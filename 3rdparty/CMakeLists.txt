@@ -328,6 +328,8 @@ INSTALL_HEADERS(fmt)
 # PoissonRecon
 set(poisson_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/PoissonRecon)
 
+# uthash
+set(uthash_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/uthash/src)
 
 list(APPEND 3RDPARTY_INCLUDE_DIRS
      ${dirent_INCLUDE_DIRS}
@@ -350,6 +352,7 @@ list(APPEND 3RDPARTY_INCLUDE_DIRS
      ${fmt_INCLUDE_DIRS}
      ${k4a_INCLUDE_DIRS}
      ${poisson_INCLUDE_DIRS}
+     ${uthash_INCLUDE_DIRS}
 )
 
 # set 3RDPARTY_INCLUDE_DIRS_AT_INSTALL
