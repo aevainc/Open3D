@@ -24,6 +24,8 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
+#pragma once
+
 #include "Open3D/Core/Hashmap/HashmapCPU.hpp"
 
 #ifdef BUILD_CUDA_MODULE
@@ -64,9 +66,9 @@ std::shared_ptr<Hashmap<Hash>> CreateHashmap(uint32_t max_keys,
                                       uint32_t, uint32_t, uint32_t, Device)>,
                               utility::hash_enum_class::hash>
             map_device_type_to_hashmap_constructor = {
-                    {Device::DeviceType::CPU, CreateCPUHashmap<Hash>},
-#ifdef BUILD_CUDA_MODULE
-                    {Device::DeviceType::CUDA, CreateCUDAHashmap<Hash>}
+                {Device::DeviceType::CPU, CreateCPUHashmap<Hash>},
+#if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
+                {Device::DeviceType::CUDA, CreateCUDAHashmap<Hash>}
 #endif
             };
 

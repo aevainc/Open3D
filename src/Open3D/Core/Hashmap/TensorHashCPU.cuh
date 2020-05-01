@@ -24,35 +24,36 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
+#pragma once
 #include "Open3D/Core/Hashmap/Hashmap.h"
 #include "Open3D/Core/Hashmap/TensorHash.h"
 #include "Open3D/Core/Tensor.h"
 
 namespace open3d {
 
-CUDATensorHash::CUDATensorHash(Tensor coords,
-                               Tensor values,
-                               bool insert /* = true */) {
+CPUTensorHash::CPUTensorHash(Tensor coords,
+                             Tensor values,
+                             bool insert /* = true */) {
     // Device check
-    if (coords.GetDevice().GetType() != Device::DeviceType::CUDA ||
-        values.GetDevice().GetType() != Device::DeviceType::CUDA) {
-        utility::LogError("CUDATensorHash::Input tensors must be on CUDA.");
+    if (coords.GetDevice().GetType() != Device::DeviceType::CPU ||
+        values.GetDevice().GetType() != Device::DeviceType::CPU) {
+        utility::LogError("CPUTensorHash::Input tensors must be on CPU.");
     }
 
     // Contiguous check to fit internal hashmap
     if (!coords.IsContiguous() || !values.IsContiguous()) {
-        utility::LogError("CUDATensorHash::Input tensors must be contiguous.");
+        utility::LogError("CPUTensorHash::Input tensors must be contiguous.");
     }
 
     // Shape check
     auto coords_shape = coords.GetShape();
     auto values_shape = values.GetShape();
     if (coords_shape.size() != 2) {
-        utility::LogError("CUDATensorHash::Input coords shape must be (N, D).");
+        utility::LogError("CPUTensorHash::Input coords shape must be (N, D).");
     }
     if (coords_shape[0] != values_shape[0]) {
         utility::LogError(
-                "CUDATensorHash::Input coords and values size mismatch.");
+                "CPUTensorHash::Input coords and values size mismatch.");
     }
 
     // Store type and dim info
@@ -66,7 +67,7 @@ CUDATensorHash::CUDATensorHash(Tensor coords,
     size_t key_size = DtypeUtil::ByteSize(key_type_) * key_dim_;
     if (key_size > MAX_KEY_BYTESIZE) {
         utility::LogError(
-                "CUDATensorHash::Unsupported key size: at most {} bytes per "
+                "CPUTensorHash::Unsupported key size: at most {} bytes per "
                 "key is "
                 "supported, received {} bytes per key",
                 MAX_KEY_BYTESIZE, key_size);
@@ -85,16 +86,14 @@ CUDATensorHash::CUDATensorHash(Tensor coords,
 }
 
 /// TODO: move these iterator dispatchers to Hashmap interfaces
-__global__ void AssignIteratorsKernel(iterator_t* iterators,
-                                      uint8_t* masks,
-                                      uint8_t* values,
-                                      size_t key_size,
-                                      size_t value_size,
-                                      size_t N) {
-    size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
-
+void AssignIteratorsIter(iterator_t* iterators,
+                         uint8_t* masks,
+                         uint8_t* values,
+                         size_t key_size,
+                         size_t value_size,
+                         int tid) {
     // Valid queries
-    if (tid < N && masks[tid]) {
+    if (masks[tid]) {
         uint8_t* kv_pair_ptr = iterators[tid];
         uint8_t* src_value_ptr = values + value_size * tid;
         uint8_t* dst_value_ptr = kv_pair_ptr + key_size;
@@ -106,15 +105,13 @@ __global__ void AssignIteratorsKernel(iterator_t* iterators,
     }
 }
 
-__global__ void DispatchKeysKernel(iterator_t* iterators,
-                                   uint8_t* masks,
-                                   uint8_t* keys,
-                                   size_t key_size,
-                                   size_t N) {
-    size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
-
+void DispatchKeysIter(iterator_t* iterators,
+                      uint8_t* masks,
+                      uint8_t* keys,
+                      size_t key_size,
+                      int tid) {
     // Valid queries
-    if (tid < N && masks[tid]) {
+    if (masks[tid]) {
         uint8_t* src_key_ptr = iterators[tid];
         uint8_t* dst_key_ptr = keys + key_size * tid;
 
@@ -125,33 +122,33 @@ __global__ void DispatchKeysKernel(iterator_t* iterators,
     }
 }
 
-std::pair<Tensor, Tensor> CUDATensorHash::Insert(Tensor coords, Tensor values) {
+std::pair<Tensor, Tensor> CPUTensorHash::Insert(Tensor coords, Tensor values) {
     // Device check
-    if (coords.GetDevice().GetType() != Device::DeviceType::CUDA) {
-        utility::LogError("CUDATensorHash::Input tensors must be on CUDA.");
+    if (coords.GetDevice().GetType() != Device::DeviceType::CPU) {
+        utility::LogError("CPUTensorHash::Input tensors must be on CPU.");
     }
 
     // Contiguous check to fit internal hashmap
     if (!coords.IsContiguous() || !values.IsContiguous()) {
-        utility::LogError("CUDATensorHash::Input tensors must be contiguous.");
+        utility::LogError("CPUTensorHash::Input tensors must be contiguous.");
     }
 
     // Type and shape check
     if (key_type_ != coords.GetDtype() || value_type_ != values.GetDtype()) {
-        utility::LogError("CUDATensorHash::Input key/value type mismatch.");
+        utility::LogError("CPUTensorHash::Input key/value type mismatch.");
     }
 
     auto coords_shape = coords.GetShape();
     auto values_shape = values.GetShape();
     if (coords_shape.size() == 0 || coords_shape.size() == 0) {
-        utility::LogError("CUDATensorHash::Inputs are empty tensors");
+        utility::LogError("CPUTensorHash::Inputs are empty tensors");
     }
     if (coords_shape.size() != 2 || coords_shape[1] != key_dim_) {
-        utility::LogError("CUDATensorHash::Input coords shape mismatch.");
+        utility::LogError("CPUTensorHash::Input coords shape mismatch.");
     }
     auto value_dim = values_shape.size() == 1 ? 1 : values_shape[1];
     if (value_dim != value_dim_) {
-        utility::LogError("CUDATensorHash::Input values shape mismatch.");
+        utility::LogError("CPUTensorHash::Input values shape mismatch.");
     }
 
     int64_t N = coords.GetShape()[0];
@@ -166,18 +163,15 @@ std::pair<Tensor, Tensor> CUDATensorHash::Insert(Tensor coords, Tensor values) {
     auto masks_buf = result.second;
 
     // Assign keys
-    const size_t num_threads = 32;
-    const size_t num_blocks = (N + num_threads - 1) / num_threads;
-
     auto ret_keys_tensor =
             Tensor(coords.GetShape(), key_type_, hashmap_->device_);
 
-    DispatchKeysKernel<<<num_blocks, num_threads>>>(
-            iterators_buf, masks_buf,
-            static_cast<uint8_t*>(ret_keys_tensor.GetBlob()->GetDataPtr()),
-            hashmap_->dsize_key_, N);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
+    for (int i = 0; i < N; ++i) {
+        DispatchKeysIter(
+                iterators_buf, masks_buf,
+                static_cast<uint8_t*>(ret_keys_tensor.GetBlob()->GetDataPtr()),
+                hashmap_->dsize_key_, i);
+    }
 
     // Dispatch masks
     // Copy mask to avoid duplicate data; dummy deleter avoids double free
@@ -193,16 +187,14 @@ std::pair<Tensor, Tensor> CUDATensorHash::Insert(Tensor coords, Tensor values) {
     return std::make_pair(ret_keys_tensor, ret_mask_tensor);
 }
 
-__global__ void DispatchValuesKernel(iterator_t* iterators,
-                                     uint8_t* masks,
-                                     uint8_t* values,
-                                     size_t key_size,
-                                     size_t value_size,
-                                     size_t N) {
-    size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
-
+void DispatchValuesIter(iterator_t* iterators,
+                        uint8_t* masks,
+                        uint8_t* values,
+                        size_t key_size,
+                        size_t value_size,
+                        int tid) {
     // Valid queries
-    if (tid < N && masks[tid]) {
+    if (masks[tid]) {
         uint8_t* kv_pair_ptr = iterators[tid];
         uint8_t* src_value_ptr = kv_pair_ptr + key_size;
         uint8_t* dst_value_ptr = values + value_size * tid;
@@ -214,51 +206,51 @@ __global__ void DispatchValuesKernel(iterator_t* iterators,
     }
 }
 
-std::pair<Tensor, Tensor> CUDATensorHash::Query(Tensor coords) {
+std::pair<Tensor, Tensor> CPUTensorHash::Query(Tensor coords) {
     // Device check
-    if (coords.GetDevice().GetType() != Device::DeviceType::CUDA) {
-        utility::LogError("CUDATensorHash::Input tensors must be on CUDA.");
+    if (coords.GetDevice().GetType() != Device::DeviceType::CPU) {
+        utility::LogError("CPUTensorHash::Input tensors must be on CPU.");
     }
 
     // Contiguous check to fit internal hashmap
     if (!coords.IsContiguous()) {
-        utility::LogError("CUDATensorHash::Input tensors must be contiguous.");
+        utility::LogError("CPUTensorHash::Input tensors must be contiguous.");
     }
 
     // Type and shape check
     if (key_type_ != coords.GetDtype()) {
-        utility::LogError("CUDATensorHash::Input coords key type mismatch.");
+        utility::LogError("CPUTensorHash::Input coords key type mismatch.");
     }
     auto coords_shape = coords.GetShape();
     if (coords_shape.size() != 2 || coords_shape[1] != key_dim_) {
-        utility::LogError("CUDATensorHash::Input coords shape mismatch.");
+        utility::LogError("CPUTensorHash::Input coords shape mismatch.");
     }
     int64_t N = coords.GetShape()[0];
 
     // Search
     auto result = hashmap_->Search(
             static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()), N);
+    utility::LogInfo("Searched");
 
     // Decode returned iterators
     auto iterators_buf = result.first;
     auto masks_buf = result.second;
 
     // Dispatch values
-    const size_t num_threads = 32;
-    const size_t num_blocks = (N + num_threads - 1) / num_threads;
-
     auto ret_value_tensor =
             Tensor(SizeVector({N}), value_type_, hashmap_->device_);
-    DispatchValuesKernel<<<num_blocks, num_threads>>>(
-            iterators_buf, masks_buf,
-            static_cast<uint8_t*>(ret_value_tensor.GetBlob()->GetDataPtr()),
-            hashmap_->dsize_key_, hashmap_->dsize_value_, N);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
+    utility::LogInfo("Dispatching");
+    for (int i = 0; i < N; ++i) {
+        DispatchValuesIter(
+                iterators_buf, masks_buf,
+                static_cast<uint8_t*>(ret_value_tensor.GetBlob()->GetDataPtr()),
+                hashmap_->dsize_key_, hashmap_->dsize_value_, i);
+    }
 
     // Dispatch masks
     // Copy mask to avoid duplicate data; dummy deleter avoids double free
     // TODO: more efficient memory reuse
+    utility::LogInfo("Dispatching finished");
     auto blob = std::make_shared<Blob>(hashmap_->device_,
                                        static_cast<void*>(masks_buf),
                                        [](void* dummy) -> void {});
@@ -271,16 +263,14 @@ std::pair<Tensor, Tensor> CUDATensorHash::Query(Tensor coords) {
 }
 
 /// TODO: move these iterator dispatchers to Hashmap interfaces
-__global__ void AssignValuesKernel(iterator_t* iterators,
-                                   uint8_t* masks,
-                                   uint8_t* values,
-                                   size_t key_size,
-                                   size_t value_size,
-                                   size_t N) {
-    size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
-
+void AssignValuesIter(iterator_t* iterators,
+                      uint8_t* masks,
+                      uint8_t* values,
+                      size_t key_size,
+                      size_t value_size,
+                      int tid) {
     // Valid queries
-    if (tid < N && masks[tid]) {
+    if (masks[tid]) {
         uint8_t* kv_pair_ptr = iterators[tid];
         uint8_t* src_value_ptr = values + value_size * tid;
         uint8_t* dst_value_ptr = kv_pair_ptr + key_size;
@@ -292,33 +282,33 @@ __global__ void AssignValuesKernel(iterator_t* iterators,
     }
 }
 
-Tensor CUDATensorHash::Assign(Tensor coords, Tensor values) {
+Tensor CPUTensorHash::Assign(Tensor coords, Tensor values) {
     // Device check
-    if (coords.GetDevice().GetType() != Device::DeviceType::CUDA) {
-        utility::LogError("CUDATensorHash::Input tensors must be on CUDA.");
+    if (coords.GetDevice().GetType() != Device::DeviceType::CPU) {
+        utility::LogError("CPUTensorHash::Input tensors must be on CUDA.");
     }
 
     // Contiguous check to fit internal hashmap
     if (!coords.IsContiguous() || !values.IsContiguous()) {
-        utility::LogError("CUDATensorHash::Input tensors must be contiguous.");
+        utility::LogError("CPUTensorHash::Input tensors must be contiguous.");
     }
 
     // Type and shape check
     if (key_type_ != coords.GetDtype() || value_type_ != values.GetDtype()) {
-        utility::LogError("CUDATensorHash::Input key/value type mismatch.");
+        utility::LogError("CPUTensorHash::Input key/value type mismatch.");
     }
 
     auto coords_shape = coords.GetShape();
     auto values_shape = values.GetShape();
     if (coords_shape.size() == 0 || coords_shape.size() == 0) {
-        utility::LogError("CUDATensorHash::Inputs are empty tensors");
+        utility::LogError("CPUTensorHash::Inputs are empty tensors");
     }
     if (coords_shape.size() != 2 || coords_shape[1] != key_dim_) {
-        utility::LogError("CUDATensorHash::Input coords shape mismatch.");
+        utility::LogError("CPUTensorHash::Input coords shape mismatch.");
     }
     auto value_dim = values_shape.size() == 1 ? 1 : values_shape[1];
     if (value_dim != value_dim_) {
-        utility::LogError("CUDATensorHash::Input values shape mismatch.");
+        utility::LogError("CPUTensorHash::Input values shape mismatch.");
     }
 
     int64_t N = coords.GetShape()[0];
@@ -332,15 +322,11 @@ Tensor CUDATensorHash::Assign(Tensor coords, Tensor values) {
     auto masks_buf = result.second;
 
     // Assign values
-    const size_t num_threads = 32;
-    const size_t num_blocks = (N + num_threads - 1) / num_threads;
-
-    AssignValuesKernel<<<num_blocks, num_threads>>>(
-            iterators_buf, masks_buf,
-            static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()),
-            hashmap_->dsize_key_, hashmap_->dsize_value_, N);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
+    for (int i = 0; i < N; ++i) {
+        AssignValuesIter(iterators_buf, masks_buf,
+                         static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()),
+                         hashmap_->dsize_key_, hashmap_->dsize_value_, i);
+    }
 
     // Dispatch masks
     // Copy mask to avoid duplicate data; dummy deleter avoids double free
@@ -357,10 +343,10 @@ Tensor CUDATensorHash::Assign(Tensor coords, Tensor values) {
 }
 
 namespace _factory {
-std::shared_ptr<CUDATensorHash> CreateCUDATensorHash(Tensor coords,
-                                                     Tensor values,
-                                                     bool insert) {
-    return std::make_shared<CUDATensorHash>(coords, values, insert);
+std::shared_ptr<CPUTensorHash> CreateCPUTensorHash(Tensor coords,
+                                                   Tensor values,
+                                                   bool insert) {
+    return std::make_shared<CPUTensorHash>(coords, values, insert);
 }
 }  // namespace _factory
 }  // namespace open3d

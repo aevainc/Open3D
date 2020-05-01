@@ -29,16 +29,18 @@
 using namespace open3d;
 
 int main() {
-    Device device("CUDA:0");
+    Device device("CPU:0");
 
     /// Init
     Tensor init_coords(std::vector<float>({0, 0, 1, 1, 2, 2, 3, 3, 4, 4}),
                        {5, 2}, Dtype::Float32, device);
     Tensor init_values(std::vector<int64_t>({0, 1, 2, 3, 4}), {5}, Dtype::Int64,
                        device);
+    utility::LogInfo("Create");
     auto tensor_hash = CreateTensorHash(init_coords, init_values);
 
     /// Query
+    utility::LogInfo("Query");
     Tensor query_coords(std::vector<float>({0, 0, 3, 3, 1, 1, 4, 4, 8, 8}),
                         {5, 2}, Dtype::Float32, device);
     auto results = tensor_hash->Query(query_coords);
@@ -51,6 +53,7 @@ int main() {
     utility::LogInfo("MaskTensor {}", results.second.ToString());
 
     /// Assign: tensor[(0, 0)] = 2, tensor[(2, 2)] = 0
+    utility::LogInfo("Assign");
     Tensor assign_coords(std::vector<float>({0, 0, 2, 2}), {2, 2},
                          Dtype::Float32, device);
     Tensor assign_values(std::vector<int64_t>({2, 0}), {2}, Dtype::Int64,

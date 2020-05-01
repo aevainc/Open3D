@@ -24,7 +24,8 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include "TensorHash.h"
+#include "TensorHashCPU.cuh"
+#include "TensorHashCUDA.cuh"
 
 #include <unordered_map>
 

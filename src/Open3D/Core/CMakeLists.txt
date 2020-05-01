@@ -33,14 +33,15 @@ set (CORE_CUDA_SRC
 set (HASHMAP_SRC
     # Hashmap/Hashmap.cpp
     # Hashmap/HashmapCPU.cpp
-    Hashmap/TensorHash.cpp
-    Hashmap/TensorHashCPU.cpp
+    # Hashmap/TensorHash.cpp
+    # Hashmap/TensorHashCPU.cpp
 )
 
 set (HASHMAP_CUDA_SRC
     # Hashmap/Hashmap.cu
     # Hashmap/HashmapCUDA.cu
-    Hashmap/TensorHashCUDA.cu
+    # TODO: conditional compile and put corresponding parts in cpp
+    Hashmap/TensorHash.cu
 )
 
 if (BUILD_CUDA_MODULE)

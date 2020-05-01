@@ -26,9 +26,31 @@
 
 #pragma once
 
+#include <unordered_map>
+#include "Consts.h"
 #include "HashmapBase.h"
+#include "Types.h"
 
 namespace open3d {
+
+struct KeyEq {
+    KeyEq(size_t key_size) : key_size_(key_size) {}
+    bool operator()(const uint8_t* lhs, const uint8_t* rhs) const {
+        if (lhs == nullptr || rhs == nullptr) {
+            return false;
+        }
+        const int chunks = key_size_ / sizeof(int);
+        int* lhs_key_ptr = (int*)(lhs);
+        int* rhs_key_ptr = (int*)(rhs);
+
+        bool res = true;
+        for (size_t i = 0; i < chunks; ++i) {
+            res = res && (lhs_key_ptr[i] == rhs_key_ptr[i]);
+        }
+        return res;
+    }
+    size_t key_size_;
+};
 
 template <typename Hash>
 class CPUHashmap : public Hashmap<Hash> {
@@ -48,5 +70,12 @@ public:
                                             uint32_t input_key_size);
 
     uint8_t* Remove(uint8_t* input_keys, uint32_t input_key_size);
+
+private:
+    std::shared_ptr<std::unordered_map<uint8_t*, uint8_t*, Hash, KeyEq>>
+            cpu_hashmap_impl_;
+
+    // Valid kv_pairs
+    std::vector<iterator_t> kv_pairs_;
 };
 }  // namespace open3d

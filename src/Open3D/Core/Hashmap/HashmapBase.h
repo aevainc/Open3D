@@ -33,11 +33,15 @@
 namespace open3d {
 
 struct DefaultHash {
-    uint64_t OPEN3D_HOST_DEVICE operator()(uint8_t* key_ptr,
-                                           uint32_t key_size) const {
+    /// Make compiler happy. Undefined behavior, must set key_size_ before
+    /// calling hash func
+    DefaultHash() {}
+    DefaultHash(size_t key_size) : key_size_(key_size) {}
+
+    uint64_t OPEN3D_HOST_DEVICE operator()(uint8_t* key_ptr) const {
         uint64_t hash = UINT64_C(14695981039346656037);
 
-        const int chunks = key_size / sizeof(int);
+        const int chunks = key_size_ / sizeof(int);
         int32_t* cast_key_ptr = (int32_t*)(key_ptr);
         for (size_t i = 0; i < chunks; ++i) {
             hash ^= cast_key_ptr[i];
@@ -45,6 +49,8 @@ struct DefaultHash {
         }
         return hash;
     }
+
+    size_t key_size_;
 };
 
 /// Base class: shared interface

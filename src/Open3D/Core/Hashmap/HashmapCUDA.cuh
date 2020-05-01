@@ -40,6 +40,7 @@
  * limitations under the License.
  */
 
+#pragma once
 #include "HashmapCUDA.h"
 
 #include <thrust/device_vector.h>
@@ -205,13 +206,15 @@ __host__ void CUDAHashmapImplContext<Hash>::Setup(
 
     node_mgr_ctx_ = allocator_ctx;
     mem_mgr_ctx_ = pair_allocator_ctx;
+
+    hash_fn_.key_size_ = dsize_key;
 }
 
 /// Device functions
 template <typename Hash>
 __device__ __host__ __forceinline__ uint32_t
 CUDAHashmapImplContext<Hash>::ComputeBucket(uint8_t* key) const {
-    return hash_fn_(key, dsize_key_) % num_buckets_;
+    return hash_fn_(key) % num_buckets_;
 }
 
 template <typename Hash>
@@ -788,8 +791,6 @@ CUDAHashmap<Hash>::CUDAHashmap(uint32_t max_keys,
     output_iterator_buffer_ = (iterator_t*)MemoryManager::Malloc(
             this->max_keys_ * sizeof(iterator_t), this->device_);
 
-    // OPEN3D_CUDA_CHECK(cudaMemcpyFromSymbol(&hash_fn_ptr, default_hash_fn_ptr,
-    //                                        sizeof(hash_t)));
     cuda_hashmap_impl_ = std::make_shared<CUDAHashmapImpl<Hash>>(
             this->num_buckets_, this->max_keys_, this->dsize_key_,
             this->dsize_value_, this->device_);
