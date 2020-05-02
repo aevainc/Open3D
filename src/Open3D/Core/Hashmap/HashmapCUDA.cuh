@@ -41,7 +41,7 @@
  */
 
 #pragma once
-#include "HashmapCUDA.h"
+#include "Open3D/Core/Hashmap/HashmapCUDA.h"
 
 #include <thrust/device_vector.h>
 
@@ -847,4 +847,12 @@ uint8_t* CUDAHashmap<Hash>::Remove(uint8_t* input_keys,
     return output_mask_buffer_;
 }
 
+template <typename Hash>
+std::shared_ptr<CUDAHashmap<Hash>> CreateCUDAHashmap(uint32_t max_keys,
+                                                     uint32_t dsize_key,
+                                                     uint32_t dsize_value,
+                                                     open3d::Device device) {
+    return std::make_shared<CUDAHashmap<Hash>>(max_keys, dsize_key, dsize_value,
+                                               device);
+}
 }  // namespace open3d

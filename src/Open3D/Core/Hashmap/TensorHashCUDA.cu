@@ -25,7 +25,7 @@
 // ----------------------------------------------------------------------------
 
 #pragma once
-#include "Open3D/Core/Hashmap/Hashmap.h"
+#include "Open3D/Core/Hashmap/HashmapCUDA.cuh"
 #include "Open3D/Core/Hashmap/TensorHash.h"
 #include "Open3D/Core/Tensor.h"
 
@@ -75,8 +75,8 @@ CUDATensorHash::CUDATensorHash(Tensor coords,
     size_t value_size = DtypeUtil::ByteSize(value_type_) * value_dim_;
 
     // Create hashmap and reserve twice input size
-    hashmap_ = CreateHashmap<DefaultHash>(N * 2, key_size, value_size,
-                                          coords.GetDevice());
+    hashmap_ = CreateCUDAHashmap<DefaultHash>(N * 2, key_size, value_size,
+                                              coords.GetDevice());
 
     if (insert) {
         hashmap_->Insert(static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),

@@ -28,33 +28,13 @@
 
 #include "Open3D/Core/Hashmap/HashmapCPU.hpp"
 
-#ifdef BUILD_CUDA_MODULE
+#if defined(BUILD_CUDA_MODULE) or defined(__CUDACC__)
 #include "Open3D/Core/Hashmap/HashmapCUDA.cuh"
 #endif
 
 #include <unordered_map>
 
 namespace open3d {
-
-template <typename Hash>
-std::shared_ptr<CPUHashmap<Hash>> CreateCPUHashmap(uint32_t max_keys,
-                                                   uint32_t dsize_key,
-                                                   uint32_t dsize_value,
-                                                   open3d::Device device) {
-    return std::make_shared<CPUHashmap<Hash>>(max_keys, dsize_key, dsize_value,
-                                              device);
-}
-
-#ifdef BUILD_CUDA_MODULE
-template <typename Hash>
-std::shared_ptr<CUDAHashmap<Hash>> CreateCUDAHashmap(uint32_t max_keys,
-                                                     uint32_t dsize_key,
-                                                     uint32_t dsize_value,
-                                                     open3d::Device device) {
-    return std::make_shared<CUDAHashmap<Hash>>(max_keys, dsize_key, dsize_value,
-                                               device);
-}
-#endif
 
 template <typename Hash = DefaultHash>
 std::shared_ptr<Hashmap<Hash>> CreateHashmap(uint32_t max_keys,

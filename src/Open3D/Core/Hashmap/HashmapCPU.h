@@ -27,9 +27,9 @@
 #pragma once
 
 #include <unordered_map>
-#include "Consts.h"
-#include "HashmapBase.h"
-#include "Types.h"
+#include "Open3D/Core/Hashmap/Consts.h"
+#include "Open3D/Core/Hashmap/HashmapBase.h"
+#include "Open3D/Core/Hashmap/Types.h"
 
 namespace open3d {
 
