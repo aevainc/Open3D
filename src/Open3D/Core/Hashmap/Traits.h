@@ -24,24 +24,23 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-/*
- * Copyright 2019 Saman Ashkiani
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright 2019 Saman Ashkiani
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+// implied. See the License for the specific language governing permissions
+// and limitations under the License.
 
 #pragma once
 
+namespace open3d {
 #include <cstdint>
 
 #define MAX_KEY_BYTESIZE 32
@@ -86,3 +85,22 @@ static constexpr uint32_t SUPER_BLOCK_SIZE_ =
         ((BITMAP_SIZE_ + MEM_BLOCK_SIZE_) * NUM_MEM_BLOCKS_PER_SUPER_BLOCK_);
 static constexpr uint32_t MEM_BLOCK_OFFSET_ =
         (BITMAP_SIZE_ * NUM_MEM_BLOCKS_PER_SUPER_BLOCK_);
+
+typedef uint32_t ptr_t;
+typedef uint8_t* iterator_t;
+
+typedef uint64_t (*hash_t)(uint8_t*, uint32_t);
+
+/// Internal Hashtable Node: (31 units and 1 next ptr) representation.
+/// \member kv_pair_ptrs:
+/// Each element is an internal ptr to a kv pair managed by the
+/// InternalMemoryManager. Can be converted to a real ptr.
+/// \member next_slab_ptr:
+/// An internal ptr managed by InternalNodeManager.
+class Slab {
+public:
+    ptr_t kv_pair_ptrs[31];
+    ptr_t next_slab_ptr;
+};
+
+}  // namespace open3d

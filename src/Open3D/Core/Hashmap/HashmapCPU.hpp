@@ -25,6 +25,9 @@
 // ----------------------------------------------------------------------------
 
 #pragma once
+
+// Implementation for the CPU hashmap. Separated from HashmapCPU.h for brevity.
+
 #include "Open3D/Core/Hashmap/HashmapCPU.h"
 
 namespace open3d {

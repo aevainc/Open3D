@@ -26,9 +26,20 @@
 
 #pragma once
 
+// Low level hashmap interface for users. APIs are available in HashmapBase.h.
+// Include path:
+// Hashmap.h -> HashmapCPU.hpp -> HashmapBase.h
+//         |                      ^
+//         |--> HashmapCUDA.cuh --|
+//               (CUDA code)
+
+// .cpp targets only include CPU part that can be compiled by non-nvcc
+// compilers even if BUILD_CUDA_MODULE is enabled.
+// .cu targets include both.
+
 #include "Open3D/Core/Hashmap/HashmapCPU.hpp"
 
-#if defined(BUILD_CUDA_MODULE) or defined(__CUDACC__)
+#if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
 #include "Open3D/Core/Hashmap/HashmapCUDA.cuh"
 #endif
 

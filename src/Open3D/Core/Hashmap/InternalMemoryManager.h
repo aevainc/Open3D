@@ -35,7 +35,7 @@
 #include <vector>
 
 #include "Open3D/Core/CUDAUtils.h"
-#include "Open3D/Core/Hashmap/Consts.h"
+#include "Open3D/Core/Hashmap/Traits.h"
 #include "Open3D/Core/MemoryManager.h"
 
 namespace open3d {

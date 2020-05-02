@@ -26,10 +26,11 @@
 
 #pragma once
 
+// Interface for the CPU hashmap. Separated from HashmapCPU.hpp for brevity.
+
 #include <unordered_map>
-#include "Open3D/Core/Hashmap/Consts.h"
 #include "Open3D/Core/Hashmap/HashmapBase.h"
-#include "Open3D/Core/Hashmap/Types.h"
+#include "Open3D/Core/Hashmap/Traits.h"
 
 namespace open3d {
 

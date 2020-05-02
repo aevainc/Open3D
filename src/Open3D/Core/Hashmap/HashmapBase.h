@@ -27,7 +27,7 @@
 #pragma once
 
 #include "Open3D/Core/CUDAUtils.h"
-#include "Open3D/Core/Hashmap/Types.h"
+#include "Open3D/Core/Hashmap/Traits.h"
 #include "Open3D/Core/MemoryManager.h"
 
 namespace open3d {
