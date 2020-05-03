@@ -33,9 +33,10 @@
 namespace open3d {
 
 struct DefaultHash {
-    /// Make compiler happy. Undefined behavior, must set key_size_ before
-    /// calling hash func
+    // Default constructor makes compiler happy. Undefined behavior, must set
+    // key_size_ before calling operator().
     DefaultHash() {}
+
     DefaultHash(size_t key_size) : key_size_(key_size) {}
 
     uint64_t OPEN3D_HOST_DEVICE operator()(uint8_t* key_ptr) const {

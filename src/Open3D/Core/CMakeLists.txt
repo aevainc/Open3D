@@ -73,8 +73,11 @@ if (BUILD_CUDA_MODULE)
     set(CUDA_NVCC_FLAGS -std=c++11)
     set(CMAKE_CXX_STANDARD 11)
 
-    cuda_add_executable(test_hashmap Hashmap/test_hashmap.cu)
-    target_link_libraries(test_hashmap ${CMAKE_PROJECT_NAME})
+    cuda_add_executable(test_hashmap_cuda Hashmap/test_hashmap.cu)
+    target_link_libraries(test_hashmap_cuda ${CMAKE_PROJECT_NAME})
+
+    add_executable(test_hashmap_cpu Hashmap/test_hashmap.cpp)
+    target_link_libraries(test_hashmap_cpu ${CMAKE_PROJECT_NAME})
 
     add_executable(test_tensorhash Hashmap/test_tensorhash.cpp)
     target_link_libraries(test_tensorhash ${CMAKE_PROJECT_NAME})

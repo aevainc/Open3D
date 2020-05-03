@@ -54,22 +54,21 @@ public:
     int max_capacity_;
 
 public:
-    /**
-     * The @value array's size is FIXED.
-     * The @heap array stores the addresses of the values.
-     * Only the unallocated part is maintained.
-     * (ONLY care about the heap above the heap counter. Below is meaningless.)
-     * ---------------------------------------------------------------------
-     * heap  ---Malloc-->  heap  ---Malloc-->  heap  ---Free(0)-->  heap
-     * N-1                 N-1                  N-1                  N-1   |
-     *  .                   .                    .                    .    |
-     *  .                   .                    .                    .    |
-     *  .                   .                    .                    .    |
-     *  3                   3                    3                    3    |
-     *  2                   2                    2 <-                 2    |
-     *  1                   1 <-                 1                    0 <- |
-     *  0 <- heap_counter   0                    0                    0
-     */
+    // The @value array's size is FIXED.
+    // The @heap array stores the addresses of the values.
+    // Only the unallocated part is maintained.
+    // (ONLY care about the heap above the heap counter. Below is
+    // meaningless.)
+    // ---------------------------------------------------------------------
+    // heap  ---Malloc-->  heap  ---Malloc-->  heap  ---Free(0)-->  heap
+    // N-1                 N-1                  N-1                  N-1   |
+    //  .                   .                    .                    .    |
+    //  .                   .                    .                    .    |
+    //  .                   .                    .                    .    |
+    //  3                   3                    3                    3    |
+    //  2                   2                    2 <-                 2    |
+    //  1                   1 <-                 1                    0 <- |
+    //  0 <- heap_counter   0                    0                    0
     __device__ ptr_t Allocate() {
         int index = atomicAdd(heap_counter_, 1);
         assert(index < max_capacity_);
