@@ -51,7 +51,7 @@
 #include "Open3D/Core/MemoryManager.h"
 
 #include "Open3D/Core/Hashmap/HashmapBase.h"
-#include "Open3D/Core/Hashmap/InternalMemoryManager.h"
+#include "Open3D/Core/Hashmap/InternalKvPairManager.h"
 #include "Open3D/Core/Hashmap/InternalNodeManager.h"
 
 namespace open3d {
@@ -81,7 +81,7 @@ public:
                         const uint32_t dsize_key,
                         const uint32_t dsize_value,
                         const InternalNodeManagerContext& node_mgr_ctx,
-                        const InternalMemoryManagerContext& mem_mgr_ctx);
+                        const InternalKvPairManagerContext& mem_mgr_ctx);
 
     __device__ Pair<ptr_t, uint8_t> Insert(uint8_t& lane_active,
                                            const uint32_t lane_id,
@@ -134,7 +134,7 @@ public:
 
     Slab* bucket_list_head_;
     InternalNodeManagerContext node_mgr_ctx_;
-    InternalMemoryManagerContext mem_mgr_ctx_;
+    InternalKvPairManagerContext mem_mgr_ctx_;
 };
 
 template <typename Hash>
@@ -176,10 +176,14 @@ private:
 
     CUDAHashmapImplContext<Hash> gpu_context_;
 
-    std::shared_ptr<InternalMemoryManager> mem_mgr_;
+    std::shared_ptr<InternalKvPairManager> mem_mgr_;
     std::shared_ptr<InternalNodeManager> node_mgr_;
 
     Device device_;
+};
+
+struct ElemwiseFunc {
+    void operator()(iterator_t* iterator);
 };
 
 template <typename Hash>
@@ -201,9 +205,13 @@ public:
 
     uint8_t* Remove(uint8_t* input_keys, uint32_t input_key_size);
 
+    /// TODO: parallel foreach
+    // void Foreach(ElemwiseFunc& func);
+
 protected:
     uint32_t num_buckets_;
 
+    // TODO: move out these buffers
     // Buffer to store temporary results
     uint8_t* output_key_buffer_;
     uint8_t* output_value_buffer_;

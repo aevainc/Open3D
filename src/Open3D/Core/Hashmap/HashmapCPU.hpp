@@ -46,7 +46,8 @@ CPUHashmap<Hash>::CPUHashmap(uint32_t max_keys,
 template <typename Hash>
 CPUHashmap<Hash>::~CPUHashmap() {
     for (auto kv_pair : kv_pairs_) {
-        MemoryManager::Free(kv_pair, this->device_);
+        MemoryManager::Free(kv_pair.first, this->device_);
+        MemoryManager::Free(kv_pair.second, this->device_);
     }
 };
 
@@ -63,10 +64,10 @@ std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash>::Insert(
         uint8_t* src_value = (uint8_t*)input_values + this->dsize_value_ * i;
 
         // Manually copy before insert
-        void* dst_kvpair = MemoryManager::Malloc(
-                this->dsize_key_ + this->dsize_value_, this->device_);
-        void* dst_key = dst_kvpair;
-        void* dst_value = (void*)((uint8_t*)dst_kvpair + this->dsize_key_);
+        void* dst_key = MemoryManager::Malloc(this->dsize_key_, this->device_);
+        void* dst_value =
+                MemoryManager::Malloc(this->dsize_value_, this->device_);
+
         MemoryManager::Memcpy(dst_key, this->device_, src_key, this->device_,
                               this->dsize_key_);
         MemoryManager::Memcpy(dst_value, this->device_, src_value,
@@ -78,11 +79,12 @@ std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash>::Insert(
 
         // Handle memory
         if (res.second) {
-            iterators[i] = (iterator_t)dst_kvpair;
+            iterators[i] = iterator_t((uint8_t*)dst_key, (uint8_t*)dst_value);
             masks[i] = 1;
         } else {
-            MemoryManager::Free(dst_kvpair, this->device_);
-            iterators[i] = nullptr;
+            MemoryManager::Free(dst_key, this->device_);
+            MemoryManager::Free(dst_value, this->device_);
+            iterators[i] = iterator_t();
             masks[i] = 0;
         }
     }
@@ -103,11 +105,11 @@ std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash>::Search(
 
         auto iter = cpu_hashmap_impl_->find(key);
         if (iter == cpu_hashmap_impl_->end()) {
-            iterators[i] = nullptr;
+            iterators[i] = iterator_t();
             masks[i] = 0;
         } else {
             void* key = iter->first;
-            iterators[i] = (iterator_t)key;
+            iterators[i] = iterator_t(iter->first, iter->second);
             masks[i] = 1;
         }
     }

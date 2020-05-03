@@ -39,6 +39,7 @@
 // and limitations under the License.
 
 #pragma once
+#include "Open3D/Core/CUDAUtils.h"
 
 namespace open3d {
 #include <cstdint>
@@ -87,7 +88,14 @@ static constexpr uint32_t MEM_BLOCK_OFFSET_ =
         (BITMAP_SIZE_ * NUM_MEM_BLOCKS_PER_SUPER_BLOCK_);
 
 typedef uint32_t ptr_t;
-typedef uint8_t* iterator_t;
+struct iterator_t {
+    OPEN3D_HOST_DEVICE iterator_t() : first(nullptr), second(nullptr) {}
+    OPEN3D_HOST_DEVICE iterator_t(uint8_t* key_ptr, uint8_t* value_ptr)
+        : first(key_ptr), second(value_ptr) {}
+
+    uint8_t* first;
+    uint8_t* second;
+};
 
 typedef uint64_t (*hash_t)(uint8_t*, uint32_t);
 

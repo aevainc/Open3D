@@ -96,9 +96,8 @@ __global__ void AssignIteratorsKernel(iterator_t* iterators,
 
     // Valid queries
     if (tid < N && masks[tid]) {
-        uint8_t* kv_pair_ptr = iterators[tid];
         uint8_t* src_value_ptr = values + value_size * tid;
-        uint8_t* dst_value_ptr = kv_pair_ptr + key_size;
+        uint8_t* dst_value_ptr = iterators[tid].second;
 
         // Byte-by-byte copy, can be improved
         for (int i = 0; i < value_size; ++i) {
@@ -116,7 +115,7 @@ __global__ void DispatchKeysKernel(iterator_t* iterators,
 
     // Valid queries
     if (tid < N && masks[tid]) {
-        uint8_t* src_key_ptr = iterators[tid];
+        uint8_t* src_key_ptr = iterators[tid].first;
         uint8_t* dst_key_ptr = keys + key_size * tid;
 
         // Byte-by-byte copy, can be improved
@@ -204,8 +203,7 @@ __global__ void DispatchValuesKernel(iterator_t* iterators,
 
     // Valid queries
     if (tid < N && masks[tid]) {
-        uint8_t* kv_pair_ptr = iterators[tid];
-        uint8_t* src_value_ptr = kv_pair_ptr + key_size;
+        uint8_t* src_value_ptr = iterators[tid].second;
         uint8_t* dst_value_ptr = values + value_size * tid;
 
         // Byte-by-byte copy, can be improved
@@ -282,9 +280,8 @@ __global__ void AssignValuesKernel(iterator_t* iterators,
 
     // Valid queries
     if (tid < N && masks[tid]) {
-        uint8_t* kv_pair_ptr = iterators[tid];
         uint8_t* src_value_ptr = values + value_size * tid;
-        uint8_t* dst_value_ptr = kv_pair_ptr + key_size;
+        uint8_t* dst_value_ptr = iterators[tid].second;
 
         // Byte-by-byte copy, can be improved
         for (int i = 0; i < value_size; ++i) {

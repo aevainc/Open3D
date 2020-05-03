@@ -65,7 +65,7 @@ endif()
 add_library(Core OBJECT ${ALL_CORE_SRC})
 set_target_properties(Core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-add_executable(test_unordered_map Hashmap/test_unordered_map.cpp)
+# add_executable(test_unordered_map Hashmap/test_unordered_map.cpp)
 
 if (BUILD_CUDA_MODULE)
     target_include_directories(Core PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})

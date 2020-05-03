@@ -94,9 +94,8 @@ void AssignIteratorsIter(iterator_t* iterators,
                          int tid) {
     // Valid queries
     if (masks[tid]) {
-        uint8_t* kv_pair_ptr = iterators[tid];
         uint8_t* src_value_ptr = values + value_size * tid;
-        uint8_t* dst_value_ptr = kv_pair_ptr + key_size;
+        uint8_t* dst_value_ptr = iterators[tid].second;
 
         // Byte-by-byte copy, can be improved
         for (int i = 0; i < value_size; ++i) {
@@ -112,7 +111,7 @@ void DispatchKeysIter(iterator_t* iterators,
                       int tid) {
     // Valid queries
     if (masks[tid]) {
-        uint8_t* src_key_ptr = iterators[tid];
+        uint8_t* src_key_ptr = iterators[tid].first;
         uint8_t* dst_key_ptr = keys + key_size * tid;
 
         // Byte-by-byte copy, can be improved
@@ -195,8 +194,7 @@ void DispatchValuesIter(iterator_t* iterators,
                         int tid) {
     // Valid queries
     if (masks[tid]) {
-        uint8_t* kv_pair_ptr = iterators[tid];
-        uint8_t* src_value_ptr = kv_pair_ptr + key_size;
+        uint8_t* src_value_ptr = iterators[tid].second;
         uint8_t* dst_value_ptr = values + value_size * tid;
 
         // Byte-by-byte copy, can be improved
@@ -271,9 +269,8 @@ void AssignValuesIter(iterator_t* iterators,
                       int tid) {
     // Valid queries
     if (masks[tid]) {
-        uint8_t* kv_pair_ptr = iterators[tid];
         uint8_t* src_value_ptr = values + value_size * tid;
-        uint8_t* dst_value_ptr = kv_pair_ptr + key_size;
+        uint8_t* dst_value_ptr = iterators[tid].second;
 
         // Byte-by-byte copy, can be improved
         for (int i = 0; i < value_size; ++i) {

@@ -34,10 +34,10 @@ bool Compare(iterator_t* ret_iterators,
             }
         } else {  /// Found
             iterator_t iterator = iterators[i];
-            Key key = *(
-                    thrust::device_ptr<Key>(reinterpret_cast<Key*>(iterator)));
+            Key key = *(thrust::device_ptr<Key>(
+                    reinterpret_cast<Key*>(iterator.first)));
             Value val = *(thrust::device_ptr<Value>(
-                    reinterpret_cast<Value*>(iterator + sizeof(Key))));
+                    reinterpret_cast<Value*>(iterator.second)));
             if (!(key == iterator_gt->first)) {
                 utility::LogError("key[{}] is not equal to ground truth", i);
             }
@@ -75,9 +75,8 @@ void TEST_SIMPLE() {
             thrust::raw_pointer_cast(query_keys_cuda.data()));
 
     /// Hashmap creation
-    auto hashmap =
-            CreateHashmap<DefaultHash>(max_keys, sizeof(int), sizeof(int),
-                                       open3d::Device("CUDA:0"));
+    auto hashmap = CreateHashmap<DefaultHash>(
+            max_keys, sizeof(int), sizeof(int), open3d::Device("CUDA:0"));
 
     /// Hashmap insertion
     hashmap->Insert(insert_keys_ptr_cuda, insert_vals_ptr_cuda,

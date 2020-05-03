@@ -29,9 +29,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
@@ -87,8 +87,8 @@ CUDAHashmapImpl<Hash>::CUDAHashmapImpl(const uint32_t max_bucket_count,
     : num_buckets_(max_bucket_count),
       device_(device),
       bucket_list_head_(nullptr) {
-    mem_mgr_ = std::make_shared<InternalMemoryManager>(
-            max_keyvalue_count, dsize_key + dsize_value, device_);
+    mem_mgr_ = std::make_shared<InternalKvPairManager>(
+            max_keyvalue_count, dsize_key, dsize_value, device_);
     node_mgr_ = std::make_shared<InternalNodeManager>(device_);
 
     bucket_list_head_ = static_cast<Slab*>(
@@ -198,7 +198,7 @@ __host__ void CUDAHashmapImplContext<Hash>::Setup(
         const uint32_t dsize_key,
         const uint32_t dsize_value,
         const InternalNodeManagerContext& allocator_ctx,
-        const InternalMemoryManagerContext& pair_allocator_ctx) {
+        const InternalKvPairManagerContext& pair_allocator_ctx) {
     bucket_list_head_ = bucket_list_head;
 
     num_buckets_ = num_buckets;
@@ -249,7 +249,7 @@ __device__ int32_t CUDAHashmapImplContext<Hash>::WarpFindKey(
             /* validate key addrs */
             && (ptr != EMPTY_PAIR_PTR)
             /* find keys in memory heap */
-            && cmp(mem_mgr_ctx_.extract_ptr(ptr), key_ptr, dsize_key_);
+            && cmp(mem_mgr_ctx_.extract_iterator(ptr).first, key_ptr, dsize_key_);
 
     return __ffs(__ballot_sync(PAIR_PTR_LANES_MASK, is_lane_found)) - 1;
 }
@@ -318,6 +318,7 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash>::Search(
             if (lane_id == src_lane) {
                 to_search = false;
 
+                /// Actually iterator_ptr
                 iterator = found_pair_internal_ptr;
                 mask = true;
             }
@@ -371,11 +372,16 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash>::Insert(
     int prealloc_pair_internal_ptr = EMPTY_PAIR_PTR;
     if (to_be_inserted) {
         prealloc_pair_internal_ptr = mem_mgr_ctx_.Allocate();
+
         // TODO: replace with Assign
-        uint8_t* ptr = mem_mgr_ctx_.extract_ptr(prealloc_pair_internal_ptr);
+        iterator_t iter = mem_mgr_ctx_.extract_iterator(prealloc_pair_internal_ptr);
+
+        uint8_t* ptr = iter.first;
         for (int i = 0; i < dsize_key_; ++i) {
             *ptr++ = key[i];
         }
+
+        ptr = iter.second;
         for (int i = 0; i < dsize_value_; ++i) {
             *ptr++ = value[i];
         }
@@ -599,7 +605,7 @@ __global__ void SearchKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
     result = slab_hash_ctx.Search(lane_active, lane_id, bucket_id, key);
 
     if (tid < num_queries) {
-        iterators[tid] = slab_hash_ctx.mem_mgr_ctx_.extract_ptr(result.first);
+        iterators[tid] = slab_hash_ctx.mem_mgr_ctx_.extract_iterator(result.first);
         masks[tid] = result.second;
     }
 }
@@ -639,7 +645,7 @@ __global__ void InsertKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
             slab_hash_ctx.Insert(lane_active, lane_id, bucket_id, key, value);
 
     if (tid < num_keys) {
-        iterators[tid] = slab_hash_ctx.mem_mgr_ctx_.extract_ptr(result.first);
+        iterators[tid] = slab_hash_ctx.mem_mgr_ctx_.extract_iterator(result.first);
         masks[tid] = result.second;
     }
 }

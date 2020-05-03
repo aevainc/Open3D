@@ -32,8 +32,8 @@ bool Compare(iterator_t* ret_iterators,
             }
         } else {  /// Found
             iterator_t iterator = iterators[i];
-            Key key = *(reinterpret_cast<Key*>(iterator));
-            Value val = *(reinterpret_cast<Value*>(iterator + sizeof(Key)));
+            Key key = *(reinterpret_cast<Key*>(iterator.first));
+            Value val = *(reinterpret_cast<Value*>(iterator.second));
             if (!(key == iterator_gt->first)) {
                 utility::LogError("key[{}] is not equal to ground truth", i);
             }
