@@ -36,7 +36,6 @@ struct DefaultHash {
     // Default constructor makes compiler happy. Undefined behavior, must set
     // key_size_ before calling operator().
     DefaultHash() {}
-
     DefaultHash(size_t key_size) : key_size_(key_size) {}
 
     uint64_t OPEN3D_HOST_DEVICE operator()(uint8_t* key_ptr) const {
@@ -54,8 +53,33 @@ struct DefaultHash {
     size_t key_size_;
 };
 
+struct DefaultKeyEq {
+    // Default constructor makes compiler happy. Undefined behavior, must set
+    // key_size_ before calling operator().
+    DefaultKeyEq() {}
+    DefaultKeyEq(size_t key_size) : key_size_(key_size) {}
+
+    bool OPEN3D_HOST_DEVICE operator()(const uint8_t* lhs,
+                                       const uint8_t* rhs) const {
+        if (lhs == nullptr || rhs == nullptr) {
+            return false;
+        }
+        const int chunks = key_size_ / sizeof(int);
+        int* lhs_key_ptr = (int*)(lhs);
+        int* rhs_key_ptr = (int*)(rhs);
+
+        bool res = true;
+        for (size_t i = 0; i < chunks; ++i) {
+            res = res && (lhs_key_ptr[i] == rhs_key_ptr[i]);
+        }
+        return res;
+    }
+
+    size_t key_size_;
+};
+
 /// Base class: shared interface
-template <typename Hash>
+template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
 class Hashmap {
 public:
     Hashmap(uint32_t max_keys,
@@ -87,9 +111,9 @@ public:
 };
 
 /// Factory
-template <typename Hash>
-std::shared_ptr<Hashmap<Hash>> CreateHashmap(uint32_t max_keys,
-                                             uint32_t dsize_key,
-                                             uint32_t dsize_value,
-                                             Device device);
+template <typename Hash, typename KeyEq>
+std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(uint32_t max_keys,
+                                                    uint32_t dsize_key,
+                                                    uint32_t dsize_value,
+                                                    Device device);
 }  // namespace open3d

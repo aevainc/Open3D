@@ -49,41 +49,42 @@
 namespace open3d {
 
 /// Kernels
-template <typename Hash>
-__global__ void InsertKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
+template <typename Hash, typename KeyEq>
+__global__ void InsertKernel(CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
                              uint8_t* input_keys,
                              uint8_t* input_values,
                              iterator_t* output_iterators,
                              uint8_t* output_masks,
-                             uint32_t num_keys);
-template <typename Hash>
-__global__ void SearchKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
+                             uint32_t num_keys); 
+template <typename Hash, typename KeyEq>
+__global__ void SearchKernel(CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
                              uint8_t* input_keys,
                              iterator_t* output_iterators,
                              uint8_t* output_masks,
                              uint32_t num_keys);
-template <typename Hash>
-__global__ void RemoveKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
+template <typename Hash, typename KeyEq>
+__global__ void RemoveKernel(CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
                              uint8_t* input_keys,
                              uint8_t* output_masks,
                              uint32_t num_keys);
-template <typename Hash>
-__global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
-                                   iterator_t* output_iterators,
-                                   uint32_t* output_iterator_count,
-                                   uint32_t num_buckets);
-template <typename Hash>
+template <typename Hash, typename KeyEq>
+__global__ void GetIteratorsKernel(
+        CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
+        iterator_t* output_iterators,
+        uint32_t* output_iterator_count,
+        uint32_t num_buckets);
+template <typename Hash, typename KeyEq>
 __global__ void CountElemsPerBucketKernel(
-        CUDAHashmapImplContext<Hash> slab_hash_ctx,
+        CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
         uint32_t* bucket_elem_counts);
 
 /// Kernel callers
-template <typename Hash>
-CUDAHashmapImpl<Hash>::CUDAHashmapImpl(const uint32_t max_bucket_count,
-                                       const uint32_t max_keyvalue_count,
-                                       const uint32_t dsize_key,
-                                       const uint32_t dsize_value,
-                                       Device device)
+template <typename Hash, typename KeyEq>
+CUDAHashmapImpl<Hash, KeyEq>::CUDAHashmapImpl(const uint32_t max_bucket_count,
+                                              const uint32_t max_keyvalue_count,
+                                              const uint32_t dsize_key,
+                                              const uint32_t dsize_value,
+                                              Device device)
     : num_buckets_(max_bucket_count),
       device_(device),
       bucket_list_head_(nullptr) {
@@ -100,17 +101,17 @@ CUDAHashmapImpl<Hash>::CUDAHashmapImpl(const uint32_t max_bucket_count,
                        node_mgr_->gpu_context_, mem_mgr_->gpu_context_);
 }
 
-template <typename Hash>
-CUDAHashmapImpl<Hash>::~CUDAHashmapImpl() {
+template <typename Hash, typename KeyEq>
+CUDAHashmapImpl<Hash, KeyEq>::~CUDAHashmapImpl() {
     MemoryManager::Free(bucket_list_head_, device_);
 }
 
-template <typename Hash>
-void CUDAHashmapImpl<Hash>::Insert(uint8_t* keys,
-                                   uint8_t* values,
-                                   iterator_t* iterators,
-                                   uint8_t* masks,
-                                   uint32_t num_keys) {
+template <typename Hash, typename KeyEq>
+void CUDAHashmapImpl<Hash, KeyEq>::Insert(uint8_t* keys,
+                                          uint8_t* values,
+                                          iterator_t* iterators,
+                                          uint8_t* masks,
+                                          uint32_t num_keys) {
     const uint32_t num_blocks = (num_keys + BLOCKSIZE_ - 1) / BLOCKSIZE_;
     InsertKernel<<<num_blocks, BLOCKSIZE_>>>(gpu_context_, keys, values,
                                              iterators, masks, num_keys);
@@ -118,11 +119,11 @@ void CUDAHashmapImpl<Hash>::Insert(uint8_t* keys,
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 }
 
-template <typename Hash>
-void CUDAHashmapImpl<Hash>::Search(uint8_t* keys,
-                                   iterator_t* iterators,
-                                   uint8_t* masks,
-                                   uint32_t num_keys) {
+template <typename Hash, typename KeyEq>
+void CUDAHashmapImpl<Hash, KeyEq>::Search(uint8_t* keys,
+                                          iterator_t* iterators,
+                                          uint8_t* masks,
+                                          uint32_t num_keys) {
     OPEN3D_CUDA_CHECK(cudaMemset(masks, 0, sizeof(uint8_t) * num_keys));
 
     const uint32_t num_blocks = (num_keys + BLOCKSIZE_ - 1) / BLOCKSIZE_;
@@ -132,10 +133,10 @@ void CUDAHashmapImpl<Hash>::Search(uint8_t* keys,
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 }
 
-template <typename Hash>
-void CUDAHashmapImpl<Hash>::Remove(uint8_t* keys,
-                                   uint8_t* masks,
-                                   uint32_t num_keys) {
+template <typename Hash, typename KeyEq>
+void CUDAHashmapImpl<Hash, KeyEq>::Remove(uint8_t* keys,
+                                          uint8_t* masks,
+                                          uint32_t num_keys) {
     OPEN3D_CUDA_CHECK(cudaMemset(masks, 0, sizeof(uint8_t) * num_keys));
 
     const uint32_t num_blocks = (num_keys + BLOCKSIZE_ - 1) / BLOCKSIZE_;
@@ -145,8 +146,8 @@ void CUDAHashmapImpl<Hash>::Remove(uint8_t* keys,
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 }
 
-template <typename Hash>
-std::vector<int> CUDAHashmapImpl<Hash>::CountElemsPerBucket() {
+template <typename Hash, typename KeyEq>
+std::vector<int> CUDAHashmapImpl<Hash, KeyEq>::CountElemsPerBucket() {
     auto elems_per_bucket_buffer = static_cast<uint32_t*>(
             MemoryManager::Malloc(num_buckets_ * sizeof(uint32_t), device_));
 
@@ -166,8 +167,8 @@ std::vector<int> CUDAHashmapImpl<Hash>::CountElemsPerBucket() {
     return std::move(result);
 }
 
-template <typename Hash>
-double CUDAHashmapImpl<Hash>::ComputeLoadFactor() {
+template <typename Hash, typename KeyEq>
+double CUDAHashmapImpl<Hash, KeyEq>::ComputeLoadFactor() {
     auto elems_per_bucket = CountElemsPerBucket();
     int total_elems_stored = std::accumulate(elems_per_bucket.begin(),
                                              elems_per_bucket.end(), 0);
@@ -184,15 +185,15 @@ double CUDAHashmapImpl<Hash>::ComputeLoadFactor() {
 }
 
 /// Device proxy
-template <typename Hash>
-CUDAHashmapImplContext<Hash>::CUDAHashmapImplContext()
+template <typename Hash, typename KeyEq>
+CUDAHashmapImplContext<Hash, KeyEq>::CUDAHashmapImplContext()
     : num_buckets_(0), bucket_list_head_(nullptr) {
     static_assert(sizeof(Slab) == (WARP_WIDTH * sizeof(ptr_t)),
                   "Invalid slab size");
 }
 
-template <typename Hash>
-__host__ void CUDAHashmapImplContext<Hash>::Setup(
+template <typename Hash, typename KeyEq>
+__host__ void CUDAHashmapImplContext<Hash, KeyEq>::Setup(
         Slab* bucket_list_head,
         const uint32_t num_buckets,
         const uint32_t dsize_key,
@@ -212,15 +213,17 @@ __host__ void CUDAHashmapImplContext<Hash>::Setup(
 }
 
 /// Device functions
-template <typename Hash>
+template <typename Hash, typename KeyEq>
 __device__ __host__ __forceinline__ uint32_t
-CUDAHashmapImplContext<Hash>::ComputeBucket(uint8_t* key) const {
+CUDAHashmapImplContext<Hash, KeyEq>::ComputeBucket(uint8_t* key) const {
     return hash_fn_(key) % num_buckets_;
 }
 
-template <typename Hash>
-__device__ __forceinline__ void CUDAHashmapImplContext<Hash>::WarpSyncKey(
-        uint8_t* key_ptr, const uint32_t lane_id, uint8_t* ret_key_ptr) {
+template <typename Hash, typename KeyEq>
+__device__ __forceinline__ void
+CUDAHashmapImplContext<Hash, KeyEq>::WarpSyncKey(uint8_t* key_ptr,
+                                                 const uint32_t lane_id,
+                                                 uint8_t* ret_key_ptr) {
     const int chunks = dsize_key_ / sizeof(int);
 #pragma unroll 1
     for (size_t i = 0; i < chunks; ++i) {
@@ -240,8 +243,8 @@ __device__ __host__ inline bool cmp(uint8_t* src,
     return ret;
 }
 
-template <typename Hash>
-__device__ int32_t CUDAHashmapImplContext<Hash>::WarpFindKey(
+template <typename Hash, typename KeyEq>
+__device__ int32_t CUDAHashmapImplContext<Hash, KeyEq>::WarpFindKey(
         uint8_t* key_ptr, const uint32_t lane_id, const ptr_t ptr) {
     uint8_t is_lane_found =
             /* select key lanes */
@@ -249,33 +252,34 @@ __device__ int32_t CUDAHashmapImplContext<Hash>::WarpFindKey(
             /* validate key addrs */
             && (ptr != EMPTY_PAIR_PTR)
             /* find keys in memory heap */
-            && cmp(mem_mgr_ctx_.extract_iterator(ptr).first, key_ptr, dsize_key_);
+            &&
+            cmp(mem_mgr_ctx_.extract_iterator(ptr).first, key_ptr, dsize_key_);
 
     return __ffs(__ballot_sync(PAIR_PTR_LANES_MASK, is_lane_found)) - 1;
 }
 
-template <typename Hash>
+template <typename Hash, typename KeyEq>
 __device__ __forceinline__ int32_t
-CUDAHashmapImplContext<Hash>::WarpFindEmpty(const ptr_t ptr) {
+CUDAHashmapImplContext<Hash, KeyEq>::WarpFindEmpty(const ptr_t ptr) {
     uint8_t is_lane_empty = (ptr == EMPTY_PAIR_PTR);
 
     return __ffs(__ballot_sync(PAIR_PTR_LANES_MASK, is_lane_empty)) - 1;
 }
 
-template <typename Hash>
+template <typename Hash, typename KeyEq>
 __device__ __forceinline__ ptr_t
-CUDAHashmapImplContext<Hash>::AllocateSlab(const uint32_t lane_id) {
+CUDAHashmapImplContext<Hash, KeyEq>::AllocateSlab(const uint32_t lane_id) {
     return node_mgr_ctx_.WarpAllocate(lane_id);
 }
 
-template <typename Hash>
-__device__ __forceinline__ void CUDAHashmapImplContext<Hash>::FreeSlab(
+template <typename Hash, typename KeyEq>
+__device__ __forceinline__ void CUDAHashmapImplContext<Hash, KeyEq>::FreeSlab(
         const ptr_t slab_ptr) {
     node_mgr_ctx_.FreeUntouched(slab_ptr);
 }
 
-template <typename Hash>
-__device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash>::Search(
+template <typename Hash, typename KeyEq>
+__device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Search(
         uint8_t& to_search,
         const uint32_t lane_id,
         const uint32_t bucket_id,
@@ -353,8 +357,8 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash>::Search(
  * replacePair: REPLACE if found
  * WE DO NOT ALLOW DUPLICATE KEYS
  */
-template <typename Hash>
-__device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash>::Insert(
+template <typename Hash, typename KeyEq>
+__device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Insert(
         uint8_t& to_be_inserted,
         const uint32_t lane_id,
         const uint32_t bucket_id,
@@ -374,7 +378,8 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash>::Insert(
         prealloc_pair_internal_ptr = mem_mgr_ctx_.Allocate();
 
         // TODO: replace with Assign
-        iterator_t iter = mem_mgr_ctx_.extract_iterator(prealloc_pair_internal_ptr);
+        iterator_t iter =
+                mem_mgr_ctx_.extract_iterator(prealloc_pair_internal_ptr);
 
         uint8_t* ptr = iter.first;
         for (int i = 0; i < dsize_key_; ++i) {
@@ -495,12 +500,12 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash>::Insert(
     return make_pair(iterator, mask);
 }
 
-template <typename Hash>
+template <typename Hash, typename KeyEq>
 __device__ uint8_t
-CUDAHashmapImplContext<Hash>::Remove(uint8_t& to_be_deleted,
-                                     const uint32_t lane_id,
-                                     const uint32_t bucket_id,
-                                     uint8_t* key) {
+CUDAHashmapImplContext<Hash, KeyEq>::Remove(uint8_t& to_be_deleted,
+                                            const uint32_t lane_id,
+                                            const uint32_t bucket_id,
+                                            uint8_t* key) {
     uint32_t work_queue = 0;
     uint32_t prev_work_queue = 0;
     uint32_t curr_slab_ptr = HEAD_SLAB_PTR;
@@ -571,8 +576,8 @@ CUDAHashmapImplContext<Hash>::Remove(uint8_t& to_be_deleted,
     return mask;
 }
 
-template <typename Hash>
-__global__ void SearchKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
+template <typename Hash, typename KeyEq>
+__global__ void SearchKernel(CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
                              uint8_t* keys,
                              iterator_t* iterators,
                              uint8_t* masks,
@@ -605,13 +610,14 @@ __global__ void SearchKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
     result = slab_hash_ctx.Search(lane_active, lane_id, bucket_id, key);
 
     if (tid < num_queries) {
-        iterators[tid] = slab_hash_ctx.mem_mgr_ctx_.extract_iterator(result.first);
+        iterators[tid] =
+                slab_hash_ctx.mem_mgr_ctx_.extract_iterator(result.first);
         masks[tid] = result.second;
     }
 }
 
-template <typename Hash>
-__global__ void InsertKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
+template <typename Hash, typename KeyEq>
+__global__ void InsertKernel(CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
                              uint8_t* keys,
                              uint8_t* values,
                              iterator_t* iterators,
@@ -645,13 +651,14 @@ __global__ void InsertKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
             slab_hash_ctx.Insert(lane_active, lane_id, bucket_id, key, value);
 
     if (tid < num_keys) {
-        iterators[tid] = slab_hash_ctx.mem_mgr_ctx_.extract_iterator(result.first);
+        iterators[tid] =
+                slab_hash_ctx.mem_mgr_ctx_.extract_iterator(result.first);
         masks[tid] = result.second;
     }
 }
 
-template <typename Hash>
-__global__ void RemoveKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
+template <typename Hash, typename KeyEq>
+__global__ void RemoveKernel(CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
                              uint8_t* keys,
                              uint8_t* masks,
                              uint32_t num_keys) {
@@ -682,11 +689,12 @@ __global__ void RemoveKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
     }
 }
 
-template <typename Hash>
-__global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
-                                   iterator_t* iterators,
-                                   uint32_t* iterator_count,
-                                   uint32_t num_buckets) {
+template <typename Hash, typename KeyEq>
+__global__ void GetIteratorsKernel(
+        CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
+        iterator_t* iterators,
+        uint32_t* iterator_count,
+        uint32_t num_buckets) {
     // global warp ID
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
     uint32_t wid = tid >> 5;
@@ -738,9 +746,9 @@ __global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash> slab_hash_ctx,
  * This kernel can be used to compute total number of elements within each
  * bucket. The final results per bucket is stored in d_count_result array
  */
-template <typename Hash>
+template <typename Hash, typename KeyEq>
 __global__ void CountElemsPerBucketKernel(
-        CUDAHashmapImplContext<Hash> slab_hash_ctx,
+        CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
         uint32_t* bucket_elem_counts) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
     uint32_t lane_id = threadIdx.x & 0x1F;
@@ -779,12 +787,12 @@ __global__ void CountElemsPerBucketKernel(
     }
 }
 
-template <typename Hash>
-CUDAHashmap<Hash>::CUDAHashmap(uint32_t max_keys,
-                               uint32_t dsize_key,
-                               uint32_t dsize_value,
-                               Device device)
-    : Hashmap<Hash>(max_keys, dsize_key, dsize_value, device) {
+template <typename Hash, typename KeyEq>
+CUDAHashmap<Hash, KeyEq>::CUDAHashmap(uint32_t max_keys,
+                                      uint32_t dsize_key,
+                                      uint32_t dsize_value,
+                                      Device device)
+    : Hashmap<Hash, KeyEq>(max_keys, dsize_key, dsize_value, device) {
     const uint32_t expected_keys_per_bucket = 10;
     num_buckets_ = (max_keys + expected_keys_per_bucket - 1) /
                    expected_keys_per_bucket;
@@ -798,21 +806,21 @@ CUDAHashmap<Hash>::CUDAHashmap(uint32_t max_keys,
     output_iterator_buffer_ = (iterator_t*)MemoryManager::Malloc(
             this->max_keys_ * sizeof(iterator_t), this->device_);
 
-    cuda_hashmap_impl_ = std::make_shared<CUDAHashmapImpl<Hash>>(
+    cuda_hashmap_impl_ = std::make_shared<CUDAHashmapImpl<Hash, KeyEq>>(
             this->num_buckets_, this->max_keys_, this->dsize_key_,
             this->dsize_value_, this->device_);
 }
 
-template <typename Hash>
-CUDAHashmap<Hash>::~CUDAHashmap() {
+template <typename Hash, typename KeyEq>
+CUDAHashmap<Hash, KeyEq>::~CUDAHashmap() {
     MemoryManager::Free(output_key_buffer_, this->device_);
     MemoryManager::Free(output_value_buffer_, this->device_);
     MemoryManager::Free(output_mask_buffer_, this->device_);
     MemoryManager::Free(output_iterator_buffer_, this->device_);
 }
 
-template <typename Hash>
-std::pair<iterator_t*, uint8_t*> CUDAHashmap<Hash>::Insert(
+template <typename Hash, typename KeyEq>
+std::pair<iterator_t*, uint8_t*> CUDAHashmap<Hash, KeyEq>::Insert(
         uint8_t* input_keys, uint8_t* input_values, uint32_t input_keys_size) {
     // TODO: rehash and increase max_keys_
     if (input_keys_size > this->max_keys_) {
@@ -829,8 +837,8 @@ std::pair<iterator_t*, uint8_t*> CUDAHashmap<Hash>::Insert(
     return std::make_pair(output_iterator_buffer_, output_mask_buffer_);
 }
 
-template <typename Hash>
-std::pair<iterator_t*, uint8_t*> CUDAHashmap<Hash>::Search(
+template <typename Hash, typename KeyEq>
+std::pair<iterator_t*, uint8_t*> CUDAHashmap<Hash, KeyEq>::Search(
         uint8_t* input_keys, uint32_t input_keys_size) {
     if (input_keys_size > this->max_keys_) {
         utility::LogError(
@@ -845,21 +853,22 @@ std::pair<iterator_t*, uint8_t*> CUDAHashmap<Hash>::Search(
     return std::make_pair(output_iterator_buffer_, output_mask_buffer_);
 }
 
-template <typename Hash>
-uint8_t* CUDAHashmap<Hash>::Remove(uint8_t* input_keys,
-                                   uint32_t input_keys_size) {
+template <typename Hash, typename KeyEq>
+uint8_t* CUDAHashmap<Hash, KeyEq>::Remove(uint8_t* input_keys,
+                                          uint32_t input_keys_size) {
     cuda_hashmap_impl_->Remove(input_keys, output_mask_buffer_,
                                input_keys_size);
 
     return output_mask_buffer_;
 }
 
-template <typename Hash>
-std::shared_ptr<CUDAHashmap<Hash>> CreateCUDAHashmap(uint32_t max_keys,
-                                                     uint32_t dsize_key,
-                                                     uint32_t dsize_value,
-                                                     open3d::Device device) {
-    return std::make_shared<CUDAHashmap<Hash>>(max_keys, dsize_key, dsize_value,
-                                               device);
+template <typename Hash, typename KeyEq>
+std::shared_ptr<CUDAHashmap<Hash, KeyEq>> CreateCUDAHashmap(
+        uint32_t max_keys,
+        uint32_t dsize_key,
+        uint32_t dsize_value,
+        open3d::Device device) {
+    return std::make_shared<CUDAHashmap<Hash, KeyEq>>(max_keys, dsize_key,
+                                                      dsize_value, device);
 }
 }  // namespace open3d

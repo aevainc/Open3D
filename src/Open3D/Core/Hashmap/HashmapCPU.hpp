@@ -32,27 +32,27 @@
 
 namespace open3d {
 
-template <typename Hash>
-CPUHashmap<Hash>::CPUHashmap(uint32_t max_keys,
-                             uint32_t dsize_key,
-                             uint32_t dsize_value,
-                             Device device)
-    : Hashmap<Hash>(max_keys, dsize_key, dsize_value, device) {
+template <typename Hash, typename KeyEq>
+CPUHashmap<Hash, KeyEq>::CPUHashmap(uint32_t max_keys,
+                                    uint32_t dsize_key,
+                                    uint32_t dsize_value,
+                                    Device device)
+    : Hashmap<Hash, KeyEq>(max_keys, dsize_key, dsize_value, device) {
     cpu_hashmap_impl_ = std::make_shared<
             std::unordered_map<uint8_t*, uint8_t*, Hash, KeyEq>>(
-            max_keys, DefaultHash(dsize_key), KeyEq(dsize_key));
+            max_keys, Hash(dsize_key), KeyEq(dsize_key));
 };
 
-template <typename Hash>
-CPUHashmap<Hash>::~CPUHashmap() {
+template <typename Hash, typename KeyEq>
+CPUHashmap<Hash, KeyEq>::~CPUHashmap() {
     for (auto kv_pair : kv_pairs_) {
         MemoryManager::Free(kv_pair.first, this->device_);
         MemoryManager::Free(kv_pair.second, this->device_);
     }
 };
 
-template <typename Hash>
-std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash>::Insert(
+template <typename Hash, typename KeyEq>
+std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash, KeyEq>::Insert(
         uint8_t* input_keys, uint8_t* input_values, uint32_t input_key_size) {
     // TODO handle memory release
     auto iterators =
@@ -92,8 +92,8 @@ std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash>::Insert(
     return std::make_pair(iterators, masks);
 }
 
-template <typename Hash>
-std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash>::Search(
+template <typename Hash, typename KeyEq>
+std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash, KeyEq>::Search(
         uint8_t* input_keys, uint32_t input_key_size) {
     // TODO: handle memory release
     auto iterators =
@@ -117,20 +117,21 @@ std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash>::Search(
     return std::make_pair(iterators, masks);
 }
 
-template <typename Hash>
-uint8_t* CPUHashmap<Hash>::Remove(uint8_t* input_keys,
-                                  uint32_t input_key_size) {
+template <typename Hash, typename KeyEq>
+uint8_t* CPUHashmap<Hash, KeyEq>::Remove(uint8_t* input_keys,
+                                         uint32_t input_key_size) {
     utility::LogError("Unimplemented method");
     uint8_t* masks = nullptr;
     return masks;
 }
 
-template <typename Hash>
-std::shared_ptr<CPUHashmap<Hash>> CreateCPUHashmap(uint32_t max_keys,
-                                                   uint32_t dsize_key,
-                                                   uint32_t dsize_value,
-                                                   open3d::Device device) {
-    return std::make_shared<CPUHashmap<Hash>>(max_keys, dsize_key, dsize_value,
-                                              device);
+template <typename Hash, typename KeyEq>
+std::shared_ptr<CPUHashmap<Hash, KeyEq>> CreateCPUHashmap(
+        uint32_t max_keys,
+        uint32_t dsize_key,
+        uint32_t dsize_value,
+        open3d::Device device) {
+    return std::make_shared<CPUHashmap<Hash, KeyEq>>(max_keys, dsize_key,
+                                                     dsize_value, device);
 }
 }  // namespace open3d

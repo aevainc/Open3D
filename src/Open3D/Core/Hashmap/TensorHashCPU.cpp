@@ -75,8 +75,8 @@ CPUTensorHash::CPUTensorHash(Tensor coords,
     size_t value_size = DtypeUtil::ByteSize(value_type_) * value_dim_;
 
     // Create hashmap and reserve twice input size
-    hashmap_ = CreateCPUHashmap<DefaultHash>(N * 2, key_size, value_size,
-                                             coords.GetDevice());
+    hashmap_ = CreateCPUHashmap<DefaultHash, DefaultKeyEq>(
+            N * 2, key_size, value_size, coords.GetDevice());
 
     if (insert) {
         hashmap_->Insert(static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),

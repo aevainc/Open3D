@@ -40,7 +40,7 @@ public:
     virtual Tensor Assign(Tensor coords, Tensor values) = 0;
 
 protected:
-    std::shared_ptr<Hashmap<DefaultHash>> hashmap_;
+    std::shared_ptr<Hashmap<DefaultHash, DefaultKeyEq>> hashmap_;
     Dtype key_type_;
     Dtype value_type_;
 

@@ -71,7 +71,7 @@ __device__ __host__ Pair<Key, Value> make_pair(const Key& key,
     return Pair<Key, Value>(key, value);
 }
 
-template <typename Hash>
+template <typename Hash, typename KeyEq>
 class CUDAHashmapImplContext {
 public:
     CUDAHashmapImplContext();
@@ -137,10 +137,9 @@ public:
     InternalKvPairManagerContext mem_mgr_ctx_;
 };
 
-template <typename Hash>
+template <typename Hash, typename KeyEq>
 class CUDAHashmapImpl {
 public:
-    using MemoryManager = open3d::MemoryManager;
     CUDAHashmapImpl(const uint32_t max_bucket_count,
                     const uint32_t max_keyvalue_count,
                     const uint32_t dsize_key,
@@ -174,7 +173,7 @@ private:
     Slab* bucket_list_head_;
     uint32_t num_buckets_;
 
-    CUDAHashmapImplContext<Hash> gpu_context_;
+    CUDAHashmapImplContext<Hash, KeyEq> gpu_context_;
 
     std::shared_ptr<InternalKvPairManager> mem_mgr_;
     std::shared_ptr<InternalNodeManager> node_mgr_;
@@ -186,8 +185,8 @@ struct ElemwiseFunc {
     void operator()(iterator_t* iterator);
 };
 
-template <typename Hash>
-class CUDAHashmap : public Hashmap<Hash> {
+template <typename Hash, typename KeyEq>
+class CUDAHashmap : public Hashmap<Hash, KeyEq> {
 public:
     ~CUDAHashmap();
 
@@ -218,7 +217,7 @@ protected:
     iterator_t* output_iterator_buffer_;
     uint8_t* output_mask_buffer_;
 
-    std::shared_ptr<CUDAHashmapImpl<Hash>> cuda_hashmap_impl_;
+    std::shared_ptr<CUDAHashmapImpl<Hash, KeyEq>> cuda_hashmap_impl_;
 };
 
 }  // namespace open3d

@@ -34,27 +34,8 @@
 
 namespace open3d {
 
-struct KeyEq {
-    KeyEq(size_t key_size) : key_size_(key_size) {}
-    bool operator()(const uint8_t* lhs, const uint8_t* rhs) const {
-        if (lhs == nullptr || rhs == nullptr) {
-            return false;
-        }
-        const int chunks = key_size_ / sizeof(int);
-        int* lhs_key_ptr = (int*)(lhs);
-        int* rhs_key_ptr = (int*)(rhs);
-
-        bool res = true;
-        for (size_t i = 0; i < chunks; ++i) {
-            res = res && (lhs_key_ptr[i] == rhs_key_ptr[i]);
-        }
-        return res;
-    }
-    size_t key_size_;
-};
-
-template <typename Hash>
-class CPUHashmap : public Hashmap<Hash> {
+template <typename Hash, typename KeyEq>
+class CPUHashmap : public Hashmap<Hash, KeyEq> {
 public:
     ~CPUHashmap();
 

@@ -47,19 +47,20 @@
 
 namespace open3d {
 
-template <typename Hash = DefaultHash>
-std::shared_ptr<Hashmap<Hash>> CreateHashmap(uint32_t max_keys,
-                                             uint32_t dsize_key,
-                                             uint32_t dsize_value,
-                                             open3d::Device device) {
-    static std::unordered_map<Device::DeviceType,
-                              std::function<std::shared_ptr<Hashmap<Hash>>(
-                                      uint32_t, uint32_t, uint32_t, Device)>,
-                              utility::hash_enum_class::hash>
+template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
+std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(uint32_t max_keys,
+                                                    uint32_t dsize_key,
+                                                    uint32_t dsize_value,
+                                                    open3d::Device device) {
+    static std::unordered_map<
+            Device::DeviceType,
+            std::function<std::shared_ptr<Hashmap<Hash, KeyEq>>(
+                    uint32_t, uint32_t, uint32_t, Device)>,
+            utility::hash_enum_class::hash>
             map_device_type_to_hashmap_constructor = {
-                {Device::DeviceType::CPU, CreateCPUHashmap<Hash>},
+                {Device::DeviceType::CPU, CreateCPUHashmap<Hash, KeyEq>},
 #if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
-                {Device::DeviceType::CUDA, CreateCUDAHashmap<Hash>}
+                {Device::DeviceType::CUDA, CreateCUDAHashmap<Hash, KeyEq>}
 #endif
             };
 
