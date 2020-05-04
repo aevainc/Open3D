@@ -52,7 +52,7 @@ bool Compare(iterator_t* ret_iterators,
 
 void TEST_SIMPLE() {
     /// C++ ground truth generation
-    const int max_keys = 100;
+    const int max_buckets = 10;
     std::unordered_map<int, int> hashmap_gt;
     std::vector<int> insert_keys = {1, 3, 5};
     std::vector<int> insert_vals = {100, 300, 500};
@@ -76,7 +76,7 @@ void TEST_SIMPLE() {
 
     /// Hashmap creation
     auto hashmap = CreateHashmap<DefaultHash, DefaultKeyEq>(
-            max_keys, sizeof(int), sizeof(int), open3d::Device("CUDA:0"));
+            max_buckets, sizeof(int), sizeof(int), open3d::Device("CUDA:0"));
 
     /// Hashmap insertion
     hashmap->Insert(insert_keys_ptr_cuda, insert_vals_ptr_cuda,
@@ -100,7 +100,7 @@ void TEST_SIMPLE() {
     iterator_t* ret_iterators;
     uint8_t* ret_masks;
     std::tie(ret_iterators, ret_masks) =
-            hashmap->Search(query_keys_ptr_cuda, query_keys_cuda.size());
+            hashmap->Find(query_keys_ptr_cuda, query_keys_cuda.size());
 
     /// Result parsing
     Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
@@ -202,7 +202,7 @@ void TEST_SIMPLE() {
 //     uint8_t* ret_masks;
 //     timer.Start();
 //     std::tie(ret_iterators, ret_masks) =
-//             hashmap->Search(query_keys_ptr_cuda, query_keys_cuda.size());
+//             hashmap->Find(query_keys_ptr_cuda, query_keys_cuda.size());
 //     timer.Stop();
 //     duration = timer.GetDuration();
 //     utility::LogInfo("{} pairs searched in {} ms, avg {} queries/s",
@@ -326,7 +326,7 @@ void TEST_SIMPLE() {
 //     uint8_t* ret_masks;
 //     timer.Start();
 //     std::tie(ret_iterators, ret_masks) =
-//             hashmap->Search(query_keys_ptr_cuda, query_keys_cuda.size());
+//             hashmap->Find(query_keys_ptr_cuda, query_keys_cuda.size());
 //     timer.Stop();
 //     duration = timer.GetDuration();
 //     utility::LogInfo("{} pairs searched in {} ms, avg {} queries/s",

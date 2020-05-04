@@ -33,14 +33,14 @@
 namespace open3d {
 
 template <typename Hash, typename KeyEq>
-CPUHashmap<Hash, KeyEq>::CPUHashmap(uint32_t max_keys,
+CPUHashmap<Hash, KeyEq>::CPUHashmap(uint32_t init_buckets,
                                     uint32_t dsize_key,
                                     uint32_t dsize_value,
                                     Device device)
-    : Hashmap<Hash, KeyEq>(max_keys, dsize_key, dsize_value, device) {
+    : Hashmap<Hash, KeyEq>(init_buckets, dsize_key, dsize_value, device) {
     cpu_hashmap_impl_ = std::make_shared<
             std::unordered_map<uint8_t*, uint8_t*, Hash, KeyEq>>(
-            max_keys, Hash(dsize_key), KeyEq(dsize_key));
+            init_buckets, Hash(dsize_key), KeyEq(dsize_key));
 };
 
 template <typename Hash, typename KeyEq>
@@ -93,7 +93,7 @@ std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash, KeyEq>::Insert(
 }
 
 template <typename Hash, typename KeyEq>
-std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash, KeyEq>::Search(
+std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash, KeyEq>::Find(
         uint8_t* input_keys, uint32_t input_key_size) {
     // TODO: handle memory release
     auto iterators =
@@ -118,8 +118,8 @@ std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash, KeyEq>::Search(
 }
 
 template <typename Hash, typename KeyEq>
-uint8_t* CPUHashmap<Hash, KeyEq>::Remove(uint8_t* input_keys,
-                                         uint32_t input_key_size) {
+uint8_t* CPUHashmap<Hash, KeyEq>::Erase(uint8_t* input_keys,
+                                        uint32_t input_key_size) {
     utility::LogError("Unimplemented method");
     uint8_t* masks = nullptr;
     return masks;
@@ -127,11 +127,11 @@ uint8_t* CPUHashmap<Hash, KeyEq>::Remove(uint8_t* input_keys,
 
 template <typename Hash, typename KeyEq>
 std::shared_ptr<CPUHashmap<Hash, KeyEq>> CreateCPUHashmap(
-        uint32_t max_keys,
+        uint32_t init_buckets,
         uint32_t dsize_key,
         uint32_t dsize_value,
         open3d::Device device) {
-    return std::make_shared<CPUHashmap<Hash, KeyEq>>(max_keys, dsize_key,
+    return std::make_shared<CPUHashmap<Hash, KeyEq>>(init_buckets, dsize_key,
                                                      dsize_value, device);
 }
 }  // namespace open3d

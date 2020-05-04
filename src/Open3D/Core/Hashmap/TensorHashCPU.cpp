@@ -24,7 +24,6 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#pragma once
 #include "Open3D/Core/Hashmap/HashmapCPU.hpp"
 #include "Open3D/Core/Hashmap/TensorHash.h"
 #include "Open3D/Core/Tensor.h"
@@ -226,7 +225,7 @@ std::pair<Tensor, Tensor> CPUTensorHash::Query(Tensor coords) {
     int64_t N = coords.GetShape()[0];
 
     // Search
-    auto result = hashmap_->Search(
+    auto result = hashmap_->Find(
             static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()), N);
     utility::LogInfo("Searched");
 
@@ -311,7 +310,7 @@ Tensor CPUTensorHash::Assign(Tensor coords, Tensor values) {
     int64_t N = coords.GetShape()[0];
 
     // Search
-    auto result = hashmap_->Search(
+    auto result = hashmap_->Find(
             static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()), N);
 
     // Decode returned iterators

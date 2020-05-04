@@ -86,11 +86,11 @@ struct IteratorFunc {
 template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
 class Hashmap {
 public:
-    Hashmap(uint32_t max_keys,
+    Hashmap(uint32_t init_buckets,
             uint32_t dsize_key,
             uint32_t dsize_value,
             Device device)
-        : max_keys_(max_keys),
+        : bucket_count_(init_buckets),
           dsize_key_(dsize_key),
           dsize_value_(dsize_value),
           device_(device){};
@@ -100,15 +100,15 @@ public:
             uint8_t* input_values,
             uint32_t input_key_size) = 0;
 
-    virtual std::pair<iterator_t*, uint8_t*> Search(
-            uint8_t* input_keys, uint32_t input_key_size) = 0;
+    virtual std::pair<iterator_t*, uint8_t*> Find(uint8_t* input_keys,
+                                                  uint32_t input_key_size) = 0;
 
-    virtual uint8_t* Remove(uint8_t* input_keys, uint32_t input_key_size) = 0;
+    virtual uint8_t* Erase(uint8_t* input_keys, uint32_t input_key_size) = 0;
 
     virtual std::pair<iterator_t*, uint32_t> GetIterators() = 0;
 
 public:
-    uint32_t max_keys_;
+    uint32_t bucket_count_;
     uint32_t dsize_key_;
     uint32_t dsize_value_;
 
@@ -118,7 +118,7 @@ public:
 
 /// Factory
 template <typename Hash, typename KeyEq>
-std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(uint32_t max_keys,
+std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(uint32_t init_buckets,
                                                     uint32_t dsize_key,
                                                     uint32_t dsize_value,
                                                     Device device);

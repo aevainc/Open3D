@@ -48,7 +48,7 @@
 namespace open3d {
 
 template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
-std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(uint32_t max_keys,
+std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(uint32_t init_buckets,
                                                     uint32_t dsize_key,
                                                     uint32_t dsize_value,
                                                     open3d::Device device) {
@@ -71,6 +71,6 @@ std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(uint32_t max_keys,
 
     auto constructor =
             map_device_type_to_hashmap_constructor.at(device.GetType());
-    return constructor(max_keys, dsize_key, dsize_value, device);
+    return constructor(init_buckets, dsize_key, dsize_value, device);
 }
 }  // namespace open3d

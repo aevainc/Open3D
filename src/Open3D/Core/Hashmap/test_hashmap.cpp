@@ -48,7 +48,7 @@ bool Compare(iterator_t* ret_iterators,
 
 void TEST_SIMPLE() {
     /// C++ ground truth generation
-    const int max_keys = 10;
+    const int max_buckets = 10;
     std::unordered_map<int, int> hashmap_gt;
     std::vector<int> insert_keys = {1, 3, 5};
     std::vector<int> insert_vals = {100, 300, 500};
@@ -72,7 +72,7 @@ void TEST_SIMPLE() {
 
     /// Hashmap creation
     auto hashmap = CreateHashmap<DefaultHash>(
-            max_keys, sizeof(int), sizeof(int), open3d::Device("CPU:0"));
+            max_buckets, sizeof(int), sizeof(int), open3d::Device("CPU:0"));
 
     /// Hashmap insertion
     hashmap->Insert(insert_keys_ptr_cpu, insert_vals_ptr_cpu,
@@ -82,7 +82,7 @@ void TEST_SIMPLE() {
     iterator_t* ret_iterators;
     uint8_t* ret_masks;
     std::tie(ret_iterators, ret_masks) =
-            hashmap->Search(query_keys_ptr_cpu, query_keys_cpu.size());
+            hashmap->Find(query_keys_ptr_cpu, query_keys_cpu.size());
 
     /// Result parsing
     Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,

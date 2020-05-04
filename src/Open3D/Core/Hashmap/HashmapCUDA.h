@@ -61,8 +61,7 @@ class CUDAHashmapImplContext {
 public:
     CUDAHashmapImplContext();
 
-    __host__ void Setup(Slab* bucket_list_head,
-                        const uint32_t num_buckets,
+    __host__ void Setup(const uint32_t init_buckets,
                         const uint32_t dsize_key,
                         const uint32_t dsize_value,
                         const InternalNodeManagerContext& node_mgr_ctx,
@@ -74,19 +73,18 @@ public:
                                            uint8_t* key_ptr,
                                            uint8_t* value_ptr);
 
-    __device__ Pair<ptr_t, uint8_t> Search(uint8_t& lane_active,
-                                           const uint32_t lane_id,
-                                           const uint32_t bucket_id,
-                                           uint8_t* key_ptr);
+    __device__ Pair<ptr_t, uint8_t> Find(uint8_t& lane_active,
+                                         const uint32_t lane_id,
+                                         const uint32_t bucket_id,
+                                         uint8_t* key_ptr);
 
-    __device__ uint8_t Remove(uint8_t& lane_active,
-                              const uint32_t lane_id,
-                              const uint32_t bucket_id,
-                              uint8_t* key_ptr);
+    __device__ uint8_t Erase(uint8_t& lane_active,
+                             const uint32_t lane_id,
+                             const uint32_t bucket_id,
+                             uint8_t* key_ptr);
 
     /* Hash function */
     __device__ __host__ uint32_t ComputeBucket(uint8_t* key_ptr) const;
-    __device__ __host__ uint32_t bucket_size() const { return num_buckets_; }
 
     __device__ __forceinline__ ptr_t* get_unit_ptr_from_list_nodes(
             const ptr_t slab_ptr, const uint32_t lane_id) {
@@ -111,11 +109,12 @@ private:
     __device__ __forceinline__ void FreeSlab(const ptr_t slab_ptr);
 
 public:
-    uint32_t num_buckets_;
+    Hash hash_fn_;
+    KeyEq cmp_fn_;
+
+    uint32_t bucket_count_;
     uint32_t dsize_key_;
     uint32_t dsize_value_;
-
-    Hash hash_fn_;
 
     Slab* bucket_list_head_;
     InternalNodeManagerContext node_mgr_ctx_;
@@ -125,8 +124,7 @@ public:
 template <typename Hash, typename KeyEq>
 class CUDAHashmapImpl {
 public:
-    CUDAHashmapImpl(const uint32_t max_bucket_count,
-                    const uint32_t max_keyvalue_count,
+    CUDAHashmapImpl(const uint32_t init_buckets,
                     const uint32_t dsize_key,
                     const uint32_t dsize_value,
                     Device device);
@@ -138,26 +136,18 @@ public:
                 iterator_t* output_iterators,
                 uint8_t* output_masks,
                 uint32_t num_keys);
-    void Search(uint8_t* input_keys,
-                iterator_t* output_iterators,
-                uint8_t* output_masks,
-                uint32_t num_keys);
-    void Remove(uint8_t* input_keys, uint8_t* output_masks, uint32_t num_keys);
+    void Find(uint8_t* input_keys,
+              iterator_t* output_iterators,
+              uint8_t* output_masks,
+              uint32_t num_keys);
+    void Erase(uint8_t* input_keys, uint8_t* output_masks, uint32_t num_keys);
 
     void GetIterators(iterator_t*& iterators, uint32_t& num_iterators);
-
-    void ExtractIterators(iterator_t* iterators,
-                          uint8_t* keys,
-                          uint8_t* values,
-                          uint32_t num_iterators);
 
     std::vector<int> CountElemsPerBucket();
     double ComputeLoadFactor();
 
 private:
-    Slab* bucket_list_head_;
-    uint32_t num_buckets_;
-
     CUDAHashmapImplContext<Hash, KeyEq> gpu_context_;
 
     std::shared_ptr<InternalKvPairManager> mem_mgr_;
@@ -171,7 +161,7 @@ class CUDAHashmap : public Hashmap<Hash, KeyEq> {
 public:
     ~CUDAHashmap();
 
-    CUDAHashmap(uint32_t max_keys,
+    CUDAHashmap(uint32_t init_buckets,
                 uint32_t dsize_key,
                 uint32_t dsize_value,
                 Device device);
@@ -180,10 +170,10 @@ public:
                                             uint8_t* input_values,
                                             uint32_t input_key_size);
 
-    std::pair<iterator_t*, uint8_t*> Search(uint8_t* input_keys,
-                                            uint32_t input_key_size);
+    std::pair<iterator_t*, uint8_t*> Find(uint8_t* input_keys,
+                                          uint32_t input_key_size);
 
-    uint8_t* Remove(uint8_t* input_keys, uint32_t input_key_size);
+    uint8_t* Erase(uint8_t* input_keys, uint32_t input_key_size);
 
     std::pair<iterator_t*, uint32_t> GetIterators();
 
@@ -191,8 +181,6 @@ public:
     // void Foreach(ElemwiseFunc& func);
 
 protected:
-    uint32_t num_buckets_;
-
     // TODO: move out these buffers
     // Buffer to store temporary results
     uint8_t* output_key_buffer_;

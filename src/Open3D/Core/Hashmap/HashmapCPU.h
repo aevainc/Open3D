@@ -39,7 +39,7 @@ class CPUHashmap : public Hashmap<Hash, KeyEq> {
 public:
     ~CPUHashmap();
 
-    CPUHashmap(uint32_t max_keys,
+    CPUHashmap(uint32_t init_buckets,
                uint32_t dsize_key,
                uint32_t dsize_value,
                Device device);
@@ -48,11 +48,12 @@ public:
                                             uint8_t* input_values,
                                             uint32_t input_key_size);
 
-    std::pair<iterator_t*, uint8_t*> Search(uint8_t* input_keys,
-                                            uint32_t input_key_size);
+    std::pair<iterator_t*, uint8_t*> Find(uint8_t* input_keys,
+                                          uint32_t input_key_size);
 
-    uint8_t* Remove(uint8_t* input_keys, uint32_t input_key_size);
+    uint8_t* Erase(uint8_t* input_keys, uint32_t input_key_size);
 
+    /// TODO: replace place-holder
     std::pair<iterator_t*, uint32_t> GetIterators() {
         iterator_t* iterators = nullptr;
         uint32_t num_iterators = 0;
