@@ -111,4 +111,19 @@ public:
     ptr_t next_slab_ptr;
 };
 
+template <typename Key, typename Value>
+struct Pair {
+    Key first;
+    Value second;
+    OPEN3D_HOST_DEVICE Pair() {}
+    OPEN3D_HOST_DEVICE Pair(const Key& key, const Value& value)
+        : first(key), second(value) {}
+};
+
+template <typename Key, typename Value>
+OPEN3D_HOST_DEVICE Pair<Key, Value> make_pair(const Key& key,
+                                              const Value& value) {
+    return Pair<Key, Value>(key, value);
+}
+
 }  // namespace open3d

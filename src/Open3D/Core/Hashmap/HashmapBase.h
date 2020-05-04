@@ -78,6 +78,10 @@ struct DefaultKeyEq {
     size_t key_size_;
 };
 
+struct IteratorFunc {
+    void OPEN3D_HOST_DEVICE operator()(iterator_t* iterator);
+};
+
 /// Base class: shared interface
 template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
 class Hashmap {

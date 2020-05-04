@@ -56,21 +56,6 @@
 
 namespace open3d {
 
-template <typename Key, typename Value>
-struct Pair {
-    Key first;
-    Value second;
-    __device__ __host__ Pair() {}
-    __device__ __host__ Pair(const Key& key, const Value& value)
-        : first(key), second(value) {}
-};
-
-template <typename Key, typename Value>
-__device__ __host__ Pair<Key, Value> make_pair(const Key& key,
-                                               const Value& value) {
-    return Pair<Key, Value>(key, value);
-}
-
 template <typename Hash, typename KeyEq>
 class CUDAHashmapImplContext {
 public:
@@ -179,10 +164,6 @@ private:
     std::shared_ptr<InternalNodeManager> node_mgr_;
 
     Device device_;
-};
-
-struct ElemwiseFunc {
-    void operator()(iterator_t* iterator);
 };
 
 template <typename Hash, typename KeyEq>
