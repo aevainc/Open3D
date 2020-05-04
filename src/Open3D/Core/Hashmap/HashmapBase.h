@@ -101,6 +101,8 @@ public:
 
     virtual uint8_t* Remove(uint8_t* input_keys, uint32_t input_key_size) = 0;
 
+    virtual std::pair<iterator_t*, uint32_t> GetIterators() = 0;
+
 public:
     uint32_t max_keys_;
     uint32_t dsize_key_;

@@ -55,7 +55,7 @@ __global__ void InsertKernel(CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
                              uint8_t* input_values,
                              iterator_t* output_iterators,
                              uint8_t* output_masks,
-                             uint32_t num_keys); 
+                             uint32_t num_keys);
 template <typename Hash, typename KeyEq>
 __global__ void SearchKernel(CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
                              uint8_t* input_keys,
@@ -144,6 +144,30 @@ void CUDAHashmapImpl<Hash, KeyEq>::Remove(uint8_t* keys,
                                              num_keys);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
+}
+
+template <typename Hash, typename KeyEq>
+void CUDAHashmapImpl<Hash, KeyEq>::GetIterators(iterator_t*& iterators,
+                                                uint32_t& num_iterators) {
+    const uint32_t blocksize = 128;
+    std::cout << "BUCKET SIZE " << num_buckets_ << "\n";
+    const uint32_t num_blocks = (num_buckets_ * 32 + blocksize - 1) / blocksize;
+
+    uint32_t* iterator_count =
+            (uint32_t*)MemoryManager::Malloc(sizeof(uint32_t), device_);
+    cudaMemset(iterator_count, 0, sizeof(uint32_t));
+
+    iterators = (iterator_t*)MemoryManager::Malloc(
+            sizeof(iterator_t) * num_buckets_, device_);
+    
+    GetIteratorsKernel<<<num_blocks, blocksize>>>(gpu_context_, iterators,
+                                                  iterator_count, num_buckets_);
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    OPEN3D_CUDA_CHECK(cudaGetLastError());
+
+
+    MemoryManager::Memcpy(&num_iterators, Device("CPU:0"), iterator_count,
+                          device_, sizeof(uint32_t));
 }
 
 template <typename Hash, typename KeyEq>
@@ -689,57 +713,71 @@ __global__ void RemoveKernel(CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
     }
 }
 
+__device__ int32_t __lanemask_lt(uint32_t lane_id) {
+    return ((int32_t)1 << lane_id) - 1;
+}
+
 template <typename Hash, typename KeyEq>
 __global__ void GetIteratorsKernel(
         CUDAHashmapImplContext<Hash, KeyEq> slab_hash_ctx,
         iterator_t* iterators,
         uint32_t* iterator_count,
         uint32_t num_buckets) {
-    // global warp ID
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
-    uint32_t wid = tid >> 5;
+    printf("tid %d\n", tid);
+    uint32_t lane_id = threadIdx.x & 0x1F;
+
     // assigning a warp per bucket
-    if (wid >= num_buckets) {
+    uint32_t wid = tid >> 5;
+    if (wid >= slab_hash_ctx.bucket_size()) {
         return;
     }
 
-    /* uint32_t lane_id = threadIdx.x & 0x1F; */
+    slab_hash_ctx.node_mgr_ctx_.Init(tid, lane_id);
 
-    /* // initializing the memory allocator on each warp: */
-    /* slab_hash_ctx.get_slab_alloc_ctx().Init(tid, lane_id); */
+    uint32_t count = 0;
+    uint32_t prev_count = 0;
 
-    /* uint32_t src_unit_data = */
-    /*         *slab_hash_ctx.get_unit_ptr_from_list_head(wid, lane_id); */
-    /* uint32_t active_mask = */
-    /*         __ballot_sync(PAIR_PTR_LANES_MASK, src_unit_data !=
-     * EMPTY_PAIR_PTR); */
-    /* int leader = __ffs(active_mask) - 1; */
-    /* uint32_t count = __popc(active_mask); */
-    /* uint32_t rank = __popc(active_mask & __lanemask_lt()); */
-    /* uint32_t prev_count; */
-    /* if (rank == 0) { */
-    /*     prev_count = atomicAdd(iterator_count, count); */
-    /* } */
-    /* prev_count = __shfl_sync(active_mask, prev_count, leader); */
+    // count head node
+    uint32_t src_unit_data =
+            *slab_hash_ctx.get_unit_ptr_from_list_head(wid, lane_id);
+    bool is_active = src_unit_data != EMPTY_PAIR_PTR;
+    count = __popc(__ballot_sync(PAIR_PTR_LANES_MASK, is_active));
+    if (lane_id == 0) {
+        prev_count = atomicAdd(iterator_count, count);
+    }
+    if (is_active && ((1 << lane_id) & PAIR_PTR_LANES_MASK)) {
+        iterators[prev_count + lane_id] =
+                slab_hash_ctx.mem_mgr_ctx_.extract_iterator(src_unit_data);
+        printf("head: wid=%d, prev_count=%d, internal_ptr=%d, lane_id=%d, "
+               "iterators[%d] = %ld\n",
+               wid, prev_count, src_unit_data, lane_id, prev_count + lane_id,
+               iterators[prev_count + lane_id].first);
+    }
 
-    /* if (src_unit_data != EMPTY_PAIR_PTR) { */
-    /*     iterators[prev_count + rank] = src_unit_data; */
-    /* } */
+    ptr_t next = __shfl_sync(ACTIVE_LANES_MASK, src_unit_data,
+                             NEXT_SLAB_PTR_LANE, WARP_WIDTH);
 
-    /* uint32_t next = __shfl_sync(0xFFFFFFFF, src_unit_data, 31, 32); */
-    /* while (next != EMPTY_SLAB_PTR) { */
-    /*     src_unit_data = */
-    /*             *slab_hash_ctx.get_unit_ptr_from_list_nodes(next,
-     * lane_id);
-     */
-    /*     count += __popc(__ballot_sync(PAIR_PTR_LANES_MASK, */
-    /*                                   src_unit_data != EMPTY_PAIR_PTR));
-     */
-    /*     next = __shfl_sync(0xFFFFFFFF, src_unit_data, 31, 32); */
-    /* } */
-    /* // writing back the results: */
-    /* if (lane_id == 0) { */
-    /* } */
+    // count following nodes
+    while (next != EMPTY_SLAB_PTR) {
+        src_unit_data =
+                *slab_hash_ctx.get_unit_ptr_from_list_nodes(next, lane_id);
+        count = __popc(__ballot_sync(PAIR_PTR_LANES_MASK,
+                                     src_unit_data != EMPTY_PAIR_PTR));
+        if (lane_id == 0) {
+            prev_count = atomicAdd(iterator_count, count);
+        }
+
+        uint32_t prev_count = atomicAdd(iterator_count, count);
+        if (is_active && ((1 << lane_id) & PAIR_PTR_LANES_MASK)) {
+            printf("list: wid=%d, prev_count=%d, internal_ptr=%d\n", wid,
+                   prev_count, src_unit_data);
+            iterators[prev_count + lane_id] =
+                    slab_hash_ctx.mem_mgr_ctx_.extract_iterator(src_unit_data);
+        }
+        next = __shfl_sync(ACTIVE_LANES_MASK, src_unit_data, NEXT_SLAB_PTR_LANE,
+                           WARP_WIDTH);
+    }
 }
 
 /*
@@ -860,6 +898,18 @@ uint8_t* CUDAHashmap<Hash, KeyEq>::Remove(uint8_t* input_keys,
                                input_keys_size);
 
     return output_mask_buffer_;
+}
+
+template <typename Hash, typename KeyEq>
+std::pair<iterator_t*, uint32_t> CUDAHashmap<Hash, KeyEq>::GetIterators() {
+    iterator_t* iterators;
+    uint32_t num_iterators;
+
+    cuda_hashmap_impl_->GetIterators(iterators, num_iterators);
+    std::cout << "CUDAHashmap.GetIterators() " << iterators << " "
+              << num_iterators << "\n";
+
+    return std::make_pair(iterators, num_iterators);
 }
 
 template <typename Hash, typename KeyEq>

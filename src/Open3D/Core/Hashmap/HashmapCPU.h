@@ -53,6 +53,12 @@ public:
 
     uint8_t* Remove(uint8_t* input_keys, uint32_t input_key_size);
 
+    std::pair<iterator_t*, uint32_t> GetIterators() {
+        iterator_t* iterators = nullptr;
+        uint32_t num_iterators = 0;
+        return std::make_pair(iterators, num_iterators);
+    }
+
 private:
     std::shared_ptr<std::unordered_map<uint8_t*, uint8_t*, Hash, KeyEq>>
             cpu_hashmap_impl_;

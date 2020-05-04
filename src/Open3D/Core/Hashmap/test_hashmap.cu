@@ -52,7 +52,7 @@ bool Compare(iterator_t* ret_iterators,
 
 void TEST_SIMPLE() {
     /// C++ ground truth generation
-    const int max_keys = 10;
+    const int max_keys = 100;
     std::unordered_map<int, int> hashmap_gt;
     std::vector<int> insert_keys = {1, 3, 5};
     std::vector<int> insert_vals = {100, 300, 500};
@@ -75,12 +75,26 @@ void TEST_SIMPLE() {
             thrust::raw_pointer_cast(query_keys_cuda.data()));
 
     /// Hashmap creation
-    auto hashmap = CreateHashmap<DefaultHash>(
+    auto hashmap = CreateHashmap<DefaultHash, DefaultKeyEq>(
             max_keys, sizeof(int), sizeof(int), open3d::Device("CUDA:0"));
 
     /// Hashmap insertion
     hashmap->Insert(insert_keys_ptr_cuda, insert_vals_ptr_cuda,
                     insert_keys_cuda.size());
+
+     auto res = hashmap->GetIterators();
+    std::cout << res.first << " " << res.second << "\n";
+    auto all_iterators = thrust::device_vector<iterator_t>(
+            res.first, res.first + res.second);
+    std::cout << "all_iterators constructed\n";
+    for (int i = 0; i < res.second; ++i) {
+        iterator_t iterator = all_iterators[i];
+        int key = *(thrust::device_ptr<int>(
+                 reinterpret_cast<int*>(iterator.first)));
+        int val = *(thrust::device_ptr<int>(
+                reinterpret_cast<int*>(iterator.second)));
+        std::cout << key << " " << val << "\n";
+    }
 
     /// Hashmap search
     iterator_t* ret_iterators;

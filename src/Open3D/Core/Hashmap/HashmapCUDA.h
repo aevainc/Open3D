@@ -159,7 +159,7 @@ public:
                 uint32_t num_keys);
     void Remove(uint8_t* input_keys, uint8_t* output_masks, uint32_t num_keys);
 
-    void GetIterators(iterator_t* iterators, uint32_t& num_iterators);
+    void GetIterators(iterator_t*& iterators, uint32_t& num_iterators);
 
     void ExtractIterators(iterator_t* iterators,
                           uint8_t* keys,
@@ -203,6 +203,8 @@ public:
                                             uint32_t input_key_size);
 
     uint8_t* Remove(uint8_t* input_keys, uint32_t input_key_size);
+
+    std::pair<iterator_t*, uint32_t> GetIterators();
 
     /// TODO: parallel foreach
     // void Foreach(ElemwiseFunc& func);
