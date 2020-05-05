@@ -91,6 +91,8 @@ public:
           dsize_value_(dsize_value),
           device_(device){};
 
+    virtual void Rehash(uint32_t buckets) = 0;
+
     virtual std::pair<iterator_t*, uint8_t*> Insert(uint8_t* input_keys,
                                                     uint8_t* input_values,
                                                     uint32_t input_count) = 0;

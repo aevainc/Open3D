@@ -105,6 +105,31 @@ void TEST_SIMPLE() {
     /// Result parsing
     Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
                       hashmap_gt);
+
+    hashmap->Rehash(2 * max_buckets);
+    res = hashmap->GetIterators();
+    std::cout << res.first << " " << res.second << "\n";
+    all_iterators = thrust::device_vector<iterator_t>(
+            res.first, res.first + res.second);
+    std::cout << "all_iterators constructed\n";
+    for (int i = 0; i < res.second; ++i) {
+        iterator_t iterator = all_iterators[i];
+        int key = *(thrust::device_ptr<int>(
+                 reinterpret_cast<int*>(iterator.first)));
+        int val = *(thrust::device_ptr<int>(
+                reinterpret_cast<int*>(iterator.second)));
+        std::cout << key << " " << val << "\n";
+    }
+
+
+    /// Again, result parsing
+    std::tie(ret_iterators, ret_masks) =
+            hashmap->Find(query_keys_ptr_cuda, query_keys_cuda.size());
+    Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
+                      hashmap_gt);
+
+
+
     utility::LogInfo("TEST_SIMPLE() passed");
 }
 

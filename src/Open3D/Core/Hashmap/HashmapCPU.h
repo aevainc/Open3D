@@ -44,6 +44,9 @@ public:
                uint32_t dsize_value,
                Device device);
 
+    /// TODO: implement CPU counterpart here
+    void Rehash(uint32_t buckets){};
+
     std::pair<iterator_t*, uint8_t*> Insert(uint8_t* input_keys,
                                             uint8_t* input_values,
                                             uint32_t input_key_size);
