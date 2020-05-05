@@ -78,10 +78,6 @@ struct DefaultKeyEq {
     size_t key_size_;
 };
 
-struct IteratorFunc {
-    void OPEN3D_HOST_DEVICE operator()(iterator_t* iterator);
-};
-
 /// Base class: shared interface
 template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
 class Hashmap {
@@ -95,17 +91,31 @@ public:
           dsize_value_(dsize_value),
           device_(device){};
 
-    virtual std::pair<iterator_t*, uint8_t*> Insert(
-            uint8_t* input_keys,
-            uint8_t* input_values,
-            uint32_t input_key_size) = 0;
+    virtual std::pair<iterator_t*, uint8_t*> Insert(uint8_t* input_keys,
+                                                    uint8_t* input_values,
+                                                    uint32_t input_count) = 0;
 
     virtual std::pair<iterator_t*, uint8_t*> Find(uint8_t* input_keys,
-                                                  uint32_t input_key_size) = 0;
+                                                  uint32_t input_count) = 0;
 
-    virtual uint8_t* Erase(uint8_t* input_keys, uint32_t input_key_size) = 0;
+    virtual uint8_t* Erase(uint8_t* input_keys, uint32_t input_count) = 0;
 
     virtual std::pair<iterator_t*, uint32_t> GetIterators() = 0;
+
+    /// Only write to corresponding entries if they are not nullptr
+    /// Only access input_masks if they it is not nullptr
+    virtual void UnpackIterators(iterator_t* input_iterators,
+                                 uint8_t* input_masks,
+                                 uint8_t* output_keys,
+                                 uint8_t* output_values,
+                                 uint32_t iterator_count) = 0;
+
+    /// (Optionally) In-place modify iterators returned from Find
+    /// Note: key cannot be changed, otherwise the semantic is violated
+    virtual void AssignIterators(iterator_t* input_iterators,
+                                 uint8_t* input_masks,
+                                 uint8_t* input_values,
+                                 uint32_t iterator_count) = 0;
 
 public:
     uint32_t bucket_count_;

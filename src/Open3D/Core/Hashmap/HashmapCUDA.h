@@ -135,12 +135,14 @@ public:
                 uint8_t* input_values,
                 iterator_t* output_iterators,
                 uint8_t* output_masks,
-                uint32_t num_keys);
+                uint32_t input_count);
     void Find(uint8_t* input_keys,
               iterator_t* output_iterators,
               uint8_t* output_masks,
-              uint32_t num_keys);
-    void Erase(uint8_t* input_keys, uint8_t* output_masks, uint32_t num_keys);
+              uint32_t input_count);
+    void Erase(uint8_t* input_keys,
+               uint8_t* output_masks,
+               uint32_t input_count);
 
     void GetIterators(iterator_t*& iterators, uint32_t& num_iterators);
 
@@ -168,14 +170,24 @@ public:
 
     std::pair<iterator_t*, uint8_t*> Insert(uint8_t* input_keys,
                                             uint8_t* input_values,
-                                            uint32_t input_key_size);
+                                            uint32_t input_count);
 
     std::pair<iterator_t*, uint8_t*> Find(uint8_t* input_keys,
-                                          uint32_t input_key_size);
+                                          uint32_t input_count);
 
-    uint8_t* Erase(uint8_t* input_keys, uint32_t input_key_size);
+    uint8_t* Erase(uint8_t* input_keys, uint32_t input_count);
 
     std::pair<iterator_t*, uint32_t> GetIterators();
+
+    void UnpackIterators(iterator_t* input_iterators,
+                         uint8_t* input_masks,
+                         uint8_t* output_keys,
+                         uint8_t* output_values,
+                         uint32_t iterator_count);
+    void AssignIterators(iterator_t* input_iterators,
+                         uint8_t* input_masks,
+                         uint8_t* input_values,
+                         uint32_t iterator_count);
 
     /// TODO: parallel foreach
     // void Foreach(ElemwiseFunc& func);

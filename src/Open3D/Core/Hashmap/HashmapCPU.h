@@ -60,6 +60,17 @@ public:
         return std::make_pair(iterators, num_iterators);
     }
 
+    void UnpackIterators(iterator_t* input_iterators,
+                         uint8_t* input_masks,
+                         uint8_t* output_keys,
+                         uint8_t* output_values,
+                         uint32_t iterator_count) {}
+
+    void AssignIterators(iterator_t* input_iterators,
+                         uint8_t* input_masks,
+                         uint8_t* input_values,
+                         uint32_t iterator_count) {}
+
 private:
     std::shared_ptr<std::unordered_map<uint8_t*, uint8_t*, Hash, KeyEq>>
             cpu_hashmap_impl_;
