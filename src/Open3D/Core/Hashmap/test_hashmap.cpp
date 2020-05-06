@@ -83,8 +83,13 @@ void TEST_SIMPLE() {
     uint8_t* ret_masks;
     std::tie(ret_iterators, ret_masks) =
             hashmap->Find(query_keys_ptr_cpu, query_keys_cpu.size());
+    Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
+                      hashmap_gt);
 
     /// Result parsing
+    hashmap->Rehash(max_buckets * 2);
+    std::tie(ret_iterators, ret_masks) =
+            hashmap->Find(query_keys_ptr_cpu, query_keys_cpu.size());
     Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
                       hashmap_gt);
     utility::LogInfo("TEST_SIMPLE() passed");
