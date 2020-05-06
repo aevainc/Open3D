@@ -35,6 +35,7 @@
 #include "Open3D/Core/DLPack/dlpack.h"
 #include "Open3D/Core/Device.h"
 #include "Open3D/Core/Dtype.h"
+#include "Open3D/Core/ShapeUtil.h"
 #include "Open3D/Core/SizeVector.h"
 #include "Open3D/Core/TensorKey.h"
 
@@ -144,6 +145,32 @@ public:
         return *this;
     }
 
+    /// Create a tensor with uninitilized values.
+    static Tensor Empty(const SizeVector& shape,
+                        Dtype dtype,
+                        const Device& device = Device("CPU:0"));
+
+    /// Create a tensor fill with specified value.
+    template <typename T>
+    static Tensor Full(const SizeVector& shape,
+                       T fill_value,
+                       Dtype dtype,
+                       const Device& device = Device("CPU:0")) {
+        Tensor t = Empty(shape, dtype, device);
+        t.Fill(fill_value);
+        return t;
+    }
+
+    /// Create a tensor fill with zeros.
+    static Tensor Zeros(const SizeVector& shape,
+                        Dtype dtype,
+                        const Device& device = Device("CPU:0"));
+
+    /// Create a tensor fill with ones.
+    static Tensor Ones(const SizeVector& shape,
+                       Dtype dtype,
+                       const Device& device = Device("CPU:0"));
+
     /// Pythonic __getitem__ for tensor.
     ///
     /// Returns a view of the original tensor, if TensorKey is
@@ -235,7 +262,7 @@ public:
     /// \brief Fill the whole Tensor with a scalar value, the scalar will be
     /// casted to the Tensor's dtype.
     template <typename T>
-    void Fill(const T& v) {
+    void Fill(T v) {
         DISPATCH_DTYPE_TO_TEMPLATE_WITH_BOOL(GetDtype(), [&]() {
             scalar_t casted_v = static_cast<scalar_t>(v);
             Tensor tmp(std::vector<scalar_t>({casted_v}), SizeVector({}),
@@ -380,41 +407,145 @@ public:
 
     /// Adds a tensor and returns the resulting tensor.
     Tensor Add(const Tensor& value) const;
+    template <typename T>
+    Tensor Add(T scalar_value) const {
+        return Add(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
     Tensor operator+(const Tensor& value) const { return Add(value); }
+    template <typename T>
+    Tensor operator+(T scalar_value) const {
+        return Add(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
 
     /// Inplace version of Tensor::Add. Adds a tensor to the current tensor and
     /// returns the current tensor.
     Tensor Add_(const Tensor& value);
+    template <typename T>
+    Tensor Add_(T scalar_value) {
+        return Add_(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
     Tensor operator+=(const Tensor& value) { return Add_(value); }
+    template <typename T>
+    Tensor operator+=(T scalar_value) {
+        return Add_(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
 
     /// Substracts a tensor and returns the resulting tensor.
     Tensor Sub(const Tensor& value) const;
+    template <typename T>
+    Tensor Sub(T scalar_value) const {
+        return Sub(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
     Tensor operator-(const Tensor& value) const { return Sub(value); }
+    template <typename T>
+    Tensor operator-(T scalar_value) const {
+        return Sub(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
 
     /// Inplace version of Tensor::Sub. Substracts a tensor to the current
     /// tensor and returns the current tensor.
     Tensor Sub_(const Tensor& value);
+    template <typename T>
+    Tensor Sub_(T scalar_value) {
+        return Sub_(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
     Tensor operator-=(const Tensor& value) { return Sub_(value); }
+    template <typename T>
+    Tensor operator-=(T scalar_value) {
+        return Sub_(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
 
     /// Multiplies a tensor and returns the resulting tensor.
     Tensor Mul(const Tensor& value) const;
+    template <typename T>
+    Tensor Mul(T scalar_value) const {
+        return Mul(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
     Tensor operator*(const Tensor& value) const { return Mul(value); }
+    template <typename T>
+    Tensor operator*(T scalar_value) const {
+        return Mul(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
 
     /// Inplace version of Tensor::Mul. Multiplies a tensor to the current
     /// tensor and returns the current tensor.
     Tensor Mul_(const Tensor& value);
+    template <typename T>
+    Tensor Mul_(T scalar_value) {
+        return Mul_(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
     Tensor operator*=(const Tensor& value) { return Mul_(value); }
+    template <typename T>
+    Tensor operator*=(T scalar_value) {
+        return Mul_(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
 
     /// Divides a tensor and returns the resulting tensor.
     Tensor Div(const Tensor& value) const;
+    template <typename T>
+    Tensor Div(T scalar_value) const {
+        return Div(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
     Tensor operator/(const Tensor& value) const { return Div(value); }
+    template <typename T>
+    Tensor operator/(T scalar_value) const {
+        return Div(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
 
     /// Inplace version of Tensor::Div. Divides a tensor to the current
     /// tensor and returns the current tensor.
     Tensor Div_(const Tensor& value);
+    template <typename T>
+    Tensor Div_(T scalar_value) {
+        return Div_(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
     Tensor operator/=(const Tensor& value) { return Div_(value); }
+    template <typename T>
+    Tensor operator/=(T scalar_value) {
+        return Div_(Tensor::Full({}, scalar_value, dtype_, GetDevice()));
+    }
 
-    /// Element-wise square root of a tensor, returning a new tensor.
+    /// Returns the sum of the tensor along the given \p dims.
+    /// \param dims A list of dimensions to be reduced.
+    /// \param keepdim If true, the reduced dims will be retained as size 1.
+    Tensor Sum(const SizeVector& dims, bool keepdim = false) const;
+
+    /// Returns the product of the tensor along the given \p dims.
+    /// \param dims A list of dimensions to be reduced.
+    /// \param keepdim If true, the reduced dims will be retained as size 1.
+    Tensor Prod(const SizeVector& dims, bool keepdim = false) const;
+
+    /// Returns min of the tensor along the given \p dims.
+    /// \param dims A list of dimensions to be reduced.
+    /// \param keepdim If true, the reduced dims will be retained as size 1.
+    Tensor Min(const SizeVector& dims, bool keepdim = false) const;
+
+    /// Returns max of the tensor along the given \p dims.
+    /// \param dims A list of dimensions to be reduced.
+    /// \param keepdim If true, the reduced dims will be retained as size 1.
+    Tensor Max(const SizeVector& dims, bool keepdim = false) const;
+
+    /// Returns minimum index of the tensor along the given \p dim. The returned
+    /// tensor has dtype int64_t, and has the same shape as original tensor
+    /// except that the reduced dimension is removed.
+    ///
+    /// \param dims \p dims can only contain a single dimension or all
+    /// dimensions. If \p dims contains a single dimension, the index is along
+    /// the specified dimension. If \p dims contains all dimensions, the index
+    /// is into the flattend tensor.
+    Tensor ArgMin(const SizeVector& dims) const;
+
+    /// Returns maximum index of the tensor along the given \p dim. The returned
+    /// tensor has dtype int64_t, and has the same shape as original tensor
+    /// except that the reduced dimension is removed.
+    ///
+    /// \param dims \p dims can only contain a single dimension or all
+    /// dimensions. If \p dims contains a single dimension, the index is along
+    /// the specified dimension. If \p dims contains all dimensions, the index
+    /// is into the flattend tensor.
+    Tensor ArgMax(const SizeVector& dims) const;
+
+    /// Element-wise square root of a tensor, returns a new tensor.
     Tensor Sqrt() const;
 
     /// Element-wise square root of a tensor, in-place.
@@ -585,7 +716,7 @@ public:
     inline const SizeVector& GetShapeRef() const { return shape_; }
 
     inline int64_t GetShape(int64_t dim) const {
-        return shape_[WrapDim(dim, NumDims())];
+        return shape_[shape_util::WrapDim(dim, NumDims())];
     }
 
     inline SizeVector GetStrides() const { return strides_; }
@@ -593,7 +724,7 @@ public:
     inline const SizeVector& GetStridesRef() const { return strides_; }
 
     inline int64_t GetStride(int64_t dim) const {
-        return strides_[WrapDim(dim, NumDims())];
+        return strides_[shape_util::WrapDim(dim, NumDims())];
     }
 
     inline void* GetDataPtr() { return data_ptr_; }
@@ -602,7 +733,7 @@ public:
 
     inline Dtype GetDtype() const { return dtype_; }
 
-    inline Device GetDevice() const { return GetBlob()->GetDevice(); }
+    Device GetDevice() const;
 
     inline std::shared_ptr<Blob> GetBlob() const { return blob_; }
 
@@ -626,16 +757,13 @@ public:
 
     static SizeVector DefaultStrides(const SizeVector& shape);
 
-    /// On a high level,
-    /// 1. separate `oldshape` into chunks of dimensions, where the dimensions
-    /// are
-    ///    ``contiguous'' in each chunk, i.e., oldstride[i] = oldshape[i+1] *
-    ///     oldstride[i+1]
+    /// 1. Separate `oldshape` into chunks of dimensions, where the dimensions
+    ///    are ``contiguous'' in each chunk, i.e.,
+    ///    oldstride[i] = oldshape[i+1] * oldstride[i+1]
     /// 2. `newshape` must be able to be separated into same number of chunks as
     ///    `oldshape` was separated into, where each chunk of newshape has
-    ///    matching
-    ///    ``numel'', i.e., number of subspaces, as the corresponding chunk of
-    ///    `oldshape`.
+    ///    matching ``numel'', i.e., number of subspaces, as the corresponding
+    ///    chunk of `oldshape`.
     /// Ref: aten/src/ATen/TensorUtils.cpp
     static std::pair<bool, SizeVector> ComputeNewStrides(
             const SizeVector& old_shape,
@@ -724,6 +852,26 @@ inline std::vector<bool> Tensor::ToFlatVector() const {
             values_uchar.begin(), values_uchar.end(), values.begin(),
             [](unsigned char v) -> bool { return static_cast<bool>(v); });
     return values;
+}
+
+template <typename T>
+Tensor operator+(T scalar_lhs, const Tensor& rhs) {
+    return rhs + scalar_lhs;
+}
+
+template <typename T>
+Tensor operator-(T scalar_lhs, const Tensor& rhs) {
+    return Tensor::Full({}, scalar_lhs, rhs.GetDtype(), rhs.GetDevice()) - rhs;
+}
+
+template <typename T>
+Tensor operator*(T scalar_lhs, const Tensor& rhs) {
+    return rhs * scalar_lhs;
+}
+
+template <typename T>
+Tensor operator/(T scalar_lhs, const Tensor& rhs) {
+    return Tensor::Full({}, scalar_lhs, rhs.GetDtype(), rhs.GetDevice()) / rhs;
 }
 
 }  // namespace open3d
