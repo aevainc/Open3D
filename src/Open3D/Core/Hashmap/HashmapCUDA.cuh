@@ -122,16 +122,16 @@ CUDAHashmapImplContext<Hash, KeyEq>::WarpSyncKey(uint8_t* key_ptr,
     }
 }
 
-__device__ __host__ inline bool cmp(uint8_t* src,
-                                    uint8_t* dst,
-                                    uint32_t dsize) {
-    bool ret = true;
-#pragma unroll 1
-    for (int i = 0; i < dsize; ++i) {
-        ret = ret && (src[i] == dst[i]);
-    }
-    return ret;
-}
+// __device__ __host__ inline bool cmp(uint8_t* src,
+//                                     uint8_t* dst,
+//                                     uint32_t dsize) {
+//     bool ret = true;
+// #pragma unroll 1
+//     for (int i = 0; i < dsize; ++i) {
+//         ret = ret && (src[i] == dst[i]);
+//     }
+//     return ret;
+// }
 
 template <typename Hash, typename KeyEq>
 __device__ int32_t CUDAHashmapImplContext<Hash, KeyEq>::WarpFindKey(
@@ -142,8 +142,7 @@ __device__ int32_t CUDAHashmapImplContext<Hash, KeyEq>::WarpFindKey(
             /* validate key addrs */
             && (ptr != EMPTY_PAIR_PTR)
             /* find keys in memory heap */
-            &&
-            cmp(mem_mgr_ctx_.extract_iterator(ptr).first, key_ptr, dsize_key_);
+            && cmp_fn_(mem_mgr_ctx_.extract_iterator(ptr).first, key_ptr);
 
     return __ffs(__ballot_sync(PAIR_PTR_LANES_MASK, is_lane_found)) - 1;
 }
