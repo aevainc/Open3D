@@ -84,42 +84,6 @@ CPUTensorHash::CPUTensorHash(Tensor coords,
     }
 }
 
-/// TODO: move these iterator dispatchers to Hashmap interfaces
-void AssignIteratorsIter(iterator_t* iterators,
-                         uint8_t* masks,
-                         uint8_t* values,
-                         size_t key_size,
-                         size_t value_size,
-                         int tid) {
-    // Valid queries
-    if (masks[tid]) {
-        uint8_t* src_value_ptr = values + value_size * tid;
-        uint8_t* dst_value_ptr = iterators[tid].second;
-
-        // Byte-by-byte copy, can be improved
-        for (int i = 0; i < value_size; ++i) {
-            dst_value_ptr[i] = src_value_ptr[i];
-        }
-    }
-}
-
-void DispatchKeysIter(iterator_t* iterators,
-                      uint8_t* masks,
-                      uint8_t* keys,
-                      size_t key_size,
-                      int tid) {
-    // Valid queries
-    if (masks[tid]) {
-        uint8_t* src_key_ptr = iterators[tid].first;
-        uint8_t* dst_key_ptr = keys + key_size * tid;
-
-        // Byte-by-byte copy, can be improved
-        for (int i = 0; i < key_size; ++i) {
-            dst_key_ptr[i] = src_key_ptr[i];
-        }
-    }
-}
-
 std::pair<Tensor, Tensor> CPUTensorHash::Insert(Tensor coords, Tensor values) {
     // Device check
     if (coords.GetDevice().GetType() != Device::DeviceType::CPU) {
@@ -164,12 +128,10 @@ std::pair<Tensor, Tensor> CPUTensorHash::Insert(Tensor coords, Tensor values) {
     auto ret_keys_tensor =
             Tensor(coords.GetShape(), key_type_, hashmap_->device_);
 
-    for (int i = 0; i < N; ++i) {
-        DispatchKeysIter(
-                iterators_buf, masks_buf,
-                static_cast<uint8_t*>(ret_keys_tensor.GetBlob()->GetDataPtr()),
-                hashmap_->dsize_key_, i);
-    }
+    hashmap_->UnpackIterators(
+            iterators_buf, masks_buf,
+            static_cast<uint8_t*>(ret_keys_tensor.GetBlob()->GetDataPtr()),
+            nullptr, N);
 
     // Dispatch masks
     // Copy mask to avoid duplicate data; dummy deleter avoids double free
@@ -183,24 +145,6 @@ std::pair<Tensor, Tensor> CPUTensorHash::Insert(Tensor coords, Tensor values) {
     auto ret_mask_tensor = mask_tensor.Copy(hashmap_->device_);
 
     return std::make_pair(ret_keys_tensor, ret_mask_tensor);
-}
-
-void DispatchValuesIter(iterator_t* iterators,
-                        uint8_t* masks,
-                        uint8_t* values,
-                        size_t key_size,
-                        size_t value_size,
-                        int tid) {
-    // Valid queries
-    if (masks[tid]) {
-        uint8_t* src_value_ptr = iterators[tid].second;
-        uint8_t* dst_value_ptr = values + value_size * tid;
-
-        // Byte-by-byte copy, can be improved
-        for (int i = 0; i < value_size; ++i) {
-            dst_value_ptr[i] = src_value_ptr[i];
-        }
-    }
 }
 
 std::pair<Tensor, Tensor> CPUTensorHash::Query(Tensor coords) {
@@ -236,13 +180,9 @@ std::pair<Tensor, Tensor> CPUTensorHash::Query(Tensor coords) {
     // Dispatch values
     auto ret_value_tensor =
             Tensor(SizeVector({N}), value_type_, hashmap_->device_);
-    utility::LogInfo("Dispatching");
-    for (int i = 0; i < N; ++i) {
-        DispatchValuesIter(
-                iterators_buf, masks_buf,
-                static_cast<uint8_t*>(ret_value_tensor.GetBlob()->GetDataPtr()),
-                hashmap_->dsize_key_, hashmap_->dsize_value_, i);
-    }
+    hashmap_->UnpackIterators(
+            iterators_buf, masks_buf, nullptr,
+            static_cast<uint8_t*>(ret_value_tensor.GetBlob()->GetDataPtr()), N);
 
     // Dispatch masks
     // Copy mask to avoid duplicate data; dummy deleter avoids double free
@@ -257,25 +197,6 @@ std::pair<Tensor, Tensor> CPUTensorHash::Query(Tensor coords) {
     auto ret_mask_tensor = mask_tensor.Copy(hashmap_->device_);
 
     return std::make_pair(ret_value_tensor, ret_mask_tensor);
-}
-
-/// TODO: move these iterator dispatchers to Hashmap interfaces
-void AssignValuesIter(iterator_t* iterators,
-                      uint8_t* masks,
-                      uint8_t* values,
-                      size_t key_size,
-                      size_t value_size,
-                      int tid) {
-    // Valid queries
-    if (masks[tid]) {
-        uint8_t* src_value_ptr = values + value_size * tid;
-        uint8_t* dst_value_ptr = iterators[tid].second;
-
-        // Byte-by-byte copy, can be improved
-        for (int i = 0; i < value_size; ++i) {
-            dst_value_ptr[i] = src_value_ptr[i];
-        }
-    }
 }
 
 Tensor CPUTensorHash::Assign(Tensor coords, Tensor values) {
@@ -317,12 +238,9 @@ Tensor CPUTensorHash::Assign(Tensor coords, Tensor values) {
     auto iterators_buf = result.first;
     auto masks_buf = result.second;
 
-    // Assign values
-    for (int i = 0; i < N; ++i) {
-        AssignValuesIter(iterators_buf, masks_buf,
-                         static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()),
-                         hashmap_->dsize_key_, hashmap_->dsize_value_, i);
-    }
+    hashmap_->AssignIterators(
+            iterators_buf, masks_buf,
+            static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()), N);
 
     // Dispatch masks
     // Copy mask to avoid duplicate data; dummy deleter avoids double free

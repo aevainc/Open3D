@@ -902,7 +902,6 @@ __global__ void UnpackIteratorsKernel(iterator_t* input_iterators,
             for (int i = 0; i < dsize_key; ++i) {
                 dst_key_ptr[i] = src_key_ptr[i];
             }
-            printf("key[%d] = %d\n", tid, *((int*)dst_key_ptr));
         }
 
         if (output_values != nullptr) {
@@ -912,7 +911,6 @@ __global__ void UnpackIteratorsKernel(iterator_t* input_iterators,
             for (int i = 0; i < dsize_value; ++i) {
                 dst_value_ptr[i] = src_value_ptr[i];
             }
-            printf("value[%d] = %d\n", tid, *((int*)dst_value_ptr));
         }
     }
 }

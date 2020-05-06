@@ -124,10 +124,6 @@ std::pair<Tensor, Tensor> CUDATensorHash::Insert(Tensor coords, Tensor values) {
     auto iterators_buf = result.first;
     auto masks_buf = result.second;
 
-    // Write keys
-    const size_t num_threads = 32;
-    const size_t num_blocks = (N + num_threads - 1) / num_threads;
-
     auto ret_keys_tensor =
             Tensor(coords.GetShape(), key_type_, hashmap_->device_);
 
@@ -244,10 +240,6 @@ Tensor CUDATensorHash::Assign(Tensor coords, Tensor values) {
     // Decode returned iterators
     auto iterators_buf = result.first;
     auto masks_buf = result.second;
-
-    // Assign values
-    const size_t num_threads = 32;
-    const size_t num_blocks = (N + num_threads - 1) / num_threads;
 
     hashmap_->AssignIterators(
             iterators_buf, masks_buf,

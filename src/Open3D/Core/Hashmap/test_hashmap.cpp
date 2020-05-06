@@ -71,7 +71,7 @@ void TEST_SIMPLE() {
             reinterpret_cast<uint8_t*>(query_keys_cpu.data());
 
     /// Hashmap creation
-    auto hashmap = CreateHashmap<DefaultHash>(
+    auto hashmap = CreateHashmap<DefaultHash, DefaultKeyEq>(
             max_buckets, sizeof(int), sizeof(int), open3d::Device("CPU:0"));
 
     /// Hashmap insertion

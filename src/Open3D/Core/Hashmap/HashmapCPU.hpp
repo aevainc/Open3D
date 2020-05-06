@@ -120,9 +120,104 @@ std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash, KeyEq>::Find(
 template <typename Hash, typename KeyEq>
 uint8_t* CPUHashmap<Hash, KeyEq>::Erase(uint8_t* input_keys,
                                         uint32_t input_key_size) {
-    utility::LogError("Unimplemented method");
-    uint8_t* masks = nullptr;
-    return masks;
+    auto masks = (uint8_t*)std::malloc(input_key_size * sizeof(uint8_t));
+    for (int i = 0; i < input_key_size; ++i) {
+        uint8_t* key = (uint8_t*)input_keys + this->dsize_key_ * i;
+
+        size_t erased = cpu_hashmap_impl_->erase(key);
+        masks[i] = erased > 0;
+    }
+}
+
+template <typename Hash, typename KeyEq>
+std::pair<iterator_t*, uint32_t> CPUHashmap<Hash, KeyEq>::GetIterators() {
+    /// TODO: fix this memory allocation
+    uint32_t iterator_count = cpu_hashmap_impl_->size();
+    iterator_t* iterators = (iterator_t*)MemoryManager::Malloc(
+            sizeof(iterator_t) * iterator_count, this->device_);
+
+    int i = 0;
+    for (auto iter = cpu_hashmap_impl_->begin();
+         iter != cpu_hashmap_impl_->end(); ++iter, ++i) {
+        iterators[i] = iterator_t(iter->first, iter->second);
+    }
+
+    return std::make_pair(iterators, iterator_count);
+}
+
+void UnpackIteratorsStep(iterator_t* input_iterators,
+                         uint8_t* input_masks,
+                         uint8_t* output_keys,
+                         uint8_t* output_values,
+                         uint32_t dsize_key,
+                         uint32_t dsize_value,
+                         uint32_t tid) {
+    // Valid queries
+    if (input_masks == nullptr || input_masks[tid]) {
+        if (output_keys != nullptr) {
+            uint8_t* dst_key_ptr = output_keys + dsize_key * tid;
+            uint8_t* src_key_ptr = input_iterators[tid].first;
+
+            for (int i = 0; i < dsize_key; ++i) {
+                dst_key_ptr[i] = src_key_ptr[i];
+            }
+        }
+
+        if (output_values != nullptr) {
+            uint8_t* dst_value_ptr = output_values + dsize_value * tid;
+            uint8_t* src_value_ptr = input_iterators[tid].second;
+
+            for (int i = 0; i < dsize_value; ++i) {
+                dst_value_ptr[i] = src_value_ptr[i];
+            }
+        }
+    }
+}
+
+template <typename Hash, typename KeyEq>
+void CPUHashmap<Hash, KeyEq>::UnpackIterators(iterator_t* input_iterators,
+                                              uint8_t* input_masks,
+                                              uint8_t* output_keys,
+                                              uint8_t* output_values,
+                                              uint32_t iterator_count) {
+    for (int i = 0; i < iterator_count; ++i) {
+        UnpackIteratorsStep(input_iterators, input_masks, output_keys,
+                            output_values, this->dsize_key_, this->dsize_value_,
+                            i);
+    }
+}
+
+void AssignIteratorsStep(iterator_t* input_iterators,
+                         uint8_t* input_masks,
+                         uint8_t* input_values,
+                         uint32_t dsize_value,
+                         uint32_t tid) {
+    // Valid queries
+    if (input_masks == nullptr || input_masks[tid]) {
+        uint8_t* src_value_ptr = input_values + dsize_value * tid;
+        uint8_t* dst_value_ptr = input_iterators[tid].second;
+
+        // Byte-by-byte copy, can be improved
+        for (int i = 0; i < dsize_value; ++i) {
+            dst_value_ptr[i] = src_value_ptr[i];
+        }
+    }
+}
+
+template <typename Hash, typename KeyEq>
+void CPUHashmap<Hash, KeyEq>::AssignIterators(iterator_t* input_iterators,
+                                              uint8_t* input_masks,
+                                              uint8_t* input_values,
+                                              uint32_t iterator_count) {
+    for (int i = 0; i < iterator_count; ++i) {
+        AssignIteratorsStep(input_iterators, input_masks, input_values,
+                            this->dsize_value_, i);
+    }
+}
+
+template <typename Hash, typename KeyEq>
+void CPUHashmap<Hash, KeyEq>::Rehash(uint32_t buckets) {
+    cpu_hashmap_impl_->rehash(buckets);
 }
 
 template <typename Hash, typename KeyEq>

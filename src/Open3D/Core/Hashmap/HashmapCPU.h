@@ -44,9 +44,6 @@ public:
                uint32_t dsize_value,
                Device device);
 
-    /// TODO: implement CPU counterpart here
-    void Rehash(uint32_t buckets){};
-
     std::pair<iterator_t*, uint8_t*> Insert(uint8_t* input_keys,
                                             uint8_t* input_values,
                                             uint32_t input_key_size);
@@ -54,25 +51,23 @@ public:
     std::pair<iterator_t*, uint8_t*> Find(uint8_t* input_keys,
                                           uint32_t input_key_size);
 
+    /// TODO: implement CPU counterpart here
     uint8_t* Erase(uint8_t* input_keys, uint32_t input_key_size);
 
-    /// TODO: replace place-holder
-    std::pair<iterator_t*, uint32_t> GetIterators() {
-        iterator_t* iterators = nullptr;
-        uint32_t num_iterators = 0;
-        return std::make_pair(iterators, num_iterators);
-    }
+    std::pair<iterator_t*, uint32_t> GetIterators();
 
     void UnpackIterators(iterator_t* input_iterators,
                          uint8_t* input_masks,
                          uint8_t* output_keys,
                          uint8_t* output_values,
-                         uint32_t iterator_count) {}
+                         uint32_t iterator_count);
 
     void AssignIterators(iterator_t* input_iterators,
                          uint8_t* input_masks,
                          uint8_t* input_values,
-                         uint32_t iterator_count) {}
+                         uint32_t iterator_count);
+
+    void Rehash(uint32_t buckets);
 
 private:
     std::shared_ptr<std::unordered_map<uint8_t*, uint8_t*, Hash, KeyEq>>
