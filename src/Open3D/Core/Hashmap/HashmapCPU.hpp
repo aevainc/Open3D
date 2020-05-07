@@ -221,6 +221,16 @@ void CPUHashmap<Hash, KeyEq>::Rehash(uint32_t buckets) {
 }
 
 template <typename Hash, typename KeyEq>
+std::vector<int> CPUHashmap<Hash, KeyEq>::BucketSize() {
+    size_t bucket_count = cpu_hashmap_impl_->bucket_count();
+    std::vector<int> ret;
+    for (int i = 0; i < bucket_count; ++i) {
+        ret.push_back(cpu_hashmap_impl_->bucket_size(i));
+    }
+    return std::move(ret);
+}
+
+template <typename Hash, typename KeyEq>
 std::shared_ptr<CPUHashmap<Hash, KeyEq>> CreateCPUHashmap(
         uint32_t init_buckets,
         uint32_t dsize_key,

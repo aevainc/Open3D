@@ -70,10 +70,10 @@ public:
 
     /// Bucket-related utilitiesx
     /// Return number of elems per bucket
-    std::vector<int> BucketSize() { return std::vector<int>(); }
+    std::vector<int> BucketSize();
 
     /// Return size / bucket_count
-    float LoadFactor() { return 0.0; };
+    float LoadFactor() { return cpu_hashmap_impl_->load_factor(); };
 
 private:
     std::shared_ptr<std::unordered_map<uint8_t*, uint8_t*, Hash, KeyEq>>

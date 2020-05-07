@@ -86,12 +86,27 @@ void TEST_SIMPLE() {
     Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
                       hashmap_gt);
 
+    utility::LogInfo("Before rehashing");
+    utility::LogInfo("Load factor = {}", hashmap->LoadFactor());
+    auto bucket_size = hashmap->BucketSize();
+    for (auto bs : bucket_size) {
+        std::cout << bs << "\n";
+    }
+
     /// Result parsing
     hashmap->Rehash(max_buckets * 2);
     std::tie(ret_iterators, ret_masks) =
             hashmap->Find(query_keys_ptr_cpu, query_keys_cpu.size());
     Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
                       hashmap_gt);
+
+    utility::LogInfo("After rehashing");
+    utility::LogInfo("Load factor = {}", hashmap->LoadFactor());
+    bucket_size = hashmap->BucketSize();
+    for (auto bs : bucket_size) {
+        std::cout << bs << "\n";
+    }
+
     utility::LogInfo("TEST_SIMPLE() passed");
 }
 
