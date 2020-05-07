@@ -105,6 +105,10 @@ void TEST_SIMPLE() {
     /// Result parsing
     Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
                       hashmap_gt);
+    utility::LogInfo("Before rehashing");
+    utility::LogInfo("Load factor = {}, bucket_count = {}",
+                     hashmap->LoadFactor(), hashmap->BucketSize());
+
 
     hashmap->Rehash(2 * max_buckets);
     res = hashmap->GetIterators();
@@ -120,6 +124,10 @@ void TEST_SIMPLE() {
                 reinterpret_cast<int*>(iterator.second)));
         std::cout << key << " " << val << "\n";
     }
+
+    utility::LogInfo("After rehashing");
+    utility::LogInfo("Load factor = {}, bucket_count = {}",
+                     hashmap->LoadFactor(), hashmap->BucketSize());
 
 
     /// Again, result parsing

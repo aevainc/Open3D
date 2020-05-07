@@ -43,6 +43,7 @@ public:
                uint32_t dsize_key,
                uint32_t dsize_value,
                Device device);
+    void Rehash(uint32_t buckets);
 
     std::pair<iterator_t*, uint8_t*> Insert(uint8_t* input_keys,
                                             uint8_t* input_values,
@@ -67,7 +68,12 @@ public:
                          uint8_t* input_values,
                          uint32_t iterator_count);
 
-    void Rehash(uint32_t buckets);
+    /// Bucket-related utilitiesx
+    /// Return number of elems per bucket
+    std::vector<int> BucketSize() { return std::vector<int>(); }
+
+    /// Return size / bucket_count
+    float LoadFactor() { return 0.0; };
 
 private:
     std::shared_ptr<std::unordered_map<uint8_t*, uint8_t*, Hash, KeyEq>>

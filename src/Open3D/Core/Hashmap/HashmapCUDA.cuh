@@ -796,19 +796,21 @@ std::vector<int> CUDAHashmapImpl<Hash, KeyEq>::CountElemsPerBucket() {
 }
 
 template <typename Hash, typename KeyEq>
-double CUDAHashmapImpl<Hash, KeyEq>::ComputeLoadFactor() {
+float CUDAHashmapImpl<Hash, KeyEq>::ComputeLoadFactor() {
     auto elems_per_bucket = CountElemsPerBucket();
     int total_elems_stored = std::accumulate(elems_per_bucket.begin(),
                                              elems_per_bucket.end(), 0);
 
     node_mgr_->gpu_context_ = gpu_context_.node_mgr_ctx_;
-    auto slabs_per_bucket = node_mgr_->CountSlabsPerSuperblock();
-    int total_slabs_stored =
-            std::accumulate(slabs_per_bucket.begin(), slabs_per_bucket.end(),
-                            gpu_context_.bucket_count_);
 
-    double load_factor = double(total_elems_stored) /
-                         double(total_slabs_stored * WARP_WIDTH);
+    /// Unrelated factor for now
+    // auto slabs_per_bucket = node_mgr_->CountSlabsPerSuperblock();
+    // int total_slabs_stored =
+    //         std::accumulate(slabs_per_bucket.begin(), slabs_per_bucket.end(),
+    //                         gpu_context_.bucket_count_);
+
+    float load_factor =
+            float(total_elems_stored) / float(elems_per_bucket.size());
 
     return load_factor;
 }
@@ -988,6 +990,19 @@ void CUDAHashmap<Hash, KeyEq>::Rehash(uint32_t buckets) {
 
     MemoryManager::Free(output_keys, this->device_);
     MemoryManager::Free(output_values, this->device_);
+}
+
+/// Bucket-related utilitiesx
+/// Return number of elems per bucket
+template <typename Hash, typename KeyEq>
+std::vector<int> CUDAHashmap<Hash, KeyEq>::BucketSize() {
+    return cuda_hashmap_impl_->CountElemsPerBucket();
+}
+
+/// Return size / bucket_count
+template <typename Hash, typename KeyEq>
+float CUDAHashmap<Hash, KeyEq>::LoadFactor() {
+    return cuda_hashmap_impl_->ComputeLoadFactor();
 }
 
 template <typename Hash, typename KeyEq>

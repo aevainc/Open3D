@@ -147,7 +147,7 @@ public:
     void GetIterators(iterator_t*& iterators, uint32_t& num_iterators);
 
     std::vector<int> CountElemsPerBucket();
-    double ComputeLoadFactor();
+    float ComputeLoadFactor();
 
 public:
     CUDAHashmapImplContext<Hash, KeyEq> gpu_context_;
@@ -180,7 +180,6 @@ public:
     uint8_t* Erase(uint8_t* input_keys, uint32_t input_count);
 
     std::pair<iterator_t*, uint32_t> GetIterators();
-
     void UnpackIterators(iterator_t* input_iterators,
                          uint8_t* input_masks,
                          uint8_t* output_keys,
@@ -193,6 +192,13 @@ public:
 
     /// TODO: parallel foreach
     // void Foreach(ElemwiseFunc& func);
+
+    /// Bucket-related utilitiesx
+    /// Return number of elems per bucket
+    std::vector<int> BucketSize();
+
+    /// Return size / bucket_count
+    float LoadFactor();
 
 protected:
     // TODO: move out these buffers

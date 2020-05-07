@@ -93,6 +93,7 @@ public:
 
     virtual void Rehash(uint32_t buckets) = 0;
 
+    /// Essential hashmap operations
     virtual std::pair<iterator_t*, uint8_t*> Insert(uint8_t* input_keys,
                                                     uint8_t* input_values,
                                                     uint32_t input_count) = 0;
@@ -104,6 +105,7 @@ public:
 
     virtual std::pair<iterator_t*, uint32_t> GetIterators() = 0;
 
+    /// Parallel iterations
     /// Only write to corresponding entries if they are not nullptr
     /// Only access input_masks if they it is not nullptr
     virtual void UnpackIterators(iterator_t* input_iterators,
@@ -118,6 +120,13 @@ public:
                                  uint8_t* input_masks,
                                  uint8_t* input_values,
                                  uint32_t iterator_count) = 0;
+
+    /// Bucket-related utilitiesx
+    /// Return number of elems per bucket
+    virtual std::vector<int> BucketSize();
+
+    /// Return size / bucket_count
+    virtual float LoadFactor();
 
 public:
     uint32_t bucket_count_;
