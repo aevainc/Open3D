@@ -82,7 +82,7 @@ void TEST_SIMPLE() {
     hashmap->Insert(insert_keys_ptr_cuda, insert_vals_ptr_cuda,
                     insert_keys_cuda.size());
 
-     auto res = hashmap->GetIterators();
+    auto res = hashmap->GetIterators();
     std::cout << res.first << " " << res.second << "\n";
     auto all_iterators = thrust::device_vector<iterator_t>(
             res.first, res.first + res.second);
@@ -90,7 +90,7 @@ void TEST_SIMPLE() {
     for (int i = 0; i < res.second; ++i) {
         iterator_t iterator = all_iterators[i];
         int key = *(thrust::device_ptr<int>(
-                 reinterpret_cast<int*>(iterator.first)));
+                reinterpret_cast<int*>(iterator.first)));
         int val = *(thrust::device_ptr<int>(
                 reinterpret_cast<int*>(iterator.second)));
         std::cout << key << " " << val << "\n";
@@ -106,37 +106,40 @@ void TEST_SIMPLE() {
     Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
                       hashmap_gt);
     utility::LogInfo("Before rehashing");
-    utility::LogInfo("Load factor = {}, bucket_count = {}",
-                     hashmap->LoadFactor(), hashmap->BucketSize());
+    utility::LogInfo("Load factor = {}", hashmap->LoadFactor());
 
+    auto bucket_size = hashmap->BucketSize();
+    for (auto bs : bucket_size) {
+        std::cout << bs << "\n";
+    }
 
     hashmap->Rehash(2 * max_buckets);
     res = hashmap->GetIterators();
     std::cout << res.first << " " << res.second << "\n";
-    all_iterators = thrust::device_vector<iterator_t>(
-            res.first, res.first + res.second);
+    all_iterators = thrust::device_vector<iterator_t>(res.first,
+                                                      res.first + res.second);
     std::cout << "all_iterators constructed\n";
     for (int i = 0; i < res.second; ++i) {
         iterator_t iterator = all_iterators[i];
         int key = *(thrust::device_ptr<int>(
-                 reinterpret_cast<int*>(iterator.first)));
+                reinterpret_cast<int*>(iterator.first)));
         int val = *(thrust::device_ptr<int>(
                 reinterpret_cast<int*>(iterator.second)));
         std::cout << key << " " << val << "\n";
     }
 
     utility::LogInfo("After rehashing");
-    utility::LogInfo("Load factor = {}, bucket_count = {}",
-                     hashmap->LoadFactor(), hashmap->BucketSize());
-
+    utility::LogInfo("Load factor = {}", hashmap->LoadFactor());
+    bucket_size = hashmap->BucketSize();
+    for (auto bs : bucket_size) {
+        std::cout << bs << "\n";
+    }
 
     /// Again, result parsing
     std::tie(ret_iterators, ret_masks) =
             hashmap->Find(query_keys_ptr_cuda, query_keys_cuda.size());
     Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
                       hashmap_gt);
-
-
 
     utility::LogInfo("TEST_SIMPLE() passed");
 }

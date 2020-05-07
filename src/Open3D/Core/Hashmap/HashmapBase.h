@@ -123,10 +123,10 @@ public:
 
     /// Bucket-related utilitiesx
     /// Return number of elems per bucket
-    virtual std::vector<int> BucketSize();
+    virtual std::vector<int> BucketSize() = 0;
 
     /// Return size / bucket_count
-    virtual float LoadFactor();
+    virtual float LoadFactor() = 0;
 
 public:
     uint32_t bucket_count_;

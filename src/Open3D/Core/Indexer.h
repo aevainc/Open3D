@@ -42,10 +42,10 @@ class Indexer;
 class IndexerIterator;
 
 // Maximum number of dimensions of TensorRef.
-static constexpr int64_t MAX_DIMS = 10;
+static constexpr int64_t MAX_DIMS = 8;
 
 // Maximum number of operands (inputs) of an op.
-static constexpr int64_t MAX_OPERANDS = 10;
+static constexpr int64_t MAX_OPERANDS = 8;
 
 // Fixed-size array type usable from host and device.
 template <typename T, int size>
