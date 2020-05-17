@@ -144,7 +144,7 @@ public:
                uint8_t* output_masks,
                uint32_t input_count);
 
-    void GetIterators(iterator_t*& iterators, uint32_t& num_iterators);
+    uint32_t GetIterators(iterator_t* iterators);
 
     std::vector<int> CountElemsPerBucket();
     float ComputeLoadFactor();
@@ -170,44 +170,45 @@ public:
 
     void Rehash(uint32_t buckets);
 
-    std::pair<iterator_t*, uint8_t*> Insert(uint8_t* input_keys,
-                                            uint8_t* input_values,
-                                            uint32_t input_count);
+    void Insert(uint8_t* input_keys,
+                uint8_t* input_values,
+                iterator_t* output_iterators,
+                uint8_t* output_masks,
+                uint32_t count);
 
-    std::pair<iterator_t*, uint8_t*> Find(uint8_t* input_keys,
-                                          uint32_t input_count);
+    void Find(uint8_t* input_keys,
+              iterator_t* output_iterators,
+              uint8_t* output_masks,
+              uint32_t count);
 
-    uint8_t* Erase(uint8_t* input_keys, uint32_t input_count);
+    void Erase(uint8_t* input_keys, uint8_t* output_masks, uint32_t count);
 
-    std::pair<iterator_t*, uint32_t> GetIterators();
+    uint32_t GetIterators(iterator_t* output_iterators);
+
+    /// Parallel iterations
+    /// Only write to corresponding entries if they are not nullptr
+    /// Only access input_masks if they it is not nullptr
     void UnpackIterators(iterator_t* input_iterators,
                          uint8_t* input_masks,
                          uint8_t* output_keys,
                          uint8_t* output_values,
-                         uint32_t iterator_count);
+                         uint32_t count);
+
+    /// (Optionally) In-place modify iterators returned from Find
+    /// Note: key cannot be changed, otherwise the semantic is violated
     void AssignIterators(iterator_t* input_iterators,
                          uint8_t* input_masks,
                          uint8_t* input_values,
-                         uint32_t iterator_count);
+                         uint32_t count);
 
-    /// TODO: parallel foreach
-    // void Foreach(ElemwiseFunc& func);
-
-    /// Bucket-related utilitiesx
+    /// Bucket-related utilities
     /// Return number of elems per bucket
-    std::vector<int> BucketSize();
+    virtual std::vector<int> BucketSizes();
 
     /// Return size / bucket_count
-    float LoadFactor();
+    virtual float LoadFactor();
 
 protected:
-    // TODO: move out these buffers
-    // Buffer to store temporary results
-    uint8_t* output_key_buffer_;
-    uint8_t* output_value_buffer_;
-    iterator_t* output_iterator_buffer_;
-    uint8_t* output_mask_buffer_;
-
     std::shared_ptr<CUDAHashmapImpl<Hash, KeyEq>> cuda_hashmap_impl_;
 };
 

@@ -750,26 +750,24 @@ void CUDAHashmapImpl<Hash, KeyEq>::Erase(uint8_t* keys,
 }
 
 template <typename Hash, typename KeyEq>
-void CUDAHashmapImpl<Hash, KeyEq>::GetIterators(iterator_t*& iterators,
-                                                uint32_t& iterator_count) {
+uint32_t CUDAHashmapImpl<Hash, KeyEq>::GetIterators(iterator_t* iterators) {
     const uint32_t blocksize = 128;
     const uint32_t num_blocks =
             (gpu_context_.bucket_count_ * 32 + blocksize - 1) / blocksize;
 
-    uint32_t* iterator_count_tmp =
+    uint32_t* iterator_count_cuda =
             (uint32_t*)MemoryManager::Malloc(sizeof(uint32_t), device_);
-    cudaMemset(iterator_count_tmp, 0, sizeof(uint32_t));
-
-    iterators = (iterator_t*)MemoryManager::Malloc(
-            sizeof(iterator_t) * gpu_context_.bucket_count_, device_);
+    cudaMemset(iterator_count_cuda, 0, sizeof(uint32_t));
 
     GetIteratorsKernel<<<num_blocks, blocksize>>>(gpu_context_, iterators,
-                                                  iterator_count_tmp);
+                                                  iterator_count_cuda);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 
-    MemoryManager::Memcpy(&iterator_count, Device("CPU:0"), iterator_count_tmp,
+    uint32_t iterator_count;
+    MemoryManager::Memcpy(&iterator_count, Device("CPU:0"), iterator_count_cuda,
                           device_, sizeof(uint32_t));
+    return iterator_count;
 }
 
 template <typename Hash, typename KeyEq>
@@ -822,67 +820,42 @@ CUDAHashmap<Hash, KeyEq>::CUDAHashmap(uint32_t initial_buckets,
                                       uint32_t dsize_value,
                                       Device device)
     : Hashmap<Hash, KeyEq>(initial_buckets, dsize_key, dsize_value, device) {
-    /// TODO: eliminate this part
-    output_key_buffer_ = (uint8_t*)MemoryManager::Malloc(
-            10 * this->bucket_count_ * 32 * this->dsize_key_, this->device_);
-    output_value_buffer_ = (uint8_t*)MemoryManager::Malloc(
-            10 * this->bucket_count_ * 32 * this->dsize_value_, this->device_);
-    output_mask_buffer_ = (uint8_t*)MemoryManager::Malloc(
-            10 * this->bucket_count_ * 32 * sizeof(uint8_t), this->device_);
-    output_iterator_buffer_ = (iterator_t*)MemoryManager::Malloc(
-            10 * this->bucket_count_ * 32 * sizeof(iterator_t), this->device_);
-
     cuda_hashmap_impl_ = std::make_shared<CUDAHashmapImpl<Hash, KeyEq>>(
             this->bucket_count_, this->dsize_key_, this->dsize_value_,
             this->device_);
 }
 
 template <typename Hash, typename KeyEq>
-CUDAHashmap<Hash, KeyEq>::~CUDAHashmap() {
-    MemoryManager::Free(output_key_buffer_, this->device_);
-    MemoryManager::Free(output_value_buffer_, this->device_);
-    MemoryManager::Free(output_mask_buffer_, this->device_);
-    MemoryManager::Free(output_iterator_buffer_, this->device_);
+CUDAHashmap<Hash, KeyEq>::~CUDAHashmap() {}
+
+template <typename Hash, typename KeyEq>
+void CUDAHashmap<Hash, KeyEq>::Insert(uint8_t* input_keys,
+                                      uint8_t* input_values,
+                                      iterator_t* output_iterators,
+                                      uint8_t* output_masks,
+                                      uint32_t count) {
+    cuda_hashmap_impl_->Insert(input_keys, input_values, output_iterators,
+                               output_masks, count);
 }
 
 template <typename Hash, typename KeyEq>
-std::pair<iterator_t*, uint8_t*> CUDAHashmap<Hash, KeyEq>::Insert(
-        uint8_t* input_keys, uint8_t* input_values, uint32_t input_keys_size) {
-    // TODO: rehash and increase max_keys_
-    cuda_hashmap_impl_->Insert(input_keys, input_values,
-                               output_iterator_buffer_, output_mask_buffer_,
-                               input_keys_size);
-
-    return std::make_pair(output_iterator_buffer_, output_mask_buffer_);
+void CUDAHashmap<Hash, KeyEq>::Find(uint8_t* input_keys,
+                                    iterator_t* output_iterators,
+                                    uint8_t* output_masks,
+                                    uint32_t count) {
+    cuda_hashmap_impl_->Find(input_keys, output_iterators, output_masks, count);
 }
 
 template <typename Hash, typename KeyEq>
-std::pair<iterator_t*, uint8_t*> CUDAHashmap<Hash, KeyEq>::Find(
-        uint8_t* input_keys, uint32_t input_keys_size) {
-    cuda_hashmap_impl_->Find(input_keys, output_iterator_buffer_,
-                             output_mask_buffer_, input_keys_size);
-
-    return std::make_pair(output_iterator_buffer_, output_mask_buffer_);
+void CUDAHashmap<Hash, KeyEq>::Erase(uint8_t* input_keys,
+                                     uint8_t* output_masks,
+                                     uint32_t count) {
+    cuda_hashmap_impl_->Erase(input_keys, output_masks, count);
 }
 
 template <typename Hash, typename KeyEq>
-uint8_t* CUDAHashmap<Hash, KeyEq>::Erase(uint8_t* input_keys,
-                                         uint32_t input_keys_size) {
-    cuda_hashmap_impl_->Erase(input_keys, output_mask_buffer_, input_keys_size);
-
-    return output_mask_buffer_;
-}
-
-template <typename Hash, typename KeyEq>
-std::pair<iterator_t*, uint32_t> CUDAHashmap<Hash, KeyEq>::GetIterators() {
-    iterator_t* iterators;
-    uint32_t iterator_count;
-
-    cuda_hashmap_impl_->GetIterators(iterators, iterator_count);
-    std::cout << "CUDAHashmap.GetIterators() " << iterators << " "
-              << iterator_count << "\n";
-
-    return std::make_pair(iterators, iterator_count);
+uint32_t CUDAHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
+    return cuda_hashmap_impl_->GetIterators(output_iterators);
 }
 
 __global__ void UnpackIteratorsKernel(iterator_t* input_iterators,
@@ -968,16 +941,18 @@ void CUDAHashmap<Hash, KeyEq>::AssignIterators(iterator_t* input_iterators,
 
 template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::Rehash(uint32_t buckets) {
-    iterator_t* iterators;
-    uint32_t iterator_count;
-    std::tie(iterators, iterator_count) = GetIterators();
+    // TODO: add a size operator instead of rough estimation
+    auto output_iterators = (iterator_t*)MemoryManager::Malloc(
+            sizeof(iterator_t) * this->bucket_count_ * 32, this->device_);
+    uint32_t iterator_count = GetIterators(output_iterators);
 
     auto output_keys = (uint8_t*)MemoryManager::Malloc(
             this->dsize_key_ * iterator_count, this->device_);
     auto output_values = (uint8_t*)MemoryManager::Malloc(
             this->dsize_value_ * iterator_count, this->device_);
-    UnpackIterators(iterators, nullptr, output_keys, output_values,
-                    iterator_count);
+
+    UnpackIterators(output_iterators, /* masks = */ nullptr, output_keys,
+                    output_values, iterator_count);
 
     this->bucket_count_ = buckets;
     cuda_hashmap_impl_ = std::make_shared<CUDAHashmapImpl<Hash, KeyEq>>(
@@ -985,17 +960,21 @@ void CUDAHashmap<Hash, KeyEq>::Rehash(uint32_t buckets) {
             this->device_);
 
     /// Insert back
-    std::cout << "Re-inserting " << iterator_count << "\n";
-    Insert(output_keys, output_values, iterator_count);
+    auto output_masks = (uint8_t*)MemoryManager::Malloc(
+            sizeof(uint8_t) * iterator_count, this->device_);
+    Insert(output_keys, output_values, output_iterators, output_masks,
+           iterator_count);
 
+    MemoryManager::Free(output_iterators, this->device_);
     MemoryManager::Free(output_keys, this->device_);
     MemoryManager::Free(output_values, this->device_);
+    MemoryManager::Free(output_masks, this->device_);
 }
 
 /// Bucket-related utilitiesx
 /// Return number of elems per bucket
 template <typename Hash, typename KeyEq>
-std::vector<int> CUDAHashmap<Hash, KeyEq>::BucketSize() {
+std::vector<int> CUDAHashmap<Hash, KeyEq>::BucketSizes() {
     return cuda_hashmap_impl_->CountElemsPerBucket();
 }
 

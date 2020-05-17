@@ -64,15 +64,34 @@ void TEST_SIMPLE() {
     /// CUDA data generation: use thrust for simplicity
     thrust::device_vector<int> insert_keys_cuda = insert_keys;
     thrust::device_vector<int> insert_vals_cuda = insert_vals;
+    thrust::device_vector<iterator_t> output_iterators_cuda(insert_keys.size());
+    thrust::device_vector<uint8_t> output_masks_cuda(insert_keys.size());
+
     thrust::device_vector<int> query_keys_cuda = query_keys;
+    thrust::device_vector<iterator_t> query_iterators_cuda(query_keys.size());
+    thrust::device_vector<uint8_t> query_masks_cuda(query_keys.size());
+
+    thrust::device_vector<iterator_t> all_iterators_cuda(max_buckets * 32);
 
     /// CUDA data ptr conversion
     uint8_t* insert_keys_ptr_cuda = reinterpret_cast<uint8_t*>(
             thrust::raw_pointer_cast(insert_keys_cuda.data()));
     uint8_t* insert_vals_ptr_cuda = reinterpret_cast<uint8_t*>(
             thrust::raw_pointer_cast(insert_vals_cuda.data()));
+    iterator_t* ouput_iterators_ptr_cuda = reinterpret_cast<iterator_t*>(
+            thrust::raw_pointer_cast(output_iterators_cuda.data()));
+    uint8_t* output_masks_ptr_cuda = reinterpret_cast<uint8_t*>(
+            thrust::raw_pointer_cast(output_masks_cuda.data()));
+
     uint8_t* query_keys_ptr_cuda = reinterpret_cast<uint8_t*>(
             thrust::raw_pointer_cast(query_keys_cuda.data()));
+    iterator_t* query_iterators_ptr_cuda = reinterpret_cast<iterator_t*>(
+            thrust::raw_pointer_cast(query_iterators_cuda.data()));
+    uint8_t* query_masks_ptr_cuda = reinterpret_cast<uint8_t*>(
+            thrust::raw_pointer_cast(query_masks_cuda.data()));
+
+    iterator_t* all_iterators_ptr_cuda = reinterpret_cast<iterator_t*>(
+            thrust::raw_pointer_cast(all_iterators_cuda.data()));
 
     /// Hashmap creation
     auto hashmap = CreateHashmap<DefaultHash, DefaultKeyEq>(
@@ -80,46 +99,29 @@ void TEST_SIMPLE() {
 
     /// Hashmap insertion
     hashmap->Insert(insert_keys_ptr_cuda, insert_vals_ptr_cuda,
+                    ouput_iterators_ptr_cuda, output_masks_ptr_cuda,
                     insert_keys_cuda.size());
 
-    auto res = hashmap->GetIterators();
-    std::cout << res.first << " " << res.second << "\n";
-    auto all_iterators = thrust::device_vector<iterator_t>(
-            res.first, res.first + res.second);
-    std::cout << "all_iterators constructed\n";
-    for (int i = 0; i < res.second; ++i) {
-        iterator_t iterator = all_iterators[i];
-        int key = *(thrust::device_ptr<int>(
-                reinterpret_cast<int*>(iterator.first)));
-        int val = *(thrust::device_ptr<int>(
-                reinterpret_cast<int*>(iterator.second)));
-        std::cout << key << " " << val << "\n";
-    }
-
     /// Hashmap search
-    iterator_t* ret_iterators;
-    uint8_t* ret_masks;
-    std::tie(ret_iterators, ret_masks) =
-            hashmap->Find(query_keys_ptr_cuda, query_keys_cuda.size());
+    hashmap->Find(query_keys_ptr_cuda, query_iterators_ptr_cuda,
+                  query_masks_ptr_cuda, query_keys_cuda.size());
 
     /// Result parsing
-    Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
-                      hashmap_gt);
+    Compare<int, int>(query_iterators_ptr_cuda, query_masks_ptr_cuda,
+                      query_keys.size(), query_keys, hashmap_gt);
     utility::LogInfo("Before rehashing");
     utility::LogInfo("Load factor = {}", hashmap->LoadFactor());
 
-    auto bucket_size = hashmap->BucketSize();
-    for (auto bs : bucket_size) {
+    auto bucket_sizes = hashmap->BucketSizes();
+    for (auto bs : bucket_sizes) {
         std::cout << bs << "\n";
     }
 
     hashmap->Rehash(2 * max_buckets);
-    res = hashmap->GetIterators();
-    std::cout << res.first << " " << res.second << "\n";
-    all_iterators = thrust::device_vector<iterator_t>(res.first,
-                                                      res.first + res.second);
-    std::cout << "all_iterators constructed\n";
-    for (int i = 0; i < res.second; ++i) {
+    auto count = hashmap->GetIterators(all_iterators_ptr_cuda);
+    auto all_iterators = thrust::device_vector<iterator_t>(
+            all_iterators_ptr_cuda, all_iterators_ptr_cuda + count);
+    for (int i = 0; i < count; ++i) {
         iterator_t iterator = all_iterators[i];
         int key = *(thrust::device_ptr<int>(
                 reinterpret_cast<int*>(iterator.first)));
@@ -130,16 +132,16 @@ void TEST_SIMPLE() {
 
     utility::LogInfo("After rehashing");
     utility::LogInfo("Load factor = {}", hashmap->LoadFactor());
-    bucket_size = hashmap->BucketSize();
-    for (auto bs : bucket_size) {
+    bucket_sizes = hashmap->BucketSizes();
+    for (auto bs : bucket_sizes) {
         std::cout << bs << "\n";
     }
 
     /// Again, result parsing
-    std::tie(ret_iterators, ret_masks) =
-            hashmap->Find(query_keys_ptr_cuda, query_keys_cuda.size());
-    Compare<int, int>(ret_iterators, ret_masks, query_keys.size(), query_keys,
-                      hashmap_gt);
+    hashmap->Find(query_keys_ptr_cuda, query_iterators_ptr_cuda,
+                  query_masks_ptr_cuda, query_keys_cuda.size());
+    Compare<int, int>(query_iterators_ptr_cuda, query_masks_ptr_cuda,
+                      query_keys.size(), query_keys, hashmap_gt);
 
     utility::LogInfo("TEST_SIMPLE() passed");
 }

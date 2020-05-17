@@ -52,14 +52,12 @@ CPUHashmap<Hash, KeyEq>::~CPUHashmap() {
 };
 
 template <typename Hash, typename KeyEq>
-std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash, KeyEq>::Insert(
-        uint8_t* input_keys, uint8_t* input_values, uint32_t input_key_size) {
-    // TODO handle memory release
-    auto iterators =
-            (iterator_t*)std::malloc(input_key_size * sizeof(iterator_t));
-    auto masks = (uint8_t*)std::malloc(input_key_size * sizeof(uint8_t));
-
-    for (int i = 0; i < input_key_size; ++i) {
+void CPUHashmap<Hash, KeyEq>::Insert(uint8_t* input_keys,
+                                     uint8_t* input_values,
+                                     iterator_t* output_iterators,
+                                     uint8_t* output_masks,
+                                     uint32_t count) {
+    for (int i = 0; i < count; ++i) {
         uint8_t* src_key = (uint8_t*)input_keys + this->dsize_key_ * i;
         uint8_t* src_value = (uint8_t*)input_values + this->dsize_value_ * i;
 
@@ -79,70 +77,61 @@ std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash, KeyEq>::Insert(
 
         // Handle memory
         if (res.second) {
-            iterators[i] = iterator_t((uint8_t*)dst_key, (uint8_t*)dst_value);
-            masks[i] = 1;
+            output_iterators[i] =
+                    iterator_t((uint8_t*)dst_key, (uint8_t*)dst_value);
+            output_masks[i] = 1;
         } else {
             MemoryManager::Free(dst_key, this->device_);
             MemoryManager::Free(dst_value, this->device_);
-            iterators[i] = iterator_t();
-            masks[i] = 0;
+            output_iterators[i] = iterator_t();
+            output_masks[i] = 0;
         }
     }
-
-    return std::make_pair(iterators, masks);
 }
 
 template <typename Hash, typename KeyEq>
-std::pair<iterator_t*, uint8_t*> CPUHashmap<Hash, KeyEq>::Find(
-        uint8_t* input_keys, uint32_t input_key_size) {
-    // TODO: handle memory release
-    auto iterators =
-            (iterator_t*)std::malloc(input_key_size * sizeof(iterator_t));
-    auto masks = (uint8_t*)std::malloc(input_key_size * sizeof(uint8_t));
-
-    for (int i = 0; i < input_key_size; ++i) {
+void CPUHashmap<Hash, KeyEq>::Find(uint8_t* input_keys,
+                                   iterator_t* output_iterators,
+                                   uint8_t* output_masks,
+                                   uint32_t count) {
+    for (int i = 0; i < count; ++i) {
         uint8_t* key = (uint8_t*)input_keys + this->dsize_key_ * i;
 
         auto iter = cpu_hashmap_impl_->find(key);
         if (iter == cpu_hashmap_impl_->end()) {
-            iterators[i] = iterator_t();
-            masks[i] = 0;
+            output_iterators[i] = iterator_t();
+            output_masks[i] = 0;
         } else {
             void* key = iter->first;
-            iterators[i] = iterator_t(iter->first, iter->second);
-            masks[i] = 1;
+            output_iterators[i] = iterator_t(iter->first, iter->second);
+            output_masks[i] = 1;
         }
     }
-
-    return std::make_pair(iterators, masks);
 }
 
 template <typename Hash, typename KeyEq>
-uint8_t* CPUHashmap<Hash, KeyEq>::Erase(uint8_t* input_keys,
-                                        uint32_t input_key_size) {
-    auto masks = (uint8_t*)std::malloc(input_key_size * sizeof(uint8_t));
-    for (int i = 0; i < input_key_size; ++i) {
+void CPUHashmap<Hash, KeyEq>::Erase(uint8_t* input_keys,
+                                    uint8_t* output_masks,
+                                    uint32_t count) {
+    for (int i = 0; i < count; ++i) {
         uint8_t* key = (uint8_t*)input_keys + this->dsize_key_ * i;
 
         size_t erased = cpu_hashmap_impl_->erase(key);
-        masks[i] = erased > 0;
+        output_masks[i] = erased > 0;
     }
 }
 
 template <typename Hash, typename KeyEq>
-std::pair<iterator_t*, uint32_t> CPUHashmap<Hash, KeyEq>::GetIterators() {
-    /// TODO: fix this memory allocation
-    uint32_t iterator_count = cpu_hashmap_impl_->size();
-    iterator_t* iterators = (iterator_t*)MemoryManager::Malloc(
-            sizeof(iterator_t) * iterator_count, this->device_);
+uint32_t CPUHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
+    uint32_t count = cpu_hashmap_impl_->size();
 
     int i = 0;
     for (auto iter = cpu_hashmap_impl_->begin();
          iter != cpu_hashmap_impl_->end(); ++iter, ++i) {
-        iterators[i] = iterator_t(iter->first, iter->second);
+        output_iterators[i] = iterator_t(iter->first, iter->second);
     }
 
-    return std::make_pair(iterators, iterator_count);
+    return count;
 }
 
 void UnpackIteratorsStep(iterator_t* input_iterators,
@@ -221,7 +210,7 @@ void CPUHashmap<Hash, KeyEq>::Rehash(uint32_t buckets) {
 }
 
 template <typename Hash, typename KeyEq>
-std::vector<int> CPUHashmap<Hash, KeyEq>::BucketSize() {
+std::vector<int> CPUHashmap<Hash, KeyEq>::BucketSizes() {
     size_t bucket_count = cpu_hashmap_impl_->bucket_count();
     std::vector<int> ret;
     for (int i = 0; i < bucket_count; ++i) {

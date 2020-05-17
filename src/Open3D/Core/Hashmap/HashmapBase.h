@@ -94,16 +94,22 @@ public:
     virtual void Rehash(uint32_t buckets) = 0;
 
     /// Essential hashmap operations
-    virtual std::pair<iterator_t*, uint8_t*> Insert(uint8_t* input_keys,
-                                                    uint8_t* input_values,
-                                                    uint32_t input_count) = 0;
+    virtual void Insert(uint8_t* input_keys,
+                        uint8_t* input_values,
+                        iterator_t* output_iterators,
+                        uint8_t* output_masks,
+                        uint32_t count) = 0;
 
-    virtual std::pair<iterator_t*, uint8_t*> Find(uint8_t* input_keys,
-                                                  uint32_t input_count) = 0;
+    virtual void Find(uint8_t* input_keys,
+                      iterator_t* output_iterators,
+                      uint8_t* output_masks,
+                      uint32_t count) = 0;
 
-    virtual uint8_t* Erase(uint8_t* input_keys, uint32_t input_count) = 0;
+    virtual void Erase(uint8_t* input_keys,
+                       uint8_t* output_masks,
+                       uint32_t count) = 0;
 
-    virtual std::pair<iterator_t*, uint32_t> GetIterators() = 0;
+    virtual uint32_t GetIterators(iterator_t* output_iterators) = 0;
 
     /// Parallel iterations
     /// Only write to corresponding entries if they are not nullptr
@@ -112,18 +118,18 @@ public:
                                  uint8_t* input_masks,
                                  uint8_t* output_keys,
                                  uint8_t* output_values,
-                                 uint32_t iterator_count) = 0;
+                                 uint32_t count) = 0;
 
     /// (Optionally) In-place modify iterators returned from Find
     /// Note: key cannot be changed, otherwise the semantic is violated
     virtual void AssignIterators(iterator_t* input_iterators,
                                  uint8_t* input_masks,
                                  uint8_t* input_values,
-                                 uint32_t iterator_count) = 0;
+                                 uint32_t count) = 0;
 
-    /// Bucket-related utilitiesx
+    /// Bucket-related utilities
     /// Return number of elems per bucket
-    virtual std::vector<int> BucketSize() = 0;
+    virtual std::vector<int> BucketSizes() = 0;
 
     /// Return size / bucket_count
     virtual float LoadFactor() = 0;

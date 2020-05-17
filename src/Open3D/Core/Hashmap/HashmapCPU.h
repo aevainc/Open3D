@@ -45,35 +45,43 @@ public:
                Device device);
     void Rehash(uint32_t buckets);
 
-    std::pair<iterator_t*, uint8_t*> Insert(uint8_t* input_keys,
-                                            uint8_t* input_values,
-                                            uint32_t input_key_size);
+    void Insert(uint8_t* input_keys,
+                uint8_t* input_values,
+                iterator_t* output_iterators,
+                uint8_t* output_masks,
+                uint32_t count);
 
-    std::pair<iterator_t*, uint8_t*> Find(uint8_t* input_keys,
-                                          uint32_t input_key_size);
+    void Find(uint8_t* input_keys,
+              iterator_t* output_iterators,
+              uint8_t* output_masks,
+              uint32_t count);
 
-    /// TODO: implement CPU counterpart here
-    uint8_t* Erase(uint8_t* input_keys, uint32_t input_key_size);
+    void Erase(uint8_t* input_keys, uint8_t* output_masks, uint32_t count);
 
-    std::pair<iterator_t*, uint32_t> GetIterators();
+    uint32_t GetIterators(iterator_t* output_iterators);
 
+    /// Parallel iterations
+    /// Only write to corresponding entries if they are not nullptr
+    /// Only access input_masks if they it is not nullptr
     void UnpackIterators(iterator_t* input_iterators,
                          uint8_t* input_masks,
                          uint8_t* output_keys,
                          uint8_t* output_values,
-                         uint32_t iterator_count);
+                         uint32_t count);
 
+    /// (Optionally) In-place modify iterators returned from Find
+    /// Note: key cannot be changed, otherwise the semantic is violated
     void AssignIterators(iterator_t* input_iterators,
                          uint8_t* input_masks,
                          uint8_t* input_values,
-                         uint32_t iterator_count);
+                         uint32_t count);
 
-    /// Bucket-related utilitiesx
+    /// Bucket-related utilities
     /// Return number of elems per bucket
-    std::vector<int> BucketSize();
+    std::vector<int> BucketSizes();
 
-    /// Return size / bucket_count
-    float LoadFactor() { return cpu_hashmap_impl_->load_factor(); };
+    // /// Return size / bucket_count
+    float LoadFactor() { return 0.0f; };
 
 private:
     std::shared_ptr<std::unordered_map<uint8_t*, uint8_t*, Hash, KeyEq>>
