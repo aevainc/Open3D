@@ -608,7 +608,7 @@ __global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
         prev_count = atomicAdd(iterator_count, count);
     }
     prev_count = __shfl_sync(ACTIVE_LANES_MASK, prev_count, 0, WARP_WIDTH);
-    
+
     if (is_active && ((1 << lane_id) & PAIR_PTR_LANES_MASK)) {
         iterators[prev_count + lane_id] =
                 hash_ctx.mem_mgr_ctx_.extract_iterator(src_unit_data);
