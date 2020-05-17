@@ -74,16 +74,16 @@ void TEST_SIMPLE() {
     thrust::device_vector<iterator_t> all_iterators_cuda(max_buckets * 32);
 
     /// CUDA data ptr conversion
-    uint8_t* insert_keys_ptr_cuda = reinterpret_cast<uint8_t*>(
+    void* insert_keys_ptr_cuda = reinterpret_cast<void*>(
             thrust::raw_pointer_cast(insert_keys_cuda.data()));
-    uint8_t* insert_vals_ptr_cuda = reinterpret_cast<uint8_t*>(
+    void* insert_vals_ptr_cuda = reinterpret_cast<void*>(
             thrust::raw_pointer_cast(insert_vals_cuda.data()));
     iterator_t* ouput_iterators_ptr_cuda = reinterpret_cast<iterator_t*>(
             thrust::raw_pointer_cast(output_iterators_cuda.data()));
     uint8_t* output_masks_ptr_cuda = reinterpret_cast<uint8_t*>(
             thrust::raw_pointer_cast(output_masks_cuda.data()));
 
-    uint8_t* query_keys_ptr_cuda = reinterpret_cast<uint8_t*>(
+    void* query_keys_ptr_cuda = reinterpret_cast<void*>(
             thrust::raw_pointer_cast(query_keys_cuda.data()));
     iterator_t* query_iterators_ptr_cuda = reinterpret_cast<iterator_t*>(
             thrust::raw_pointer_cast(query_iterators_cuda.data()));

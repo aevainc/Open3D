@@ -38,7 +38,7 @@ struct DefaultHash {
     DefaultHash() {}
     DefaultHash(size_t key_size) : key_size_(key_size) {}
 
-    uint64_t OPEN3D_HOST_DEVICE operator()(uint8_t* key_ptr) const {
+    uint64_t OPEN3D_HOST_DEVICE operator()(void* key_ptr) const {
         uint64_t hash = UINT64_C(14695981039346656037);
 
         const int chunks = key_size_ / sizeof(int);
@@ -59,8 +59,7 @@ struct DefaultKeyEq {
     DefaultKeyEq() {}
     DefaultKeyEq(size_t key_size) : key_size_(key_size) {}
 
-    bool OPEN3D_HOST_DEVICE operator()(const uint8_t* lhs,
-                                       const uint8_t* rhs) const {
+    bool OPEN3D_HOST_DEVICE operator()(const void* lhs, const void* rhs) const {
         if (lhs == nullptr || rhs == nullptr) {
             return false;
         }
@@ -82,54 +81,54 @@ struct DefaultKeyEq {
 template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
 class Hashmap {
 public:
-    Hashmap(uint32_t init_buckets,
-            uint32_t dsize_key,
-            uint32_t dsize_value,
+    Hashmap(size_t init_buckets,
+            size_t dsize_key,
+            size_t dsize_value,
             Device device)
         : bucket_count_(init_buckets),
           dsize_key_(dsize_key),
           dsize_value_(dsize_value),
           device_(device){};
 
-    virtual void Rehash(uint32_t buckets) = 0;
+    virtual void Rehash(size_t buckets) = 0;
 
     /// Essential hashmap operations
-    virtual void Insert(uint8_t* input_keys,
-                        uint8_t* input_values,
+    virtual void Insert(void* input_keys,
+                        void* input_values,
                         iterator_t* output_iterators,
                         uint8_t* output_masks,
-                        uint32_t count) = 0;
+                        size_t count) = 0;
 
-    virtual void Find(uint8_t* input_keys,
+    virtual void Find(void* input_keys,
                       iterator_t* output_iterators,
                       uint8_t* output_masks,
-                      uint32_t count) = 0;
+                      size_t count) = 0;
 
-    virtual void Erase(uint8_t* input_keys,
+    virtual void Erase(void* input_keys,
                        uint8_t* output_masks,
-                       uint32_t count) = 0;
+                       size_t count) = 0;
 
-    virtual uint32_t GetIterators(iterator_t* output_iterators) = 0;
+    virtual size_t GetIterators(iterator_t* output_iterators) = 0;
 
     /// Parallel iterations
     /// Only write to corresponding entries if they are not nullptr
     /// Only access input_masks if they it is not nullptr
     virtual void UnpackIterators(iterator_t* input_iterators,
                                  uint8_t* input_masks,
-                                 uint8_t* output_keys,
-                                 uint8_t* output_values,
-                                 uint32_t count) = 0;
+                                 void* output_keys,
+                                 void* output_values,
+                                 size_t count) = 0;
 
     /// (Optionally) In-place modify iterators returned from Find
     /// Note: key cannot be changed, otherwise the semantic is violated
     virtual void AssignIterators(iterator_t* input_iterators,
                                  uint8_t* input_masks,
-                                 uint8_t* input_values,
-                                 uint32_t count) = 0;
+                                 void* input_values,
+                                 size_t count) = 0;
 
     /// Bucket-related utilities
     /// Return number of elems per bucket
-    virtual std::vector<int> BucketSizes() = 0;
+    virtual std::vector<size_t> BucketSizes() = 0;
 
     /// Return size / bucket_count
     virtual float LoadFactor() = 0;
@@ -145,8 +144,8 @@ public:
 
 /// Factory
 template <typename Hash, typename KeyEq>
-std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(uint32_t init_buckets,
-                                                    uint32_t dsize_key,
-                                                    uint32_t dsize_value,
+std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_buckets,
+                                                    size_t dsize_key,
+                                                    size_t dsize_value,
                                                     Device device);
 }  // namespace open3d

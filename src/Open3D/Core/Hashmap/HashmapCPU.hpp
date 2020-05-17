@@ -33,9 +33,9 @@
 namespace open3d {
 
 template <typename Hash, typename KeyEq>
-CPUHashmap<Hash, KeyEq>::CPUHashmap(uint32_t init_buckets,
-                                    uint32_t dsize_key,
-                                    uint32_t dsize_value,
+CPUHashmap<Hash, KeyEq>::CPUHashmap(size_t init_buckets,
+                                    size_t dsize_key,
+                                    size_t dsize_value,
                                     Device device)
     : Hashmap<Hash, KeyEq>(init_buckets, dsize_key, dsize_value, device) {
     cpu_hashmap_impl_ = std::make_shared<
@@ -52,12 +52,12 @@ CPUHashmap<Hash, KeyEq>::~CPUHashmap() {
 };
 
 template <typename Hash, typename KeyEq>
-void CPUHashmap<Hash, KeyEq>::Insert(uint8_t* input_keys,
-                                     uint8_t* input_values,
+void CPUHashmap<Hash, KeyEq>::Insert(void* input_keys,
+                                     void* input_values,
                                      iterator_t* output_iterators,
                                      uint8_t* output_masks,
-                                     uint32_t count) {
-    for (int i = 0; i < count; ++i) {
+                                     size_t count) {
+    for (size_t i = 0; i < count; ++i) {
         uint8_t* src_key = (uint8_t*)input_keys + this->dsize_key_ * i;
         uint8_t* src_value = (uint8_t*)input_values + this->dsize_value_ * i;
 
@@ -90,11 +90,11 @@ void CPUHashmap<Hash, KeyEq>::Insert(uint8_t* input_keys,
 }
 
 template <typename Hash, typename KeyEq>
-void CPUHashmap<Hash, KeyEq>::Find(uint8_t* input_keys,
+void CPUHashmap<Hash, KeyEq>::Find(void* input_keys,
                                    iterator_t* output_iterators,
                                    uint8_t* output_masks,
-                                   uint32_t count) {
-    for (int i = 0; i < count; ++i) {
+                                   size_t count) {
+    for (size_t i = 0; i < count; ++i) {
         uint8_t* key = (uint8_t*)input_keys + this->dsize_key_ * i;
 
         auto iter = cpu_hashmap_impl_->find(key);
@@ -110,9 +110,9 @@ void CPUHashmap<Hash, KeyEq>::Find(uint8_t* input_keys,
 }
 
 template <typename Hash, typename KeyEq>
-void CPUHashmap<Hash, KeyEq>::Erase(uint8_t* input_keys,
+void CPUHashmap<Hash, KeyEq>::Erase(void* input_keys,
                                     uint8_t* output_masks,
-                                    uint32_t count) {
+                                    size_t count) {
     for (int i = 0; i < count; ++i) {
         uint8_t* key = (uint8_t*)input_keys + this->dsize_key_ * i;
 
@@ -122,10 +122,10 @@ void CPUHashmap<Hash, KeyEq>::Erase(uint8_t* input_keys,
 }
 
 template <typename Hash, typename KeyEq>
-uint32_t CPUHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
-    uint32_t count = cpu_hashmap_impl_->size();
+size_t CPUHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
+    size_t count = cpu_hashmap_impl_->size();
 
-    int i = 0;
+    size_t i = 0;
     for (auto iter = cpu_hashmap_impl_->begin();
          iter != cpu_hashmap_impl_->end(); ++iter, ++i) {
         output_iterators[i] = iterator_t(iter->first, iter->second);
@@ -136,27 +136,28 @@ uint32_t CPUHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
 
 void UnpackIteratorsStep(iterator_t* input_iterators,
                          uint8_t* input_masks,
-                         uint8_t* output_keys,
-                         uint8_t* output_values,
-                         uint32_t dsize_key,
-                         uint32_t dsize_value,
-                         uint32_t tid) {
+                         void* output_keys,
+                         void* output_values,
+                         size_t dsize_key,
+                         size_t dsize_value,
+                         size_t tid) {
     // Valid queries
     if (input_masks == nullptr || input_masks[tid]) {
         if (output_keys != nullptr) {
-            uint8_t* dst_key_ptr = output_keys + dsize_key * tid;
+            uint8_t* dst_key_ptr = (uint8_t*)output_keys + dsize_key * tid;
             uint8_t* src_key_ptr = input_iterators[tid].first;
 
-            for (int i = 0; i < dsize_key; ++i) {
+            for (size_t i = 0; i < dsize_key; ++i) {
                 dst_key_ptr[i] = src_key_ptr[i];
             }
         }
 
         if (output_values != nullptr) {
-            uint8_t* dst_value_ptr = output_values + dsize_value * tid;
+            uint8_t* dst_value_ptr =
+                    (uint8_t*)output_values + dsize_value * tid;
             uint8_t* src_value_ptr = input_iterators[tid].second;
 
-            for (int i = 0; i < dsize_value; ++i) {
+            for (size_t i = 0; i < dsize_value; ++i) {
                 dst_value_ptr[i] = src_value_ptr[i];
             }
         }
@@ -166,10 +167,10 @@ void UnpackIteratorsStep(iterator_t* input_iterators,
 template <typename Hash, typename KeyEq>
 void CPUHashmap<Hash, KeyEq>::UnpackIterators(iterator_t* input_iterators,
                                               uint8_t* input_masks,
-                                              uint8_t* output_keys,
-                                              uint8_t* output_values,
-                                              uint32_t iterator_count) {
-    for (int i = 0; i < iterator_count; ++i) {
+                                              void* output_keys,
+                                              void* output_values,
+                                              size_t iterator_count) {
+    for (size_t i = 0; i < iterator_count; ++i) {
         UnpackIteratorsStep(input_iterators, input_masks, output_keys,
                             output_values, this->dsize_key_, this->dsize_value_,
                             i);
@@ -178,16 +179,16 @@ void CPUHashmap<Hash, KeyEq>::UnpackIterators(iterator_t* input_iterators,
 
 void AssignIteratorsStep(iterator_t* input_iterators,
                          uint8_t* input_masks,
-                         uint8_t* input_values,
-                         uint32_t dsize_value,
-                         uint32_t tid) {
+                         void* input_values,
+                         size_t dsize_value,
+                         size_t tid) {
     // Valid queries
     if (input_masks == nullptr || input_masks[tid]) {
-        uint8_t* src_value_ptr = input_values + dsize_value * tid;
+        uint8_t* src_value_ptr = (uint8_t*)input_values + dsize_value * tid;
         uint8_t* dst_value_ptr = input_iterators[tid].second;
 
         // Byte-by-byte copy, can be improved
-        for (int i = 0; i < dsize_value; ++i) {
+        for (size_t i = 0; i < dsize_value; ++i) {
             dst_value_ptr[i] = src_value_ptr[i];
         }
     }
@@ -196,24 +197,24 @@ void AssignIteratorsStep(iterator_t* input_iterators,
 template <typename Hash, typename KeyEq>
 void CPUHashmap<Hash, KeyEq>::AssignIterators(iterator_t* input_iterators,
                                               uint8_t* input_masks,
-                                              uint8_t* input_values,
-                                              uint32_t iterator_count) {
-    for (int i = 0; i < iterator_count; ++i) {
+                                              void* input_values,
+                                              size_t iterator_count) {
+    for (size_t i = 0; i < iterator_count; ++i) {
         AssignIteratorsStep(input_iterators, input_masks, input_values,
                             this->dsize_value_, i);
     }
 }
 
 template <typename Hash, typename KeyEq>
-void CPUHashmap<Hash, KeyEq>::Rehash(uint32_t buckets) {
+void CPUHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
     cpu_hashmap_impl_->rehash(buckets);
 }
 
 template <typename Hash, typename KeyEq>
-std::vector<int> CPUHashmap<Hash, KeyEq>::BucketSizes() {
+std::vector<size_t> CPUHashmap<Hash, KeyEq>::BucketSizes() {
     size_t bucket_count = cpu_hashmap_impl_->bucket_count();
-    std::vector<int> ret;
-    for (int i = 0; i < bucket_count; ++i) {
+    std::vector<size_t> ret;
+    for (size_t i = 0; i < bucket_count; ++i) {
         ret.push_back(cpu_hashmap_impl_->bucket_size(i));
     }
     return std::move(ret);
@@ -221,9 +222,9 @@ std::vector<int> CPUHashmap<Hash, KeyEq>::BucketSizes() {
 
 template <typename Hash, typename KeyEq>
 std::shared_ptr<CPUHashmap<Hash, KeyEq>> CreateCPUHashmap(
-        uint32_t init_buckets,
-        uint32_t dsize_key,
-        uint32_t dsize_value,
+        size_t init_buckets,
+        size_t dsize_key,
+        size_t dsize_value,
         open3d::Device device) {
     return std::make_shared<CPUHashmap<Hash, KeyEq>>(init_buckets, dsize_key,
                                                      dsize_value, device);

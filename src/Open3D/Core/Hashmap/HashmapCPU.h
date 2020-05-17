@@ -39,46 +39,46 @@ class CPUHashmap : public Hashmap<Hash, KeyEq> {
 public:
     ~CPUHashmap();
 
-    CPUHashmap(uint32_t init_buckets,
-               uint32_t dsize_key,
-               uint32_t dsize_value,
+    CPUHashmap(size_t init_buckets,
+               size_t dsize_key,
+               size_t dsize_value,
                Device device);
-    void Rehash(uint32_t buckets);
+    void Rehash(size_t buckets);
 
-    void Insert(uint8_t* input_keys,
-                uint8_t* input_values,
+    void Insert(void* input_keys,
+                void* input_values,
                 iterator_t* output_iterators,
                 uint8_t* output_masks,
-                uint32_t count);
+                size_t count);
 
-    void Find(uint8_t* input_keys,
+    void Find(void* input_keys,
               iterator_t* output_iterators,
               uint8_t* output_masks,
-              uint32_t count);
+              size_t count);
 
-    void Erase(uint8_t* input_keys, uint8_t* output_masks, uint32_t count);
+    void Erase(void* input_keys, uint8_t* output_masks, size_t count);
 
-    uint32_t GetIterators(iterator_t* output_iterators);
+    size_t GetIterators(iterator_t* output_iterators);
 
     /// Parallel iterations
     /// Only write to corresponding entries if they are not nullptr
     /// Only access input_masks if they it is not nullptr
     void UnpackIterators(iterator_t* input_iterators,
                          uint8_t* input_masks,
-                         uint8_t* output_keys,
-                         uint8_t* output_values,
-                         uint32_t count);
+                         void* output_keys,
+                         void* output_values,
+                         size_t count);
 
     /// (Optionally) In-place modify iterators returned from Find
     /// Note: key cannot be changed, otherwise the semantic is violated
     void AssignIterators(iterator_t* input_iterators,
                          uint8_t* input_masks,
-                         uint8_t* input_values,
-                         uint32_t count);
+                         void* input_values,
+                         size_t count);
 
     /// Bucket-related utilities
     /// Return number of elems per bucket
-    std::vector<int> BucketSizes();
+    std::vector<size_t> BucketSizes();
 
     // /// Return size / bucket_count
     float LoadFactor() { return 0.0f; };
