@@ -38,7 +38,7 @@ struct DefaultHash {
     DefaultHash() {}
     DefaultHash(size_t key_size) : key_size_(key_size) {}
 
-    uint64_t OPEN3D_HOST_DEVICE operator()(void* key_ptr) const {
+    uint64_t OPEN3D_HOST_DEVICE operator()(const void* key_ptr) const {
         uint64_t hash = UINT64_C(14695981039346656037);
 
         const int chunks = key_size_ / sizeof(int);
@@ -93,18 +93,18 @@ public:
     virtual void Rehash(size_t buckets) = 0;
 
     /// Essential hashmap operations
-    virtual void Insert(void* input_keys,
-                        void* input_values,
+    virtual void Insert(const void* input_keys,
+                        const void* input_values,
                         iterator_t* output_iterators,
                         uint8_t* output_masks,
                         size_t count) = 0;
 
-    virtual void Find(void* input_keys,
+    virtual void Find(const void* input_keys,
                       iterator_t* output_iterators,
                       uint8_t* output_masks,
                       size_t count) = 0;
 
-    virtual void Erase(void* input_keys,
+    virtual void Erase(const void* input_keys,
                        uint8_t* output_masks,
                        size_t count) = 0;
 
@@ -113,8 +113,8 @@ public:
     /// Parallel iterations
     /// Only write to corresponding entries if they are not nullptr
     /// Only access input_masks if they it is not nullptr
-    virtual void UnpackIterators(iterator_t* input_iterators,
-                                 uint8_t* input_masks,
+    virtual void UnpackIterators(const iterator_t* input_iterators,
+                                 const uint8_t* input_masks,
                                  void* output_keys,
                                  void* output_values,
                                  size_t count) = 0;
@@ -122,8 +122,8 @@ public:
     /// (Optionally) In-place modify iterators returned from Find
     /// Note: key cannot be changed, otherwise the semantic is violated
     virtual void AssignIterators(iterator_t* input_iterators,
-                                 uint8_t* input_masks,
-                                 void* input_values,
+                                 const uint8_t* input_masks,
+                                 const void* input_values,
                                  size_t count) = 0;
 
     /// Bucket-related utilities

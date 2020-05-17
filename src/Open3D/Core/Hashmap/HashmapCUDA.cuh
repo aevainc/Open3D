@@ -829,8 +829,8 @@ template <typename Hash, typename KeyEq>
 CUDAHashmap<Hash, KeyEq>::~CUDAHashmap() {}
 
 template <typename Hash, typename KeyEq>
-void CUDAHashmap<Hash, KeyEq>::Insert(void* input_keys,
-                                      void* input_values,
+void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
+                                      const void* input_values,
                                       iterator_t* output_iterators,
                                       uint8_t* output_masks,
                                       size_t count) {
@@ -839,7 +839,7 @@ void CUDAHashmap<Hash, KeyEq>::Insert(void* input_keys,
 }
 
 template <typename Hash, typename KeyEq>
-void CUDAHashmap<Hash, KeyEq>::Find(void* input_keys,
+void CUDAHashmap<Hash, KeyEq>::Find(const void* input_keys,
                                     iterator_t* output_iterators,
                                     uint8_t* output_masks,
                                     size_t count) {
@@ -848,7 +848,7 @@ void CUDAHashmap<Hash, KeyEq>::Find(void* input_keys,
 }
 
 template <typename Hash, typename KeyEq>
-void CUDAHashmap<Hash, KeyEq>::Erase(void* input_keys,
+void CUDAHashmap<Hash, KeyEq>::Erase(const void* input_keys,
                                      uint8_t* output_masks,
                                      size_t count) {
     cuda_hashmap_impl_->Erase((uint8_t*)input_keys, output_masks, count);
@@ -859,8 +859,8 @@ size_t CUDAHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
     return cuda_hashmap_impl_->GetIterators(output_iterators);
 }
 
-__global__ void UnpackIteratorsKernel(iterator_t* input_iterators,
-                                      uint8_t* input_masks,
+__global__ void UnpackIteratorsKernel(const iterator_t* input_iterators,
+                                      const uint8_t* input_masks,
                                       void* output_keys,
                                       void* output_values,
                                       size_t dsize_key,
@@ -891,8 +891,8 @@ __global__ void UnpackIteratorsKernel(iterator_t* input_iterators,
 }
 
 template <typename Hash, typename KeyEq>
-void CUDAHashmap<Hash, KeyEq>::UnpackIterators(iterator_t* input_iterators,
-                                               uint8_t* input_masks,
+void CUDAHashmap<Hash, KeyEq>::UnpackIterators(const iterator_t* input_iterators,
+                                               const uint8_t* input_masks,
                                                void* output_keys,
                                                void* output_values,
                                                size_t iterator_count) {
@@ -908,8 +908,8 @@ void CUDAHashmap<Hash, KeyEq>::UnpackIterators(iterator_t* input_iterators,
 }
 
 __global__ void AssignIteratorsKernel(iterator_t* input_iterators,
-                                      uint8_t* input_masks,
-                                      void* input_values,
+                                      const uint8_t* input_masks,
+                                      const void* input_values,
                                       size_t dsize_value,
                                       size_t iterator_count) {
     size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -928,8 +928,8 @@ __global__ void AssignIteratorsKernel(iterator_t* input_iterators,
 
 template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::AssignIterators(iterator_t* input_iterators,
-                                               uint8_t* input_masks,
-                                               void* input_values,
+                                               const uint8_t* input_masks,
+                                               const void* input_values,
                                                size_t iterator_count) {
     const size_t num_threads = 32;
     const size_t num_blocks = (iterator_count + num_threads - 1) / num_threads;

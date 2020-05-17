@@ -170,26 +170,26 @@ public:
 
     void Rehash(size_t buckets);
 
-    void Insert(void* input_keys,
-                void* input_values,
+    void Insert(const void* input_keys,
+                const void* input_values,
                 iterator_t* output_iterators,
                 uint8_t* output_masks,
                 size_t count);
 
-    void Find(void* input_keys,
+    void Find(const void* input_keys,
               iterator_t* output_iterators,
               uint8_t* output_masks,
               size_t count);
 
-    void Erase(void* input_keys, uint8_t* output_masks, size_t count);
+    void Erase(const void* input_keys, uint8_t* output_masks, size_t count);
 
     size_t GetIterators(iterator_t* output_iterators);
 
     /// Parallel iterations
     /// Only write to corresponding entries if they are not nullptr
     /// Only access input_masks if they it is not nullptr
-    void UnpackIterators(iterator_t* input_iterators,
-                         uint8_t* input_masks,
+    void UnpackIterators(const iterator_t* input_iterators,
+                         const uint8_t* input_masks,
                          void* output_keys,
                          void* output_values,
                          size_t count);
@@ -197,8 +197,8 @@ public:
     /// (Optionally) In-place modify iterators returned from Find
     /// Note: key cannot be changed, otherwise the semantic is violated
     void AssignIterators(iterator_t* input_iterators,
-                         uint8_t* input_masks,
-                         void* input_values,
+                         const uint8_t* input_masks,
+                         const void* input_values,
                          size_t count);
 
     /// Bucket-related utilities
