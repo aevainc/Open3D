@@ -81,6 +81,9 @@ if (BUILD_CUDA_MODULE)
     cuda_add_executable(test_hashmap_cuda Hashmap/test_hashmap.cu)
     target_link_libraries(test_hashmap_cuda ${CMAKE_PROJECT_NAME})
 
+    cuda_add_executable(TestHashmap Hashmap/TestHashmap.cu)
+    target_link_libraries(TestHashmap ${CMAKE_PROJECT_NAME})
+
     # add_executable(test_hashmap_cpu Hashmap/test_hashmap.cpp)
     # target_link_libraries(test_hashmap_cpu ${CMAKE_PROJECT_NAME})
 

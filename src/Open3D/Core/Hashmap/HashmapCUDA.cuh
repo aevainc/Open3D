@@ -607,13 +607,16 @@ __global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
     if (lane_id == 0) {
         prev_count = atomicAdd(iterator_count, count);
     }
+    prev_count = __shfl_sync(ACTIVE_LANES_MASK, prev_count, 0, WARP_WIDTH);
+    
     if (is_active && ((1 << lane_id) & PAIR_PTR_LANES_MASK)) {
         iterators[prev_count + lane_id] =
                 hash_ctx.mem_mgr_ctx_.extract_iterator(src_unit_data);
-        // printf("head: wid=%d, prev_count=%d, internal_ptr=%d, lane_id=%d, "
-        //        "iterators[%d] = %ld\n",
-        //        wid, prev_count, src_unit_data, lane_id, prev_count + lane_id,
-        //        iterators[prev_count + lane_id].first);
+        printf("head: wid=%d, prev_count=%d, internal_ptr=%d, lane_id=%d, "
+               "iterators[%d] = %ld, %d\n",
+               wid, prev_count, src_unit_data, lane_id, prev_count + lane_id,
+               iterators[prev_count + lane_id].first,
+               *(int*)(iterators[prev_count + lane_id].first));
     }
 
     ptr_t next = __shfl_sync(ACTIVE_LANES_MASK, src_unit_data,
@@ -630,8 +633,8 @@ __global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
         uint32_t prev_count = atomicAdd(iterator_count, count);
         if (is_active && ((1 << lane_id) & PAIR_PTR_LANES_MASK)) {
-            // printf("list: wid=%d, prev_count=%d, internal_ptr=%d\n", wid,
-            //        prev_count, src_unit_data);
+            printf("list: wid=%d, prev_count=%d, internal_ptr=%d\n", wid,
+                   prev_count, src_unit_data);
             iterators[prev_count + lane_id] =
                     hash_ctx.mem_mgr_ctx_.extract_iterator(src_unit_data);
         }

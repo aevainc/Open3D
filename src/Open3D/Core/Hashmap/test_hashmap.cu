@@ -54,12 +54,12 @@ void TEST_SIMPLE() {
     /// C++ ground truth generation
     const int max_buckets = 10;
     std::unordered_map<int, int> hashmap_gt;
-    std::vector<int> insert_keys = {1, 3, 5};
-    std::vector<int> insert_vals = {100, 300, 500};
+    std::vector<int> insert_keys = {100, 300, 500};
+    std::vector<int> insert_vals = {1, 3, 5};
     for (int i = 0; i < insert_keys.size(); ++i) {
         hashmap_gt[insert_keys[i]] = insert_vals[i];
     }
-    std::vector<int> query_keys = {1, 2, 3, 4, 5};
+    std::vector<int> query_keys = {100, 200, 300, 400, 500};
 
     /// CUDA data generation: use thrust for simplicity
     thrust::device_vector<int> insert_keys_cuda = insert_keys;
@@ -101,6 +101,18 @@ void TEST_SIMPLE() {
     hashmap->Insert(insert_keys_ptr_cuda, insert_vals_ptr_cuda,
                     ouput_iterators_ptr_cuda, output_masks_ptr_cuda,
                     insert_keys_cuda.size());
+    auto count = hashmap->GetIterators(all_iterators_ptr_cuda);
+    auto all_iterators = thrust::device_vector<iterator_t>(
+            all_iterators_ptr_cuda, all_iterators_ptr_cuda + count);
+    for (int i = 0; i < count; ++i) {
+        iterator_t iterator = all_iterators[i];
+        int key = *(thrust::device_ptr<int>(
+                reinterpret_cast<int*>(iterator.first)));
+        int val = *(thrust::device_ptr<int>(
+                reinterpret_cast<int*>(iterator.second)));
+        std::cout << key << " " << val << "\n";
+    }
+
 
     /// Hashmap search
     hashmap->Find(query_keys_ptr_cuda, query_iterators_ptr_cuda,
@@ -118,8 +130,8 @@ void TEST_SIMPLE() {
     }
 
     hashmap->Rehash(2 * max_buckets);
-    auto count = hashmap->GetIterators(all_iterators_ptr_cuda);
-    auto all_iterators = thrust::device_vector<iterator_t>(
+    count = hashmap->GetIterators(all_iterators_ptr_cuda);
+    all_iterators = thrust::device_vector<iterator_t>(
             all_iterators_ptr_cuda, all_iterators_ptr_cuda + count);
     for (int i = 0; i < count; ++i) {
         iterator_t iterator = all_iterators[i];
