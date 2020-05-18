@@ -533,7 +533,7 @@ __global__ void InsertKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
         key = keys + tid * hash_ctx.dsize_key_;
         value = values + tid * hash_ctx.dsize_value_;
         bucket_id = hash_ctx.ComputeBucket(key);
-        printf("%d -> bucket %d\n", tid, bucket_id);
+        // printf("%d -> bucket %d\n", tid, bucket_id); 
     }
 
     Pair<ptr_t, uint8_t> result =
@@ -612,11 +612,11 @@ __global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
     if (is_active && ((1 << lane_id) & PAIR_PTR_LANES_MASK)) {
         iterators[prev_count + lane_id] =
                 hash_ctx.mem_mgr_ctx_.extract_iterator(src_unit_data);
-        printf("head: wid=%d, prev_count=%d, internal_ptr=%d, lane_id=%d, "
-               "iterators[%d] = %ld, %d\n",
-               wid, prev_count, src_unit_data, lane_id, prev_count + lane_id,
-               iterators[prev_count + lane_id].first,
-               *(int*)(iterators[prev_count + lane_id].first));
+        // printf("head: wid=%d, prev_count=%d, internal_ptr=%d, lane_id=%d, "
+        //        "iterators[%d] = %ld, %d\n",
+        //        wid, prev_count, src_unit_data, lane_id, prev_count + lane_id,
+        //        iterators[prev_count + lane_id].first,
+        //        *(int*)(iterators[prev_count + lane_id].first));
     }
 
     ptr_t next = __shfl_sync(ACTIVE_LANES_MASK, src_unit_data,
@@ -630,11 +630,13 @@ __global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
         if (lane_id == 0) {
             prev_count = atomicAdd(iterator_count, count);
         }
+        printf("list\n");
+        prev_count = __shfl_sync(ACTIVE_LANES_MASK, prev_count, 0, WARP_WIDTH);
 
         uint32_t prev_count = atomicAdd(iterator_count, count);
         if (is_active && ((1 << lane_id) & PAIR_PTR_LANES_MASK)) {
-            printf("list: wid=%d, prev_count=%d, internal_ptr=%d\n", wid,
-                   prev_count, src_unit_data);
+            // printf("list: wid=%d, prev_count=%d, internal_ptr=%d\n", wid,
+            //        prev_count, src_unit_data);
             iterators[prev_count + lane_id] =
                     hash_ctx.mem_mgr_ctx_.extract_iterator(src_unit_data);
         }
