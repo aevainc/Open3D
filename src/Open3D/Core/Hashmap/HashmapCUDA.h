@@ -70,8 +70,7 @@ public:
     __device__ Pair<ptr_t, uint8_t> Insert(uint8_t& lane_active,
                                            const uint32_t lane_id,
                                            const uint32_t bucket_id,
-                                           uint8_t* key_ptr,
-                                           uint8_t* value_ptr);
+                                           uint8_t* key_ptr);
 
     __device__ Pair<ptr_t, uint8_t> Find(uint8_t& lane_active,
                                          const uint32_t lane_id,

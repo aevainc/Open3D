@@ -50,12 +50,19 @@ namespace open3d {
 
 /// Kernels
 template <typename Hash, typename KeyEq>
-__global__ void InsertKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                             uint8_t* input_keys,
-                             uint8_t* input_values,
-                             iterator_t* output_iterators,
-                             uint8_t* output_masks,
-                             uint32_t input_count);
+__global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
+                                  uint8_t* input_keys,
+                                  ptr_t* output_iterator_ptrs,
+                                  uint8_t* output_masks,
+                                  uint32_t input_count);
+template <typename Hash, typename KeyEq>
+__global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
+                                  uint8_t* input_values,
+                                  ptr_t* input_iterator_ptrs,
+                                  iterator_t* output_iterators,
+                                  uint8_t* output_masks,
+                                  uint32_t input_count);
+
 template <typename Hash, typename KeyEq>
 __global__ void FindKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                            uint8_t* input_keys,
@@ -121,17 +128,6 @@ CUDAHashmapImplContext<Hash, KeyEq>::WarpSyncKey(uint8_t* key_ptr,
                 ACTIVE_LANES_MASK, ((int*)(key_ptr))[i], lane_id, WARP_WIDTH);
     }
 }
-
-// __device__ __host__ inline bool cmp(uint8_t* src,
-//                                     uint8_t* dst,
-//                                     uint32_t dsize) {
-//     bool ret = true;
-// #pragma unroll 1
-//     for (int i = 0; i < dsize; ++i) {
-//         ret = ret && (src[i] == dst[i]);
-//     }
-//     return ret;
-// }
 
 template <typename Hash, typename KeyEq>
 __device__ int32_t CUDAHashmapImplContext<Hash, KeyEq>::WarpFindKey(
@@ -251,15 +247,13 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Insert(
         uint8_t& to_be_inserted,
         const uint32_t lane_id,
         const uint32_t bucket_id,
-        uint8_t* key,
-        uint8_t* value) {
+        uint8_t* key) {
     uint32_t work_queue = 0;
     uint32_t prev_work_queue = 0;
     uint32_t curr_slab_ptr = HEAD_SLAB_PTR;
     uint8_t src_key[MAX_KEY_BYTESIZE];
 
     ptr_t iterator_ptr = mem_mgr_ctx_.Allocate();
-    int corres_lane_id = -1;
     uint8_t mask = false;
 
     /** > Loop when we have active lanes **/
@@ -273,15 +267,6 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Insert(
                 __shfl_sync(ACTIVE_LANES_MASK, bucket_id, src_lane, WARP_WIDTH);
 
         WarpSyncKey(key, src_lane, src_key);
-        // bool debug = (*(reinterpret_cast<int*>(src_key)) == 100000);
-        // if (debug && lane_id == src_lane) {
-        //   printf("src_lane = %d\n", src_lane);
-        // }
-
-        // if (debug) {
-        //     int key_v = *(reinterpret_cast<int*>(src_key));
-        //     printf("src_lane=%d, key_v=%d\n", src_lane, key_v);
-        // }
 
         /* Each lane in the warp reads a uint in the slab */
         uint32_t unit_data =
@@ -292,20 +277,12 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Insert(
 
         int32_t lane_found = WarpFindKey(src_key, lane_id, unit_data);
         int32_t lane_empty = WarpFindEmpty(unit_data);
-        // if (debug && lane_id == src_lane) {
-        //   printf("lane_found = %d, lane_empty = %d\n", lane_found,
-        //   lane_empty);
-        // }
 
         /** Branch 1: key already existing, ABORT **/
         if (lane_found >= 0) {
             if (lane_id == src_lane) {
                 /* free memory heap */
                 to_be_inserted = false;
-                // mem_mgr_ctx_.Free(prealloc_pair_internal_ptr);
-                // if (debug) {
-                //   printf("freed\n");
-                // }
             }
         }
 
@@ -337,9 +314,7 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Insert(
                     for (int i = 0; i < dsize_key_ / sizeof(int); ++i) {
                         *(key_ptr) = *((int*)key);
                     }
-                }  // else {
-                //   mem_mgr_ctx_.Free(iterator);
-                // }
+                }
                 /** Branch 2.2: failed: RESTART
                  *  In the consequent attempt,
                  *  > if the same key was inserted in this slot,
@@ -352,9 +327,6 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Insert(
 
         /** Branch 3: nothing found in this slab, goto next slab **/
         else {
-            // if (debug) {
-            //   printf("should never reach here\n");
-            // }
             /* broadcast next slab */
             ptr_t next_slab_ptr = __shfl_sync(ACTIVE_LANES_MASK, unit_data,
                                               NEXT_SLAB_PTR_LANE, WARP_WIDTH);
@@ -514,12 +486,11 @@ __global__ void FindKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 }
 
 template <typename Hash, typename KeyEq>
-__global__ void InsertKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                             uint8_t* keys,
-                             uint8_t* values,
-                             iterator_t* iterators,
-                             uint8_t* masks,
-                             uint32_t input_count) {
+__global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
+                                  uint8_t* keys,
+                                  ptr_t* iterator_ptrs,
+                                  uint8_t* masks,
+                                  uint32_t input_count) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
     uint32_t lane_id = tid % 32;
 
@@ -535,30 +506,44 @@ __global__ void InsertKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
     // dummy
     uint8_t dummy_key[MAX_KEY_BYTESIZE];
     uint8_t* key = dummy_key;
-    uint8_t* value;
 
     if (tid < input_count) {
         lane_active = true;
         key = keys + tid * hash_ctx.dsize_key_;
-
-        value = values + tid * hash_ctx.dsize_value_;
         bucket_id = hash_ctx.ComputeBucket(key);
     }
 
     Pair<ptr_t, uint8_t> result =
-            hash_ctx.Insert(lane_active, lane_id, bucket_id, key, value);
+            hash_ctx.Insert(lane_active, lane_id, bucket_id, key);
 
     if (tid < input_count) {
-        iterators[tid] = hash_ctx.mem_mgr_ctx_.extract_iterator(result.first);
+        iterator_ptrs[tid] = result.first;
         masks[tid] = result.second;
+    }
+}
 
+template<typename Hash, typename KeyEq> __global__ void InsertKernelPass2(
+        CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
+        uint8_t* values,
+        ptr_t* iterator_ptrs,
+        iterator_t* iterators,
+        uint8_t* masks,
+        uint32_t input_count) {
+    uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (tid < input_count) {
+        ptr_t iterator_ptr = iterator_ptrs[tid];
         if (masks[tid]) {
-            iterator_t iter =
-                    hash_ctx.mem_mgr_ctx_.extract_iterator(result.first);
-            int* value_ptr = (int*)iter.second;
+            int* src_value_ptr = (int*)(values + tid * hash_ctx.dsize_value_);
+            int* dst_value_ptr =
+                    (int*)hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr)
+                            .second;
             for (int i = 0; i < hash_ctx.dsize_value_ / sizeof(int); ++i) {
-              *(value_ptr + i) = *((int*)value + i);
+                dst_value_ptr[i] = src_value_ptr[i];
             }
+        } else {
+            hash_ctx.mem_mgr_ctx_.Free(iterator_ptr);
+            iterators[tid] = iterator_t();
         }
     }
 }
@@ -739,8 +724,19 @@ void CUDAHashmapImpl<Hash, KeyEq>::Insert(uint8_t* keys,
                                           uint8_t* masks,
                                           uint32_t input_count) {
     const uint32_t num_blocks = (input_count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
-    InsertKernel<<<num_blocks, BLOCKSIZE_>>>(gpu_context_, keys, values,
-                                             iterators, masks, input_count);
+    auto iterator_ptrs =
+            (ptr_t*)MemoryManager::Malloc(sizeof(ptr_t) * input_count, device_);
+    InsertKernelPass1<<<num_blocks, BLOCKSIZE_>>>(
+            gpu_context_, keys, iterator_ptrs, masks, input_count);
+    int heap_counter;
+    heap_counter = *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
+    std::cout << "Before " << heap_counter << "\n";
+    InsertKernelPass2<<<num_blocks, BLOCKSIZE_>>>(
+            gpu_context_, values, iterator_ptrs, iterators, masks, input_count);
+    heap_counter = *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
+    std::cout << "After " << heap_counter << "\n";
+    
+    MemoryManager::Free(iterator_ptrs, device_);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 }

@@ -88,11 +88,6 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
                     reinterpret_cast<uint8_t *>(
                             thrust::raw_pointer_cast(masks_cuda.data())),
                     keys.size());
-    int insert_count = 0;
-    for (int i = 0; i < keys.size(); ++i) {
-        if (masks_cuda[i]) insert_count++;
-    }
-    std::cout << "insert count = " << insert_count << "\n";
 
     iterator_t *iterators =
             reinterpret_cast<iterator_t *>(MemoryManager::Malloc(
@@ -101,13 +96,11 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
     size_t count = hashmap->GetIterators(iterators);
 
     // 1. Sanity check: iterator counts should be equal
-    std::cout << count << " " << hashmap_gt.size() << "\n";
-    // assert(count == hashmap_gt.size());
+    assert(count == hashmap_gt.size());
     auto iterators_vec =
             thrust::device_vector<iterator_t>(iterators, iterators + count);
 
     // 2. Verbose check: every iterator should be observable in gt
-    std::vector<Key> _keys;
     for (size_t i = 0; i < count; ++i) {
         iterator_t iterator = iterators_vec[i];
 
@@ -116,34 +109,21 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
         Value val = *(thrust::device_ptr<Value>(
                 reinterpret_cast<Value *>(iterator.second)));
 
-        _keys.push_back(key);
         auto iterator_gt = hashmap_gt.find(key);
 
         assert(iterator_gt != hashmap_gt.end());
         assert(iterator_gt->first == key);
         assert(iterator_gt->second == val);
     }
-    std::cout << insert_count << "\n";
 
-    // [Open3D INFO] _keys[173260] == _keys[173261] == 100000
-    // [Open3D INFO] _keys[173261] == _keys[173262] == 100000
-    // [Open3D INFO] _keys[173262] == _keys[173263] == 100000
-
-    std::sort(_keys.begin(), _keys.end());
-    for (size_t i = 0; i < _keys.size() - 1; ++i) {
-      if (_keys[i] == _keys[i + 1]) {
-        utility::LogInfo("_keys[{}] == _keys[{}] == {}", i, i+1, _keys[i]);
-      }
-    }
-
-    // MemoryManager::Free(iterators, hashmap->device_);
+    MemoryManager::Free(iterators, hashmap->device_);
 }
 
 int main() {
     // std::random_device rnd_device;
     std::mt19937 mersenne_engine{0};
 
-    for (size_t bucket_count = 1000; bucket_count <= 100000;
+    for (size_t bucket_count = 1000; bucket_count <= 1000000;
          bucket_count *= 10) {
         utility::LogInfo("Test with bucket_count = {}", bucket_count);
         using Key = int;
@@ -160,7 +140,6 @@ int main() {
         for (size_t i = 0; i < keys.size(); ++i) {
             // Ensure 1 on 1 mapping to remove hassles in duplicate keys
             vals[i] = keys[i] * 100;
-            // utility::LogInfo("({}, {})", keys[i], vals[i]);
         }
 
         auto hashmap = CreateHashmap<DefaultHash, DefaultKeyEq>(

@@ -93,10 +93,10 @@ public:
         return iterator_t(keys_ + ptr * dsize_key_,
                           values_ + ptr * dsize_value_);
     }
-    // __device__ const iterator_t extract_iterator(ptr_t ptr) const {
-    //     return iterator_t(keys_ + ptr * dsize_key_,
-    //                       values_ + ptr * dsize_value_);
-    // }
+    __device__ const iterator_t extract_iterator(ptr_t ptr) const {
+        return iterator_t(keys_ + ptr * dsize_key_,
+                          values_ + ptr * dsize_value_);
+    }
 };
 
 __global__ void ResetInternalKvPairManagerKernel(
