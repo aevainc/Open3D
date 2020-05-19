@@ -259,47 +259,8 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Insert(
     uint8_t src_key[MAX_KEY_BYTESIZE];
 
     ptr_t iterator_ptr = mem_mgr_ctx_.Allocate();
+    int corres_lane_id = -1;
     uint8_t mask = false;
-
-    // if (*(reinterpret_cast<int*>(key)) * 100 !=
-    // *(reinterpret_cast<int*>(value)) ) {
-    //   printf("error! %d %d\n", *(reinterpret_cast<int*>(key)),
-    //   *(reinterpret_cast<int*>(value)));
-    // }
-
-    /** WARNING: Allocation should be finished in warp,
-     * results are unexpected otherwise **/
-    // if (to_be_inserted) {
-    //     int internal_ptr = mem_mgr_ctx_.Allocate();
-
-    //     // TODO: replace with Assign
-    //     iterator_t iter = mem_mgr_ctx_.extract_iterator(internal_ptr);
-
-    //     int* key_ptr = (int*)iter.first;
-    //     // for (int i = 0; i < dsize_key_ / sizeof(int); ++i) {
-    //     *(key_ptr) = *((int*)key);
-    //     assert(*(key_ptr) == *((int*)key));
-    //     // }
-
-    //     int* value_ptr = (int*)iter.second;
-    //     // for (int i = 0; i < dsize_value_ / sizeof(int); ++i) {
-    //     *(value_ptr) = *((int*)value);
-    //     //}
-    //     printf("key=%d internal_ptr=%d\n", *(reinterpret_cast<int*>(key)),
-    //            internal_ptr);
-    //     if (*(reinterpret_cast<int*>(iter.first)) * 100 !=
-    //         *(reinterpret_cast<int*>(iter.second))) {
-    //         printf("error 1! iter.first=%d, iter.second=%d, key=%d, value=%d, "
-    //                "ptr=%d, iter.first=%ld, iter.second=%ld\n",
-    //                *(reinterpret_cast<int*>(iter.first)),
-    //                *(reinterpret_cast<int*>(iter.second)),
-    //                *(reinterpret_cast<int*>(key)),
-    //                *(reinterpret_cast<int*>(value)), internal_ptr, iter.first,
-    //                iter.second);
-    //     }
-
-    //     prealloc_pair_internal_ptr = internal_ptr;
-    // }
 
     /** > Loop when we have active lanes **/
     while ((work_queue = __ballot_sync(ACTIVE_LANES_MASK, to_be_inserted))) {
@@ -369,18 +330,14 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Insert(
 
                     // iterator = prealloc_pair_internal_ptr;
                     mask = true;
-                    
+
                     iterator_t iter =
                             mem_mgr_ctx_.extract_iterator(iterator_ptr);
                     int* key_ptr = (int*)iter.first;
                     for (int i = 0; i < dsize_key_ / sizeof(int); ++i) {
-                        *(key_ptr) = *((int*)src_key);
+                        *(key_ptr) = *((int*)key);
                     }
-                    int* value_ptr = (int*)iter.second;
-                    for (int i = 0; i < dsize_value_ / sizeof(int); ++i) {
-                      *(value_ptr) = *(key_ptr) * 100;
-                    }
-                } // else {
+                }  // else {
                 //   mem_mgr_ctx_.Free(iterator);
                 // }
                 /** Branch 2.2: failed: RESTART
@@ -436,7 +393,6 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Insert(
         }
 
         prev_work_queue = work_queue;
-
     }
 
     return make_pair(iterator_ptr, mask);
@@ -587,17 +543,6 @@ __global__ void InsertKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
         value = values + tid * hash_ctx.dsize_value_;
         bucket_id = hash_ctx.ComputeBucket(key);
-        // if (bucket_id == 3887) {
-        //   printf("tid = %d, lane_id = %d\n", tid, lane_id);
-        // }
-        //     int key_v = *(reinterpret_cast<int*>(key));
-        //     printf("tid = %d, lane_id = %d, key_v = %d\n", tid, lane_id,
-        //     key_v);
-        // }
-        // int key_v = *(reinterpret_cast<int*>(key));
-        // if (key_v == 100000) {
-        //   printf("tid=%d, key_v=%d, bucket_id=%d\n", tid, key_v, bucket_id);
-        // }
     }
 
     Pair<ptr_t, uint8_t> result =
@@ -606,6 +551,15 @@ __global__ void InsertKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
     if (tid < input_count) {
         iterators[tid] = hash_ctx.mem_mgr_ctx_.extract_iterator(result.first);
         masks[tid] = result.second;
+
+        if (masks[tid]) {
+            iterator_t iter =
+                    hash_ctx.mem_mgr_ctx_.extract_iterator(result.first);
+            int* value_ptr = (int*)iter.second;
+            for (int i = 0; i < hash_ctx.dsize_value_ / sizeof(int); ++i) {
+              *(value_ptr + i) = *((int*)value + i);
+            }
+        }
     }
 }
 
@@ -873,7 +827,8 @@ float CUDAHashmapImpl<Hash, KeyEq>::ComputeLoadFactor() {
     /// Unrelated factor for now
     // auto slabs_per_bucket = node_mgr_->CountSlabsPerSuperblock();
     // int total_slabs_stored =
-    //         std::accumulate(slabs_per_bucket.begin(), slabs_per_bucket.end(),
+    //         std::accumulate(slabs_per_bucket.begin(),
+    //         slabs_per_bucket.end(),
     //                         gpu_context_.bucket_count_);
 
     float load_factor =
