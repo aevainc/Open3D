@@ -119,15 +119,9 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
         _keys.push_back(key);
         auto iterator_gt = hashmap_gt.find(key);
 
-        // if (iterator_gt->second != val) {
-        //   utility::LogInfo("iterator_gt->first = {} vs {}",
-        //                      iterator_gt->first, key);
-        //     utility::LogInfo("iterator_gt->second = {} vs {}",
-        //                      iterator_gt->second, val);
-        // }
-        // assert(iterator_gt != hashmap_gt.end());
-        // assert(iterator_gt->first == key);
-        // assert(iterator_gt->second == val);
+        assert(iterator_gt != hashmap_gt.end());
+        assert(iterator_gt->first == key);
+        assert(iterator_gt->second == val);
     }
     std::cout << insert_count << "\n";
 
