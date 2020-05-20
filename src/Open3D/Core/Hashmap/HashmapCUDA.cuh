@@ -923,6 +923,8 @@ void CUDAHashmap<Hash, KeyEq>::UnpackIterators(
         void* output_keys,
         void* output_values,
         size_t iterator_count) {
+    if (iterator_count == 0) return;
+    
     const size_t num_threads = 32;
     const size_t num_blocks = (iterator_count + num_threads - 1) / num_threads;
 
@@ -958,6 +960,7 @@ void CUDAHashmap<Hash, KeyEq>::AssignIterators(iterator_t* input_iterators,
                                                const uint8_t* input_masks,
                                                const void* input_values,
                                                size_t iterator_count) {
+    if (iterator_count == 0) return;
     const size_t num_threads = 32;
     const size_t num_blocks = (iterator_count + num_threads - 1) / num_threads;
 

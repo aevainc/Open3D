@@ -85,6 +85,44 @@ void CompareFind(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
 }
 
 template <typename Key, typename Value, typename Hash, typename Eq>
+void CompareAllIterators(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
+                         std::unordered_map<Key, Value> &hashmap_gt) {
+    // Grab all iterators
+    thrust::device_vector<iterator_t> all_iterators_device(
+            hashmap->bucket_count_ * 64);
+    size_t total_count = hashmap->GetIterators(reinterpret_cast<iterator_t *>(
+            thrust::raw_pointer_cast(all_iterators_device.data())));
+    assert(total_count == hashmap_gt.size());
+
+    thrust::device_vector<Key> output_keys_device(total_count);
+    thrust::device_vector<Value> output_vals_device(total_count);
+    hashmap->UnpackIterators(
+            reinterpret_cast<iterator_t *>(
+                    thrust::raw_pointer_cast(all_iterators_device.data())),
+            nullptr,
+            reinterpret_cast<Key *>(
+                    thrust::raw_pointer_cast(output_keys_device.data())),
+            reinterpret_cast<Value *>(
+                    thrust::raw_pointer_cast(output_vals_device.data())),
+            total_count);
+
+    thrust::host_vector<Key> output_keys_host = output_keys_device;
+    thrust::host_vector<Value> output_vals_host = output_vals_device;
+
+    // 2. Verbose check: every iterator should be observable in gt
+    for (size_t i = 0; i < total_count; ++i) {
+        auto key = output_keys_host[i];
+        auto val = output_vals_host[i];
+
+        auto iterator_gt = hashmap_gt.find(key);
+
+        assert(iterator_gt != hashmap_gt.end());
+        assert(iterator_gt->first == key);
+        assert(iterator_gt->second == val);
+    }
+}
+
+template <typename Key, typename Value, typename Hash, typename Eq>
 void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
                    std::unordered_map<Key, Value> &hashmap_gt,
                    const std::vector<Key> &keys,
@@ -95,63 +133,28 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
     }
 
     // Prepare GPU memory
-    thrust::device_vector<Key> keys_cuda = keys;
-    thrust::device_vector<Value> vals_cuda = vals;
-    thrust::device_vector<iterator_t> iterators_cuda(keys.size());
-    thrust::device_vector<uint8_t> masks_cuda(keys.size());
+    thrust::device_vector<Key> input_keys_device = keys;
+    thrust::device_vector<Value> input_vals_device = vals;
+    thrust::device_vector<iterator_t> output_iterators_device(keys.size());
+    thrust::device_vector<uint8_t> output_masks_device(keys.size());
 
+    // Parallel insert
     hashmap->Insert(reinterpret_cast<void *>(
-                            thrust::raw_pointer_cast(keys_cuda.data())),
+                            thrust::raw_pointer_cast(input_keys_device.data())),
                     reinterpret_cast<void *>(
-                            thrust::raw_pointer_cast(vals_cuda.data())),
-                    reinterpret_cast<iterator_t *>(
-                            thrust::raw_pointer_cast(iterators_cuda.data())),
-                    reinterpret_cast<uint8_t *>(
-                            thrust::raw_pointer_cast(masks_cuda.data())),
+                            thrust::raw_pointer_cast(input_vals_device.data())),
+                    reinterpret_cast<iterator_t *>(thrust::raw_pointer_cast(
+                            output_iterators_device.data())),
+                    reinterpret_cast<uint8_t *>(thrust::raw_pointer_cast(
+                            output_masks_device.data())),
                     keys.size());
 
-    iterator_t *iterators =
-            reinterpret_cast<iterator_t *>(MemoryManager::Malloc(
-                    sizeof(iterator_t) * hashmap->bucket_count_ * 64,
-                    hashmap->device_));
-    size_t count = hashmap->GetIterators(iterators);
+    size_t insert_count = thrust::reduce(output_masks_device.begin(),
+                                         output_masks_device.end(), (size_t)0,
+                                         thrust::plus<size_t>());
+    utility::LogInfo("Successful insert_count = {}", insert_count);
 
-    size_t insert_count = 0;
-    for (int i = 0; i < keys.size(); ++i) {
-        insert_count += masks_cuda[i];
-    }
-    std::cout << "insert_count = " << insert_count << "\n";
-
-    auto bucket_count_total = 0;
-    auto bucket_sizes = hashmap->BucketSizes();
-    for (size_t i = 0; i < bucket_sizes.size(); ++i) {
-        bucket_count_total += bucket_sizes[i];
-    }
-    std::cout << "bucket_count_total = " << bucket_count_total << "\n";
-
-    // 1. Sanity check: iterator counts should be equal
-    std::cout << count << " " << hashmap_gt.size() << "\n";
-    assert(count == hashmap_gt.size());
-    auto iterators_vec =
-            thrust::device_vector<iterator_t>(iterators, iterators + count);
-
-    // 2. Verbose check: every iterator should be observable in gt
-    for (size_t i = 0; i < count; ++i) {
-        iterator_t iterator = iterators_vec[i];
-
-        Key key = *(thrust::device_ptr<Key>(
-                reinterpret_cast<Key *>(iterator.first)));
-        Value val = *(thrust::device_ptr<Value>(
-                reinterpret_cast<Value *>(iterator.second)));
-
-        auto iterator_gt = hashmap_gt.find(key);
-
-        assert(iterator_gt != hashmap_gt.end());
-        assert(iterator_gt->first == key);
-        assert(iterator_gt->second == val);
-    }
-
-    MemoryManager::Free(iterators, hashmap->device_);
+    CompareAllIterators(hashmap, hashmap_gt);
 }
 
 template <typename Key, typename Value, typename Hash, typename Eq>
@@ -164,50 +167,16 @@ void CompareErase(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
     }
 
     // Prepare GPU memory
-    thrust::device_vector<Key> keys_cuda = keys;
-    thrust::device_vector<uint8_t> masks_cuda(keys.size());
+    thrust::device_vector<Key> input_keys_device = keys;
+    thrust::device_vector<uint8_t> output_masks_device(keys.size());
 
     hashmap->Erase(reinterpret_cast<void *>(
-                           thrust::raw_pointer_cast(keys_cuda.data())),
-                   reinterpret_cast<uint8_t *>(
-                           thrust::raw_pointer_cast(masks_cuda.data())),
+                           thrust::raw_pointer_cast(input_keys_device.data())),
+                   reinterpret_cast<uint8_t *>(thrust::raw_pointer_cast(
+                           output_masks_device.data())),
                    keys.size());
 
-    // size_t erase_count = 0;
-    // for (int i = 0; i < keys.size(); ++i) {
-    //     erase_count += masks_cuda[i];
-    // }
-    // std::cout << "erase_count = " << erase_count << "\n";
-
-    iterator_t *iterators =
-            reinterpret_cast<iterator_t *>(MemoryManager::Malloc(
-                    sizeof(iterator_t) * hashmap->bucket_count_ * 64,
-                    hashmap->device_));
-    size_t count = hashmap->GetIterators(iterators);
-    // std::cout << count << "\n";
-
-    // 1. Sanity check: iterator counts should be equal
-    assert(count == hashmap_gt.size());
-    auto iterators_vec =
-            thrust::device_vector<iterator_t>(iterators, iterators + count);
-
-    // 2. Verbose check: every iterator should be observable in gt
-    for (size_t i = 0; i < count; ++i) {
-        iterator_t iterator = iterators_vec[i];
-
-        Key key = *(thrust::device_ptr<Key>(
-                reinterpret_cast<Key *>(iterator.first)));
-        Value val = *(thrust::device_ptr<Value>(
-                reinterpret_cast<Value *>(iterator.second)));
-
-        auto iterator_gt = hashmap_gt.find(key);
-
-        assert(iterator_gt != hashmap_gt.end());
-        assert(iterator_gt->first == key);
-        assert(iterator_gt->second == val);
-    }
-
-    MemoryManager::Free(iterators, hashmap->device_);
+    CompareAllIterators(hashmap, hashmap_gt);
 }
 
 template <typename Key, typename Value, typename Hash, typename Eq>
@@ -217,32 +186,7 @@ void CompareRehash(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
     hashmap->Rehash(hashmap->bucket_count_ * 2);
     hashmap_gt.rehash(hashmap_gt.bucket_count() * 2);
 
-    iterator_t *iterators =
-            reinterpret_cast<iterator_t *>(MemoryManager::Malloc(
-                    sizeof(iterator_t) * hashmap->bucket_count_ * 64,
-                    hashmap->device_));
-    size_t count = hashmap->GetIterators(iterators);
-    assert(count == hashmap_gt.size());
-    auto iterators_vec =
-            thrust::device_vector<iterator_t>(iterators, iterators + count);
-
-    // 2. Verbose check: every iterator should be observable in gt
-    for (size_t i = 0; i < count; ++i) {
-        iterator_t iterator = iterators_vec[i];
-
-        Key key = *(thrust::device_ptr<Key>(
-                reinterpret_cast<Key *>(iterator.first)));
-        Value val = *(thrust::device_ptr<Value>(
-                reinterpret_cast<Value *>(iterator.second)));
-
-        auto iterator_gt = hashmap_gt.find(key);
-
-        assert(iterator_gt != hashmap_gt.end());
-        assert(iterator_gt->first == key);
-        assert(iterator_gt->second == val);
-    }
-
-    MemoryManager::Free(iterators, hashmap->device_);
+    CompareAllIterators(hashmap, hashmap_gt);
 }
 
 int main() {
