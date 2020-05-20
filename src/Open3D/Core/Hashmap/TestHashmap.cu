@@ -91,11 +91,28 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
 
     iterator_t *iterators =
             reinterpret_cast<iterator_t *>(MemoryManager::Malloc(
-                    sizeof(iterator_t) * hashmap->bucket_count_ * 32,
+                    sizeof(iterator_t) * hashmap->bucket_count_ * 64,
                     hashmap->device_));
     size_t count = hashmap->GetIterators(iterators);
 
+    size_t insert_count = 0;
+    for (int i = 0; i < keys.size(); ++i) {
+        insert_count += masks_cuda[i];
+    }
+    std::cout << "insert_count = " << insert_count << "\n";
+
+    auto bucket_count_total = 0;
+    auto bucket_sizes = hashmap->BucketSizes();
+    for (size_t i = 0; i < bucket_sizes.size(); ++i) {
+        // if (bucket_sizes[i] >= 31) {
+        //     utility::LogInfo("bucket {}: {}", i, bucket_sizes[i]);
+        // }
+        bucket_count_total += bucket_sizes[i];
+    }
+    std::cout << "bucket_count_total = " << bucket_count_total << "\n";
+
     // 1. Sanity check: iterator counts should be equal
+    std::cout << count << " " << hashmap_gt.size() << "\n";
     assert(count == hashmap_gt.size());
     auto iterators_vec =
             thrust::device_vector<iterator_t>(iterators, iterators + count);
@@ -146,7 +163,7 @@ void CompareErase(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
 
     iterator_t *iterators =
             reinterpret_cast<iterator_t *>(MemoryManager::Malloc(
-                    sizeof(iterator_t) * hashmap->bucket_count_ * 32,
+                    sizeof(iterator_t) * hashmap->bucket_count_ * 64,
                     hashmap->device_));
     size_t count = hashmap->GetIterators(iterators);
     // std::cout << count << "\n";
@@ -186,8 +203,8 @@ int main() {
         using Value = int;
 
         // Generate data
-        std::uniform_int_distribution<int> dist{-(int)bucket_count * 10,
-                                                (int)bucket_count * 10};
+        std::uniform_int_distribution<int> dist{-(int)bucket_count * 20,
+                                                (int)bucket_count * 20};
         std::vector<int> keys(bucket_count * 32);
         std::vector<int> vals(bucket_count * 32);
         std::generate(std::begin(keys), std::end(keys),
