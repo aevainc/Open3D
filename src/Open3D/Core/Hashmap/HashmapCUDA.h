@@ -149,6 +149,9 @@ public:
     float ComputeLoadFactor();
 
 public:
+    // 2 warps
+    size_t avg_elems_per_bucket_ = 64;
+
     CUDAHashmapImplContext<Hash, KeyEq> gpu_context_;
 
     std::shared_ptr<InternalKvPairManager> mem_mgr_;

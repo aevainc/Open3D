@@ -104,9 +104,6 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
     auto bucket_count_total = 0;
     auto bucket_sizes = hashmap->BucketSizes();
     for (size_t i = 0; i < bucket_sizes.size(); ++i) {
-        // if (bucket_sizes[i] >= 31) {
-        //     utility::LogInfo("bucket {}: {}", i, bucket_sizes[i]);
-        // }
         bucket_count_total += bucket_sizes[i];
     }
     std::cout << "bucket_count_total = " << bucket_count_total << "\n";
@@ -192,9 +189,45 @@ void CompareErase(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
     MemoryManager::Free(iterators, hashmap->device_);
 }
 
+template <typename Key, typename Value, typename Hash, typename Eq>
+void CompareRehash(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
+                   std::unordered_map<Key, Value> &hashmap_gt,
+                   const std::vector<Key> &keys) {
+    hashmap->Rehash(hashmap->bucket_count_ * 2);
+    hashmap_gt.rehash(hashmap_gt.bucket_count() * 2);
+
+
+    iterator_t *iterators =
+            reinterpret_cast<iterator_t *>(MemoryManager::Malloc(
+                    sizeof(iterator_t) * hashmap->bucket_count_ * 64,
+                    hashmap->device_));
+    size_t count = hashmap->GetIterators(iterators);
+    assert(count == hashmap_gt.size());
+    auto iterators_vec =
+            thrust::device_vector<iterator_t>(iterators, iterators + count);
+
+    // 2. Verbose check: every iterator should be observable in gt
+    for (size_t i = 0; i < count; ++i) {
+        iterator_t iterator = iterators_vec[i];
+
+        Key key = *(thrust::device_ptr<Key>(
+                reinterpret_cast<Key *>(iterator.first)));
+        Value val = *(thrust::device_ptr<Value>(
+                reinterpret_cast<Value *>(iterator.second)));
+
+        auto iterator_gt = hashmap_gt.find(key);
+
+        assert(iterator_gt != hashmap_gt.end());
+        assert(iterator_gt->first == key);
+        assert(iterator_gt->second == val);
+    }
+
+    MemoryManager::Free(iterators, hashmap->device_);
+}
+
 int main() {
-    // std::random_device rnd_device;
-    std::mt19937 mersenne_engine{0};
+    std::random_device rnd_device;
+    std::mt19937 mersenne_engine{rnd_device()};
 
     for (size_t bucket_count = 1000; bucket_count <= 1000000;
          bucket_count *= 10) {
@@ -205,13 +238,12 @@ int main() {
         // Generate data
         std::uniform_int_distribution<int> dist{-(int)bucket_count * 20,
                                                 (int)bucket_count * 20};
-        std::vector<int> keys(bucket_count * 32);
-        std::vector<int> vals(bucket_count * 32);
+        std::vector<int> keys(bucket_count * 64);
+        std::vector<int> vals(bucket_count * 64);
         std::generate(std::begin(keys), std::end(keys),
                       [&]() { return dist(mersenne_engine); });
         std::sort(keys.begin(), keys.end());
         for (size_t i = 0; i < keys.size(); ++i) {
-            // Ensure 1 on 1 mapping to remove hassles in duplicate keys
             vals[i] = keys[i] * 100;
         }
 
@@ -225,6 +257,9 @@ int main() {
 
         CompareFind(hashmap, hashmap_gt, keys);
         utility::LogInfo("TestFind passed");
+
+        CompareRehash(hashmap, hashmap_gt, keys);
+        utility::LogInfo("TestRehash passed");
 
         CompareErase(hashmap, hashmap_gt, keys);
         utility::LogInfo("TestErase passed");
