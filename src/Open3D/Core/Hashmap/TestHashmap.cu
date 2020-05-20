@@ -119,6 +119,62 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
     MemoryManager::Free(iterators, hashmap->device_);
 }
 
+template <typename Key, typename Value, typename Hash, typename Eq>
+void CompareErase(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
+                  std::unordered_map<Key, Value> &hashmap_gt,
+                  const std::vector<Key> &keys) {
+    // Prepare groundtruth
+    for (int i = 0; i < keys.size(); ++i) {
+        hashmap_gt.erase(keys[i]);
+    }
+
+    // Prepare GPU memory
+    thrust::device_vector<Key> keys_cuda = keys;
+    thrust::device_vector<uint8_t> masks_cuda(keys.size());
+
+    hashmap->Erase(reinterpret_cast<void *>(
+                           thrust::raw_pointer_cast(keys_cuda.data())),
+                   reinterpret_cast<uint8_t *>(
+                           thrust::raw_pointer_cast(masks_cuda.data())),
+                   keys.size());
+
+    // size_t erase_count = 0;
+    // for (int i = 0; i < keys.size(); ++i) {
+    //     erase_count += masks_cuda[i];
+    // }
+    // std::cout << "erase_count = " << erase_count << "\n";
+
+    iterator_t *iterators =
+            reinterpret_cast<iterator_t *>(MemoryManager::Malloc(
+                    sizeof(iterator_t) * hashmap->bucket_count_ * 32,
+                    hashmap->device_));
+    size_t count = hashmap->GetIterators(iterators);
+    // std::cout << count << "\n";
+
+    // 1. Sanity check: iterator counts should be equal
+    assert(count == hashmap_gt.size());
+    auto iterators_vec =
+            thrust::device_vector<iterator_t>(iterators, iterators + count);
+
+    // 2. Verbose check: every iterator should be observable in gt
+    for (size_t i = 0; i < count; ++i) {
+        iterator_t iterator = iterators_vec[i];
+
+        Key key = *(thrust::device_ptr<Key>(
+                reinterpret_cast<Key *>(iterator.first)));
+        Value val = *(thrust::device_ptr<Value>(
+                reinterpret_cast<Value *>(iterator.second)));
+
+        auto iterator_gt = hashmap_gt.find(key);
+
+        assert(iterator_gt != hashmap_gt.end());
+        assert(iterator_gt->first == key);
+        assert(iterator_gt->second == val);
+    }
+
+    MemoryManager::Free(iterators, hashmap->device_);
+}
+
 int main() {
     // std::random_device rnd_device;
     std::mt19937 mersenne_engine{0};
@@ -150,7 +206,10 @@ int main() {
         CompareInsert(hashmap, hashmap_gt, keys, vals);
         utility::LogInfo("TestInsert passed");
 
-        // CompareFind(hashmap, hashmap_gt, std::vector<Key>({100, 300, 500}));
-        // utility::LogInfo("TestFind passed");
+        CompareFind(hashmap, hashmap_gt, keys);
+        utility::LogInfo("TestFind passed");
+
+        CompareErase(hashmap, hashmap_gt, keys);
+        utility::LogInfo("TestErase passed");
     }
 }

@@ -47,6 +47,7 @@
 #include <thrust/device_vector.h>
 
 namespace open3d {
+static const uint32_t est_bucket_factor = 64;
 
 /// Kernels
 template <typename Hash, typename KeyEq>
@@ -379,8 +380,10 @@ CUDAHashmapImplContext<Hash, KeyEq>::Erase(uint8_t& to_be_deleted,
     uint32_t work_queue = 0;
     uint32_t prev_work_queue = 0;
     uint32_t curr_slab_ptr = HEAD_SLAB_PTR;
-
+    uint8_t src_key[MAX_KEY_BYTESIZE];
     uint8_t mask = false;
+
+    // printf("lane_id = %d, key = %d\n", lane_id, *((int*)key));
 
     /** > Loop when we have active lanes **/
     while ((work_queue = __ballot_sync(ACTIVE_LANES_MASK, to_be_deleted))) {
@@ -392,7 +395,6 @@ CUDAHashmapImplContext<Hash, KeyEq>::Erase(uint8_t& to_be_deleted,
         uint32_t src_bucket =
                 __shfl_sync(ACTIVE_LANES_MASK, bucket_id, src_lane, WARP_WIDTH);
 
-        uint8_t src_key[MAX_KEY_BYTESIZE];
         WarpSyncKey(key, src_lane, src_key);
 
         const uint32_t unit_data =
@@ -435,11 +437,15 @@ CUDAHashmapImplContext<Hash, KeyEq>::Erase(uint8_t& to_be_deleted,
                                               NEXT_SLAB_PTR_LANE, WARP_WIDTH);
             if (next_slab_ptr == EMPTY_SLAB_PTR) {
                 // not found:
-                to_be_deleted = false;
+                if (lane_id == src_lane) {
+                    to_be_deleted = false;
+                }
             } else {
                 curr_slab_ptr = next_slab_ptr;
             }
         }
+        // printf("src_lane = %d, lane_id = %d, src_key = %d, active = %d\n",
+        //        src_lane, lane_id, *((int*)src_key), (int)to_be_deleted);
         prev_work_queue = work_queue;
     }
 
@@ -522,13 +528,13 @@ __global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
     }
 }
 
-template<typename Hash, typename KeyEq> __global__ void InsertKernelPass2(
-        CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-        uint8_t* values,
-        ptr_t* iterator_ptrs,
-        iterator_t* iterators,
-        uint8_t* masks,
-        uint32_t input_count) {
+template <typename Hash, typename KeyEq>
+__global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
+                                  uint8_t* values,
+                                  ptr_t* iterator_ptrs,
+                                  iterator_t* iterators,
+                                  uint8_t* masks,
+                                  uint32_t input_count) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (tid < input_count) {
@@ -564,7 +570,9 @@ __global__ void EraseKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
     uint8_t lane_active = false;
     uint32_t bucket_id = 0;
-    uint8_t* key;
+
+    __shared__ uint8_t dummy_key[MAX_KEY_BYTESIZE];
+    uint8_t* key = dummy_key;
 
     if (tid < input_count) {
         lane_active = true;
@@ -698,7 +706,6 @@ CUDAHashmapImpl<Hash, KeyEq>::CUDAHashmapImpl(const uint32_t init_buckets,
                                               const uint32_t dsize_value,
                                               Device device)
     : device_(device) {
-    const uint32_t est_bucket_factor = 32;
     const uint32_t est_kvpairs = init_buckets * est_bucket_factor;
     mem_mgr_ = std::make_shared<InternalKvPairManager>(est_kvpairs, dsize_key,
                                                        dsize_value, device_);
@@ -729,13 +736,15 @@ void CUDAHashmapImpl<Hash, KeyEq>::Insert(uint8_t* keys,
     InsertKernelPass1<<<num_blocks, BLOCKSIZE_>>>(
             gpu_context_, keys, iterator_ptrs, masks, input_count);
     int heap_counter;
-    heap_counter = *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
+    heap_counter =
+            *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
     std::cout << "Before " << heap_counter << "\n";
     InsertKernelPass2<<<num_blocks, BLOCKSIZE_>>>(
             gpu_context_, values, iterator_ptrs, iterators, masks, input_count);
-    heap_counter = *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
+    heap_counter =
+            *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
     std::cout << "After " << heap_counter << "\n";
-    
+
     MemoryManager::Free(iterator_ptrs, device_);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
@@ -772,7 +781,7 @@ template <typename Hash, typename KeyEq>
 uint32_t CUDAHashmapImpl<Hash, KeyEq>::GetIterators(iterator_t* iterators) {
     const uint32_t blocksize = 128;
     const uint32_t num_blocks =
-            (gpu_context_.bucket_count_ * 32 + blocksize - 1) / blocksize;
+            (gpu_context_.bucket_count_ * est_bucket_factor + blocksize - 1) / blocksize;
 
     uint32_t* iterator_count_cuda =
             (uint32_t*)MemoryManager::Malloc(sizeof(uint32_t), device_);
@@ -801,7 +810,7 @@ std::vector<size_t> CUDAHashmapImpl<Hash, KeyEq>::CountElemsPerBucket() {
 
     const uint32_t blocksize = 128;
     const uint32_t num_blocks =
-            (gpu_context_.bucket_count_ * 32 + blocksize - 1) / blocksize;
+            (gpu_context_.bucket_count_ * est_bucket_factor + blocksize - 1) / blocksize;
     CountElemsPerBucketKernel<<<num_blocks, blocksize>>>(
             gpu_context_, thrust::raw_pointer_cast(elems_per_bucket.data()));
 
@@ -967,7 +976,7 @@ template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
     // TODO: add a size operator instead of rough estimation
     auto output_iterators = (iterator_t*)MemoryManager::Malloc(
-            sizeof(iterator_t) * this->bucket_count_ * 32, this->device_);
+            sizeof(iterator_t) * this->bucket_count_ * est_bucket_factor, this->device_);
     uint32_t iterator_count = GetIterators(output_iterators);
 
     auto output_keys = MemoryManager::Malloc(this->dsize_key_ * iterator_count,
