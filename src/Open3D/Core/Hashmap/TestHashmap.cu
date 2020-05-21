@@ -191,8 +191,8 @@ void CompareRehash(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
 }
 
 int main() {
-    // std::random_device rnd_device;
-    std::mt19937 mersenne_engine{0};
+    std::random_device rnd_device;
+    std::mt19937 mersenne_engine{rnd_device()};
 
     for (size_t bucket_count = 1000; bucket_count <= 1000000; bucket_count *= 10) {
         utility::LogInfo("Test with bucket_count = {}", bucket_count);
@@ -202,8 +202,8 @@ int main() {
         // Generate data
         std::uniform_int_distribution<int64_t> dist{-(int64_t)bucket_count * 20,
                                                     (int64_t)bucket_count * 20};
-        std::vector<int64_t> keys(bucket_count * 32);
-        std::vector<int64_t> vals(bucket_count * 32);
+        std::vector<int64_t> keys(bucket_count * 64);
+        std::vector<int64_t> vals(bucket_count * 64);
         std::generate(std::begin(keys), std::end(keys),
                       [&]() { return dist(mersenne_engine); });
         // std::sort(keys.begin(), keys.end());
@@ -226,7 +226,7 @@ int main() {
         CompareRehash(hashmap, hashmap_gt, keys);
         utility::LogInfo("TestRehash passed");
 
-        CompareErase(hashmap, hashmap_gt, keys);
-        utility::LogInfo("TestErase passed");
+        // CompareErase(hashmap, hashmap_gt, keys);
+        // utility::LogInfo("TestErase passed");
     }
 }

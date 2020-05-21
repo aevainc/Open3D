@@ -67,20 +67,21 @@ public:
                         const InternalNodeManagerContext& node_mgr_ctx,
                         const InternalKvPairManagerContext& mem_mgr_ctx);
 
-    __device__ Pair<ptr_t, uint8_t> Insert(uint8_t& lane_active,
-                                           const uint32_t lane_id,
-                                           const uint32_t bucket_id,
-                                           uint8_t* key_ptr);
+    __device__ uint8_t Insert(uint8_t& lane_active,
+                              const uint32_t lane_id,
+                              const uint32_t bucket_id,
+                              uint8_t* key_ptr,
+                              ptr_t iterator_ptr);
 
     __device__ Pair<ptr_t, uint8_t> Find(uint8_t& lane_active,
                                          const uint32_t lane_id,
                                          const uint32_t bucket_id,
                                          uint8_t* key_ptr);
 
-    __device__ uint8_t Erase(uint8_t& lane_active,
-                             const uint32_t lane_id,
-                             const uint32_t bucket_id,
-                             uint8_t* key_ptr);
+    __device__ Pair<ptr_t, uint8_t> Erase(uint8_t& lane_active,
+                                          const uint32_t lane_id,
+                                          const uint32_t bucket_id,
+                                          uint8_t* key_ptr);
 
     /* Hash function */
     __device__ __host__ uint32_t ComputeBucket(uint8_t* key_ptr) const;
