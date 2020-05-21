@@ -75,12 +75,20 @@ CPUTensorHash::CPUTensorHash(Tensor coords,
 
     // Create hashmap and reserve twice input size
     hashmap_ = CreateCPUHashmap<DefaultHash, DefaultKeyEq>(
-            N * 2, key_size, value_size, coords.GetDevice());
+            N / 2, key_size, value_size, coords.GetDevice());
 
     if (insert) {
-        hashmap_->Insert(static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
-                         static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()),
-                         N);
+        auto iterators = MemoryManager::Malloc(sizeof(iterator_t) * N,
+                                               coords.GetDevice());
+        auto masks =
+                MemoryManager::Malloc(sizeof(uint8_t) * N, coords.GetDevice());
+
+        hashmap_->Insert(static_cast<void*>(coords.GetBlob()->GetDataPtr()),
+                         static_cast<void*>(values.GetBlob()->GetDataPtr()),
+                         static_cast<iterator_t*>(iterators),
+                         static_cast<uint8_t*>(masks), N);
+        MemoryManager::Free(iterators, coords.GetDevice());
+        MemoryManager::Free(masks, coords.GetDevice());
     }
 }
 
@@ -116,35 +124,29 @@ std::pair<Tensor, Tensor> CPUTensorHash::Insert(Tensor coords, Tensor values) {
     int64_t N = coords.GetShape()[0];
 
     // Insert
-    auto result = hashmap_->Insert(
+    auto iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * N, coords.GetDevice());
+
+    Tensor output_coord_tensor(SizeVector({N, key_dim_}), key_type_,
+                               coords.GetDevice());
+    Tensor output_mask_tensor(SizeVector({N}), Dtype::UInt8,
+                              coords.GetDevice());
+    hashmap_->Insert(
             static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
-            static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()), N);
-
-    // Decode returned iterators
-    auto iterators_buf = result.first;
-    auto masks_buf = result.second;
-
-    // Assign keys
-    auto ret_keys_tensor =
-            Tensor(coords.GetShape(), key_type_, hashmap_->device_);
+            static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()),
+            static_cast<iterator_t*>(iterators),
+            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            N);
 
     hashmap_->UnpackIterators(
-            iterators_buf, masks_buf,
-            static_cast<uint8_t*>(ret_keys_tensor.GetBlob()->GetDataPtr()),
-            nullptr, N);
+            static_cast<iterator_t*>(iterators),
+            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            static_cast<void*>(output_coord_tensor.GetBlob()->GetDataPtr()),
+            /* value = */ nullptr, N);
 
-    // Dispatch masks
-    // Copy mask to avoid duplicate data; dummy deleter avoids double free
-    // TODO: more efficient memory reuse
-    auto blob = std::make_shared<Blob>(hashmap_->device_,
-                                       static_cast<void*>(masks_buf),
-                                       [](void* dummy) -> void {});
-    auto mask_tensor =
-            Tensor(SizeVector({N}), SizeVector({1}),
-                   static_cast<void*>(masks_buf), Dtype::UInt8, blob);
-    auto ret_mask_tensor = mask_tensor.Copy(hashmap_->device_);
+    MemoryManager::Free(iterators, coords.GetDevice());
 
-    return std::make_pair(ret_keys_tensor, ret_mask_tensor);
+    return std::make_pair(output_coord_tensor, output_mask_tensor);
 }
 
 std::pair<Tensor, Tensor> CPUTensorHash::Query(Tensor coords) {
@@ -169,34 +171,29 @@ std::pair<Tensor, Tensor> CPUTensorHash::Query(Tensor coords) {
     int64_t N = coords.GetShape()[0];
 
     // Search
-    auto result = hashmap_->Find(
-            static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()), N);
-    utility::LogInfo("Searched");
+    auto iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * N, coords.GetDevice());
 
-    // Decode returned iterators
-    auto iterators_buf = result.first;
-    auto masks_buf = result.second;
+    Tensor output_value_tensor(SizeVector({N, value_dim_}), value_type_,
+                               coords.GetDevice());
+    Tensor output_mask_tensor(SizeVector({N}), Dtype::UInt8,
+                              coords.GetDevice());
 
-    // Dispatch values
-    auto ret_value_tensor =
-            Tensor(SizeVector({N}), value_type_, hashmap_->device_);
+    hashmap_->Find(
+            static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
+            static_cast<iterator_t*>(iterators),
+            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            N);
+
     hashmap_->UnpackIterators(
-            iterators_buf, masks_buf, nullptr,
-            static_cast<uint8_t*>(ret_value_tensor.GetBlob()->GetDataPtr()), N);
+            static_cast<iterator_t*>(iterators),
+            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            /* coord = */ nullptr,
+            static_cast<void*>(output_value_tensor.GetBlob()->GetDataPtr()), N);
 
-    // Dispatch masks
-    // Copy mask to avoid duplicate data; dummy deleter avoids double free
-    // TODO: more efficient memory reuse
-    utility::LogInfo("Dispatching finished");
-    auto blob = std::make_shared<Blob>(hashmap_->device_,
-                                       static_cast<void*>(masks_buf),
-                                       [](void* dummy) -> void {});
-    auto mask_tensor =
-            Tensor(SizeVector({N}), SizeVector({1}),
-                   static_cast<void*>(masks_buf), Dtype::UInt8, blob);
-    auto ret_mask_tensor = mask_tensor.Copy(hashmap_->device_);
+    MemoryManager::Free(iterators, coords.GetDevice());
 
-    return std::make_pair(ret_value_tensor, ret_mask_tensor);
+    return std::make_pair(output_value_tensor, output_mask_tensor);
 }
 
 Tensor CPUTensorHash::Assign(Tensor coords, Tensor values) {
@@ -231,29 +228,26 @@ Tensor CPUTensorHash::Assign(Tensor coords, Tensor values) {
     int64_t N = coords.GetShape()[0];
 
     // Search
-    auto result = hashmap_->Find(
-            static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()), N);
+    auto iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * N, coords.GetDevice());
 
-    // Decode returned iterators
-    auto iterators_buf = result.first;
-    auto masks_buf = result.second;
+    Tensor output_mask_tensor(SizeVector({N}), Dtype::UInt8,
+                              coords.GetDevice());
+
+    hashmap_->Find(
+            static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
+            static_cast<iterator_t*>(iterators),
+            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            N);
 
     hashmap_->AssignIterators(
-            iterators_buf, masks_buf,
+            static_cast<iterator_t*>(iterators),
+            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
             static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()), N);
 
-    // Dispatch masks
-    // Copy mask to avoid duplicate data; dummy deleter avoids double free
-    // TODO: more efficient memory reuse
-    auto blob = std::make_shared<Blob>(hashmap_->device_,
-                                       static_cast<void*>(masks_buf),
-                                       [](void* dummy) -> void {});
-    auto mask_tensor =
-            Tensor(SizeVector({N}), SizeVector({1}),
-                   static_cast<void*>(masks_buf), Dtype::UInt8, blob);
-    auto ret_mask_tensor = mask_tensor.Copy(hashmap_->device_);
+    MemoryManager::Free(iterators, coords.GetDevice());
 
-    return ret_mask_tensor;
+    return output_mask_tensor;
 }
 
 namespace _factory {

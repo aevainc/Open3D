@@ -38,17 +38,12 @@ set (CORE_CUDA_SRC
 )
 
 set (HASHMAP_SRC
-    # Hashmap/Hashmap.cpp
-    # Hashmap/HashmapCPU.cpp
-    # Hashmap/TensorHash.cpp
-    # Hashmap/TensorHashCPU.cpp
+    Hashmap/TensorHash.cpp
+    Hashmap/TensorHashCPU.cpp
 )
 
 set (HASHMAP_CUDA_SRC
-    # Hashmap/Hashmap.cu
-    # Hashmap/HashmapCUDA.cu
-    # TODO: conditional compile and put corresponding parts in cpp
-    # Hashmap/TensorHashCUDA.cu
+    Hashmap/TensorHashCUDA.cu
 )
 
 if (BUILD_CUDA_MODULE)
@@ -87,6 +82,6 @@ if (BUILD_CUDA_MODULE)
     # add_executable(test_hashmap_cpu Hashmap/test_hashmap.cpp)
     # target_link_libraries(test_hashmap_cpu ${CMAKE_PROJECT_NAME})
 
-    # add_executable(test_tensorhash Hashmap/test_tensorhash.cpp)
-    # target_link_libraries(test_tensorhash ${CMAKE_PROJECT_NAME})
+    add_executable(test_tensorhash Hashmap/test_tensorhash.cpp)
+    target_link_libraries(test_tensorhash ${CMAKE_PROJECT_NAME})
 endif()

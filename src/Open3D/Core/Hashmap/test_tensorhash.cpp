@@ -50,8 +50,8 @@ int main() {
         // Tensor[shape={5}, stride={1}, Int64, CUDA:0, 0x7f85dde01600]
         // [Open3D INFO] MaskTensor [1 1 1 1 0]
         // Tensor[shape={5}, stride={1}, UInt8, CUDA:0, 0x7f85dde01800]
-        utility::LogInfo("IndexTensor {}", results.first.ToString());
-        utility::LogInfo("MaskTensor {}", results.second.ToString());
+        std::cout << "IndexTensor " << results.first.ToString() << "\n";
+        std::cout << "MaskTensor " << results.second.ToString() << "\n";
 
         /// Assign: tensor[(0, 0)] = 2, tensor[(2, 2)] = 0
         utility::LogInfo("Assign");
@@ -67,8 +67,8 @@ int main() {
         // Tensor[shape={5}, stride={1}, Int64, CUDA:0, 0x7f8615e01e00]
         // [Open3D INFO] MaskTensor [1 1 1 1 1]
         // Tensor[shape={5}, stride={1}, UInt8, CUDA:0, 0x7f8615e02000]
-        utility::LogInfo("IndexTensor {}", results.first.ToString());
-        utility::LogInfo("MaskTensor {}", results.second.ToString());
+        std::cout << "IndexTensor " << results.first.ToString() << "\n";
+        std::cout << "MaskTensor " << results.second.ToString() << "\n";
 
         /// Test Unique
         Tensor duplicate_coords(
@@ -88,7 +88,7 @@ int main() {
         // Tensor[shape={7}, stride={1}, UInt8, CUDA:0, 0x7ff65de03400]
         // -> [[0 0], [1 1], [2 2], [3 3], [4 4]] after advanced indexing with
         // masks
-        utility::LogInfo("IndexTensor {}", results.first.ToString());
-        utility::LogInfo("MaskTensor {}", results.second.ToString());
+        std::cout << "IndexTensor " << results.first.ToString() << "\n";
+        std::cout << "MaskTensor " << results.second.ToString() << "\n";
     }
 }
