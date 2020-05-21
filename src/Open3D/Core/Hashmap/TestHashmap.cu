@@ -92,6 +92,7 @@ void CompareAllIterators(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
             hashmap->bucket_count_ * 64);
     size_t total_count = hashmap->GetIterators(reinterpret_cast<iterator_t *>(
             thrust::raw_pointer_cast(all_iterators_device.data())));
+    std::cout << total_count << " " << hashmap_gt.size() << "\n";
     assert(total_count == hashmap_gt.size());
 
     thrust::device_vector<Key> output_keys_device(total_count);
@@ -190,25 +191,25 @@ void CompareRehash(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
 }
 
 int main() {
-    std::random_device rnd_device;
-    std::mt19937 mersenne_engine{rnd_device()};
+    // std::random_device rnd_device;
+    std::mt19937 mersenne_engine{0};
 
-    for (size_t bucket_count = 1000; bucket_count <= 1000000;
-         bucket_count *= 10) {
+    for (size_t bucket_count = 1000; bucket_count <= 1000000; bucket_count *= 10) {
         utility::LogInfo("Test with bucket_count = {}", bucket_count);
-        using Key = int;
-        using Value = int;
+        using Key = int64_t;
+        using Value = int64_t;
 
         // Generate data
-        std::uniform_int_distribution<int> dist{-(int)bucket_count * 20,
-                                                (int)bucket_count * 20};
-        std::vector<int> keys(bucket_count * 64);
-        std::vector<int> vals(bucket_count * 64);
+        std::uniform_int_distribution<int64_t> dist{-(int64_t)bucket_count * 20,
+                                                    (int64_t)bucket_count * 20};
+        std::vector<int64_t> keys(bucket_count * 32);
+        std::vector<int64_t> vals(bucket_count * 32);
         std::generate(std::begin(keys), std::end(keys),
                       [&]() { return dist(mersenne_engine); });
-        std::sort(keys.begin(), keys.end());
+        // std::sort(keys.begin(), keys.end());
         for (size_t i = 0; i < keys.size(); ++i) {
             vals[i] = keys[i] * 100;
+            // std::cout << keys[i] << " " << vals[i] << "\n";
         }
 
         auto hashmap = CreateHashmap<DefaultHash, DefaultKeyEq>(

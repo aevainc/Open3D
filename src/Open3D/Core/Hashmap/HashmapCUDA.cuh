@@ -50,6 +50,13 @@ namespace open3d {
 
 /// Kernels
 template <typename Hash, typename KeyEq>
+__global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
+                                  uint8_t* input_keys,
+                                  ptr_t* output_iterator_ptrs,
+                                  uint8_t* output_masks,
+                                  uint32_t input_count);
+
+template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                   uint8_t* input_keys,
                                   ptr_t* output_iterator_ptrs,
@@ -300,19 +307,21 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Insert(
                 ptr_t old_iterator_ptr =
                         atomicCAS((unsigned int*)unit_data_ptr, EMPTY_PAIR_PTR,
                                   iterator_ptr);
+
                 // Remember to clean up in another pass
                 /** Branch 2.1: SUCCEED **/
                 if (old_iterator_ptr == EMPTY_PAIR_PTR) {
                     to_be_inserted = false;
 
-                    // iterator = prealloc_pair_internal_ptr;
                     mask = true;
 
                     iterator_t iter =
                             mem_mgr_ctx_.extract_iterator(iterator_ptr);
                     int* key_ptr = (int*)iter.first;
+
+                    // Can this be a problem?
                     for (int i = 0; i < dsize_key_ / sizeof(int); ++i) {
-                        *(key_ptr) = *((int*)key);
+                        *(key_ptr + i) = *((int*)key + i);
                     }
                 }
                 /** Branch 2.2: failed: RESTART
@@ -924,7 +933,7 @@ void CUDAHashmap<Hash, KeyEq>::UnpackIterators(
         void* output_values,
         size_t iterator_count) {
     if (iterator_count == 0) return;
-    
+
     const size_t num_threads = 32;
     const size_t num_blocks = (iterator_count + num_threads - 1) / num_threads;
 
