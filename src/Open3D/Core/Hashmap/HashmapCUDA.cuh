@@ -392,8 +392,6 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Erase(
     ptr_t iterator_ptr = 0;
     uint8_t mask = false;
 
-    // printf("lane_id = %d, key = %d\n", lane_id, *((int*)key));
-
     /** > Loop when we have active lanes **/
     while ((work_queue = __ballot_sync(ACTIVE_LANES_MASK, to_be_deleted))) {
         /** 0. Restart from linked list head if last insertion is finished
@@ -416,9 +414,6 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Erase(
 
         /** Branch 1: key found **/
         if (lane_found >= 0) {
-            ptr_t src_pair_internal_ptr = __shfl_sync(
-                    ACTIVE_LANES_MASK, unit_data, lane_found, WARP_WIDTH);
-
             if (lane_id == src_lane) {
                 uint32_t* unit_data_ptr =
                         (curr_slab_ptr == HEAD_SLAB_PTR)
@@ -426,19 +421,23 @@ __device__ Pair<ptr_t, uint8_t> CUDAHashmapImplContext<Hash, KeyEq>::Erase(
                                                               lane_found)
                                 : get_unit_ptr_from_list_nodes(curr_slab_ptr,
                                                                lane_found);
-                ptr_t pair_to_delete = *unit_data_ptr;
-                ptr_t old_key_value_pair =
-                        atomicCAS((unsigned int*)(unit_data_ptr),
-                                  pair_to_delete, EMPTY_PAIR_PTR);
+
+                uint32_t pair_to_delete = atomicExch(
+                        (unsigned int*)unit_data_ptr, EMPTY_PAIR_PTR);
+                mask = pair_to_delete != EMPTY_PAIR_PTR;
+                iterator_ptr = pair_to_delete;
+                // ptr_t old_key_value_pair =
+                //         atomicCAS((unsigned int*)(unit_data_ptr),
+                //                   pair_to_delete, EMPTY_PAIR_PTR);
                 /** Branch 1.1: this thread reset, free src_addr **/
-                if (old_key_value_pair == pair_to_delete) {
-                    to_be_deleted = false;
-                    iterator_ptr = pair_to_delete;
-                    mask = true;
-                }
+                // if (old_key_value_pair == pair_to_delete) {
+                //     iterator_ptr = pair_to_delete;
+                //     mask = true;
+                // }
+                // to_be_deleted = false;
+
                 /** Branch 1.2: other thread did the job, avoid double free
                  * **/
-
             }
         } else {  // no matching slot found:
             ptr_t next_slab_ptr = __shfl_sync(ACTIVE_LANES_MASK, unit_data,
@@ -613,6 +612,7 @@ __global__ void EraseKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
         lane_active = true;
         key = keys + tid * hash_ctx.dsize_key_;
         bucket_id = hash_ctx.ComputeBucket(key);
+        // printf("tid = %d, key = %d\n", tid, *((int*)key));
     }
 
     auto result = hash_ctx.Erase(lane_active, lane_id, bucket_id, key);
@@ -630,7 +630,7 @@ __global__ void EraseKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                  uint32_t input_count) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
     if (tid < input_count && masks[tid]) {
-        hash_ctx.mem_mgr_ctx_.SafeFree(iterator_ptrs[tid]);
+        hash_ctx.mem_mgr_ctx_.Free(iterator_ptrs[tid]);
     }
 }
 

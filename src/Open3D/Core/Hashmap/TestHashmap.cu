@@ -177,6 +177,11 @@ void CompareErase(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
                            output_masks_device.data())),
                    keys.size());
 
+    size_t erase_count = thrust::reduce(output_masks_device.begin(),
+                                         output_masks_device.end(), (size_t)0,
+                                         thrust::plus<size_t>());
+    utility::LogInfo("Successful erase_count = {}", erase_count);
+
     CompareAllIterators(hashmap, hashmap_gt);
 }
 
@@ -194,22 +199,20 @@ int main() {
     std::random_device rnd_device;
     std::mt19937 mersenne_engine{rnd_device()};
 
-    for (size_t bucket_count = 1000; bucket_count <= 1000000; bucket_count *= 10) {
+    for (size_t bucket_count = 50; bucket_count <= 500000; bucket_count *= 10) {
         utility::LogInfo("Test with bucket_count = {}", bucket_count);
         using Key = int64_t;
         using Value = int64_t;
 
         // Generate data
-        std::uniform_int_distribution<int64_t> dist{-(int64_t)bucket_count * 20,
-                                                    (int64_t)bucket_count * 20};
-        std::vector<int64_t> keys(bucket_count * 64);
-        std::vector<int64_t> vals(bucket_count * 64);
+        std::uniform_int_distribution<Key> dist{-(Key)bucket_count * 20,
+                                                (Key)bucket_count * 20};
+        std::vector<Key> keys(bucket_count * 64);
+        std::vector<Value> vals(bucket_count * 64);
         std::generate(std::begin(keys), std::end(keys),
                       [&]() { return dist(mersenne_engine); });
-        // std::sort(keys.begin(), keys.end());
         for (size_t i = 0; i < keys.size(); ++i) {
             vals[i] = keys[i] * 100;
-            // std::cout << keys[i] << " " << vals[i] << "\n";
         }
 
         auto hashmap = CreateHashmap<DefaultHash, DefaultKeyEq>(
@@ -226,7 +229,7 @@ int main() {
         CompareRehash(hashmap, hashmap_gt, keys);
         utility::LogInfo("TestRehash passed");
 
-        // CompareErase(hashmap, hashmap_gt, keys);
-        // utility::LogInfo("TestErase passed");
+        CompareErase(hashmap, hashmap_gt, keys);
+        utility::LogInfo("TestErase passed");
     }
 }
