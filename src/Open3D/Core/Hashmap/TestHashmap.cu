@@ -155,6 +155,26 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
                                          thrust::plus<size_t>());
     utility::LogInfo("Successful insert_count = {}", insert_count);
 
+    for (size_t i = 0; i < keys.size(); ++i) {
+        auto iterator_gt = hashmap_gt.find(keys[i]);
+
+        // Not found in gt => not found in ours
+        if (iterator_gt == hashmap_gt.end()) {
+            assert(output_masks_host[i] == 0);
+        } else {  /// Found in gt => same key and value
+            assert(output_keys_host[i] == iterator_gt->first);
+            assert(output_vals_host[i] == iterator_gt->second);
+
+            // iterator_t iterator = output_iterators_device[i];
+            // Key key = *(thrust::device_ptr<Key>(
+            //         reinterpret_cast<Key *>(iterator.first)));
+            // Value val = *(thrust::device_ptr<Value>(
+            //         reinterpret_cast<Value *>(iterator.second)));
+            // assert(key == iterator_gt->first);
+            // assert(val == iterator_gt->second);
+        }
+    }
+
     CompareAllIterators(hashmap, hashmap_gt);
 }
 
@@ -178,8 +198,8 @@ void CompareErase(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
                    keys.size());
 
     size_t erase_count = thrust::reduce(output_masks_device.begin(),
-                                         output_masks_device.end(), (size_t)0,
-                                         thrust::plus<size_t>());
+                                        output_masks_device.end(), (size_t)0,
+                                        thrust::plus<size_t>());
     utility::LogInfo("Successful erase_count = {}", erase_count);
 
     CompareAllIterators(hashmap, hashmap_gt);

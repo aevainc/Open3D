@@ -570,16 +570,17 @@ __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
     if (tid < input_count) {
         ptr_t iterator_ptr = iterator_ptrs[tid];
-
+        
         if (masks[tid]) {
+            iterator_t iterator =
+                    hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr);
             // Success: copy remaining values
             int* src_value_ptr = (int*)(values + tid * hash_ctx.dsize_value_);
-            int* dst_value_ptr =
-                    (int*)hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr)
-                            .second;
+            int* dst_value_ptr = (int*)iterator.second;
             for (int i = 0; i < hash_ctx.dsize_value_ / sizeof(int); ++i) {
                 dst_value_ptr[i] = src_value_ptr[i];
             }
+            iterators[tid] = iterator;
         } else {
             hash_ctx.mem_mgr_ctx_.Free(iterator_ptr);
             iterators[tid] = iterator_t();
