@@ -54,7 +54,7 @@ CUDAHashmap<Hash, KeyEq>::CUDAHashmap(size_t initial_buckets,
                                       size_t dsize_value,
                                       Device device)
     : Hashmap<Hash, KeyEq>(initial_buckets, dsize_key, dsize_value, device) {
-    cuda_hashmap_impl_ = std::make_shared<CUDAHashmapImpl<Hash, KeyEq>>(
+    impl_ = std::make_shared<CUDAHashmapImpl<Hash, KeyEq>>(
             this->bucket_count_, this->dsize_key_, this->dsize_value_,
             this->device_);
 }
@@ -71,12 +71,12 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
     bool extern_alloc = (output_masks != nullptr);
     if (!extern_alloc) {
         output_masks = (uint8_t*)MemoryManager::Malloc(
-                count * sizeof(uint8_t), cuda_hashmap_impl_->device_);
+                count * sizeof(uint8_t), impl_->device_);
     }
-    cuda_hashmap_impl_->Insert((uint8_t*)input_keys, (uint8_t*)input_values,
+    impl_->Insert((uint8_t*)input_keys, (uint8_t*)input_values,
                                output_iterators, output_masks, count);
     if (!extern_alloc) {
-        MemoryManager::Free(output_masks, cuda_hashmap_impl_->device_);
+        MemoryManager::Free(output_masks, impl_->device_);
     }
 }
 
@@ -85,7 +85,7 @@ void CUDAHashmap<Hash, KeyEq>::Find(const void* input_keys,
                                     iterator_t* output_iterators,
                                     uint8_t* output_masks,
                                     size_t count) {
-    cuda_hashmap_impl_->Find((uint8_t*)input_keys, output_iterators,
+    impl_->Find((uint8_t*)input_keys, output_iterators,
                              output_masks, count);
 }
 
@@ -96,17 +96,17 @@ void CUDAHashmap<Hash, KeyEq>::Erase(const void* input_keys,
     bool extern_alloc = (output_masks != nullptr);
     if (!extern_alloc) {
         output_masks = (uint8_t*)MemoryManager::Malloc(
-                count * sizeof(uint8_t), cuda_hashmap_impl_->device_);
+                count * sizeof(uint8_t), impl_->device_);
     }
-    cuda_hashmap_impl_->Erase((uint8_t*)input_keys, output_masks, count);
+    impl_->Erase((uint8_t*)input_keys, output_masks, count);
     if (!extern_alloc) {
-        MemoryManager::Free(output_masks, cuda_hashmap_impl_->device_);
+        MemoryManager::Free(output_masks, impl_->device_);
     }
 }
 
 template <typename Hash, typename KeyEq>
 size_t CUDAHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
-    return cuda_hashmap_impl_->GetIterators(output_iterators);
+    return impl_->GetIterators(output_iterators);
 }
 
 __global__ void UnpackIteratorsKernel(const iterator_t* input_iterators,
@@ -201,7 +201,7 @@ void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
     // TODO: add a size operator instead of rough estimation
     auto output_iterators = (iterator_t*)MemoryManager::Malloc(
             sizeof(iterator_t) * this->bucket_count_ *
-                    cuda_hashmap_impl_->avg_elems_per_bucket_,
+                    impl_->avg_elems_per_bucket_,
             this->device_);
     uint32_t iterator_count = GetIterators(output_iterators);
 
@@ -214,7 +214,7 @@ void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
                     output_values, iterator_count);
 
     this->bucket_count_ = buckets;
-    cuda_hashmap_impl_ = std::make_shared<CUDAHashmapImpl<Hash, KeyEq>>(
+    impl_ = std::make_shared<CUDAHashmapImpl<Hash, KeyEq>>(
             this->bucket_count_, this->dsize_key_, this->dsize_value_,
             this->device_);
 
@@ -234,13 +234,13 @@ void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
 /// Return number of elems per bucket
 template <typename Hash, typename KeyEq>
 std::vector<size_t> CUDAHashmap<Hash, KeyEq>::BucketSizes() {
-    return cuda_hashmap_impl_->CountElemsPerBucket();
+    return impl_->CountElemsPerBucket();
 }
 
 /// Return size / bucket_count
 template <typename Hash, typename KeyEq>
 float CUDAHashmap<Hash, KeyEq>::LoadFactor() {
-    return cuda_hashmap_impl_->ComputeLoadFactor();
+    return impl_->ComputeLoadFactor();
 }
 
 template <typename Hash, typename KeyEq>

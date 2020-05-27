@@ -98,7 +98,7 @@ public:
     float LoadFactor();
 
 protected:
-    std::shared_ptr<CUDAHashmapImpl<Hash, KeyEq>> cuda_hashmap_impl_;
+    std::shared_ptr<CUDAHashmapImpl<Hash, KeyEq>> impl_;
 };
 
 }  // namespace open3d

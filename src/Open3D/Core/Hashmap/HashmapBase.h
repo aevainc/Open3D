@@ -36,45 +36,44 @@ struct DefaultHash {
     // Default constructor makes compiler happy. Undefined behavior, must set
     // key_size_ before calling operator().
     DefaultHash() {}
-    DefaultHash(size_t key_size) : key_size_(key_size) {}
+    DefaultHash(size_t key_size) : key_size_in_int_(key_size / sizeof(int)) {}
 
     uint64_t OPEN3D_HOST_DEVICE operator()(const void* key_ptr) const {
         uint64_t hash = UINT64_C(14695981039346656037);
 
-        const int chunks = key_size_ / sizeof(int);
-        int32_t* cast_key_ptr = (int32_t*)(key_ptr);
-        for (size_t i = 0; i < chunks; ++i) {
+        auto cast_key_ptr = static_cast<const int*>(key_ptr);
+        for (size_t i = 0; i < key_size_in_int_; ++i) {
             hash ^= cast_key_ptr[i];
             hash *= UINT64_C(1099511628211);
         }
         return hash;
     }
 
-    size_t key_size_;
+    size_t key_size_in_int_;
 };
 
 struct DefaultKeyEq {
     // Default constructor makes compiler happy. Undefined behavior, must set
     // key_size_ before calling operator().
     DefaultKeyEq() {}
-    DefaultKeyEq(size_t key_size) : key_size_(key_size) {}
+    DefaultKeyEq(size_t key_size) : key_size_in_int_(key_size / sizeof(int)) {}
 
     bool OPEN3D_HOST_DEVICE operator()(const void* lhs, const void* rhs) const {
         if (lhs == nullptr || rhs == nullptr) {
             return false;
         }
-        const int chunks = key_size_ / sizeof(int);
-        int* lhs_key_ptr = (int*)(lhs);
-        int* rhs_key_ptr = (int*)(rhs);
 
-        bool res = true;
-        for (size_t i = 0; i < chunks; ++i) {
-            res = res && (lhs_key_ptr[i] == rhs_key_ptr[i]);
+        auto lhs_key_ptr = static_cast<const int*>(lhs);
+        auto rhs_key_ptr = static_cast<const int*>(rhs);
+
+        bool is_eq = true;
+        for (size_t i = 0; i < key_size_in_int_; ++i) {
+            is_eq = is_eq && (lhs_key_ptr[i] == rhs_key_ptr[i]);
         }
-        return res;
+        return is_eq;
     }
 
-    size_t key_size_;
+    size_t key_size_in_int_;
 };
 
 /// Base class: shared interface

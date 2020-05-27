@@ -97,8 +97,8 @@ __host__ void CUDAHashmapImplContext<Hash, KeyEq>::Setup(
     node_mgr_ctx_ = allocator_ctx;
     mem_mgr_ctx_ = pair_allocator_ctx;
 
-    hash_fn_.key_size_ = dsize_key;
-    cmp_fn_.key_size_ = dsize_key;
+    hash_fn_.key_size_in_int_ = dsize_key / sizeof(int);
+    cmp_fn_.key_size_in_int_ = dsize_key / sizeof(int);
 }
 
 /// Device functions
