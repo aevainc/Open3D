@@ -82,27 +82,19 @@ public:
 
     size_t GetIterators(iterator_t* output_iterators);
 
-    /// Parallel iterations
-    /// Only write to corresponding entries if they are not nullptr
-    /// Only access input_masks if they it is not nullptr
     void UnpackIterators(const iterator_t* input_iterators,
                          const uint8_t* input_masks,
                          void* output_keys,
                          void* output_values,
                          size_t count);
 
-    /// (Optionally) In-place modify iterators returned from Find
-    /// Note: key cannot be changed, otherwise the semantic is violated
     void AssignIterators(iterator_t* input_iterators,
                          const uint8_t* input_masks,
                          const void* input_values,
                          size_t count);
 
-    /// Bucket-related utilities
-    /// Return number of elems per bucket
     std::vector<size_t> BucketSizes();
 
-    // /// Return size / bucket_count
     float LoadFactor();
 
 protected:

@@ -90,47 +90,61 @@ public:
           dsize_value_(dsize_value),
           device_(device){};
 
+    /// Rehash expects extra memory space at runtime, since it consists of
+    /// 1) dumping all key value pairs to a buffer
+    /// 2) create a new hash table
+    /// 3) parallel insert dumped key value pairs
+    /// 4) deallocate old hash table
     virtual void Rehash(size_t buckets) = 0;
 
-    /// Essential hashmap operations
+    /// Parallel insert contiguous arrays of keys and values.
+    /// Output iterators and masks can be nullptrs if return iterators are not
+    /// to be processed.
     virtual void Insert(const void* input_keys,
                         const void* input_values,
                         iterator_t* output_iterators,
                         uint8_t* output_masks,
                         size_t count) = 0;
 
+    /// Parallel find a contiguous array of keys.
+    /// Output iterators and masks CANNOT be nullptrs as we have to interpret
+    /// them.
     virtual void Find(const void* input_keys,
                       iterator_t* output_iterators,
                       uint8_t* output_masks,
                       size_t count) = 0;
 
+    /// Parallel erase a contiguous array of keys.
+    /// Output masks can be a nullptr if return results are not to be processed.
     virtual void Erase(const void* input_keys,
                        uint8_t* output_masks,
                        size_t count) = 0;
 
+    /// Parallel collect all iterators in the hash table
     virtual size_t GetIterators(iterator_t* output_iterators) = 0;
 
-    /// Parallel iterations
-    /// Only write to corresponding entries if they are not nullptr
-    /// Only access input_masks if they it is not nullptr
+    /// Parallel unpack iterators to contiguous arrays of keys and/or values.
+    /// Output keys and values can be nullptrs if they are not to be
+    /// processed/stored.
     virtual void UnpackIterators(const iterator_t* input_iterators,
                                  const uint8_t* input_masks,
                                  void* output_keys,
                                  void* output_values,
                                  size_t count) = 0;
 
-    /// (Optionally) In-place modify iterators returned from Find
-    /// Note: key cannot be changed, otherwise the semantic is violated
+    /// Parallel assign iterators in-place with associated values.
+    /// Note: users should manage the key-value correspondences around
+    /// iterators.
     virtual void AssignIterators(iterator_t* input_iterators,
                                  const uint8_t* input_masks,
                                  const void* input_values,
                                  size_t count) = 0;
 
-    /// Bucket-related utilities
-    /// Return number of elems per bucket
+    /// Return number of elems per bucket.
+    /// High performance not required, so directly returns a vector.
     virtual std::vector<size_t> BucketSizes() = 0;
 
-    /// Return size / bucket_count
+    /// Return size / bucket_count.
     virtual float LoadFactor() = 0;
 
 public:

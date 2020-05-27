@@ -24,7 +24,6 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-
 namespace open3d {  /// Kernels
 template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
@@ -557,10 +556,16 @@ __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
             for (int i = 0; i < hash_ctx.dsize_value_ / sizeof(int); ++i) {
                 dst_value_ptr[i] = src_value_ptr[i];
             }
-            iterators[tid] = iterator;
+
+            if (iterators != nullptr) {
+                iterators[tid] = iterator;
+            }
         } else {
             hash_ctx.mem_mgr_ctx_.Free(iterator_ptr);
-            iterators[tid] = iterator_t();
+            
+            if (iterators != nullptr) {
+                iterators[tid] = iterator_t();
+            }
         }
     }
 }
@@ -590,7 +595,6 @@ __global__ void EraseKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
         lane_active = true;
         key = keys + tid * hash_ctx.dsize_key_;
         bucket_id = hash_ctx.ComputeBucket(key);
-        // printf("tid = %d, key = %d\n", tid, *((int*)key));
     }
 
     auto result = hash_ctx.Erase(lane_active, lane_id, bucket_id, key);
@@ -610,10 +614,6 @@ __global__ void EraseKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
     if (tid < input_count && masks[tid]) {
         hash_ctx.mem_mgr_ctx_.Free(iterator_ptrs[tid]);
     }
-}
-
-__device__ int32_t __lanemask_lt(uint32_t lane_id) {
-    return ((int32_t)1 << lane_id) - 1;
 }
 
 template <typename Hash, typename KeyEq>
@@ -749,6 +749,7 @@ void CUDAHashmapImpl<Hash, KeyEq>::Insert(uint8_t* keys,
                                           uint8_t* masks,
                                           uint32_t input_count) {
     const uint32_t num_blocks = (input_count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
+
     auto iterator_ptrs =
             (ptr_t*)MemoryManager::Malloc(sizeof(ptr_t) * input_count, device_);
 

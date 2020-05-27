@@ -47,7 +47,6 @@
 
 namespace open3d {
 
-
 /// Interface
 template <typename Hash, typename KeyEq>
 CUDAHashmap<Hash, KeyEq>::CUDAHashmap(size_t initial_buckets,
@@ -69,8 +68,16 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
                                       iterator_t* output_iterators,
                                       uint8_t* output_masks,
                                       size_t count) {
+    bool extern_alloc = (output_masks != nullptr);
+    if (!extern_alloc) {
+        output_masks = (uint8_t*)MemoryManager::Malloc(
+                count * sizeof(uint8_t), cuda_hashmap_impl_->device_);
+    }
     cuda_hashmap_impl_->Insert((uint8_t*)input_keys, (uint8_t*)input_values,
                                output_iterators, output_masks, count);
+    if (!extern_alloc) {
+        MemoryManager::Free(output_masks, cuda_hashmap_impl_->device_);
+    }
 }
 
 template <typename Hash, typename KeyEq>
@@ -86,7 +93,15 @@ template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::Erase(const void* input_keys,
                                      uint8_t* output_masks,
                                      size_t count) {
+    bool extern_alloc = (output_masks != nullptr);
+    if (!extern_alloc) {
+        output_masks = (uint8_t*)MemoryManager::Malloc(
+                count * sizeof(uint8_t), cuda_hashmap_impl_->device_);
+    }
     cuda_hashmap_impl_->Erase((uint8_t*)input_keys, output_masks, count);
+    if (!extern_alloc) {
+        MemoryManager::Free(output_masks, cuda_hashmap_impl_->device_);
+    }
 }
 
 template <typename Hash, typename KeyEq>

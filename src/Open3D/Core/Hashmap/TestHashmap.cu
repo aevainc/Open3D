@@ -136,7 +136,6 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
     // Prepare GPU memory
     thrust::device_vector<Key> input_keys_device = keys;
     thrust::device_vector<Value> input_vals_device = vals;
-    thrust::device_vector<iterator_t> output_iterators_device(keys.size());
     thrust::device_vector<uint8_t> output_masks_device(keys.size());
 
     // Parallel insert
@@ -144,8 +143,7 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
                             thrust::raw_pointer_cast(input_keys_device.data())),
                     reinterpret_cast<void *>(
                             thrust::raw_pointer_cast(input_vals_device.data())),
-                    reinterpret_cast<iterator_t *>(thrust::raw_pointer_cast(
-                            output_iterators_device.data())),
+                    nullptr,
                     reinterpret_cast<uint8_t *>(thrust::raw_pointer_cast(
                             output_masks_device.data())),
                     keys.size());

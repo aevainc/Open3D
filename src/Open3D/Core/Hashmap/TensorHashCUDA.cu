@@ -78,18 +78,9 @@ CUDATensorHash::CUDATensorHash(Tensor coords,
             N / 2, key_size, value_size, coords.GetDevice());
 
     if (insert) {
-        auto iterators = MemoryManager::Malloc(sizeof(iterator_t) * N,
-                                               coords.GetDevice());
-        auto masks =
-                MemoryManager::Malloc(sizeof(uint8_t) * N, coords.GetDevice());
-
         hashmap_->Insert(static_cast<void*>(coords.GetBlob()->GetDataPtr()),
                          static_cast<void*>(values.GetBlob()->GetDataPtr()),
-                         static_cast<iterator_t*>(iterators),
-                         static_cast<uint8_t*>(masks), N);
-
-        MemoryManager::Free(iterators, coords.GetDevice());
-        MemoryManager::Free(masks, coords.GetDevice());
+                         nullptr, nullptr, N);
     }
 }
 
