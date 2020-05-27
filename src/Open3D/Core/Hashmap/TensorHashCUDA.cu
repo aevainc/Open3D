@@ -24,7 +24,7 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include "Open3D/Core/Hashmap/HashmapCUDA.cuh"
+#include "Open3D/Core/Hashmap/CUDA/HashmapCUDA.cuh"
 #include "Open3D/Core/Hashmap/TensorHash.h"
 #include "Open3D/Core/Tensor.h"
 

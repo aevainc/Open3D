@@ -28,7 +28,7 @@
 
 // Implementation for the CPU hashmap. Separated from HashmapCPU.h for brevity.
 
-#include "Open3D/Core/Hashmap/HashmapCPU.h"
+#include "Open3D/Core/Hashmap/CPU/HashmapCPU.h"
 
 namespace open3d {
 

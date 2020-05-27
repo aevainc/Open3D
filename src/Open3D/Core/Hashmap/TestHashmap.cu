@@ -155,26 +155,6 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
                                          thrust::plus<size_t>());
     utility::LogInfo("Successful insert_count = {}", insert_count);
 
-    for (size_t i = 0; i < keys.size(); ++i) {
-        auto iterator_gt = hashmap_gt.find(keys[i]);
-
-        // Not found in gt => not found in ours
-        if (iterator_gt == hashmap_gt.end()) {
-            assert(output_masks_host[i] == 0);
-        } else {  /// Found in gt => same key and value
-            assert(output_keys_host[i] == iterator_gt->first);
-            assert(output_vals_host[i] == iterator_gt->second);
-
-            // iterator_t iterator = output_iterators_device[i];
-            // Key key = *(thrust::device_ptr<Key>(
-            //         reinterpret_cast<Key *>(iterator.first)));
-            // Value val = *(thrust::device_ptr<Value>(
-            //         reinterpret_cast<Value *>(iterator.second)));
-            // assert(key == iterator_gt->first);
-            // assert(val == iterator_gt->second);
-        }
-    }
-
     CompareAllIterators(hashmap, hashmap_gt);
 }
 
@@ -225,8 +205,8 @@ int main() {
         using Value = int64_t;
 
         // Generate data
-        std::uniform_int_distribution<Key> dist{-(Key)bucket_count * 20,
-                                                (Key)bucket_count * 20};
+        std::uniform_int_distribution<Key> dist{-(Key)bucket_count * 10,
+                                                (Key)bucket_count * 10};
         std::vector<Key> keys(bucket_count * 64);
         std::vector<Value> vals(bucket_count * 64);
         std::generate(std::begin(keys), std::end(keys),

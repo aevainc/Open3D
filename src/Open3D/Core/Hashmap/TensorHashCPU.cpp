@@ -24,7 +24,7 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include "Open3D/Core/Hashmap/HashmapCPU.hpp"
+#include "Open3D/Core/Hashmap/CPU/HashmapCPU.hpp"
 #include "Open3D/Core/Hashmap/TensorHash.h"
 #include "Open3D/Core/Tensor.h"
 

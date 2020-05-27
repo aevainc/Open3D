@@ -37,10 +37,10 @@
 // compilers even if BUILD_CUDA_MODULE is enabled.
 // .cu targets include both.
 
-#include "Open3D/Core/Hashmap/HashmapCPU.hpp"
+#include "Open3D/Core/Hashmap/CPU/HashmapCPU.hpp"
 
 #if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
-#include "Open3D/Core/Hashmap/HashmapCUDA.cuh"
+#include "Open3D/Core/Hashmap/CUDA/HashmapCUDA.cuh"
 #endif
 
 #include <unordered_map>
