@@ -25,55 +25,6 @@
 // ----------------------------------------------------------------------------
 
 namespace open3d {  /// Kernels
-template <typename Hash, typename KeyEq>
-__global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                  uint8_t* input_keys,
-                                  ptr_t* output_iterator_ptrs,
-                                  uint32_t input_count);
-
-template <typename Hash, typename KeyEq>
-__global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                  uint8_t* input_keys,
-                                  ptr_t* output_iterator_ptrs,
-                                  uint8_t* output_masks,
-                                  uint32_t input_count);
-
-template <typename Hash, typename KeyEq>
-__global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                  uint8_t* input_values,
-                                  ptr_t* input_iterator_ptrs,
-                                  iterator_t* output_iterators,
-                                  uint8_t* output_masks,
-                                  uint32_t input_count);
-
-template <typename Hash, typename KeyEq>
-__global__ void FindKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                           uint8_t* input_keys,
-                           iterator_t* output_iterators,
-                           uint8_t* output_masks,
-                           uint32_t input_count);
-
-template <typename Hash, typename KeyEq>
-__global__ void EraseKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                 uint8_t* input_keys,
-                                 ptr_t* output_iterator_ptrs,
-                                 uint8_t* output_masks,
-                                 uint32_t input_count);
-
-template <typename Hash, typename KeyEq>
-__global__ void EraseKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                 ptr_t* output_iterator_ptrs,
-                                 uint8_t* output_masks,
-                                 uint32_t input_count);
-
-template <typename Hash, typename KeyEq>
-__global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                   iterator_t* output_iterators,
-                                   uint32_t* output_iterator_count);
-template <typename Hash, typename KeyEq>
-__global__ void CountElemsPerBucketKernel(
-        CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-        size_t* bucket_elem_counts);
 
 /// Device proxy
 template <typename Hash, typename KeyEq>
@@ -718,172 +669,55 @@ __global__ void CountElemsPerBucketKernel(
     }
 }
 
-template <typename Hash, typename KeyEq>
-CUDAHashmapImpl<Hash, KeyEq>::CUDAHashmapImpl(const uint32_t init_buckets,
-                                              const uint32_t dsize_key,
-                                              const uint32_t dsize_value,
-                                              Device device)
-    : device_(device) {
-    const uint32_t est_kvpairs = init_buckets * avg_elems_per_bucket_;
-    mem_mgr_ = std::make_shared<InternalKvPairManager>(est_kvpairs, dsize_key,
-                                                       dsize_value, device_);
-    node_mgr_ = std::make_shared<InternalNodeManager>(device_);
+__global__ void UnpackIteratorsKernel(const iterator_t* input_iterators,
+                                      const uint8_t* input_masks,
+                                      void* output_keys,
+                                      void* output_values,
+                                      size_t dsize_key,
+                                      size_t dsize_value,
+                                      size_t iterator_count) {
+    size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    gpu_context_.Setup(init_buckets, dsize_key, dsize_value,
-                       node_mgr_->gpu_context_, mem_mgr_->gpu_context_);
-    gpu_context_.bucket_list_head_ = static_cast<Slab*>(
-            MemoryManager::Malloc(sizeof(Slab) * init_buckets, device_));
-    OPEN3D_CUDA_CHECK(cudaMemset(gpu_context_.bucket_list_head_, 0xFF,
-                                 sizeof(Slab) * init_buckets));
+    // Valid queries
+    if (tid < iterator_count && (input_masks == nullptr || input_masks[tid])) {
+        if (output_keys != nullptr) {
+            uint8_t* dst_key_ptr = (uint8_t*)output_keys + dsize_key * tid;
+            uint8_t* src_key_ptr = input_iterators[tid].first;
+
+            for (size_t i = 0; i < dsize_key; ++i) {
+                dst_key_ptr[i] = src_key_ptr[i];
+            }
+        }
+
+        if (output_values != nullptr) {
+            uint8_t* dst_value_ptr =
+                    (uint8_t*)output_values + dsize_value * tid;
+            uint8_t* src_value_ptr = input_iterators[tid].second;
+
+            for (size_t i = 0; i < dsize_value; ++i) {
+                dst_value_ptr[i] = src_value_ptr[i];
+            }
+        }
+    }
 }
 
-template <typename Hash, typename KeyEq>
-CUDAHashmapImpl<Hash, KeyEq>::~CUDAHashmapImpl() {
-    MemoryManager::Free(gpu_context_.bucket_list_head_, device_);
+__global__ void AssignIteratorsKernel(iterator_t* input_iterators,
+                                      const uint8_t* input_masks,
+                                      const void* input_values,
+                                      size_t dsize_value,
+                                      size_t iterator_count) {
+    size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    // Valid queries
+    if (tid < iterator_count && (input_masks == nullptr || input_masks[tid])) {
+        uint8_t* src_value_ptr = (uint8_t*)input_values + dsize_value * tid;
+        uint8_t* dst_value_ptr = input_iterators[tid].second;
+
+        // Byte-by-byte copy, can be improved
+        for (size_t i = 0; i < dsize_value; ++i) {
+            dst_value_ptr[i] = src_value_ptr[i];
+        }
+    }
 }
 
-template <typename Hash, typename KeyEq>
-void CUDAHashmapImpl<Hash, KeyEq>::Insert(uint8_t* keys,
-                                          uint8_t* values,
-                                          iterator_t* iterators,
-                                          uint8_t* masks,
-                                          uint32_t input_count) {
-    const uint32_t num_blocks = (input_count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
-
-    auto iterator_ptrs =
-            (ptr_t*)MemoryManager::Malloc(sizeof(ptr_t) * input_count, device_);
-
-    InsertKernelPass0<<<num_blocks, BLOCKSIZE_>>>(gpu_context_, keys,
-                                                  iterator_ptrs, input_count);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-
-    InsertKernelPass1<<<num_blocks, BLOCKSIZE_>>>(
-            gpu_context_, keys, iterator_ptrs, masks, input_count);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-
-    int heap_counter;
-    heap_counter =
-            *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
-    std::cout << "Before " << heap_counter << "\n";
-    InsertKernelPass2<<<num_blocks, BLOCKSIZE_>>>(
-            gpu_context_, values, iterator_ptrs, iterators, masks, input_count);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-
-    heap_counter =
-            *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
-    std::cout << "After " << heap_counter << "\n";
-
-    MemoryManager::Free(iterator_ptrs, device_);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-}
-
-template <typename Hash, typename KeyEq>
-void CUDAHashmapImpl<Hash, KeyEq>::Find(uint8_t* keys,
-                                        iterator_t* iterators,
-                                        uint8_t* masks,
-                                        uint32_t input_count) {
-    OPEN3D_CUDA_CHECK(cudaMemset(masks, 0, sizeof(uint8_t) * input_count));
-
-    const uint32_t num_blocks = (input_count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
-    FindKernel<<<num_blocks, BLOCKSIZE_>>>(gpu_context_, keys, iterators, masks,
-                                           input_count);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-}
-
-template <typename Hash, typename KeyEq>
-void CUDAHashmapImpl<Hash, KeyEq>::Erase(uint8_t* keys,
-                                         uint8_t* masks,
-                                         uint32_t input_count) {
-    OPEN3D_CUDA_CHECK(cudaMemset(masks, 0, sizeof(uint8_t) * input_count));
-    const uint32_t num_blocks = (input_count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
-
-    auto iterator_ptrs =
-            (ptr_t*)MemoryManager::Malloc(sizeof(ptr_t) * input_count, device_);
-
-    EraseKernelPass0<<<num_blocks, BLOCKSIZE_>>>(
-            gpu_context_, keys, iterator_ptrs, masks, input_count);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-
-    EraseKernelPass1<<<num_blocks, BLOCKSIZE_>>>(gpu_context_, iterator_ptrs,
-                                                 masks, input_count);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-
-    MemoryManager::Free(iterator_ptrs, device_);
-}
-
-template <typename Hash, typename KeyEq>
-uint32_t CUDAHashmapImpl<Hash, KeyEq>::GetIterators(iterator_t* iterators) {
-    const uint32_t blocksize = 128;
-    const uint32_t num_blocks =
-            (gpu_context_.bucket_count_ * avg_elems_per_bucket_ + blocksize -
-             1) /
-            blocksize;
-
-    uint32_t* iterator_count_cuda =
-            (uint32_t*)MemoryManager::Malloc(sizeof(uint32_t), device_);
-    cudaMemset(iterator_count_cuda, 0, sizeof(uint32_t));
-
-    GetIteratorsKernel<<<num_blocks, blocksize>>>(gpu_context_, iterators,
-                                                  iterator_count_cuda);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-
-    uint32_t iterator_count;
-    MemoryManager::Memcpy(&iterator_count, Device("CPU:0"), iterator_count_cuda,
-                          device_, sizeof(uint32_t));
-    return iterator_count;
-}
-
-template <typename Hash, typename KeyEq>
-std::vector<size_t> CUDAHashmapImpl<Hash, KeyEq>::CountElemsPerBucket() {
-    auto elems_per_bucket_buffer = static_cast<size_t*>(MemoryManager::Malloc(
-            gpu_context_.bucket_count_ * sizeof(size_t), device_));
-
-    thrust::device_vector<size_t> elems_per_bucket(
-            elems_per_bucket_buffer,
-            elems_per_bucket_buffer + gpu_context_.bucket_count_);
-    thrust::fill(elems_per_bucket.begin(), elems_per_bucket.end(), 0);
-
-    const uint32_t blocksize = 128;
-    const uint32_t num_blocks =
-            (gpu_context_.bucket_count_ * avg_elems_per_bucket_ + blocksize -
-             1) /
-            blocksize;
-    CountElemsPerBucketKernel<<<num_blocks, blocksize>>>(
-            gpu_context_, thrust::raw_pointer_cast(elems_per_bucket.data()));
-
-    std::vector<size_t> result(gpu_context_.bucket_count_);
-    thrust::copy(elems_per_bucket.begin(), elems_per_bucket.end(),
-                 result.begin());
-    MemoryManager::Free(elems_per_bucket_buffer, device_);
-    return std::move(result);
-}
-
-template <typename Hash, typename KeyEq>
-float CUDAHashmapImpl<Hash, KeyEq>::ComputeLoadFactor() {
-    auto elems_per_bucket = CountElemsPerBucket();
-    int total_elems_stored = std::accumulate(elems_per_bucket.begin(),
-                                             elems_per_bucket.end(), 0);
-
-    node_mgr_->gpu_context_ = gpu_context_.node_mgr_ctx_;
-
-    /// Unrelated factor for now
-    // auto slabs_per_bucket = node_mgr_->CountSlabsPerSuperblock();
-    // int total_slabs_stored =
-    //         std::accumulate(slabs_per_bucket.begin(),
-    //         slabs_per_bucket.end(),
-    //                         gpu_context_.bucket_count_);
-
-    float load_factor =
-            float(total_elems_stored) / float(elems_per_bucket.size());
-
-    return load_factor;
-}
 }  // namespace open3d

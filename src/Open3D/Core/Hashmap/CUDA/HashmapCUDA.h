@@ -98,7 +98,13 @@ public:
     float LoadFactor();
 
 protected:
-    std::shared_ptr<CUDAHashmapImpl<Hash, KeyEq>> impl_;
+    /// struct directly passed to kernels, cannot be a pointer
+    size_t avg_elems_per_bucket_ = 64;
+
+    CUDAHashmapImplContext<Hash, KeyEq> gpu_context_;
+
+    std::shared_ptr<InternalKvPairManager> mem_mgr_;
+    std::shared_ptr<InternalNodeManager> node_mgr_;
 };
 
 }  // namespace open3d
