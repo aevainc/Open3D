@@ -562,7 +562,7 @@ __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
             }
         } else {
             hash_ctx.mem_mgr_ctx_.Free(iterator_ptr);
-            
+
             if (iterators != nullptr) {
                 iterators[tid] = iterator_t();
             }
