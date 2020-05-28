@@ -73,11 +73,10 @@ public:
                          size_t count);
 
     std::vector<size_t> BucketSizes();
-    float LoadFactor() { return 0.0f; };
+    float LoadFactor();
 
 private:
-    std::shared_ptr<std::unordered_map<uint8_t*, uint8_t*, Hash, KeyEq>>
-            cpu_hashmap_impl_;
+    std::shared_ptr<std::unordered_map<void*, void*, Hash, KeyEq>> impl_;
 
     // Valid kv_pairs
     std::vector<iterator_t> kv_pairs_;

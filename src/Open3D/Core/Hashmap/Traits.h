@@ -90,8 +90,9 @@ static constexpr uint32_t MEM_BLOCK_OFFSET_ =
 typedef uint32_t ptr_t;
 struct iterator_t {
     OPEN3D_HOST_DEVICE iterator_t() : first(nullptr), second(nullptr) {}
-    OPEN3D_HOST_DEVICE iterator_t(uint8_t* key_ptr, uint8_t* value_ptr)
-        : first(key_ptr), second(value_ptr) {}
+    OPEN3D_HOST_DEVICE iterator_t(void* key_ptr, void* value_ptr)
+        : first(static_cast<uint8_t*>(key_ptr)),
+          second(static_cast<uint8_t*>(value_ptr)) {}
 
     uint8_t* first;
     uint8_t* second;
