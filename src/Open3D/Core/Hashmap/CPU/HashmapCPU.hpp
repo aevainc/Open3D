@@ -55,7 +55,7 @@ template <typename Hash, typename KeyEq>
 void CPUHashmap<Hash, KeyEq>::Insert(const void* input_keys,
                                      const void* input_values,
                                      iterator_t* output_iterators,
-                                     uint8_t* output_masks,
+                                     bool* output_masks,
                                      size_t count) {
     for (size_t i = 0; i < count; ++i) {
         uint8_t* src_key = (uint8_t*)input_keys + this->dsize_key_ * i;
@@ -92,7 +92,7 @@ void CPUHashmap<Hash, KeyEq>::Insert(const void* input_keys,
 template <typename Hash, typename KeyEq>
 void CPUHashmap<Hash, KeyEq>::Find(const void* input_keys,
                                    iterator_t* output_iterators,
-                                   uint8_t* output_masks,
+                                   bool* output_masks,
                                    size_t count) {
     for (size_t i = 0; i < count; ++i) {
         uint8_t* key = (uint8_t*)input_keys + this->dsize_key_ * i;
@@ -111,7 +111,7 @@ void CPUHashmap<Hash, KeyEq>::Find(const void* input_keys,
 
 template <typename Hash, typename KeyEq>
 void CPUHashmap<Hash, KeyEq>::Erase(const void* input_keys,
-                                    uint8_t* output_masks,
+                                    bool* output_masks,
                                     size_t count) {
     for (int i = 0; i < count; ++i) {
         uint8_t* key = (uint8_t*)input_keys + this->dsize_key_ * i;
@@ -135,7 +135,7 @@ size_t CPUHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
 }
 
 void UnpackIteratorsStep(const iterator_t* input_iterators,
-                         const uint8_t* input_masks,
+                         const bool* input_masks,
                          void* output_keys,
                          void* output_values,
                          size_t dsize_key,
@@ -166,7 +166,7 @@ void UnpackIteratorsStep(const iterator_t* input_iterators,
 
 template <typename Hash, typename KeyEq>
 void CPUHashmap<Hash, KeyEq>::UnpackIterators(const iterator_t* input_iterators,
-                                              const uint8_t* input_masks,
+                                              const bool* input_masks,
                                               void* output_keys,
                                               void* output_values,
                                               size_t iterator_count) {
@@ -178,7 +178,7 @@ void CPUHashmap<Hash, KeyEq>::UnpackIterators(const iterator_t* input_iterators,
 }
 
 void AssignIteratorsStep(iterator_t* input_iterators,
-                         const uint8_t* input_masks,
+                         const bool* input_masks,
                          const void* input_values,
                          size_t dsize_value,
                          size_t tid) {
@@ -196,7 +196,7 @@ void AssignIteratorsStep(iterator_t* input_iterators,
 
 template <typename Hash, typename KeyEq>
 void CPUHashmap<Hash, KeyEq>::AssignIterators(iterator_t* input_iterators,
-                                              const uint8_t* input_masks,
+                                              const bool* input_masks,
                                               const void* input_values,
                                               size_t iterator_count) {
     for (size_t i = 0; i < iterator_count; ++i) {

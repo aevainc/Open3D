@@ -127,14 +127,14 @@ std::pair<Tensor, Tensor> CUDATensorHash::Insert(Tensor coords, Tensor values) {
             static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
             static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()),
             static_cast<iterator_t*>(iterators),
-            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()),
             N);
 
     std::cout << output_mask_tensor.ToString() << "\n";
 
     hashmap_->UnpackIterators(
             static_cast<iterator_t*>(iterators),
-            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()),
             static_cast<void*>(output_coord_tensor.GetBlob()->GetDataPtr()),
             /* value = */ nullptr, N);
 
@@ -176,12 +176,12 @@ std::pair<Tensor, Tensor> CUDATensorHash::Query(Tensor coords) {
     hashmap_->Find(
             static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
             static_cast<iterator_t*>(iterators),
-            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()),
             N);
 
     hashmap_->UnpackIterators(
             static_cast<iterator_t*>(iterators),
-            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()),
             /* coord = */ nullptr,
             static_cast<void*>(output_value_tensor.GetBlob()->GetDataPtr()), N);
 
@@ -231,12 +231,12 @@ Tensor CUDATensorHash::Assign(Tensor coords, Tensor values) {
     hashmap_->Find(
             static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
             static_cast<iterator_t*>(iterators),
-            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()),
             N);
 
     hashmap_->AssignIterators(
             static_cast<iterator_t*>(iterators),
-            static_cast<uint8_t*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()),
             static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()), N);
 
     MemoryManager::Free(iterators, coords.GetDevice());

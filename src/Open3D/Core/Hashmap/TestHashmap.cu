@@ -36,13 +36,13 @@ void CompareFind(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
     // Prepare GPU memory
     thrust::device_vector<Key> input_keys_device(keys);
     thrust::device_vector<iterator_t> output_iterators_device(keys.size());
-    thrust::device_vector<uint8_t> output_masks_device(keys.size());
+    thrust::device_vector<bool> output_masks_device(keys.size());
 
     hashmap->Find(reinterpret_cast<void *>(
                           thrust::raw_pointer_cast(input_keys_device.data())),
                   reinterpret_cast<iterator_t *>(thrust::raw_pointer_cast(
                           output_iterators_device.data())),
-                  reinterpret_cast<uint8_t *>(
+                  reinterpret_cast<bool *>(
                           thrust::raw_pointer_cast(output_masks_device.data())),
                   keys.size());
 
@@ -51,7 +51,7 @@ void CompareFind(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
     hashmap->UnpackIterators(
             reinterpret_cast<iterator_t *>(
                     thrust::raw_pointer_cast(output_iterators_device.data())),
-            reinterpret_cast<uint8_t *>(
+            reinterpret_cast<bool *>(
                     thrust::raw_pointer_cast(output_masks_device.data())),
             reinterpret_cast<Key *>(
                     thrust::raw_pointer_cast(output_keys_device.data())),
@@ -61,7 +61,7 @@ void CompareFind(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
 
     thrust::host_vector<Key> output_keys_host = output_keys_device;
     thrust::host_vector<Value> output_vals_host = output_vals_device;
-    thrust::host_vector<uint8_t> output_masks_host = output_masks_device;
+    thrust::host_vector<bool> output_masks_host = output_masks_device;
 
     for (size_t i = 0; i < keys.size(); ++i) {
         auto iterator_gt = hashmap_gt.find(keys[i]);
@@ -136,7 +136,7 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
     // Prepare GPU memory
     thrust::device_vector<Key> input_keys_device = keys;
     thrust::device_vector<Value> input_vals_device = vals;
-    thrust::device_vector<uint8_t> output_masks_device(keys.size());
+    thrust::device_vector<bool> output_masks_device(keys.size());
 
     // Parallel insert
     hashmap->Insert(reinterpret_cast<void *>(
@@ -144,7 +144,7 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
                     reinterpret_cast<void *>(
                             thrust::raw_pointer_cast(input_vals_device.data())),
                     nullptr,
-                    reinterpret_cast<uint8_t *>(thrust::raw_pointer_cast(
+                    reinterpret_cast<bool *>(thrust::raw_pointer_cast(
                             output_masks_device.data())),
                     keys.size());
 
@@ -167,11 +167,11 @@ void CompareErase(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
 
     // Prepare GPU memory
     thrust::device_vector<Key> input_keys_device = keys;
-    thrust::device_vector<uint8_t> output_masks_device(keys.size());
+    thrust::device_vector<bool> output_masks_device(keys.size());
 
     hashmap->Erase(reinterpret_cast<void *>(
                            thrust::raw_pointer_cast(input_keys_device.data())),
-                   reinterpret_cast<uint8_t *>(thrust::raw_pointer_cast(
+                   reinterpret_cast<bool *>(thrust::raw_pointer_cast(
                            output_masks_device.data())),
                    keys.size());
 

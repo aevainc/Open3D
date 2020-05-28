@@ -43,21 +43,21 @@ public:
                         const InternalNodeManagerContext& node_mgr_ctx,
                         const InternalKvPairManagerContext& mem_mgr_ctx);
 
-    __device__ uint8_t Insert(uint8_t& lane_active,
-                              const uint32_t lane_id,
-                              const uint32_t bucket_id,
-                              uint8_t* key_ptr,
-                              ptr_t iterator_ptr);
+    __device__ bool Insert(bool& lane_active,
+                           const uint32_t lane_id,
+                           const uint32_t bucket_id,
+                           uint8_t* key_ptr,
+                           ptr_t iterator_ptr);
 
-    __device__ Pair<ptr_t, uint8_t> Find(uint8_t& lane_active,
-                                         const uint32_t lane_id,
-                                         const uint32_t bucket_id,
-                                         uint8_t* key_ptr);
+    __device__ Pair<ptr_t, bool> Find(bool& lane_active,
+                                      const uint32_t lane_id,
+                                      const uint32_t bucket_id,
+                                      uint8_t* key_ptr);
 
-    __device__ Pair<ptr_t, uint8_t> Erase(uint8_t& lane_active,
-                                          const uint32_t lane_id,
-                                          const uint32_t bucket_id,
-                                          uint8_t* key_ptr);
+    __device__ Pair<ptr_t, bool> Erase(bool& lane_active,
+                                       const uint32_t lane_id,
+                                       const uint32_t bucket_id,
+                                       uint8_t* key_ptr);
 
     /* Hash function */
     __device__ __host__ uint32_t ComputeBucket(uint8_t* key_ptr) const;
@@ -108,7 +108,7 @@ template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                   uint8_t* input_keys,
                                   ptr_t* output_iterator_ptrs,
-                                  uint8_t* output_masks,
+                                  bool* output_masks,
                                   uint32_t input_count);
 
 template <typename Hash, typename KeyEq>
@@ -116,27 +116,27 @@ __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                   uint8_t* input_values,
                                   ptr_t* input_iterator_ptrs,
                                   iterator_t* output_iterators,
-                                  uint8_t* output_masks,
+                                  bool* output_masks,
                                   uint32_t input_count);
 
 template <typename Hash, typename KeyEq>
 __global__ void FindKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                            uint8_t* input_keys,
                            iterator_t* output_iterators,
-                           uint8_t* output_masks,
+                           bool* output_masks,
                            uint32_t input_count);
 
 template <typename Hash, typename KeyEq>
 __global__ void EraseKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                  uint8_t* input_keys,
                                  ptr_t* output_iterator_ptrs,
-                                 uint8_t* output_masks,
+                                 bool* output_masks,
                                  uint32_t input_count);
 
 template <typename Hash, typename KeyEq>
 __global__ void EraseKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                  ptr_t* output_iterator_ptrs,
-                                 uint8_t* output_masks,
+                                 bool* output_masks,
                                  uint32_t input_count);
 
 template <typename Hash, typename KeyEq>
@@ -150,7 +150,7 @@ __global__ void CountElemsPerBucketKernel(
         size_t* bucket_elem_counts);
 
 __global__ void UnpackIteratorsKernel(const iterator_t* input_iterators,
-                                      const uint8_t* input_masks,
+                                      const bool* input_masks,
                                       void* output_keys,
                                       void* output_values,
                                       size_t dsize_key,
@@ -158,7 +158,7 @@ __global__ void UnpackIteratorsKernel(const iterator_t* input_iterators,
                                       size_t iterator_count);
 
 __global__ void AssignIteratorsKernel(iterator_t* input_iterators,
-                                      const uint8_t* input_masks,
+                                      const bool* input_masks,
                                       const void* input_values,
                                       size_t dsize_value,
                                       size_t iterator_count);

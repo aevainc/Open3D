@@ -77,11 +77,11 @@ template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
                                       const void* input_values,
                                       iterator_t* output_iterators,
-                                      uint8_t* output_masks,
+                                      bool* output_masks,
                                       size_t count) {
     bool extern_alloc = (output_masks != nullptr);
     if (!extern_alloc) {
-        output_masks = (uint8_t*)MemoryManager::Malloc(count * sizeof(uint8_t),
+        output_masks = (bool*)MemoryManager::Malloc(count * sizeof(bool),
                                                        this->device_);
     }
     const uint32_t num_blocks = (count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
@@ -125,9 +125,9 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
 template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::Find(const void* input_keys,
                                     iterator_t* output_iterators,
-                                    uint8_t* output_masks,
+                                    bool* output_masks,
                                     size_t count) {
-    OPEN3D_CUDA_CHECK(cudaMemset(output_masks, 0, sizeof(uint8_t) * count));
+    OPEN3D_CUDA_CHECK(cudaMemset(output_masks, 0, sizeof(bool) * count));
 
     const uint32_t num_blocks = (count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
     FindKernel<<<num_blocks, BLOCKSIZE_>>>(gpu_context_, (uint8_t*)input_keys,
@@ -139,15 +139,15 @@ void CUDAHashmap<Hash, KeyEq>::Find(const void* input_keys,
 
 template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::Erase(const void* input_keys,
-                                     uint8_t* output_masks,
+                                     bool* output_masks,
                                      size_t count) {
     bool extern_alloc = (output_masks != nullptr);
     if (!extern_alloc) {
-        output_masks = (uint8_t*)MemoryManager::Malloc(count * sizeof(uint8_t),
-                                                       this->device_);
+        output_masks = (bool*)MemoryManager::Malloc(count * sizeof(bool),
+                                                    this->device_);
     }
 
-    OPEN3D_CUDA_CHECK(cudaMemset(output_masks, 0, sizeof(uint8_t) * count));
+    OPEN3D_CUDA_CHECK(cudaMemset(output_masks, 0, sizeof(bool) * count));
     const uint32_t num_blocks = (count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
 
     auto iterator_ptrs =
@@ -197,7 +197,7 @@ size_t CUDAHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
 template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::UnpackIterators(
         const iterator_t* input_iterators,
-        const uint8_t* input_masks,
+        const bool* input_masks,
         void* output_keys,
         void* output_values,
         size_t iterator_count) {
@@ -217,7 +217,7 @@ void CUDAHashmap<Hash, KeyEq>::UnpackIterators(
 
 template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::AssignIterators(iterator_t* input_iterators,
-                                               const uint8_t* input_masks,
+                                               const bool* input_masks,
                                                const void* input_values,
                                                size_t iterator_count) {
     if (iterator_count == 0) return;
@@ -249,8 +249,8 @@ void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
 
     this->bucket_count_ = buckets;
     const uint32_t est_kvpairs = buckets * avg_elems_per_bucket_;
-    mem_mgr_ = std::make_shared<InternalKvPairManager>(est_kvpairs, this->dsize_key_,
-                                                       this->dsize_value_, this->device_);
+    mem_mgr_ = std::make_shared<InternalKvPairManager>(
+            est_kvpairs, this->dsize_key_, this->dsize_value_, this->device_);
     node_mgr_ = std::make_shared<InternalNodeManager>(this->device_);
     gpu_context_.Setup(buckets, this->dsize_key_, this->dsize_value_,
                        node_mgr_->gpu_context_, mem_mgr_->gpu_context_);
@@ -260,11 +260,10 @@ void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
             MemoryManager::Malloc(sizeof(Slab) * buckets, this->device_));
     OPEN3D_CUDA_CHECK(cudaMemset(gpu_context_.bucket_list_head_, 0xFF,
                                  sizeof(Slab) * buckets));
-    
 
     /// Insert back
-    auto output_masks = (uint8_t*)MemoryManager::Malloc(
-            sizeof(uint8_t) * iterator_count, this->device_);
+    auto output_masks = (bool*)MemoryManager::Malloc(
+            sizeof(bool) * iterator_count, this->device_);
     Insert(output_keys, output_values, output_iterators, output_masks,
            iterator_count);
 

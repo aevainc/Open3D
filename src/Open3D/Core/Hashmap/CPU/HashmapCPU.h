@@ -49,26 +49,26 @@ public:
     void Insert(const void* input_keys,
                 const void* input_values,
                 iterator_t* output_iterators,
-                uint8_t* output_masks,
+                bool* output_masks,
                 size_t count);
 
     void Find(const void* input_keys,
               iterator_t* output_iterators,
-              uint8_t* output_masks,
+              bool* output_masks,
               size_t count);
 
-    void Erase(const void* input_keys, uint8_t* output_masks, size_t count);
+    void Erase(const void* input_keys, bool* output_masks, size_t count);
 
     size_t GetIterators(iterator_t* output_iterators);
 
     void UnpackIterators(const iterator_t* input_iterators,
-                         const uint8_t* input_masks,
+                         const bool* input_masks,
                          void* output_keys,
                          void* output_values,
                          size_t count);
 
     void AssignIterators(iterator_t* input_iterators,
-                         const uint8_t* input_masks,
+                         const bool* input_masks,
                          const void* input_values,
                          size_t count);
 
