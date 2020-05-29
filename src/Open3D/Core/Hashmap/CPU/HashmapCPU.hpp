@@ -142,7 +142,8 @@ void UnpackIteratorsStep(const iterator_t* input_iterators,
     if (input_masks == nullptr || input_masks[tid]) {
         if (output_keys != nullptr) {
             uint8_t* dst_key_ptr = (uint8_t*)output_keys + dsize_key * tid;
-            uint8_t* src_key_ptr = input_iterators[tid].first;
+            uint8_t* src_key_ptr =
+                    static_cast<uint8_t*>(input_iterators[tid].first);
 
             for (size_t i = 0; i < dsize_key; ++i) {
                 dst_key_ptr[i] = src_key_ptr[i];
@@ -152,7 +153,8 @@ void UnpackIteratorsStep(const iterator_t* input_iterators,
         if (output_values != nullptr) {
             uint8_t* dst_value_ptr =
                     (uint8_t*)output_values + dsize_value * tid;
-            uint8_t* src_value_ptr = input_iterators[tid].second;
+            uint8_t* src_value_ptr =
+                    static_cast<uint8_t*>(input_iterators[tid].second);
 
             for (size_t i = 0; i < dsize_value; ++i) {
                 dst_value_ptr[i] = src_value_ptr[i];
@@ -182,7 +184,8 @@ void AssignIteratorsStep(iterator_t* input_iterators,
     // Valid queries
     if (input_masks == nullptr || input_masks[tid]) {
         uint8_t* src_value_ptr = (uint8_t*)input_values + dsize_value * tid;
-        uint8_t* dst_value_ptr = input_iterators[tid].second;
+        uint8_t* dst_value_ptr =
+                static_cast<uint8_t*>(input_iterators[tid].second);
 
         // Byte-by-byte copy, can be improved
         for (size_t i = 0; i < dsize_value; ++i) {

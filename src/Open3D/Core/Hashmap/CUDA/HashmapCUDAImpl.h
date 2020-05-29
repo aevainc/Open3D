@@ -37,60 +37,59 @@ class CUDAHashmapImplContext {
 public:
     CUDAHashmapImplContext();
 
-    __host__ void Setup(const uint32_t init_buckets,
-                        const uint32_t dsize_key,
-                        const uint32_t dsize_value,
+    __host__ void Setup(size_t init_buckets,
+                        size_t dsize_key,
+                        size_t dsize_value,
                         const InternalNodeManagerContext& node_mgr_ctx,
                         const InternalKvPairManagerContext& mem_mgr_ctx);
 
-    __device__ bool Insert(bool& lane_active,
-                           const uint32_t lane_id,
-                           const uint32_t bucket_id,
-                           uint8_t* key_ptr,
+    __device__ bool Insert(bool lane_active,
+                           uint32_t lane_id,
+                           uint32_t bucket_id,
+                           const void* key_ptr,
                            ptr_t iterator_ptr);
 
-    __device__ Pair<ptr_t, bool> Find(bool& lane_active,
-                                      const uint32_t lane_id,
-                                      const uint32_t bucket_id,
-                                      uint8_t* key_ptr);
+    __device__ Pair<ptr_t, bool> Find(bool lane_active,
+                                      uint32_t lane_id,
+                                      uint32_t bucket_id,
+                                      const void* key_ptr);
 
-    __device__ Pair<ptr_t, bool> Erase(bool& lane_active,
-                                       const uint32_t lane_id,
-                                       const uint32_t bucket_id,
-                                       uint8_t* key_ptr);
+    __device__ Pair<ptr_t, bool> Erase(bool lane_active,
+                                       uint32_t lane_id,
+                                       uint32_t bucket_id,
+                                       const void* key_ptr);
+
+    __device__ void WarpSyncKey(const void* key_ptr,
+                                uint32_t lane_id,
+                                void* ret_key_ptr);
+    __device__ int32_t WarpFindKey(const void* src_key_ptr,
+                                   uint32_t lane_id,
+                                   ptr_t ptr);
+    __device__ int32_t WarpFindEmpty(ptr_t unit_data);
 
     /* Hash function */
-    __device__ __host__ uint32_t ComputeBucket(uint8_t* key_ptr) const;
+    __device__ size_t ComputeBucket(const void* key_ptr) const;
 
-    __device__ __forceinline__ ptr_t* get_unit_ptr_from_list_nodes(
-            const ptr_t slab_ptr, const uint32_t lane_id) {
+    __device__ ptr_t* get_unit_ptr_from_list_nodes(ptr_t slab_ptr,
+                                                   uint32_t lane_id) {
         return node_mgr_ctx_.get_unit_ptr_from_slab(slab_ptr, lane_id);
     }
-    __device__ __forceinline__ ptr_t* get_unit_ptr_from_list_head(
-            const uint32_t bucket_id, const uint32_t lane_id) {
+    __device__ ptr_t* get_unit_ptr_from_list_head(uint32_t bucket_id,
+                                                  uint32_t lane_id) {
         return reinterpret_cast<uint32_t*>(bucket_list_head_) +
                bucket_id * BASE_UNIT_SIZE + lane_id;
     }
 
-private:
-    __device__ __forceinline__ void WarpSyncKey(uint8_t* key_ptr,
-                                                const uint32_t lane_id,
-                                                uint8_t* ret_key_ptr);
-    __device__ __forceinline__ int32_t WarpFindKey(uint8_t* src_key_ptr,
-                                                   const uint32_t lane_id,
-                                                   const uint32_t ptr);
-    __device__ __forceinline__ int32_t WarpFindEmpty(const uint32_t unit_data);
-
-    __device__ __forceinline__ ptr_t AllocateSlab(const uint32_t lane_id);
-    __device__ __forceinline__ void FreeSlab(const ptr_t slab_ptr);
+    __device__ ptr_t AllocateSlab(uint32_t lane_id);
+    __device__ void FreeSlab(ptr_t slab_ptr);
 
 public:
     Hash hash_fn_;
     KeyEq cmp_fn_;
 
-    uint32_t bucket_count_;
-    uint32_t dsize_key_;
-    uint32_t dsize_value_;
+    size_t bucket_count_;
+    size_t dsize_key_;
+    size_t dsize_value_;
 
     Slab* bucket_list_head_;
     InternalNodeManagerContext node_mgr_ctx_;
@@ -100,44 +99,44 @@ public:
 /// Kernels
 template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                  uint8_t* input_keys,
+                                  const void* input_keys,
                                   ptr_t* output_iterator_ptrs,
-                                  uint32_t input_count);
+                                  size_t count);
 
 template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                  uint8_t* input_keys,
+                                  const void* input_keys,
                                   ptr_t* output_iterator_ptrs,
                                   bool* output_masks,
-                                  uint32_t input_count);
+                                  size_t count);
 
 template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                  uint8_t* input_values,
+                                  const void* input_values,
                                   ptr_t* input_iterator_ptrs,
                                   iterator_t* output_iterators,
                                   bool* output_masks,
-                                  uint32_t input_count);
+                                  size_t count);
 
 template <typename Hash, typename KeyEq>
 __global__ void FindKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                           uint8_t* input_keys,
+                           const void* input_keys,
                            iterator_t* output_iterators,
                            bool* output_masks,
-                           uint32_t input_count);
+                           size_t count);
 
 template <typename Hash, typename KeyEq>
 __global__ void EraseKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                 uint8_t* input_keys,
+                                 const void* input_keys,
                                  ptr_t* output_iterator_ptrs,
                                  bool* output_masks,
-                                 uint32_t input_count);
+                                 size_t count);
 
 template <typename Hash, typename KeyEq>
 __global__ void EraseKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                  ptr_t* output_iterator_ptrs,
                                  bool* output_masks,
-                                 uint32_t input_count);
+                                 size_t count);
 
 template <typename Hash, typename KeyEq>
 __global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,

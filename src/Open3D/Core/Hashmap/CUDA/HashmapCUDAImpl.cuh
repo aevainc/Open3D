@@ -29,16 +29,13 @@ namespace open3d {  /// Kernels
 /// Device proxy
 template <typename Hash, typename KeyEq>
 CUDAHashmapImplContext<Hash, KeyEq>::CUDAHashmapImplContext()
-    : bucket_count_(0), bucket_list_head_(nullptr) {
-    static_assert(sizeof(Slab) == (WARP_WIDTH * sizeof(ptr_t)),
-                  "Invalid slab size");
-}
+    : bucket_count_(0), bucket_list_head_(nullptr) {}
 
 template <typename Hash, typename KeyEq>
-__host__ void CUDAHashmapImplContext<Hash, KeyEq>::Setup(
-        const uint32_t init_buckets,
-        const uint32_t dsize_key,
-        const uint32_t dsize_value,
+void CUDAHashmapImplContext<Hash, KeyEq>::Setup(
+        size_t init_buckets,
+        size_t dsize_key,
+        size_t dsize_value,
         const InternalNodeManagerContext& allocator_ctx,
         const InternalKvPairManagerContext& pair_allocator_ctx) {
     bucket_count_ = init_buckets;
@@ -54,27 +51,27 @@ __host__ void CUDAHashmapImplContext<Hash, KeyEq>::Setup(
 
 /// Device functions
 template <typename Hash, typename KeyEq>
-__device__ __host__ __forceinline__ uint32_t
-CUDAHashmapImplContext<Hash, KeyEq>::ComputeBucket(uint8_t* key) const {
+__device__ size_t
+CUDAHashmapImplContext<Hash, KeyEq>::ComputeBucket(const void* key) const {
     return hash_fn_(key) % bucket_count_;
 }
 
 template <typename Hash, typename KeyEq>
-__device__ __forceinline__ void
-CUDAHashmapImplContext<Hash, KeyEq>::WarpSyncKey(uint8_t* key_ptr,
-                                                 const uint32_t lane_id,
-                                                 uint8_t* ret_key_ptr) {
+__device__ void CUDAHashmapImplContext<Hash, KeyEq>::WarpSyncKey(
+        const void* key_ptr, uint32_t lane_id, void* ret_key_ptr) {
     const int chunks = dsize_key_ / sizeof(int);
 
+    auto src_key_ptr = static_cast<const int*>(key_ptr);
+    auto dst_key_ptr = static_cast<int*>(ret_key_ptr);
     for (size_t i = 0; i < chunks; ++i) {
-        ((int*)(ret_key_ptr))[i] = __shfl_sync(
-                ACTIVE_LANES_MASK, ((int*)(key_ptr))[i], lane_id, WARP_WIDTH);
+        dst_key_ptr[i] = __shfl_sync(ACTIVE_LANES_MASK, src_key_ptr[i], lane_id,
+                                     WARP_WIDTH);
     }
 }
 
 template <typename Hash, typename KeyEq>
 __device__ int32_t CUDAHashmapImplContext<Hash, KeyEq>::WarpFindKey(
-        uint8_t* key_ptr, const uint32_t lane_id, const ptr_t ptr) {
+        const void* key_ptr, uint32_t lane_id, ptr_t ptr) {
     bool is_lane_found =
             /* select key lanes */
             ((1 << lane_id) & PAIR_PTR_LANES_MASK)
@@ -87,31 +84,27 @@ __device__ int32_t CUDAHashmapImplContext<Hash, KeyEq>::WarpFindKey(
 }
 
 template <typename Hash, typename KeyEq>
-__device__ __forceinline__ int32_t
-CUDAHashmapImplContext<Hash, KeyEq>::WarpFindEmpty(const ptr_t ptr) {
+__device__ int32_t
+CUDAHashmapImplContext<Hash, KeyEq>::WarpFindEmpty(ptr_t ptr) {
     bool is_lane_empty = (ptr == EMPTY_PAIR_PTR);
-
     return __ffs(__ballot_sync(PAIR_PTR_LANES_MASK, is_lane_empty)) - 1;
 }
 
 template <typename Hash, typename KeyEq>
-__device__ __forceinline__ ptr_t
-CUDAHashmapImplContext<Hash, KeyEq>::AllocateSlab(const uint32_t lane_id) {
+__device__ ptr_t
+CUDAHashmapImplContext<Hash, KeyEq>::AllocateSlab(uint32_t lane_id) {
     return node_mgr_ctx_.WarpAllocate(lane_id);
 }
 
 template <typename Hash, typename KeyEq>
 __device__ __forceinline__ void CUDAHashmapImplContext<Hash, KeyEq>::FreeSlab(
-        const ptr_t slab_ptr) {
+        ptr_t slab_ptr) {
     node_mgr_ctx_.FreeUntouched(slab_ptr);
 }
 
 template <typename Hash, typename KeyEq>
 __device__ Pair<ptr_t, bool> CUDAHashmapImplContext<Hash, KeyEq>::Find(
-        bool& to_search,
-        const uint32_t lane_id,
-        const uint32_t bucket_id,
-        uint8_t* query_key) {
+        bool to_search, uint32_t lane_id, uint32_t bucket_id, const void* query_key) {
     uint32_t work_queue = 0;
     uint32_t prev_work_queue = work_queue;
     uint32_t curr_slab_ptr = HEAD_SLAB_PTR;
@@ -186,12 +179,12 @@ __device__ Pair<ptr_t, bool> CUDAHashmapImplContext<Hash, KeyEq>::Find(
  * WE DO NOT ALLOW DUPLICATE KEYSn
  */
 template <typename Hash, typename KeyEq>
-__device__ bool
-CUDAHashmapImplContext<Hash, KeyEq>::Insert(bool& to_be_inserted,
-                                            const uint32_t lane_id,
-                                            const uint32_t bucket_id,
-                                            uint8_t* key,
-                                            ptr_t iterator_ptr) {
+__device__ bool CUDAHashmapImplContext<Hash, KeyEq>::Insert(
+        bool to_be_inserted,
+        uint32_t lane_id,
+        uint32_t bucket_id,
+        const void* key,
+        ptr_t iterator_ptr) {
     uint32_t work_queue = 0;
     uint32_t prev_work_queue = 0;
     uint32_t curr_slab_ptr = HEAD_SLAB_PTR;
@@ -307,10 +300,7 @@ CUDAHashmapImplContext<Hash, KeyEq>::Insert(bool& to_be_inserted,
 
 template <typename Hash, typename KeyEq>
 __device__ Pair<ptr_t, bool> CUDAHashmapImplContext<Hash, KeyEq>::Erase(
-        bool& to_be_deleted,
-        const uint32_t lane_id,
-        const uint32_t bucket_id,
-        uint8_t* key) {
+        bool to_be_deleted, uint32_t lane_id, uint32_t bucket_id, const void* key) {
     uint32_t work_queue = 0;
     uint32_t prev_work_queue = 0;
     uint32_t curr_slab_ptr = HEAD_SLAB_PTR;
@@ -353,16 +343,6 @@ __device__ Pair<ptr_t, bool> CUDAHashmapImplContext<Hash, KeyEq>::Erase(
                         (unsigned int*)unit_data_ptr, EMPTY_PAIR_PTR);
                 mask = pair_to_delete != EMPTY_PAIR_PTR;
                 iterator_ptr = pair_to_delete;
-                // ptr_t old_key_value_pair =
-                //         atomicCAS((unsigned int*)(unit_data_ptr),
-                //                   pair_to_delete, EMPTY_PAIR_PTR);
-                /** Branch 1.1: this thread reset, free src_addr **/
-                // if (old_key_value_pair == pair_to_delete) {
-                //     iterator_ptr = pair_to_delete;
-                //     mask = true;
-                // }
-                // to_be_deleted = false;
-
                 /** Branch 1.2: other thread did the job, avoid double free
                  * **/
             }
@@ -378,8 +358,6 @@ __device__ Pair<ptr_t, bool> CUDAHashmapImplContext<Hash, KeyEq>::Erase(
                 curr_slab_ptr = next_slab_ptr;
             }
         }
-        // printf("src_lane = %d, lane_id = %d, src_key = %d, active = %d\n",
-        //         src_lane, lane_id, *((int*)src_key), (int)to_be_deleted);
         prev_work_queue = work_queue;
     }
 
@@ -388,10 +366,10 @@ __device__ Pair<ptr_t, bool> CUDAHashmapImplContext<Hash, KeyEq>::Erase(
 
 template <typename Hash, typename KeyEq>
 __global__ void FindKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                           uint8_t* keys,
+                           const void* keys,
                            iterator_t* iterators,
                            bool* masks,
-                           uint32_t input_count) {
+                           size_t input_count) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
     uint32_t lane_id = threadIdx.x & 0x1F;
 
@@ -407,13 +385,13 @@ __global__ void FindKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
     uint32_t bucket_id = 0;
 
     // dummy
-    __shared__ uint8_t dummy_key[MAX_KEY_BYTESIZE];
-    uint8_t* key = dummy_key;
+    uint8_t dummy_key[MAX_KEY_BYTESIZE];
+    const void* key = reinterpret_cast<const void*>(dummy_key);
     Pair<ptr_t, bool> result;
 
     if (tid < input_count) {
         lane_active = true;
-        key = keys + tid * hash_ctx.dsize_key_;
+        key = static_cast<const uint8_t*>(keys) + tid * hash_ctx.dsize_key_;
         bucket_id = hash_ctx.ComputeBucket(key);
     }
 
@@ -427,9 +405,9 @@ __global__ void FindKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
 template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                  uint8_t* keys,
+                                  const void* keys,
                                   ptr_t* iterator_ptrs,
-                                  uint32_t input_count) {
+                                  size_t input_count) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (tid < input_count) {
@@ -438,8 +416,8 @@ __global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
         iterator_t iterator =
                 hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr);
 
-        int* dst_key_ptr = (int*)iterator.first;
-        int* src_key_ptr = (int*)(keys + tid * hash_ctx.dsize_key_);
+        auto dst_key_ptr = static_cast<int*>(iterator.first);
+        auto src_key_ptr = static_cast<const int*>(keys) + tid * hash_ctx.dsize_key_ / sizeof(int);
         for (int i = 0; i < hash_ctx.dsize_key_ / sizeof(int); ++i) {
             dst_key_ptr[i] = src_key_ptr[i];
         }
@@ -450,10 +428,10 @@ __global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
 template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                  uint8_t* keys,
+                                  const void* keys,
                                   ptr_t* iterator_ptrs,
                                   bool* masks,
-                                  uint32_t input_count) {
+                                  size_t input_count) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
     uint32_t lane_id = tid % 32;
 
@@ -469,11 +447,11 @@ __global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
     // dummy
     uint8_t dummy_key[MAX_KEY_BYTESIZE];
-    uint8_t* key = dummy_key;
+    const void* key = reinterpret_cast<const void*>(dummy_key);
 
     if (tid < input_count) {
         lane_active = true;
-        key = keys + tid * hash_ctx.dsize_key_;
+        key = static_cast<const uint8_t*>(keys) + tid * hash_ctx.dsize_key_;
         iterator_ptr = iterator_ptrs[tid];
         bucket_id = hash_ctx.ComputeBucket(key);
     }
@@ -488,11 +466,11 @@ __global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
 template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                  uint8_t* values,
+                                  const void* values,
                                   ptr_t* iterator_ptrs,
                                   iterator_t* iterators,
                                   bool* masks,
-                                  uint32_t input_count) {
+                                  size_t input_count) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (tid < input_count) {
@@ -502,8 +480,8 @@ __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
             iterator_t iterator =
                     hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr);
             // Success: copy remaining values
-            int* src_value_ptr = (int*)(values + tid * hash_ctx.dsize_value_);
-            int* dst_value_ptr = (int*)iterator.second;
+            auto src_value_ptr = static_cast<const int*>(values) + tid * hash_ctx.dsize_value_ / sizeof(int);
+            auto dst_value_ptr = static_cast<int*>(iterator.second);
             for (int i = 0; i < hash_ctx.dsize_value_ / sizeof(int); ++i) {
                 dst_value_ptr[i] = src_value_ptr[i];
             }
@@ -523,10 +501,10 @@ __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
 template <typename Hash, typename KeyEq>
 __global__ void EraseKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
-                                 uint8_t* keys,
+                                 const void* keys,
                                  ptr_t* iterator_ptrs,
                                  bool* masks,
-                                 uint32_t input_count) {
+                                 size_t input_count) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
     uint32_t lane_id = threadIdx.x & 0x1F;
 
@@ -539,12 +517,12 @@ __global__ void EraseKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
     bool lane_active = false;
     uint32_t bucket_id = 0;
 
-    __shared__ uint8_t dummy_key[MAX_KEY_BYTESIZE];
-    uint8_t* key = dummy_key;
+    uint8_t dummy_key[MAX_KEY_BYTESIZE];
+    const void* key = reinterpret_cast<const void*>(dummy_key);
 
     if (tid < input_count) {
         lane_active = true;
-        key = keys + tid * hash_ctx.dsize_key_;
+        key = static_cast<const uint8_t*>(keys) + tid * hash_ctx.dsize_key_;
         bucket_id = hash_ctx.ComputeBucket(key);
     }
 
@@ -560,7 +538,7 @@ template <typename Hash, typename KeyEq>
 __global__ void EraseKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                  ptr_t* iterator_ptrs,
                                  bool* masks,
-                                 uint32_t input_count) {
+                                 size_t input_count) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
     if (tid < input_count && masks[tid]) {
         hash_ctx.mem_mgr_ctx_.Free(iterator_ptrs[tid]);
@@ -682,7 +660,7 @@ __global__ void UnpackIteratorsKernel(const iterator_t* input_iterators,
     if (tid < iterator_count && (input_masks == nullptr || input_masks[tid])) {
         if (output_keys != nullptr) {
             uint8_t* dst_key_ptr = (uint8_t*)output_keys + dsize_key * tid;
-            uint8_t* src_key_ptr = input_iterators[tid].first;
+            uint8_t* src_key_ptr = static_cast<uint8_t*>(input_iterators[tid].first);
 
             for (size_t i = 0; i < dsize_key; ++i) {
                 dst_key_ptr[i] = src_key_ptr[i];
@@ -692,7 +670,7 @@ __global__ void UnpackIteratorsKernel(const iterator_t* input_iterators,
         if (output_values != nullptr) {
             uint8_t* dst_value_ptr =
                     (uint8_t*)output_values + dsize_value * tid;
-            uint8_t* src_value_ptr = input_iterators[tid].second;
+            uint8_t* src_value_ptr = static_cast<uint8_t*>(input_iterators[tid].second);
 
             for (size_t i = 0; i < dsize_value; ++i) {
                 dst_value_ptr[i] = src_value_ptr[i];
@@ -711,7 +689,7 @@ __global__ void AssignIteratorsKernel(iterator_t* input_iterators,
     // Valid queries
     if (tid < iterator_count && (input_masks == nullptr || input_masks[tid])) {
         uint8_t* src_value_ptr = (uint8_t*)input_values + dsize_value * tid;
-        uint8_t* dst_value_ptr = input_iterators[tid].second;
+        uint8_t* dst_value_ptr = static_cast<uint8_t*>(input_iterators[tid].second);
 
         // Byte-by-byte copy, can be improved
         for (size_t i = 0; i < dsize_value; ++i) {

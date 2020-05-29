@@ -82,36 +82,35 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
     bool extern_alloc = (output_masks != nullptr);
     if (!extern_alloc) {
         output_masks = (bool*)MemoryManager::Malloc(count * sizeof(bool),
-                                                       this->device_);
+                                                    this->device_);
     }
     const uint32_t num_blocks = (count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
 
     auto iterator_ptrs =
             (ptr_t*)MemoryManager::Malloc(sizeof(ptr_t) * count, this->device_);
 
-    InsertKernelPass0<<<num_blocks, BLOCKSIZE_>>>(
-            gpu_context_, (uint8_t*)input_keys, iterator_ptrs, count);
+    InsertKernelPass0<<<num_blocks, BLOCKSIZE_>>>(gpu_context_, input_keys,
+                                                  iterator_ptrs, count);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 
     InsertKernelPass1<<<num_blocks, BLOCKSIZE_>>>(
-            gpu_context_, (uint8_t*)input_keys, iterator_ptrs, output_masks,
-            count);
+            gpu_context_, input_keys, iterator_ptrs, output_masks, count);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 
-    int heap_counter;
-    heap_counter =
-            *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
+    // int heap_counter;
+    // heap_counter =
+    //         *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
 
     InsertKernelPass2<<<num_blocks, BLOCKSIZE_>>>(
-            gpu_context_, (uint8_t*)input_values, iterator_ptrs,
-            output_iterators, output_masks, count);
+            gpu_context_, input_values, iterator_ptrs, output_iterators,
+            output_masks, count);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 
-    heap_counter =
-            *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
+    // heap_counter =
+    //         *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
 
     MemoryManager::Free(iterator_ptrs, this->device_);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
@@ -207,9 +206,8 @@ void CUDAHashmap<Hash, KeyEq>::UnpackIterators(
     const size_t num_blocks = (iterator_count + num_threads - 1) / num_threads;
 
     UnpackIteratorsKernel<<<num_blocks, num_threads>>>(
-            input_iterators, input_masks, (uint8_t*)output_keys,
-            (uint8_t*)output_values, this->dsize_key_, this->dsize_value_,
-            iterator_count);
+            input_iterators, input_masks, output_keys, output_values,
+            this->dsize_key_, this->dsize_value_, iterator_count);
 
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
@@ -225,8 +223,8 @@ void CUDAHashmap<Hash, KeyEq>::AssignIterators(iterator_t* input_iterators,
     const size_t num_blocks = (iterator_count + num_threads - 1) / num_threads;
 
     AssignIteratorsKernel<<<num_blocks, num_threads>>>(
-            input_iterators, input_masks, (uint8_t*)input_values,
-            this->dsize_value_, iterator_count);
+            input_iterators, input_masks, input_values, this->dsize_value_,
+            iterator_count);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 }
