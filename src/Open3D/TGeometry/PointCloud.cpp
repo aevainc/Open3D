@@ -86,5 +86,10 @@ PointCloud &PointCloud::Rotate(const Tensor &R, const Tensor &center) {
     return *this;
 }
 
+std::shared_ptr<PointCloud> PointCloud::VoxelDownSample(
+        float voxel_size) const {
+    return std::make_shared<PointCloud>();
+}
+
 }  // namespace tgeometry
 }  // namespace open3d

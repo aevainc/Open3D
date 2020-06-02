@@ -66,13 +66,11 @@ endif()
 
 # Create object library
 add_library(Core OBJECT ${ALL_CORE_SRC})
-set_target_properties(Core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-
+open3d_set_global_properties(Core)
+open3d_link_3rdparty_libraries(Core)
 
 if (BUILD_CUDA_MODULE)
-   set(CUDA_NVCC_FLAGS -std=c++11)
-    set(CMAKE_CXX_STANDARD 11)
+   target_include_directories(Core PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
     # cuda_add_executable(test_hashmap_cuda Hashmap/test_hashmap.cu)
     # target_link_libraries(test_hashmap_cuda ${CMAKE_PROJECT_NAME})
