@@ -155,10 +155,28 @@ public:
     Device device_;
 };
 
-/// Factory
+/// Low level factory for customized functions
 template <typename Hash, typename KeyEq>
 std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_buckets,
                                                     size_t dsize_key,
                                                     size_t dsize_value,
                                                     Device device);
+
+/// High level factory for default functions
+/// Factory interface for non-templated Default hashmap -- to be instantiated in
+/// implementations
+typedef Hashmap<DefaultHash, DefaultKeyEq> DefaultHashmap;
+std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_buckets,
+                                                     size_t dsize_key,
+                                                     size_t dsize_value,
+                                                     open3d::Device device);
+
+std::shared_ptr<DefaultHashmap> CreateDefaultCPUHashmap(size_t init_buckets,
+                                                        size_t dsize_key,
+                                                        size_t dsize_value,
+                                                        open3d::Device device);
+std::shared_ptr<DefaultHashmap> CreateDefaultCUDAHashmap(size_t init_buckets,
+                                                         size_t dsize_key,
+                                                         size_t dsize_value,
+                                                         open3d::Device device);
 }  // namespace open3d

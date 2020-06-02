@@ -36,36 +36,224 @@ std::pair<Tensor, Tensor> Unique(Tensor tensor) {
     Tensor indices(indices_data, {tensor.GetShape()[0]}, Dtype::Int64,
                    tensor.GetDevice());
 
-    auto tensor_hash = CreateTensorHash(tensor, indices, false);
+    auto tensor_hash = std::make_shared<TensorHash>(tensor, indices, false);
     return tensor_hash->Insert(tensor, indices);
 }
 
-std::shared_ptr<TensorHash> CreateTensorHash(Tensor coords,
-                                             Tensor values,
-                                             bool insert) {
-    static std::unordered_map<
-            open3d::Device::DeviceType,
-            std::function<std::shared_ptr<TensorHash>(Tensor, Tensor, bool)>,
-            open3d::utility::hash_enum_class::hash>
-            map_device_type_to_tensorhash_constructor = {
-                    {Device::DeviceType::CPU, _factory::CreateCPUTensorHash},
-#ifdef BUILD_CUDA_MODULE
-                    {Device::DeviceType::CUDA, _factory::CreateCUDATensorHash}
-#endif
-            };
-
-    if (coords.GetDevice() != values.GetDevice()) {
-        utility::LogError("Tensor device mismatch between coords and values.");
+TensorHash::TensorHash(Tensor coords, Tensor values, bool insert /* = true */) {
+    // Device check
+    if (coords.GetDevice().GetType() != values.GetDevice().GetType()) {
+        utility::LogError("TensorHash::Input tensors device mismatch.");
     }
 
-    auto device = coords.GetDevice();
-    if (map_device_type_to_tensorhash_constructor.find(device.GetType()) ==
-        map_device_type_to_tensorhash_constructor.end()) {
-        utility::LogError("CreateTensorHash: Unimplemented device");
+    // Contiguous check to fit internal hashmap
+    if (!coords.IsContiguous() || !values.IsContiguous()) {
+        utility::LogError("TensorHash::Input tensors must be contiguous.");
     }
 
-    auto constructor =
-            map_device_type_to_tensorhash_constructor.at(device.GetType());
-    return constructor(coords, values, insert);
+    // Shape check
+    auto coords_shape = coords.GetShape();
+    auto values_shape = values.GetShape();
+    if (coords_shape.size() != 2) {
+        utility::LogError("TensorHash::Input coords shape must be (N, D).");
+    }
+    if (coords_shape[0] != values_shape[0]) {
+        utility::LogError("TensorHash::Input coords and values size mismatch.");
+    }
+
+    // Store type and dim info
+    key_type_ = coords.GetDtype();
+    value_type_ = values.GetDtype();
+    key_dim_ = coords_shape[1];
+    value_dim_ = values_shape.size() == 1 ? 1 : values_shape[1];
+
+    int64_t N = coords_shape[0];
+
+    size_t key_size = DtypeUtil::ByteSize(key_type_) * key_dim_;
+    if (key_size > MAX_KEY_BYTESIZE) {
+        utility::LogError(
+                "TensorHash::Unsupported key size: at most {} bytes per "
+                "key is "
+                "supported, received {} bytes per key",
+                MAX_KEY_BYTESIZE, key_size);
+    }
+    size_t value_size = DtypeUtil::ByteSize(value_type_) * value_dim_;
+
+    // Create hashmap and reserve twice input size
+    hashmap_ = CreateDefaultHashmap(N / 2, key_size, value_size,
+                                    coords.GetDevice());
+
+    if (insert) {
+        auto iterators = MemoryManager::Malloc(sizeof(iterator_t) * N,
+                                               coords.GetDevice());
+        auto masks =
+                MemoryManager::Malloc(sizeof(bool) * N, coords.GetDevice());
+
+        hashmap_->Insert(static_cast<void*>(coords.GetBlob()->GetDataPtr()),
+                         static_cast<void*>(values.GetBlob()->GetDataPtr()),
+                         static_cast<iterator_t*>(iterators),
+                         static_cast<bool*>(masks), N);
+        MemoryManager::Free(iterators, coords.GetDevice());
+        MemoryManager::Free(masks, coords.GetDevice());
+    }
 }
+
+std::pair<Tensor, Tensor> TensorHash::Insert(Tensor coords, Tensor values) {
+    // Device check
+    if (coords.GetDevice().GetType() != hashmap_->device_.GetType()) {
+        utility::LogError(
+                "TensorHash::Input tensors and hashmap device mismatch.");
+    }
+
+    // Contiguous check to fit internal hashmap
+    if (!coords.IsContiguous() || !values.IsContiguous()) {
+        utility::LogError("TensorHash::Input tensors must be contiguous.");
+    }
+
+    // Type and shape check
+    if (key_type_ != coords.GetDtype() || value_type_ != values.GetDtype()) {
+        utility::LogError("TensorHash::Input key/value type mismatch.");
+    }
+
+    auto coords_shape = coords.GetShape();
+    auto values_shape = values.GetShape();
+    if (coords_shape.size() == 0 || coords_shape.size() == 0) {
+        utility::LogError("TensorHash::Inputs are empty tensors");
+    }
+    if (coords_shape.size() != 2 || coords_shape[1] != key_dim_) {
+        utility::LogError("TensorHash::Input coords shape mismatch.");
+    }
+    auto value_dim = values_shape.size() == 1 ? 1 : values_shape[1];
+    if (value_dim != value_dim_) {
+        utility::LogError("TensorHash::Input values shape mismatch.");
+    }
+
+    int64_t N = coords.GetShape()[0];
+
+    // Insert
+    auto iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * N, coords.GetDevice());
+
+    Tensor output_coord_tensor(SizeVector({N, key_dim_}), key_type_,
+                               coords.GetDevice());
+    Tensor output_mask_tensor(SizeVector({N}), Dtype::UInt8,
+                              coords.GetDevice());
+    hashmap_->Insert(
+            static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
+            static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()),
+            static_cast<iterator_t*>(iterators),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()), N);
+
+    hashmap_->UnpackIterators(
+            static_cast<iterator_t*>(iterators),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            static_cast<void*>(output_coord_tensor.GetBlob()->GetDataPtr()),
+            /* value = */ nullptr, N);
+
+    MemoryManager::Free(iterators, coords.GetDevice());
+
+    return std::make_pair(output_coord_tensor, output_mask_tensor);
+}
+
+std::pair<Tensor, Tensor> TensorHash::Query(Tensor coords) {
+    // Device check
+    if (coords.GetDevice().GetType() != hashmap_->device_.GetType()) {
+        utility::LogError(
+                "TensorHash::Input tensors and hashmap device mismatch.");
+    }
+
+    // Contiguous check to fit internal hashmap
+    if (!coords.IsContiguous()) {
+        utility::LogError("TensorHash::Input tensors must be contiguous.");
+    }
+
+    // Type and shape check
+    if (key_type_ != coords.GetDtype()) {
+        utility::LogError("TensorHash::Input coords key type mismatch.");
+    }
+    auto coords_shape = coords.GetShape();
+    if (coords_shape.size() != 2 || coords_shape[1] != key_dim_) {
+        utility::LogError("TensorHash::Input coords shape mismatch.");
+    }
+    int64_t N = coords.GetShape()[0];
+
+    // Search
+    auto iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * N, coords.GetDevice());
+
+    Tensor output_value_tensor(SizeVector({N, value_dim_}), value_type_,
+                               coords.GetDevice());
+    Tensor output_mask_tensor(SizeVector({N}), Dtype::UInt8,
+                              coords.GetDevice());
+
+    hashmap_->Find(
+            static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
+            static_cast<iterator_t*>(iterators),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()), N);
+
+    hashmap_->UnpackIterators(
+            static_cast<iterator_t*>(iterators),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            /* coord = */ nullptr,
+            static_cast<void*>(output_value_tensor.GetBlob()->GetDataPtr()), N);
+
+    MemoryManager::Free(iterators, coords.GetDevice());
+
+    return std::make_pair(output_value_tensor, output_mask_tensor);
+}
+
+Tensor TensorHash::Assign(Tensor coords, Tensor values) {
+    // Device check
+    if (coords.GetDevice().GetType() != hashmap_->device_.GetType()) {
+        utility::LogError(
+                "TensorHash::Input tensors and hashmap device mismatch.");
+    }
+
+    // Contiguous check to fit internal hashmap
+    if (!coords.IsContiguous() || !values.IsContiguous()) {
+        utility::LogError("TensorHash::Input tensors must be contiguous.");
+    }
+
+    // Type and shape check
+    if (key_type_ != coords.GetDtype() || value_type_ != values.GetDtype()) {
+        utility::LogError("TensorHash::Input key/value type mismatch.");
+    }
+
+    auto coords_shape = coords.GetShape();
+    auto values_shape = values.GetShape();
+    if (coords_shape.size() == 0 || coords_shape.size() == 0) {
+        utility::LogError("TensorHash::Inputs are empty tensors");
+    }
+    if (coords_shape.size() != 2 || coords_shape[1] != key_dim_) {
+        utility::LogError("TensorHash::Input coords shape mismatch.");
+    }
+    auto value_dim = values_shape.size() == 1 ? 1 : values_shape[1];
+    if (value_dim != value_dim_) {
+        utility::LogError("TensorHash::Input values shape mismatch.");
+    }
+
+    int64_t N = coords.GetShape()[0];
+
+    // Search
+    auto iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * N, coords.GetDevice());
+
+    Tensor output_mask_tensor(SizeVector({N}), Dtype::UInt8,
+                              coords.GetDevice());
+
+    hashmap_->Find(
+            static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
+            static_cast<iterator_t*>(iterators),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()), N);
+
+    hashmap_->AssignIterators(
+            static_cast<iterator_t*>(iterators),
+            static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()),
+            static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()), N);
+
+    MemoryManager::Free(iterators, coords.GetDevice());
+
+    return output_mask_tensor;
+}
+
 }  // namespace open3d

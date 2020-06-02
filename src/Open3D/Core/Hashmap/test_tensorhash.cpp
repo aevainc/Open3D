@@ -38,7 +38,8 @@ int main() {
         Tensor init_values(std::vector<int64_t>({0, 1, 2, 3, 4}), {5},
                            Dtype::Int64, device);
         utility::LogInfo("Create");
-        auto tensor_hash = CreateTensorHash(init_coords, init_values);
+        auto tensor_hash =
+                std::make_shared<TensorHash>(init_coords, init_values);
 
         /// Query
         utility::LogInfo("Query");

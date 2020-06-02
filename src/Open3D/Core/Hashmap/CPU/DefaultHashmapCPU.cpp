@@ -24,32 +24,14 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#pragma once
-#include "Open3D/Core/Hashmap/HashmapBase.h"
-#include "Open3D/Core/Tensor.h"
+#include "HashmapCPU.hpp"
 
 namespace open3d {
-
-class TensorHash {
-public:
-    TensorHash(Tensor coords, Tensor values, bool insert = true);
-
-    /// <Value, Mask>
-    std::pair<Tensor, Tensor> Query(Tensor coords);
-    /// <Key, Mask>
-    std::pair<Tensor, Tensor> Insert(Tensor coords, Tensor values);
-    /// Mask
-    Tensor Assign(Tensor coords, Tensor values);
-
-protected:
-    std::shared_ptr<DefaultHashmap> hashmap_;
-    Dtype key_type_;
-    Dtype value_type_;
-
-    int64_t key_dim_;
-    int64_t value_dim_;
-};
-
-std::pair<Tensor, Tensor> Unique(Tensor tensor);
-
+std::shared_ptr<DefaultHashmap> CreateDefaultCPUHashmap(size_t init_buckets,
+                                                        size_t dsize_key,
+                                                        size_t dsize_value,
+                                                        open3d::Device device) {
+    return std::make_shared<CPUHashmap<DefaultHash, DefaultKeyEq>>(
+            init_buckets, dsize_key, dsize_value, device);
+}
 }  // namespace open3d

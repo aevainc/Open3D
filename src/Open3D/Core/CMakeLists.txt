@@ -39,11 +39,12 @@ set (CORE_CUDA_SRC
 
 set (HASHMAP_SRC
     Hashmap/TensorHash.cpp
-    Hashmap/TensorHashCPU.cpp
+    Hashmap/CPU/DefaultHashmapCPU.cpp
+    Hashmap/DefaultHashmap.cpp
 )
 
 set (HASHMAP_CUDA_SRC
-    Hashmap/TensorHashCUDA.cu
+    Hashmap/CUDA/DefaultHashmapCUDA.cu
 )
 
 if (BUILD_CUDA_MODULE)
@@ -73,8 +74,8 @@ if (BUILD_CUDA_MODULE)
    set(CUDA_NVCC_FLAGS -std=c++11)
     set(CMAKE_CXX_STANDARD 11)
 
-    cuda_add_executable(test_hashmap_cuda Hashmap/test_hashmap.cu)
-    target_link_libraries(test_hashmap_cuda ${CMAKE_PROJECT_NAME})
+    # cuda_add_executable(test_hashmap_cuda Hashmap/test_hashmap.cu)
+    # target_link_libraries(test_hashmap_cuda ${CMAKE_PROJECT_NAME})
 
     cuda_add_executable(TestHashmap Hashmap/TestHashmap.cu)
     target_link_libraries(TestHashmap ${CMAKE_PROJECT_NAME})

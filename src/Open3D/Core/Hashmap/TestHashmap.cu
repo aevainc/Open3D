@@ -25,7 +25,7 @@
 // ----------------------------------------------------------------------------
 
 #include <random>
-#include "Open3D/Core/Hashmap/Hashmap.h"
+#include "Open3D/Core/Hashmap/TemplateHashmap.h"
 
 using namespace open3d;
 

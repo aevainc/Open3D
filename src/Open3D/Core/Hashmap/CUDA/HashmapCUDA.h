@@ -98,9 +98,9 @@ public:
     float LoadFactor();
 
 protected:
-    /// struct directly passed to kernels, cannot be a pointer
     size_t avg_elems_per_bucket_ = 64;
 
+    /// struct directly passed to kernels, cannot be a pointer
     CUDAHashmapImplContext<Hash, KeyEq> gpu_context_;
 
     std::shared_ptr<InternalKvPairManager> mem_mgr_;

@@ -24,32 +24,39 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#pragma once
-#include "Open3D/Core/Hashmap/HashmapBase.h"
-#include "Open3D/Core/Tensor.h"
+// High level non-templated hashmap interface for basic usages.
+
+// If BUILD_CUDA_MODULE, link DefaultHashmap.cu that contains everything, and
+// disable code inside DefaultHashmap.cpp
+// Else, link DefaultHashmap.cpp and disregard DefaultHashmap.cu
+
+#include "HashmapBase.h"
 
 namespace open3d {
 
-class TensorHash {
-public:
-    TensorHash(Tensor coords, Tensor values, bool insert = true);
+std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_buckets,
+                                                     size_t dsize_key,
+                                                     size_t dsize_value,
+                                                     open3d::Device device) {
+    static std::unordered_map<Device::DeviceType,
+                              std::function<std::shared_ptr<DefaultHashmap>(
+                                      size_t, size_t, size_t, Device)>,
+                              utility::hash_enum_class::hash>
+            map_device_type_to_hashmap_constructor = {
+                {Device::DeviceType::CPU, CreateDefaultCPUHashmap},
+#if defined(BUILD_CUDA_MODULE)
+                {Device::DeviceType::CUDA, CreateDefaultCUDAHashmap}
+#endif
+            };
 
-    /// <Value, Mask>
-    std::pair<Tensor, Tensor> Query(Tensor coords);
-    /// <Key, Mask>
-    std::pair<Tensor, Tensor> Insert(Tensor coords, Tensor values);
-    /// Mask
-    Tensor Assign(Tensor coords, Tensor values);
+    if (map_device_type_to_hashmap_constructor.find(device.GetType()) ==
+        map_device_type_to_hashmap_constructor.end()) {
+        utility::LogError("CreateDefaultHashmap: Unimplemented device");
+    }
 
-protected:
-    std::shared_ptr<DefaultHashmap> hashmap_;
-    Dtype key_type_;
-    Dtype value_type_;
-
-    int64_t key_dim_;
-    int64_t value_dim_;
-};
-
-std::pair<Tensor, Tensor> Unique(Tensor tensor);
+    auto constructor =
+            map_device_type_to_hashmap_constructor.at(device.GetType());
+    return constructor(init_buckets, dsize_key, dsize_value, device);
+}
 
 }  // namespace open3d

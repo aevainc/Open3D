@@ -26,13 +26,17 @@
 
 #pragma once
 
-// Low level hashmap interface for users. APIs are available in HashmapBase.h.
-// Include path:
-// Hashmap.h -> HashmapCPU.hpp -> HashmapBase.h
-//         |                      ^
-//         |--> HashmapCUDA.cuh --|
-//               (CUDA code)
-
+// Low level hashmap interface for advanced usages who wish to modify hash
+// function and/or equal function.
+// Users must create a .cu file and compile with
+// nvcc to use customized GPU hashmap.
+//
+// APIs are available in HashmapBase.h.
+// Include path: TemplatedHashmap.h -> HashmapCPU.hpp -> HashmapBase.h
+//                                |                      ^
+//                                |--> HashmapCUDA.cuh --|
+//                                        (CUDA code)
+//
 // .cpp targets only include CPU part that can be compiled by non-nvcc
 // compilers even if BUILD_CUDA_MODULE is enabled.
 // .cu targets include both.
