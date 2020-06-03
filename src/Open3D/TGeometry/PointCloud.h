@@ -29,6 +29,7 @@
 #include <Eigen/Core>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "Open3D/Core/Tensor.h"
 #include "Open3D/Core/TensorList.h"
@@ -83,7 +84,9 @@ public:
 
     PointCloud &Rotate(const Tensor &R, const Tensor &center) override;
 
-    PointCloud VoxelDownSample(float voxel_size) const;
+    PointCloud VoxelDownSample(float voxel_size,
+                               const std::unordered_set<std::string>
+                                       &properties_to_skip = {}) const;
 
 public:
     bool HasPoints() const {

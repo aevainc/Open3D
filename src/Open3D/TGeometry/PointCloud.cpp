@@ -60,7 +60,7 @@ PointCloud::PointCloud(
     device_ = it->second.GetDevice();
 
     auto shape = it->second.GetShape();
-    if (shape.size() != 2 || shape[1] != 3) {
+    if (shape[1] != 3) {
         utility::LogError("PointCloud must be constructed from (N, 3) points.");
     }
 
@@ -158,7 +158,9 @@ PointCloud &PointCloud::Rotate(const Tensor &R, const Tensor &center) {
     return *this;
 }
 
-PointCloud PointCloud::VoxelDownSample(float voxel_size) const {
+PointCloud PointCloud::VoxelDownSample(
+        float voxel_size,
+        const std::unordered_set<std::string> &properties_to_skip) const {
     auto tensor_quantized =
             point_dict_.find("points")->second.AsTensor() / voxel_size;
     auto tensor_quantized_int64 = tensor_quantized.To(Dtype::Int64);
@@ -166,11 +168,19 @@ PointCloud PointCloud::VoxelDownSample(float voxel_size) const {
     Tensor coords, masks;
     std::tie(coords, masks) = Unique(tensor_quantized_int64);
 
-    auto pcd_down = PointCloud();
-    pcd_down.point_dict_["points"] = TensorList(
-            coords.IndexGet({masks}).To(Dtype::Float32), /* inplace = */ false);
+    auto pcd_down_map = std::unordered_map<std::string, TensorList>();
+    auto tl_pts = TensorList(coords.IndexGet({masks}).To(Dtype::Float32),
+                             /* inplace = */ false);
 
-    return pcd_down;
+    pcd_down_map.emplace(std::make_pair("points", tl_pts));
+    for (auto kv : point_dict_) {
+        if (kv.first != "points" &&
+            properties_to_skip.find(kv.first) == properties_to_skip.end()) {
+            auto tl = TensorList(kv.second.AsTensor().IndexGet({masks}), false);
+            pcd_down_map.emplace(std::make_pair(kv.first, tl));
+        }
+    }
+    return PointCloud(pcd_down_map);
 }
 
 }  // namespace tgeometry
