@@ -70,16 +70,11 @@ open3d_set_global_properties(Core)
 open3d_link_3rdparty_libraries(Core)
 
 if (BUILD_CUDA_MODULE)
-   target_include_directories(Core PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-
-    # cuda_add_executable(test_hashmap_cuda Hashmap/test_hashmap.cu)
-    # target_link_libraries(test_hashmap_cuda ${CMAKE_PROJECT_NAME})
+    target_include_directories(Core PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
     cuda_add_executable(TestHashmap Hashmap/TestHashmap.cu)
+    open3d_set_global_properties(TestHashmap)
     target_link_libraries(TestHashmap ${CMAKE_PROJECT_NAME})
-
-    # add_executable(test_hashmap_cpu Hashmap/test_hashmap.cpp)
-    # target_link_libraries(test_hashmap_cpu ${CMAKE_PROJECT_NAME})
 
     add_executable(test_tensorhash Hashmap/test_tensorhash.cpp)
     target_link_libraries(test_tensorhash ${CMAKE_PROJECT_NAME})
