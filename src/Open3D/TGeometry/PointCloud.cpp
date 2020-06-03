@@ -29,6 +29,7 @@
 #include <Eigen/Core>
 #include <unordered_map>
 
+#include "Open3D/Core/Hashmap/TensorHash.h"
 #include "Open3D/Core/ShapeUtil.h"
 #include "Open3D/Core/Tensor.h"
 #include "Open3D/Core/TensorList.h"
@@ -86,9 +87,19 @@ PointCloud &PointCloud::Rotate(const Tensor &R, const Tensor &center) {
     return *this;
 }
 
-std::shared_ptr<PointCloud> PointCloud::VoxelDownSample(
-        float voxel_size) const {
-    return std::make_shared<PointCloud>();
+PointCloud PointCloud::VoxelDownSample(float voxel_size) const {
+    auto tensor_quantized =
+            point_dict_.find("points")->second.AsTensor() / voxel_size;
+    auto tensor_quantized_int64 = tensor_quantized.To(Dtype::Int64);
+
+    Tensor coords, masks;
+    std::tie(coords, masks) = Unique(tensor_quantized_int64);
+
+    auto pcd_down = PointCloud();
+    pcd_down.point_dict_["points"] = TensorList(
+            coords.IndexGet({masks}).To(Dtype::Float32), /* inplace = */ false);
+
+    return pcd_down;
 }
 
 }  // namespace tgeometry

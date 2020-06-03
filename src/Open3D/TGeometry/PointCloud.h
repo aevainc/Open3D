@@ -71,7 +71,7 @@ public:
 
     PointCloud &Rotate(const Tensor &R, const Tensor &center) override;
 
-    std::shared_ptr<PointCloud> VoxelDownSample(float voxel_size) const;
+    PointCloud VoxelDownSample(float voxel_size) const;
 
 public:
     bool HasPoints() const {

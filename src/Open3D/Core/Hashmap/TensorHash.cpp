@@ -136,8 +136,7 @@ std::pair<Tensor, Tensor> TensorHash::Insert(Tensor coords, Tensor values) {
 
     Tensor output_coord_tensor(SizeVector({N, key_dim_}), key_type_,
                                coords.GetDevice());
-    Tensor output_mask_tensor(SizeVector({N}), Dtype::UInt8,
-                              coords.GetDevice());
+    Tensor output_mask_tensor(SizeVector({N}), Dtype::Bool, coords.GetDevice());
     hashmap_->Insert(
             static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
             static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()),
@@ -183,8 +182,7 @@ std::pair<Tensor, Tensor> TensorHash::Query(Tensor coords) {
 
     Tensor output_value_tensor(SizeVector({N, value_dim_}), value_type_,
                                coords.GetDevice());
-    Tensor output_mask_tensor(SizeVector({N}), Dtype::UInt8,
-                              coords.GetDevice());
+    Tensor output_mask_tensor(SizeVector({N}), Dtype::Bool, coords.GetDevice());
 
     hashmap_->Find(
             static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
