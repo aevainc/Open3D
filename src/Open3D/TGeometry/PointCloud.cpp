@@ -172,10 +172,6 @@ PointCloud PointCloud::VoxelDownSample(
     auto tl_pts = TensorList(coords.IndexGet({masks}).To(Dtype::Float32),
                              /* inplace = */ false);
 
-    // for (size_t i = 0; i < coords.shape.size(); ++i) {
-    //     std::cout << coords.shape[i] << "\n";
-    // }
-
     pcd_down_map.emplace(std::make_pair("points", tl_pts));
     for (auto kv : point_dict_) {
         if (kv.first != "points" &&
@@ -187,5 +183,6 @@ PointCloud PointCloud::VoxelDownSample(
     return PointCloud(pcd_down_map);
 }
 
+p
 }  // namespace tgeometry
 }  // namespace open3d

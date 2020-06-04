@@ -25,47 +25,41 @@
 // ----------------------------------------------------------------------------
 
 #pragma once
-#include "Open3D/Core/Hashmap/HashmapBase.h"
+
+#include <Eigen/Core>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+
 #include "Open3D/Core/Tensor.h"
+#include "Open3D/Core/TensorList.h"
+#include "Open3D/Geometry/PointCloud.h"
+#include "Open3D/TGeometry/Geometry3D.h"
 
 namespace open3d {
+namespace tgeometry {
 
-class TensorHash {
+class VoxelGrid : public Geometry3D {
 public:
-    /// Don't specify anything before real insertion, since many users only
-    /// insert once.
-    TensorHash(Dtype key_type,
-               int64_t key_dim,
-               Dtype value_type,
-               int64_t value_dim,
-               Device device = Device("CPU:0"))
-        : hashmap_(nullptr),
-          key_type_(key_type),
-          key_dim_(key_dim),
-          value_type_(value_type),
-          value_dim_(value_dim),
-          device_(device){};
+    /// \brief Default Constructor.
+    VoxelGrid() : Geometry3D(Geometry::GeometryType::VoxelGrid) {}
 
-    TensorHash(Tensor coords, Tensor values, bool insert = true);
+    ~VoxelGrid() override{};
 
-    /// <Value, Mask>
-    std::pair<Tensor, Tensor> Query(Tensor coords);
-    /// <Key, Mask>
-    std::pair<Tensor, Tensor> Insert(Tensor coords, Tensor values);
-    /// Mask
-    Tensor Assign(Tensor coords, Tensor values);
+    std::unordered_map<std::string, TensorList> GetVoxels(
+            const Tensor coords &);
 
 protected:
-    std::shared_ptr<DefaultHashmap> hashmap_;
-    Dtype key_type_;
-    Dtype value_type_;
+    // Map from 3D coords to Int64 indices
+    // Usage:
+    // Tensor indices = coord_map_.Query(coords);
+    // Tensor values_get =
+    //         voxel_dict_["desired_property"].AsTensor().IndexGet({indices});
+    // voxel_dict_["desired_property"].AsTensor().IndexSet({indices},
+    // values_set);
 
-    int64_t key_dim_;
-    int64_t value_dim_;
-
-    Device device_;
-};
-
-std::pair<Tensor, Tensor> Unique(Tensor tensor);
-
+    TensorHash coord_map_;
+    std::unordered_map<std::string, TensorList> voxel_dict_;
+}
+}  // namespace tgeometry
 }  // namespace open3d
