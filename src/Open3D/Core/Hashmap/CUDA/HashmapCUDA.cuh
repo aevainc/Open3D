@@ -42,7 +42,7 @@
 
 #include "Open3D/Core/Hashmap/CUDA/HashmapCUDA.h"
 #include "Open3D/Core/Hashmap/CUDA/HashmapCUDAImpl.cuh"
-
+#include "Open3D/Utility/Timer.h"
 #include <thrust/device_vector.h>
 
 namespace open3d {
@@ -102,7 +102,6 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
     // int heap_counter;
     // heap_counter =
     //         *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
-
     InsertKernelPass2<<<num_blocks, BLOCKSIZE_>>>(
             gpu_context_, input_values, iterator_ptrs, output_iterators,
             output_masks, count);

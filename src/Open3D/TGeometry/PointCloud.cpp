@@ -60,7 +60,7 @@ PointCloud::PointCloud(
     device_ = it->second.GetDevice();
 
     auto shape = it->second.GetShape();
-    if (shape[1] != 3) {
+    if (shape[0] != 3) {
         utility::LogError("PointCloud must be constructed from (N, 3) points.");
     }
 
@@ -171,6 +171,10 @@ PointCloud PointCloud::VoxelDownSample(
     auto pcd_down_map = std::unordered_map<std::string, TensorList>();
     auto tl_pts = TensorList(coords.IndexGet({masks}).To(Dtype::Float32),
                              /* inplace = */ false);
+
+    // for (size_t i = 0; i < coords.shape.size(); ++i) {
+    //     std::cout << coords.shape[i] << "\n";
+    // }
 
     pcd_down_map.emplace(std::make_pair("points", tl_pts));
     for (auto kv : point_dict_) {

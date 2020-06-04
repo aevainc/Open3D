@@ -113,7 +113,9 @@ public:
     /// auto pcd = tgeometry::PointCloud::FromLegacyPointCloud(*pcd_legacy);
     /// auto pcd_legacy_back = tgeometry::PointCloud::ToLegacyPointCloud(pcd);
     static tgeometry::PointCloud FromLegacyPointCloud(
-            const geometry::PointCloud &pcd_legacy);
+            const geometry::PointCloud &pcd_legacy,
+            Dtype dtype = Dtype::Float32,
+            Device device = Device("CPU:0"));
 
     static std::shared_ptr<geometry::PointCloud> ToLegacyPointCloud(
             const tgeometry::PointCloud &pcd);

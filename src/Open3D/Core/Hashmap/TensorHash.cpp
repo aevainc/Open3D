@@ -25,8 +25,8 @@
 // ----------------------------------------------------------------------------
 
 #include "TensorHash.h"
-
 #include <unordered_map>
+#include "Open3D/Utility/Timer.h"
 
 namespace open3d {
 std::pair<Tensor, Tensor> Unique(Tensor tensor) {
@@ -36,8 +36,13 @@ std::pair<Tensor, Tensor> Unique(Tensor tensor) {
     Tensor indices(indices_data, {tensor.GetShape()[0]}, Dtype::Int64,
                    tensor.GetDevice());
 
+    utility::Timer timer;
+    timer.Start();
     auto tensor_hash = std::make_shared<TensorHash>(tensor, indices, false);
-    return tensor_hash->Insert(tensor, indices);
+    auto result = tensor_hash->Insert(tensor, indices);
+    timer.Stop();
+    utility::LogInfo("{}", timer.GetDuration());
+    return result;
 }
 
 TensorHash::TensorHash(Tensor coords, Tensor values, bool insert /* = true */) {
