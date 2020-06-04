@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
     timer.Stop();
     utility::LogInfo("TPointCloud time: {}", timer.GetDuration());
 
-    auto pcd_down_legacy = tgeometry::PointCloud::ToLegacyPointCloud(pcd_down);
+    auto pcd_down_legacy = std::make_shared<geometry::PointCloud>(
+            tgeometry::PointCloud::ToLegacyPointCloud(pcd_down));
     visualization::DrawGeometries({pcd_down_legacy});
 }
