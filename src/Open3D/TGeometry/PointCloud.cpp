@@ -33,6 +33,7 @@
 #include "Open3D/Core/ShapeUtil.h"
 #include "Open3D/Core/Tensor.h"
 #include "Open3D/Core/TensorList.h"
+#include "Open3D/Utility/Timer.h"
 
 namespace open3d {
 namespace tgeometry {
@@ -161,28 +162,45 @@ PointCloud &PointCloud::Rotate(const Tensor &R, const Tensor &center) {
 PointCloud PointCloud::VoxelDownSample(
         float voxel_size,
         const std::unordered_set<std::string> &properties_to_skip) const {
+    utility::Timer timer;
+    timer.Start();
     auto tensor_quantized =
             point_dict_.find("points")->second.AsTensor() / voxel_size;
-    auto tensor_quantized_int64 = tensor_quantized.To(Dtype::Int64);
+    timer.Stop();
+    utility::LogInfo("operator div takes {}", timer.GetDuration());
 
+    timer.Start();
+    auto tensor_quantized_int64 = tensor_quantized.To(Dtype::Int64);
+    timer.Stop();
+    utility::LogInfo("operator To Int64 takes {}", timer.GetDuration());
+
+    timer.Start();
     Tensor coords, masks;
     std::tie(coords, masks) = Unique(tensor_quantized_int64);
+    timer.Stop();
+    utility::LogInfo("operator Unique takes {}", timer.GetDuration());
 
+    timer.Start();
     auto pcd_down_map = std::unordered_map<std::string, TensorList>();
     auto tl_pts = TensorList(coords.IndexGet({masks}).To(Dtype::Float32),
                              /* inplace = */ false);
+    timer.Stop();
+    utility::LogInfo("operator pts indexing takes {}", timer.GetDuration());
 
     pcd_down_map.emplace(std::make_pair("points", tl_pts));
     for (auto kv : point_dict_) {
         if (kv.first != "points" &&
             properties_to_skip.find(kv.first) == properties_to_skip.end()) {
+            timer.Start();
             auto tl = TensorList(kv.second.AsTensor().IndexGet({masks}), false);
             pcd_down_map.emplace(std::make_pair(kv.first, tl));
+            timer.Stop();
+            utility::LogInfo("operator {} indexing takes {}", kv.first,
+                             timer.GetDuration());
         }
     }
     return PointCloud(pcd_down_map);
 }
 
-p
 }  // namespace tgeometry
 }  // namespace open3d

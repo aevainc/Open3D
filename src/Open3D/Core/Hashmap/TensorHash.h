@@ -35,14 +35,14 @@ public:
     /// Don't specify anything before real insertion, since many users only
     /// insert once.
     TensorHash(Dtype key_type,
-               int64_t key_dim,
                Dtype value_type,
+               int64_t key_dim,
                int64_t value_dim,
                Device device = Device("CPU:0"))
         : hashmap_(nullptr),
           key_type_(key_type),
-          key_dim_(key_dim),
           value_type_(value_type),
+          key_dim_(key_dim),
           value_dim_(value_dim),
           device_(device){};
 
@@ -57,6 +57,7 @@ public:
 
 protected:
     std::shared_ptr<DefaultHashmap> hashmap_;
+
     Dtype key_type_;
     Dtype value_type_;
 

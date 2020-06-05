@@ -31,17 +31,20 @@
 namespace open3d {
 std::pair<Tensor, Tensor> Unique(Tensor tensor) {
     /// TODO: sanity checks and multiple axises
+    utility::Timer timer;
+    timer.Start();
     std::vector<int64_t> indices_data(tensor.GetShape()[0]);
     std::iota(indices_data.begin(), indices_data.end(), 0);
     Tensor indices(indices_data, {tensor.GetShape()[0]}, Dtype::Int64,
                    tensor.GetDevice());
+    timer.Stop();
+    utility::LogInfo("Unique.Sequence takes {}", timer.GetDuration());
 
-    utility::Timer timer;
     timer.Start();
     auto tensor_hash = std::make_shared<TensorHash>(tensor, indices, false);
     auto result = tensor_hash->Insert(tensor, indices);
     timer.Stop();
-    utility::LogInfo("{}", timer.GetDuration());
+    utility::LogInfo("Unique.Insert takes {}", timer.GetDuration());
     return result;
 }
 
