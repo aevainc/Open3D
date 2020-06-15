@@ -97,6 +97,16 @@ public:
         return iterator_t(keys_ + ptr * dsize_key_,
                           values_ + ptr * dsize_value_);
     }
+
+    __device__ iterator_t extract_iterator_from_heap_index(int index) {
+        ptr_t ptr = heap_[index];
+        return extract_iterator(ptr);
+    }
+    __device__ const iterator_t
+    extract_iterator_from_heap_index(int index) const {
+        ptr_t ptr = heap_[index];
+        return extract_iterator(ptr);
+    }
 };
 
 __global__ void ResetInternalKvPairManagerKernel(

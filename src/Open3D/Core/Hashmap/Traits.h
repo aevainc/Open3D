@@ -68,8 +68,8 @@ static constexpr uint32_t NULL_ITERATOR = 0xFFFFFFFF;
 
 static constexpr uint32_t NUM_SUPER_BLOCKS_ = 32;
 
-static constexpr uint32_t LOG_NUM_MEM_BLOCKS_ = 8;
-static constexpr uint32_t NUM_MEM_BLOCKS_PER_SUPER_BLOCK_ = 256;
+static constexpr uint32_t LOG_NUM_MEM_BLOCKS_ = 6;
+static constexpr uint32_t NUM_MEM_BLOCKS_PER_SUPER_BLOCK_ = 64;
 static constexpr uint32_t NUM_MEM_UNITS_PER_BLOCK_ = 1024;
 
 static constexpr uint32_t NUM_BITMAP_PER_MEM_BLOCK_ = 32;

@@ -101,6 +101,7 @@ template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                   const void* input_keys,
                                   ptr_t* output_iterator_ptrs,
+                                  int iterator_heap_index0,
                                   size_t count);
 
 template <typename Hash, typename KeyEq>

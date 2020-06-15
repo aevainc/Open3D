@@ -107,6 +107,9 @@ TensorHash::TensorHash(Tensor coords, Tensor values, bool insert /* = true */) {
 }
 
 std::pair<Tensor, Tensor> TensorHash::Insert(Tensor coords, Tensor values) {
+    utility::Timer timer;
+
+    timer.Start();
     // Device check
     if (coords.GetDevice().GetType() != hashmap_->device_.GetType()) {
         utility::LogError(
@@ -145,17 +148,29 @@ std::pair<Tensor, Tensor> TensorHash::Insert(Tensor coords, Tensor values) {
     Tensor output_coord_tensor(SizeVector({N, key_dim_}), key_type_,
                                coords.GetDevice());
     Tensor output_mask_tensor(SizeVector({N}), Dtype::Bool, coords.GetDevice());
+    timer.Stop();
+    utility::LogInfo("- TensorHash.Insert Preparation takes {}",
+                     timer.GetDuration());
+
+    timer.Start();
     hashmap_->Insert(
             static_cast<uint8_t*>(coords.GetBlob()->GetDataPtr()),
             static_cast<uint8_t*>(values.GetBlob()->GetDataPtr()),
             static_cast<iterator_t*>(iterators),
             static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()), N);
+    timer.Stop();
+    utility::LogInfo("- TensorHash.Insert Insert takes {}",
+                     timer.GetDuration());
 
+    timer.Start();
     hashmap_->UnpackIterators(
             static_cast<iterator_t*>(iterators),
             static_cast<bool*>(output_mask_tensor.GetBlob()->GetDataPtr()),
             static_cast<void*>(output_coord_tensor.GetBlob()->GetDataPtr()),
             /* value = */ nullptr, N);
+    timer.Stop();
+    utility::LogInfo("- TensorHash.Insert UnpackIterators takes {}",
+                     timer.GetDuration());
 
     MemoryManager::Free(iterators, coords.GetDevice());
 

@@ -49,7 +49,6 @@ public:
     ptr_t *heap_;       /* [N] */
     int *heap_counter_; /* [1] */
 
-public:
     int dsize_;
     int max_capacity_;
 

@@ -104,7 +104,10 @@ __device__ __forceinline__ void CUDAHashmapImplContext<Hash, KeyEq>::FreeSlab(
 
 template <typename Hash, typename KeyEq>
 __device__ Pair<ptr_t, bool> CUDAHashmapImplContext<Hash, KeyEq>::Find(
-        bool to_search, uint32_t lane_id, uint32_t bucket_id, const void* query_key) {
+        bool to_search,
+        uint32_t lane_id,
+        uint32_t bucket_id,
+        const void* query_key) {
     uint32_t work_queue = 0;
     uint32_t prev_work_queue = work_queue;
     uint32_t curr_slab_ptr = HEAD_SLAB_PTR;
@@ -300,7 +303,10 @@ __device__ bool CUDAHashmapImplContext<Hash, KeyEq>::Insert(
 
 template <typename Hash, typename KeyEq>
 __device__ Pair<ptr_t, bool> CUDAHashmapImplContext<Hash, KeyEq>::Erase(
-        bool to_be_deleted, uint32_t lane_id, uint32_t bucket_id, const void* key) {
+        bool to_be_deleted,
+        uint32_t lane_id,
+        uint32_t bucket_id,
+        const void* key) {
     uint32_t work_queue = 0;
     uint32_t prev_work_queue = 0;
     uint32_t curr_slab_ptr = HEAD_SLAB_PTR;
@@ -407,17 +413,20 @@ template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                   const void* keys,
                                   ptr_t* iterator_ptrs,
+                                  int iterator_heap_index0,
                                   size_t input_count) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (tid < input_count) {
         /** First write ALL keys to avoid potential thread conflicts **/
-        ptr_t iterator_ptr = hash_ctx.mem_mgr_ctx_.SafeAllocate();
+        ptr_t iterator_ptr =
+                hash_ctx.mem_mgr_ctx_.heap_[iterator_heap_index0 + tid];
         iterator_t iterator =
                 hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr);
 
         auto dst_key_ptr = static_cast<int*>(iterator.first);
-        auto src_key_ptr = static_cast<const int*>(keys) + tid * hash_ctx.dsize_key_ / sizeof(int);
+        auto src_key_ptr = static_cast<const int*>(keys) +
+                           tid * hash_ctx.dsize_key_ / sizeof(int);
         for (int i = 0; i < hash_ctx.dsize_key_ / sizeof(int); ++i) {
             dst_key_ptr[i] = src_key_ptr[i];
         }
@@ -480,7 +489,8 @@ __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
             iterator_t iterator =
                     hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr);
             // Success: copy remaining values
-            auto src_value_ptr = static_cast<const int*>(values) + tid * hash_ctx.dsize_value_ / sizeof(int);
+            auto src_value_ptr = static_cast<const int*>(values) +
+                                 tid * hash_ctx.dsize_value_ / sizeof(int);
             auto dst_value_ptr = static_cast<int*>(iterator.second);
             for (int i = 0; i < hash_ctx.dsize_value_ / sizeof(int); ++i) {
                 dst_value_ptr[i] = src_value_ptr[i];
@@ -660,7 +670,8 @@ __global__ void UnpackIteratorsKernel(const iterator_t* input_iterators,
     if (tid < iterator_count && (input_masks == nullptr || input_masks[tid])) {
         if (output_keys != nullptr) {
             uint8_t* dst_key_ptr = (uint8_t*)output_keys + dsize_key * tid;
-            uint8_t* src_key_ptr = static_cast<uint8_t*>(input_iterators[tid].first);
+            uint8_t* src_key_ptr =
+                    static_cast<uint8_t*>(input_iterators[tid].first);
 
             for (size_t i = 0; i < dsize_key; ++i) {
                 dst_key_ptr[i] = src_key_ptr[i];
@@ -670,7 +681,8 @@ __global__ void UnpackIteratorsKernel(const iterator_t* input_iterators,
         if (output_values != nullptr) {
             uint8_t* dst_value_ptr =
                     (uint8_t*)output_values + dsize_value * tid;
-            uint8_t* src_value_ptr = static_cast<uint8_t*>(input_iterators[tid].second);
+            uint8_t* src_value_ptr =
+                    static_cast<uint8_t*>(input_iterators[tid].second);
 
             for (size_t i = 0; i < dsize_value; ++i) {
                 dst_value_ptr[i] = src_value_ptr[i];
@@ -689,7 +701,8 @@ __global__ void AssignIteratorsKernel(iterator_t* input_iterators,
     // Valid queries
     if (tid < iterator_count && (input_masks == nullptr || input_masks[tid])) {
         uint8_t* src_value_ptr = (uint8_t*)input_values + dsize_value * tid;
-        uint8_t* dst_value_ptr = static_cast<uint8_t*>(input_iterators[tid].second);
+        uint8_t* dst_value_ptr =
+                static_cast<uint8_t*>(input_iterators[tid].second);
 
         // Byte-by-byte copy, can be improved
         for (size_t i = 0; i < dsize_value; ++i) {

@@ -272,25 +272,22 @@ public:
                 SUPER_BLOCK_SIZE_ * NUM_SUPER_BLOCKS_ * sizeof(uint32_t),
                 device_));
 
+        OPEN3D_CUDA_CHECK(cudaMemset(
+                super_blocks_, 0xFF,
+                SUPER_BLOCK_SIZE_ * NUM_SUPER_BLOCKS_ * sizeof(uint32_t)));
+
         for (int i = 0; i < NUM_SUPER_BLOCKS_; i++) {
             // setting bitmaps into zeros:
             OPEN3D_CUDA_CHECK(
                     cudaMemset(super_blocks_ + i * SUPER_BLOCK_SIZE_, 0x00,
                                NUM_MEM_BLOCKS_PER_SUPER_BLOCK_ * BITMAP_SIZE_ *
                                        sizeof(uint32_t)));
-
-            // setting empty memory units into ones:
-            OPEN3D_CUDA_CHECK(cudaMemset(
-                    super_blocks_ + i * SUPER_BLOCK_SIZE_ +
-                            (NUM_MEM_BLOCKS_PER_SUPER_BLOCK_ * BITMAP_SIZE_),
-                    0xFF,
-                    MEM_BLOCK_SIZE_ * NUM_MEM_BLOCKS_PER_SUPER_BLOCK_ *
-                            sizeof(uint32_t)));
         }
 
         // initializing the slab context:
         gpu_context_.Setup(super_blocks_, hash_coef_);
     }
+
     ~InternalNodeManager() { MemoryManager::Free(super_blocks_, device_); }
 
     std::vector<int> CountSlabsPerSuperblock() {

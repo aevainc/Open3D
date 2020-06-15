@@ -6,6 +6,7 @@ int main(int argc, char** argv) {
     utility::Timer timer;
 
     auto pcd_legacy = io::CreatePointCloudFromFile(argv[1]);
+
     auto pcd = tgeometry::PointCloud::FromLegacyPointCloud(
             *pcd_legacy, Dtype::Float32, Device("CUDA:0"));
 
@@ -15,7 +16,7 @@ int main(int argc, char** argv) {
     utility::LogInfo("PointCloud time: {}", timer.GetDuration());
 
     timer.Start();
-    auto pcd_down = pcd.VoxelDownSample(0.01);
+    auto pcd_down = pcd.VoxelDownSample(0.04);
     timer.Stop();
     utility::LogInfo("TPointCloud time: {}", timer.GetDuration());
 
