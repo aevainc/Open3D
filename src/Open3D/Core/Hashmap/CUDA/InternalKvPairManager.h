@@ -33,6 +33,7 @@
 #include "Open3D/Core/CUDAUtils.h"
 #include "Open3D/Core/Hashmap/Traits.h"
 #include "Open3D/Core/MemoryManager.h"
+#include "Open3D/Utility/Timer.h"
 
 namespace open3d {
 /// Dynamic memory allocation and free are expensive on kernels.
@@ -164,10 +165,16 @@ public:
     }
 
     ~InternalKvPairManager() {
+        utility::Timer timer;
+        timer.Start();
         MemoryManager::Free(gpu_context_.heap_counter_, device_);
         MemoryManager::Free(gpu_context_.heap_, device_);
         MemoryManager::Free(gpu_context_.keys_, device_);
         MemoryManager::Free(gpu_context_.values_, device_);
+        CudaSync();
+        timer.Stop();
+        utility::LogInfo("[InternalKvPairManager] destructor {}",
+                         timer.GetDuration());
     }
 
     std::vector<int> DownloadHeap() {

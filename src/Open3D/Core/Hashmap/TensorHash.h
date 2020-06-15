@@ -67,6 +67,6 @@ protected:
     Device device_;
 };
 
-std::pair<Tensor, Tensor> Unique(Tensor tensor);
+std::pair<Tensor, Tensor> Unique(const Tensor &tensor);
 
 }  // namespace open3d

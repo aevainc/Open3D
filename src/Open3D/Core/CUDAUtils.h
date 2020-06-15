@@ -80,6 +80,12 @@ inline void __OPEN3D_GET_LAST_CUDA_ERROR(const char* message,
                           line, message, cudaGetErrorString(err));
     }
 }
+
+inline void CudaSync() {
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    OPEN3D_CUDA_CHECK(cudaGetLastError());
+}
+
 #endif
 
 namespace cuda {

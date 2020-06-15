@@ -32,6 +32,7 @@
 
 #include "Open3D/Core/Device.h"
 #include "Open3D/Core/MemoryManager.h"
+#include "Open3D/Utility/Timer.h"
 
 namespace open3d {
 
@@ -76,6 +77,8 @@ public:
         : deleter_(deleter), data_ptr_(data_ptr), device_(device) {}
 
     ~Blob() {
+        utility::Timer timer;
+        timer.Start();
         if (deleter_) {
             // Our custom deleter's void* argument is not used. The deleter
             // function itself shall handle destruction without the argument.
@@ -85,6 +88,8 @@ public:
         } else {
             MemoryManager::Free(data_ptr_, device_);
         }
+        timer.Stop();
+        utility::LogInfo("[Blob] destructor {}", timer.GetDuration());
     };
 
     Device GetDevice() const { return device_; }

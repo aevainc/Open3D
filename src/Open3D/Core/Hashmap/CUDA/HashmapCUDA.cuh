@@ -54,8 +54,6 @@ CUDAHashmap<Hash, KeyEq>::CUDAHashmap(size_t init_buckets,
                                       size_t dsize_value,
                                       Device device)
     : Hashmap<Hash, KeyEq>(init_buckets, dsize_key, dsize_value, device) {
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
 
     utility::Timer timer;
     timer.Start();
@@ -63,35 +61,29 @@ CUDAHashmap<Hash, KeyEq>::CUDAHashmap(size_t init_buckets,
 
     mem_mgr_ = std::make_shared<InternalKvPairManager>(est_kvpairs, dsize_key,
                                                        dsize_value, device);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-    timer.Stop();
-    utility::LogInfo("  - Alloc kvpairs takes {}", timer.GetDuration());
 
-    timer.Start();
     node_mgr_ = std::make_shared<InternalNodeManager>(device);
     gpu_context_.Setup(init_buckets, dsize_key, dsize_value,
                        node_mgr_->gpu_context_, mem_mgr_->gpu_context_);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-    timer.Stop();
-    utility::LogInfo("  - Alloc nodes takes {}", timer.GetDuration());
 
-    timer.Start();
     gpu_context_.bucket_list_head_ = static_cast<Slab*>(
             MemoryManager::Malloc(sizeof(Slab) * init_buckets, device));
     OPEN3D_CUDA_CHECK(cudaMemset(gpu_context_.bucket_list_head_, 0xFF,
                                  sizeof(Slab) * init_buckets));
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
-    timer.Stop();
-    utility::LogInfo("  - Alloc slabs takes {}", timer.GetDuration());
 
+    timer.Stop();
+    utility::LogInfo("[HashmapCUDA] constructor {}", timer.GetDuration());
 }
 
 template <typename Hash, typename KeyEq>
 CUDAHashmap<Hash, KeyEq>::~CUDAHashmap() {
+    utility::Timer timer;
+    timer.Start();
     MemoryManager::Free(gpu_context_.bucket_list_head_, this->device_);
+    timer.Stop();
+    utility::LogInfo("[HashmapCUDA] destructor takes {}", timer.GetDuration());
 }
 
 template <typename Hash, typename KeyEq>
@@ -114,7 +106,7 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
     timer.Stop();
-    utility::LogInfo("  - Preparation takes {}", timer.GetDuration());
+    utility::LogDebug("[HashmapCUDA] Preparation takes {}", timer.GetDuration());
 
     // Batch allocate
     // int index = atomicAdd(heap_counter_, 1);
@@ -136,7 +128,7 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
     timer.Stop();
-    utility::LogInfo("  - Pass0 takes {}", timer.GetDuration());
+    utility::LogDebug("[HashmapCUDA] Pass0 takes {}", timer.GetDuration());
 
     timer.Start();
     InsertKernelPass1<<<num_blocks, BLOCKSIZE_>>>(
@@ -144,7 +136,7 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
     timer.Stop();
-    utility::LogInfo("  - Pass1 takes {}", timer.GetDuration());
+    utility::LogDebug("[HashmapCUDA] Pass1 takes {}", timer.GetDuration());
 
     timer.Start();
     InsertKernelPass2<<<num_blocks, BLOCKSIZE_>>>(
@@ -153,7 +145,7 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
     timer.Stop();
-    utility::LogInfo("  - Pass2 takes {}", timer.GetDuration());
+    utility::LogDebug("[HashmapCUDA] Pass2 takes {}", timer.GetDuration());
 
     timer.Start();
     MemoryManager::Free(iterator_ptrs, this->device_);
@@ -164,7 +156,7 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
         MemoryManager::Free(output_masks, this->device_);
     }
     timer.Stop();
-    utility::LogInfo("  - Free takes {}", timer.GetDuration());
+    utility::LogDebug("[HashmapCUDA] Free takes {}", timer.GetDuration());
 }
 
 template <typename Hash, typename KeyEq>

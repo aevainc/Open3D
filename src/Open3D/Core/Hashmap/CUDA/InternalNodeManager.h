@@ -49,6 +49,7 @@
 #include "Open3D/Core/CUDAUtils.h"
 #include "Open3D/Core/Hashmap/Traits.h"
 #include "Open3D/Core/MemoryManager.h"
+#include "Open3D/Utility/Timer.h"
 
 namespace open3d {
 /// 32 super blocks (5 bit)
@@ -288,7 +289,15 @@ public:
         gpu_context_.Setup(super_blocks_, hash_coef_);
     }
 
-    ~InternalNodeManager() { MemoryManager::Free(super_blocks_, device_); }
+    ~InternalNodeManager() {
+        utility::Timer timer;
+        timer.Start();
+        MemoryManager::Free(super_blocks_, device_);
+        CudaSync();
+        timer.Stop();
+        utility::LogInfo("[InternalNodeManager] destructor takes {}",
+                         timer.GetDuration());
+    }
 
     std::vector<int> CountSlabsPerSuperblock() {
         const uint32_t num_super_blocks = NUM_SUPER_BLOCKS_;

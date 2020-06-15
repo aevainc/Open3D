@@ -167,26 +167,29 @@ PointCloud PointCloud::VoxelDownSample(
     auto tensor_quantized =
             point_dict_.find("points")->second.AsTensor() / voxel_size;
     timer.Stop();
-    utility::LogInfo("operator div takes {}", timer.GetDuration());
+    utility::LogInfo("[PointCloud] operator Div takes {}", timer.GetDuration());
 
     timer.Start();
     auto tensor_quantized_int64 = tensor_quantized.To(Dtype::Int64);
     timer.Stop();
-    utility::LogInfo("operator To Int64 takes {}", timer.GetDuration());
+    utility::LogInfo("[PointCloud] To(Int64) takes {}", timer.GetDuration());
+    CudaSync();
 
     timer.Start();
-    Tensor coords, masks;
-    std::tie(coords, masks) = Unique(tensor_quantized_int64);
+    auto result = Unique(tensor_quantized_int64);
     timer.Stop();
-    utility::LogInfo("operator Unique takes {}", timer.GetDuration());
+    utility::LogInfo("[PointCloud] Unique takes {}", timer.GetDuration());
 
     timer.Start();
+    Tensor coords = result.first;
+    Tensor masks = result.second;
     auto pcd_down_map = std::unordered_map<std::string, TensorList>();
     auto tl_pts = TensorList(coords.IndexGet({masks}).To(Dtype::Float32),
                              /* inplace = */ false);
     timer.Stop();
-    utility::LogInfo("operator pts indexing takes {}", timer.GetDuration());
+    utility::LogInfo("[PointCloud] pts IndexGet takes {}", timer.GetDuration());
 
+    timer.Start();
     pcd_down_map.emplace(std::make_pair("points", tl_pts));
     for (auto kv : point_dict_) {
         if (kv.first != "points" &&
@@ -195,11 +198,16 @@ PointCloud PointCloud::VoxelDownSample(
             auto tl = TensorList(kv.second.AsTensor().IndexGet({masks}), false);
             pcd_down_map.emplace(std::make_pair(kv.first, tl));
             timer.Stop();
-            utility::LogInfo("operator {} indexing takes {}", kv.first,
+            utility::LogInfo("[PointCloud] {} IndexGet takes {}", kv.first,
                              timer.GetDuration());
         }
     }
-    return PointCloud(pcd_down_map);
+
+    PointCloud pcd_down(pcd_down_map);
+    timer.Stop();
+    utility::LogInfo("[PointCloud] constructor {}", timer.GetDuration());
+
+    return pcd_down;
 }
 
 }  // namespace tgeometry
