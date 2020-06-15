@@ -40,10 +40,10 @@
 
 #pragma once
 
+#include <thrust/device_vector.h>
 #include "Open3D/Core/Hashmap/CUDA/HashmapCUDA.h"
 #include "Open3D/Core/Hashmap/CUDA/HashmapCUDAImpl.cuh"
 #include "Open3D/Utility/Timer.h"
-#include <thrust/device_vector.h>
 
 namespace open3d {
 
@@ -79,6 +79,8 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
                                       iterator_t* output_iterators,
                                       bool* output_masks,
                                       size_t count) {
+    utility::Timer timer;
+    timer.Start();
     bool extern_alloc = (output_masks != nullptr);
     if (!extern_alloc) {
         output_masks = (bool*)MemoryManager::Malloc(count * sizeof(bool),
@@ -88,29 +90,41 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
 
     auto iterator_ptrs =
             (ptr_t*)MemoryManager::Malloc(sizeof(ptr_t) * count, this->device_);
+    timer.Stop();
+    utility::LogInfo("  - Preparation takes {}", timer.GetDuration());
 
+    timer.Start();
     InsertKernelPass0<<<num_blocks, BLOCKSIZE_>>>(gpu_context_, input_keys,
                                                   iterator_ptrs, count);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
+    timer.Stop();
+    utility::LogInfo("  - Pass0 takes {}", timer.GetDuration());
 
+    timer.Start();
     InsertKernelPass1<<<num_blocks, BLOCKSIZE_>>>(
             gpu_context_, input_keys, iterator_ptrs, output_masks, count);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
+    timer.Stop();
+    utility::LogInfo("  - Pass1 takes {}", timer.GetDuration());
 
     // int heap_counter;
     // heap_counter =
     //         *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
+    timer.Start();
     InsertKernelPass2<<<num_blocks, BLOCKSIZE_>>>(
             gpu_context_, input_values, iterator_ptrs, output_iterators,
             output_masks, count);
+    timer.Stop();
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
+    utility::LogInfo("  - Pass2 takes {}", timer.GetDuration());
 
     // heap_counter =
     //         *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
 
+    timer.Start();
     MemoryManager::Free(iterator_ptrs, this->device_);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
@@ -118,6 +132,8 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
     if (!extern_alloc) {
         MemoryManager::Free(output_masks, this->device_);
     }
+    timer.Stop();
+    utility::LogInfo("  - Free takes {}", timer.GetDuration());
 }
 
 template <typename Hash, typename KeyEq>
