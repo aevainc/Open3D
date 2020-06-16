@@ -9,7 +9,6 @@ int main(int argc, char** argv) {
 
     auto pcd = tgeometry::PointCloud::FromLegacyPointCloud(
             *pcd_legacy, Dtype::Float32, Device("CUDA:0"));
-
     timer.Start();
     pcd_legacy->VoxelDownSample(0.01);
     timer.Stop();
@@ -17,12 +16,15 @@ int main(int argc, char** argv) {
                      timer.GetDuration());
 
     timer.Start();
-    auto pcd_down = pcd.VoxelDownSample(0.04);
+    auto pcd_down = pcd.VoxelDownSample(0.01);
     timer.Stop();
     utility::LogInfo("[TestTPointCloud] VoxelDownSample: {}",
                      timer.GetDuration());
 
     auto pcd_down_legacy = std::make_shared<geometry::PointCloud>(
             tgeometry::PointCloud::ToLegacyPointCloud(pcd_down));
+
+    utility::LogInfo("pcd size {}", pcd_legacy->points_.size());
+    utility::LogInfo("pcd down size {}", pcd_down_legacy->points_.size());
     visualization::DrawGeometries({pcd_down_legacy});
 }

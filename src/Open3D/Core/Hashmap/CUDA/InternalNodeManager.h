@@ -276,6 +276,7 @@ public:
         OPEN3D_CUDA_CHECK(cudaMemset(
                 super_blocks_, 0xFF,
                 SUPER_BLOCK_SIZE_ * NUM_SUPER_BLOCKS_ * sizeof(uint32_t)));
+        printf("TOTAL ITERATORS: %ld\n", SUPER_BLOCK_SIZE_ * NUM_SUPER_BLOCKS_);
 
         for (int i = 0; i < NUM_SUPER_BLOCKS_; i++) {
             // setting bitmaps into zeros:

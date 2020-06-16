@@ -89,7 +89,7 @@ public:
             MemoryManager::Free(data_ptr_, device_);
         }
         timer.Stop();
-        utility::LogInfo("[Blob] destructor {}", timer.GetDuration());
+        // utility::LogInfo("[Blob] destructor {}", timer.GetDuration());
     };
 
     Device GetDevice() const { return device_; }
