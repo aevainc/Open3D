@@ -40,6 +40,7 @@ public:
     ~CPUHashmap();
 
     CPUHashmap(size_t init_buckets,
+               size_t init_capacity,
                size_t dsize_key,
                size_t dsize_value,
                Device device);

@@ -34,11 +34,13 @@ CUDAHashmapImplContext<Hash, KeyEq>::CUDAHashmapImplContext()
 template <typename Hash, typename KeyEq>
 void CUDAHashmapImplContext<Hash, KeyEq>::Setup(
         size_t init_buckets,
+        size_t init_capacity, 
         size_t dsize_key,
         size_t dsize_value,
         const InternalNodeManagerContext& allocator_ctx,
         const InternalKvPairManagerContext& pair_allocator_ctx) {
     bucket_count_ = init_buckets;
+    capacity_ = init_capacity;
     dsize_key_ = dsize_key;
     dsize_value_ = dsize_value;
 

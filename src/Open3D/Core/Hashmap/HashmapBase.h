@@ -32,6 +32,8 @@
 
 namespace open3d {
 
+constexpr size_t kDefaultElemsPerBucket = 4;
+
 struct DefaultHash {
     // Default constructor makes compiler happy. Undefined behavior, must set
     // key_size_ before calling operator().
@@ -80,11 +82,15 @@ struct DefaultKeyEq {
 template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
 class Hashmap {
 public:
+    /// Comprehensive constructor for the developer.
+    /// The developer knows all the parameter settings.
     Hashmap(size_t init_buckets,
+            size_t init_capacity,
             size_t dsize_key,
             size_t dsize_value,
             Device device)
         : bucket_count_(init_buckets),
+          capacity_(init_capacity),
           dsize_key_(dsize_key),
           dsize_value_(dsize_value),
           device_(device){};
@@ -148,6 +154,7 @@ public:
 
 public:
     uint32_t bucket_count_;
+    uint32_t capacity_;
     uint32_t dsize_key_;
     uint32_t dsize_value_;
 
@@ -156,8 +163,18 @@ public:
 };
 
 /// Low level factory for customized functions
+/// User-friendly interface: just roughly estimate capacity, we handle
+/// bucket_count.
+template <typename Hash, typename KeyEq>
+std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_capacity,
+                                                    size_t dsize_key,
+                                                    size_t dsize_value,
+                                                    Device device);
+
+/// Comprehensive interface
 template <typename Hash, typename KeyEq>
 std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_buckets,
+                                                    size_t init_capacity,
                                                     size_t dsize_key,
                                                     size_t dsize_value,
                                                     Device device);
@@ -166,17 +183,32 @@ std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_buckets,
 /// Factory interface for non-templated Default hashmap -- to be instantiated in
 /// implementations
 typedef Hashmap<DefaultHash, DefaultKeyEq> DefaultHashmap;
-std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_buckets,
+
+/// User-friendly interface: just roughly estimate capacity, we handle
+/// bucket_count.
+std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_capacity,
                                                      size_t dsize_key,
                                                      size_t dsize_value,
                                                      open3d::Device device);
 
+/// Comprehensive interface
+std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_buckets,
+                                                     size_t init_capacity,
+                                                     size_t dsize_key,
+                                                     size_t dsize_value,
+                                                     open3d::Device device);
+
+namespace _factory {
 std::shared_ptr<DefaultHashmap> CreateDefaultCPUHashmap(size_t init_buckets,
+                                                        size_t init_capacity,
                                                         size_t dsize_key,
                                                         size_t dsize_value,
                                                         open3d::Device device);
+
 std::shared_ptr<DefaultHashmap> CreateDefaultCUDAHashmap(size_t init_buckets,
+                                                         size_t init_capacity,
                                                          size_t dsize_key,
                                                          size_t dsize_value,
                                                          open3d::Device device);
+}  // namespace _factory
 }  // namespace open3d

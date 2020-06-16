@@ -50,20 +50,20 @@ namespace open3d {
 /// Interface
 template <typename Hash, typename KeyEq>
 CUDAHashmap<Hash, KeyEq>::CUDAHashmap(size_t init_buckets,
+                                      size_t init_capacity,
                                       size_t dsize_key,
                                       size_t dsize_value,
                                       Device device)
-    : Hashmap<Hash, KeyEq>(init_buckets, dsize_key, dsize_value, device) {
-
+    : Hashmap<Hash, KeyEq>(
+              init_buckets, init_capacity, dsize_key, dsize_value, device) {
     utility::Timer timer;
     timer.Start();
-    const uint32_t est_kvpairs = init_buckets * avg_elems_per_bucket_;
 
-    mem_mgr_ = std::make_shared<InternalKvPairManager>(est_kvpairs, dsize_key,
+    mem_mgr_ = std::make_shared<InternalKvPairManager>(init_capacity, dsize_key,
                                                        dsize_value, device);
 
     node_mgr_ = std::make_shared<InternalNodeManager>(device);
-    gpu_context_.Setup(init_buckets, dsize_key, dsize_value,
+    gpu_context_.Setup(init_buckets, init_capacity, dsize_key, dsize_value,
                        node_mgr_->gpu_context_, mem_mgr_->gpu_context_);
 
     gpu_context_.bucket_list_head_ = static_cast<Slab*>(
@@ -106,7 +106,8 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
     timer.Stop();
-    utility::LogDebug("[HashmapCUDA] Preparation takes {}", timer.GetDuration());
+    utility::LogDebug("[HashmapCUDA] Preparation takes {}",
+                      timer.GetDuration());
 
     // Batch allocate
     // int index = atomicAdd(heap_counter_, 1);
@@ -212,9 +213,7 @@ template <typename Hash, typename KeyEq>
 size_t CUDAHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
     const uint32_t blocksize = 128;
     const uint32_t num_blocks =
-            (gpu_context_.bucket_count_ * avg_elems_per_bucket_ + blocksize -
-             1) /
-            blocksize;
+            (gpu_context_.capacity_ + blocksize - 1) / blocksize;
 
     uint32_t* iterator_count =
             (uint32_t*)MemoryManager::Malloc(sizeof(uint32_t), this->device_);
@@ -271,8 +270,7 @@ template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
     // TODO: add a size operator instead of rough estimation
     auto output_iterators = (iterator_t*)MemoryManager::Malloc(
-            sizeof(iterator_t) * this->bucket_count_ * avg_elems_per_bucket_,
-            this->device_);
+            sizeof(iterator_t) * this->capacity_, this->device_);
     uint32_t iterator_count = GetIterators(output_iterators);
 
     auto output_keys = MemoryManager::Malloc(this->dsize_key_ * iterator_count,
@@ -284,12 +282,15 @@ void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
                     output_values, iterator_count);
 
     this->bucket_count_ = buckets;
-    const uint32_t est_kvpairs = buckets * avg_elems_per_bucket_;
+    this->capacity_ = buckets * kDefaultElemsPerBucket;
+
     mem_mgr_ = std::make_shared<InternalKvPairManager>(
-            est_kvpairs, this->dsize_key_, this->dsize_value_, this->device_);
+            this->capacity_, this->dsize_key_, this->dsize_value_,
+            this->device_);
     node_mgr_ = std::make_shared<InternalNodeManager>(this->device_);
-    gpu_context_.Setup(buckets, this->dsize_key_, this->dsize_value_,
-                       node_mgr_->gpu_context_, mem_mgr_->gpu_context_);
+    gpu_context_.Setup(this->bucket_count_, this->capacity_, this->dsize_key_,
+                       this->dsize_value_, node_mgr_->gpu_context_,
+                       mem_mgr_->gpu_context_);
 
     MemoryManager::Free(gpu_context_.bucket_list_head_, this->device_);
     gpu_context_.bucket_list_head_ = static_cast<Slab*>(
@@ -323,9 +324,7 @@ std::vector<size_t> CUDAHashmap<Hash, KeyEq>::BucketSizes() {
 
     const uint32_t blocksize = 128;
     const uint32_t num_blocks =
-            (gpu_context_.bucket_count_ * avg_elems_per_bucket_ + blocksize -
-             1) /
-            blocksize;
+            (gpu_context_.capacity_ + blocksize - 1) / blocksize;
     CountElemsPerBucketKernel<<<num_blocks, blocksize>>>(
             gpu_context_, thrust::raw_pointer_cast(elems_per_bucket.data()));
 
@@ -361,10 +360,11 @@ float CUDAHashmap<Hash, KeyEq>::LoadFactor() {
 template <typename Hash, typename KeyEq>
 std::shared_ptr<CUDAHashmap<Hash, KeyEq>> CreateCUDAHashmap(
         size_t init_buckets,
+        size_t init_capacity,
         size_t dsize_key,
         size_t dsize_value,
         open3d::Device device) {
-    return std::make_shared<CUDAHashmap<Hash, KeyEq>>(init_buckets, dsize_key,
-                                                      dsize_value, device);
+    return std::make_shared<CUDAHashmap<Hash, KeyEq>>(
+            init_buckets, init_capacity, dsize_key, dsize_value, device);
 }
 }  // namespace open3d

@@ -27,12 +27,15 @@
 #include "HashmapCUDA.cuh"
 
 namespace open3d {
+namespace _factory {
 std::shared_ptr<DefaultHashmap> CreateDefaultCUDAHashmap(
         size_t init_buckets,
+        size_t init_capacity,
         size_t dsize_key,
         size_t dsize_value,
         open3d::Device device) {
     return std::make_shared<CUDAHashmap<DefaultHash, DefaultKeyEq>>(
-            init_buckets, dsize_key, dsize_value, device);
+            init_buckets, init_capacity, dsize_key, dsize_value, device);
 }
+}  // namespace _factory
 }  // namespace open3d

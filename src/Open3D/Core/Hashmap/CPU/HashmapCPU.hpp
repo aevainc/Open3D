@@ -34,10 +34,16 @@ namespace open3d {
 
 template <typename Hash, typename KeyEq>
 CPUHashmap<Hash, KeyEq>::CPUHashmap(size_t init_buckets,
+                                    size_t init_capacity,
                                     size_t dsize_key,
                                     size_t dsize_value,
                                     Device device)
-    : Hashmap<Hash, KeyEq>(init_buckets, dsize_key, dsize_value, device) {
+    : Hashmap<Hash, KeyEq>(init_buckets,
+                           init_capacity,  /// dummy for std unordered_map,
+                                           /// reserved for other hashmaps
+                           dsize_key,
+                           dsize_value,
+                           device) {
     impl_ = std::make_shared<std::unordered_map<void*, void*, Hash, KeyEq>>(
             init_buckets, Hash(dsize_key), KeyEq(dsize_key));
 };
@@ -228,10 +234,11 @@ float CPUHashmap<Hash, KeyEq>::LoadFactor() {
 template <typename Hash, typename KeyEq>
 std::shared_ptr<CPUHashmap<Hash, KeyEq>> CreateCPUHashmap(
         size_t init_buckets,
+        size_t init_capacity,
         size_t dsize_key,
         size_t dsize_value,
         open3d::Device device) {
-    return std::make_shared<CPUHashmap<Hash, KeyEq>>(init_buckets, dsize_key,
-                                                     dsize_value, device);
+    return std::make_shared<CPUHashmap<Hash, KeyEq>>(
+            init_buckets, init_capacity, dsize_key, dsize_value, device);
 }
 }  // namespace open3d

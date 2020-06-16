@@ -61,6 +61,7 @@ public:
     ~CUDAHashmap();
 
     CUDAHashmap(size_t init_buckets,
+                size_t init_capacity,
                 size_t dsize_key,
                 size_t dsize_value,
                 Device device);
@@ -98,8 +99,6 @@ public:
     float LoadFactor();
 
 protected:
-    size_t avg_elems_per_bucket_ = 64;
-
     /// struct directly passed to kernels, cannot be a pointer
     CUDAHashmapImplContext<Hash, KeyEq> gpu_context_;
 

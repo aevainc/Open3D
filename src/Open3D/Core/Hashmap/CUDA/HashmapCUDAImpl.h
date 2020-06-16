@@ -38,6 +38,7 @@ public:
     CUDAHashmapImplContext();
 
     __host__ void Setup(size_t init_buckets,
+                        size_t init_capacity,
                         size_t dsize_key,
                         size_t dsize_value,
                         const InternalNodeManagerContext& node_mgr_ctx,
@@ -88,6 +89,7 @@ public:
     KeyEq cmp_fn_;
 
     size_t bucket_count_;
+    size_t capacity_;
     size_t dsize_key_;
     size_t dsize_value_;
 

@@ -24,10 +24,9 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include <random>
 #include <thrust/device_vector.h>
+#include <random>
 #include "Open3D/Core/Hashmap/TemplateHashmap.h"
-
 
 using namespace open3d;
 
@@ -199,16 +198,16 @@ int main() {
     std::random_device rnd_device;
     std::mt19937 mersenne_engine{rnd_device()};
 
-    for (size_t bucket_count = 50; bucket_count <= 500000; bucket_count *= 10) {
-        utility::LogInfo("Test with bucket_count = {}", bucket_count);
+    for (size_t capacity = 1000; capacity <= 100000; capacity *= 10) {
+        utility::LogInfo("Test with capacity = {}", capacity);
         using Key = int64_t;
         using Value = int64_t;
 
-        // Generate data
-        std::uniform_int_distribution<Key> dist{-(Key)bucket_count * 10,
-                                                (Key)bucket_count * 10};
-        std::vector<Key> keys(bucket_count * 64);
-        std::vector<Value> vals(bucket_count * 64);
+        // Generate data, allow around the half the duplicates
+        std::uniform_int_distribution<Key> dist{-(Key)capacity / 4,
+                                                (Key)capacity / 4};
+        std::vector<Key> keys(capacity);
+        std::vector<Value> vals(capacity);
         std::generate(std::begin(keys), std::end(keys),
                       [&]() { return dist(mersenne_engine); });
         for (size_t i = 0; i < keys.size(); ++i) {
@@ -216,8 +215,7 @@ int main() {
         }
 
         auto hashmap = CreateHashmap<DefaultHash, DefaultKeyEq>(
-                bucket_count, sizeof(Key), sizeof(Value),
-                open3d::Device("CUDA:0"));
+                capacity, sizeof(Key), sizeof(Value), open3d::Device("CUDA:0"));
         auto hashmap_gt = std::unordered_map<Key, Value>();
 
         CompareInsert(hashmap, hashmap_gt, keys, vals);

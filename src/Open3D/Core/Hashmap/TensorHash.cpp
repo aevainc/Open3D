@@ -34,7 +34,6 @@ std::pair<Tensor, Tensor> Unique(const Tensor &tensor) {
     utility::Timer timer, total_timer;
     total_timer.Start();
     timer.Start();
-    CudaSync();
     std::vector<int64_t> indices_data(tensor.GetShape()[0]);
     std::iota(indices_data.begin(), indices_data.end(), 0);
     Tensor indices(indices_data, {tensor.GetShape()[0]}, Dtype::Int64,
@@ -43,17 +42,19 @@ std::pair<Tensor, Tensor> Unique(const Tensor &tensor) {
     utility::LogInfo("[TensorHash] Unique.Sequence takes {}",
                      timer.GetDuration());
 
-    CudaSync();
     timer.Start();
-    utility::LogInfo("[TensorHash] Unique.Insert starts");
-
     auto tensor_hash = std::make_shared<TensorHash>(tensor, indices, false);
+    timer.Stop();
+    utility::LogInfo("[TensorHash] Unique.Construct takes {}",
+                     timer.GetDuration());
+
+    timer.Start();
     auto result = tensor_hash->Insert(tensor, indices);
     timer.Stop();
     utility::LogInfo("[TensorHash] Unique.Insert takes {}",
                      timer.GetDuration());
     total_timer.Stop();
-    utility::LogInfo("[TensorHash] Total before return takes {}",
+    utility::LogInfo("[TensorHash] Unique internally takes {}",
                      total_timer.GetDuration());
     return result;
 }
@@ -98,8 +99,8 @@ TensorHash::TensorHash(Tensor coords, Tensor values, bool insert /* = true */) {
     size_t value_size = DtypeUtil::ByteSize(value_type_) * value_dim_;
 
     // Create hashmap and reserve twice input size
-    hashmap_ = CreateDefaultHashmap(N / 2, key_size, value_size,
-                                    coords.GetDevice());
+    hashmap_ =
+            CreateDefaultHashmap(N, key_size, value_size, coords.GetDevice());
 
     if (insert) {
         auto iterators = MemoryManager::Malloc(sizeof(iterator_t) * N,
@@ -159,8 +160,8 @@ std::pair<Tensor, Tensor> TensorHash::Insert(Tensor coords, Tensor values) {
                                coords.GetDevice());
     Tensor output_mask_tensor(SizeVector({N}), Dtype::Bool, coords.GetDevice());
     timer.Stop();
-    utility::LogInfo("[TensorHash] Insert.Preparation takes {}",
-                     timer.GetDuration());
+    utility::LogDebug("[TensorHash] Insert.Preparation takes {}",
+                      timer.GetDuration());
 
     timer.Start();
     hashmap_->Insert(
@@ -169,8 +170,8 @@ std::pair<Tensor, Tensor> TensorHash::Insert(Tensor coords, Tensor values) {
             static_cast<iterator_t *>(iterators),
             static_cast<bool *>(output_mask_tensor.GetBlob()->GetDataPtr()), N);
     timer.Stop();
-    utility::LogInfo("[TensorHash] Insert.Insert takes {}",
-                     timer.GetDuration());
+    utility::LogDebug("[TensorHash] Insert.Insert takes {}",
+                      timer.GetDuration());
 
     timer.Start();
     hashmap_->UnpackIterators(
@@ -179,15 +180,15 @@ std::pair<Tensor, Tensor> TensorHash::Insert(Tensor coords, Tensor values) {
             static_cast<void *>(output_coord_tensor.GetBlob()->GetDataPtr()),
             /* value = */ nullptr, N);
     timer.Stop();
-    utility::LogInfo("[TensorHash] Insert.UnpackIterators takes {}",
-                     timer.GetDuration());
+    utility::LogDebug("[TensorHash] Insert.UnpackIterators takes {}",
+                      timer.GetDuration());
 
     timer.Start();
     MemoryManager::Free(iterators, coords.GetDevice());
     auto result = std::make_pair(output_coord_tensor, output_mask_tensor);
     timer.Stop();
-    utility::LogInfo("[TensorHash] Insert.Cleanup takes {}",
-                     timer.GetDuration());
+    utility::LogDebug("[TensorHash] Insert.Cleanup takes {}",
+                      timer.GetDuration());
 
     return result;
 }

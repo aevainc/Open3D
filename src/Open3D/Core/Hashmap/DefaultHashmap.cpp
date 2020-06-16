@@ -34,18 +34,27 @@
 
 namespace open3d {
 
+std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_capacity,
+                                                     size_t dsize_key,
+                                                     size_t dsize_value,
+                                                     open3d::Device device) {
+    return CreateDefaultHashmap(init_capacity / kDefaultElemsPerBucket,
+                                init_capacity, dsize_key, dsize_value, device);
+}
+
 std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_buckets,
+                                                     size_t init_capacity,
                                                      size_t dsize_key,
                                                      size_t dsize_value,
                                                      open3d::Device device) {
     static std::unordered_map<Device::DeviceType,
                               std::function<std::shared_ptr<DefaultHashmap>(
-                                      size_t, size_t, size_t, Device)>,
+                                      size_t, size_t, size_t, size_t, Device)>,
                               utility::hash_enum_class::hash>
             map_device_type_to_hashmap_constructor = {
-                {Device::DeviceType::CPU, CreateDefaultCPUHashmap},
+                {Device::DeviceType::CPU, _factory::CreateDefaultCPUHashmap},
 #if defined(BUILD_CUDA_MODULE)
-                {Device::DeviceType::CUDA, CreateDefaultCUDAHashmap}
+                {Device::DeviceType::CUDA, _factory::CreateDefaultCUDAHashmap}
 #endif
             };
 
@@ -56,7 +65,8 @@ std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_buckets,
 
     auto constructor =
             map_device_type_to_hashmap_constructor.at(device.GetType());
-    return constructor(init_buckets, dsize_key, dsize_value, device);
+    return constructor(init_buckets, init_capacity, dsize_key, dsize_value,
+                       device);
 }
 
 }  // namespace open3d
