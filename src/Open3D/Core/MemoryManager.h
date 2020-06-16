@@ -28,6 +28,7 @@
 
 #include <cstring>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -87,6 +88,22 @@ public:
 };
 
 #ifdef BUILD_CUDA_MODULE
+// Refrence
+// https://github.com/pytorch/pytorch/blob/5fbec1f55df59156edff4084023086823227fbb0/c10/cuda/CUDACachingAllocator.cpp
+struct Block;
+typedef std::shared_ptr<Block> BlockPtr;
+typedef bool (*Comparison)(const BlockPtr&, const BlockPtr&);
+typedef std::set<BlockPtr, Comparison> BlockPool;
+
+struct Block {
+    int device_;   // gpu
+    size_t size_;  // block size in bytes
+    void* ptr_;    // memory address
+
+    Block(int device, size_t size, void* ptr = nullptr)
+        : device_(device), size_(size), ptr_(ptr) {}
+};
+
 class CUDAMemoryManager : public DeviceMemoryManager {
 public:
     CUDAMemoryManager();
@@ -100,6 +117,20 @@ public:
 
 protected:
     bool IsCUDAPointer(const void* ptr);
+
+    inline std::shared_ptr<BlockPool> get_pool(size_t byte_size) {
+        // largest "small" allocation is 1 MiB (1024 * 1024)
+        constexpr size_t kSmallSize = 1048576;
+        return byte_size <= kSmallSize ? small_block_pool_ : large_block_pool_;
+    }
+
+    inline size_t align_size(size_t byte_size, size_t alignment = 4) {
+        return ((byte_size + alignment - 1) / alignment) * alignment;
+    }
+
+    std::unordered_map<void*, BlockPtr> allocated_blocks_;
+    std::shared_ptr<BlockPool> small_block_pool_;
+    std::shared_ptr<BlockPool> large_block_pool_;
 };
 #endif
 

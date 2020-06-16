@@ -34,13 +34,72 @@
 
 namespace open3d {
 
-CUDAMemoryManager::CUDAMemoryManager() {}
+static bool BlockComparator(const BlockPtr& a, const BlockPtr& b) {
+    // Not on the same device: treat as smaller, will be filtered in lower_bound
+    // operation.
+    if (a->device_ != b->device_) {
+        return true;
+    }
+    if (a->size_ != b->size_) {
+        return a->size_ < b->size_;
+    }
+    return (size_t)a->ptr_ < (size_t)b->ptr_;
+}
+
+CUDAMemoryManager::CUDAMemoryManager() {
+    small_block_pool_ = std::make_shared<BlockPool>(BlockComparator);
+    large_block_pool_ = std::make_shared<BlockPool>(BlockComparator);
+}
 
 void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
     CUDADeviceSwitcher switcher(device);
     void* ptr;
+
     if (device.GetType() == Device::DeviceType::CUDA) {
-        OPEN3D_CUDA_CHECK(cudaMalloc(static_cast<void**>(&ptr), byte_size));
+        byte_size = align_size(byte_size);
+        BlockPtr query_block =
+                std::make_shared<Block>(device.GetID(), byte_size);
+
+        // Find corresponding pool
+        auto pool = get_pool(byte_size);
+
+        // Query block in the pool
+        auto find_free_block = [&]() -> BlockPtr {
+            auto it = pool->lower_bound(query_block);
+            if (it != pool->end()) {
+                BlockPtr block = *it;
+                pool->erase(it);
+                return block;
+            }
+            return nullptr;
+        };
+
+        BlockPtr found_block = find_free_block();
+        if (found_block == nullptr) {
+            // Allocate and insert to the allocated pool
+            OPEN3D_CUDA_CHECK(cudaMalloc(static_cast<void**>(&ptr), byte_size));
+            allocated_blocks_.insert(
+                    {ptr,
+                     std::make_shared<Block>(device.GetID(), byte_size, ptr)});
+        } else {
+            // Set raw ptr for return
+            ptr = found_block->ptr_;
+
+            // Adapt the found block
+            BlockPtr head_block =
+                    std::make_shared<Block>(device.GetID(), byte_size, ptr);
+            allocated_blocks_.insert({ptr, head_block});
+
+            // Manage the remaining block
+            size_t tail_byte_size = found_block->size_ - byte_size;
+            if (tail_byte_size > 0) {
+                auto tail_pool = get_pool(tail_byte_size);
+                BlockPtr tail_block = std::make_shared<Block>(
+                        device.GetID(), tail_byte_size,
+                        static_cast<char*>(ptr) + byte_size);
+                tail_pool->emplace(tail_block);
+            }
+        }
     } else {
         utility::LogError("CUDAMemoryManager::Malloc: Unimplemented device");
     }
@@ -51,7 +110,22 @@ void CUDAMemoryManager::Free(void* ptr, const Device& device) {
     CUDADeviceSwitcher switcher(device);
     if (device.GetType() == Device::DeviceType::CUDA) {
         if (ptr && IsCUDAPointer(ptr)) {
-            OPEN3D_CUDA_CHECK(cudaFree(ptr));
+            auto it = allocated_blocks_.find(ptr);
+
+            if (it == allocated_blocks_.end()) {
+                // Should never reach here!
+                utility::LogError(
+                        "CUDAMemoryManager::Free: Memory leak! Block should "
+                        "have been stored.");
+            } else {
+                // Release memory to the corresponding pool
+                BlockPtr block = it->second;
+                allocated_blocks_.erase(it);
+                auto pool = get_pool(block->size_);
+                pool->emplace(block);
+            }
+        } else {
+            utility::LogError("CUDAMemoryManager::Free: Invalid pointer");
         }
     } else {
         utility::LogError("CUDAMemoryManager::Free: Unimplemented device");
