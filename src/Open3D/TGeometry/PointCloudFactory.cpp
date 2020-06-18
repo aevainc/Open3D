@@ -23,7 +23,9 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
+
 #include <type_traits>
+#include "Open3D/Geometry/PointCloud.h"
 #include "Open3D/TGeometry/PointCloud.h"
 
 namespace open3d {

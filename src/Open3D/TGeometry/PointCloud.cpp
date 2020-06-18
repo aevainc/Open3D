@@ -25,6 +25,7 @@
 // ----------------------------------------------------------------------------
 
 #include "Open3D/TGeometry/PointCloud.h"
+#include "Open3D/Geometry/PointCloud.h"
 
 #include <Eigen/Core>
 #include <unordered_map>

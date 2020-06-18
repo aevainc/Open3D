@@ -65,6 +65,10 @@
                 using scalar_t = int64_t;                    \
                 return __VA_ARGS__();                        \
             }                                                \
+            case open3d::Dtype::UInt16: {                    \
+                using scalar_t = uint16_t;                   \
+                return __VA_ARGS__();                        \
+            }                                                \
             case open3d::Dtype::UInt8: {                     \
                 using scalar_t = uint8_t;                    \
                 return __VA_ARGS__();                        \
