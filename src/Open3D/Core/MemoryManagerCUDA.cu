@@ -35,44 +35,67 @@
 
 namespace open3d {
 
-static bool BlockComparator(const BlockPtr& a, const BlockPtr& b) {
-    // Not on the same device: treat as smaller, will be filtered in lower_bound
-    // operation.
-    if (a->device_ != b->device_) {
-        return true;
+struct BlockComparator {
+    bool operator()(const BlockPtr& a, const BlockPtr& b) const {
+        // Not on the same device: treat as smaller, will be filtered in
+        // lower_bound operation.
+        if (a->device_ != b->device_) {
+            return true;
+        }
+        if (a->size_ != b->size_) {
+            return a->size_ < b->size_;
+        }
+        return (size_t)a->ptr_ < (size_t)b->ptr_;
     }
-    if (a->size_ != b->size_) {
-        return a->size_ < b->size_;
-    }
-    return (size_t)a->ptr_ < (size_t)b->ptr_;
-}
+};
 
 /// Singletons
-typedef bool (*Comparison)(const BlockPtr&, const BlockPtr&);
-typedef std::set<BlockPtr, Comparison> BlockPool;
 
-static std::unordered_map<void*, BlockPtr> allocated_blocks_;
-static std::shared_ptr<BlockPool> small_block_pool_ =
-        std::make_shared<BlockPool>(BlockComparator);
-static std::shared_ptr<BlockPool> large_block_pool_ =
-        std::make_shared<BlockPool>(BlockComparator);
+class CUDACacher {
+public:
+    static std::shared_ptr<CUDACacher> GetInstance() {
+        if (instance_ == nullptr) {
+            utility::LogInfo("CUDACacher Instance created.");
+            instance_ = std::make_shared<CUDACacher>();
+        }
+        return instance_;
+    }
 
-static std::shared_ptr<BlockPool> get_pool(size_t byte_size) {
-    // largest "small" allocation is 1 MiB (1024 * 1024)
-    constexpr size_t kSmallSize = 1048576;
-    return byte_size <= kSmallSize ? small_block_pool_ : large_block_pool_;
-}
+public:
+    CUDACacher() {
+        small_block_pool_ = std::make_shared<BlockPool>();
+        large_block_pool_ = std::make_shared<BlockPool>();
+    }
+
+    typedef std::set<BlockPtr, BlockComparator> BlockPool;
+    std::unordered_map<void*, BlockPtr> allocated_blocks_;
+    std::shared_ptr<BlockPool> small_block_pool_;
+    std::shared_ptr<BlockPool> large_block_pool_;
+
+    std::shared_ptr<BlockPool>& get_pool(size_t byte_size) {
+        // largest "small" allocation is 1 MiB (1024 * 1024)
+        constexpr size_t kSmallSize = 1048576;
+        return byte_size <= kSmallSize ? small_block_pool_ : large_block_pool_;
+    }
+
+    static std::shared_ptr<CUDACacher> instance_;
+};
+
+std::shared_ptr<CUDACacher> CUDACacher::instance_ = nullptr;
 
 void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
     CUDADeviceSwitcher switcher(device);
     void* ptr;
 
+    utility::LogInfo("Malloc");
     if (device.GetType() == Device::DeviceType::CUDA) {
+        std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();
+
         byte_size = align_size(byte_size);
         BlockPtr query_block = new Block(device.GetID(), byte_size);
 
         // Find corresponding pool
-        auto pool = get_pool(byte_size);
+        auto pool = instance->get_pool(byte_size);
 
         // Query block in the pool
         auto find_free_block = [&]() -> BlockPtr {
@@ -94,7 +117,7 @@ void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
 
             BlockPtr new_block = new Block(device.GetID(), byte_size, ptr);
             new_block->in_use_ = true;
-            allocated_blocks_.insert({ptr, new_block});
+            instance->allocated_blocks_.insert({ptr, new_block});
         } else {
             // Get raw ptr for return
             ptr = found_block->ptr_;
@@ -117,16 +140,18 @@ void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
                 }
 
                 // Place the remain block to pool
-                get_pool(remain_byte_size)->emplace(remain_block);
-                // utility::LogInfo("Splitted: {}--{} == > {}--{}, {}--{} -->{}
-                // ",
-                //                  fmt::ptr(found_block), found_block->size_,
-                //                  fmt::ptr(found_block), byte_size,
-                //                  fmt::ptr(remain_block), remain_byte_size,
-                //                  fmt::ptr(remain_block->next_));
+                instance->get_pool(remain_byte_size)->emplace(remain_block);
+                // utility::LogInfo(
+                //         "pool addr: {}",
+                //         fmt::ptr(&instance->get_pool(remain_byte_size)));
+                utility::LogInfo("Splitted: {}--{} == > {}--{}, {}--{} -->{}",
+                                 fmt::ptr(found_block), found_block->size_,
+                                 fmt::ptr(found_block), byte_size,
+                                 fmt::ptr(remain_block), remain_byte_size,
+                                 fmt::ptr(remain_block->next_));
             }
             found_block->in_use_ = true;
-            allocated_blocks_.insert({ptr, found_block});
+            instance->allocated_blocks_.insert({ptr, found_block});
         }
     } else {
         utility::LogError("CUDAMemoryManager::Malloc: Unimplemented device");
@@ -135,12 +160,16 @@ void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
 }
 
 void CUDAMemoryManager::Free(void* ptr, const Device& device) {
+    utility::LogInfo("Free");
     CUDADeviceSwitcher switcher(device);
+
+    std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();
+
     if (device.GetType() == Device::DeviceType::CUDA) {
         if (ptr && IsCUDAPointer(ptr)) {
-            auto it = allocated_blocks_.find(ptr);
+            auto it = instance->allocated_blocks_.find(ptr);
 
-            if (it == allocated_blocks_.end()) {
+            if (it == instance->allocated_blocks_.end()) {
                 // Should never reach here!
                 utility::LogError(
                         "CUDAMemoryManager::Free: Memory leak! Block "
@@ -149,7 +178,7 @@ void CUDAMemoryManager::Free(void* ptr, const Device& device) {
             } else {
                 // Release memory and check if merge is required
                 BlockPtr block = it->second;
-                allocated_blocks_.erase(it);
+                instance->allocated_blocks_.erase(it);
 
                 // Merge free blocks towards next direction
                 // TODO: wrap it with a function
@@ -175,13 +204,17 @@ void CUDAMemoryManager::Free(void* ptr, const Device& device) {
                     block_it->size_ += next_block->size_;
 
                     // Remove next_block from the pool
-                    auto next_block_pool = get_pool(next_block->size_);
+                    auto next_block_pool =
+                            instance->get_pool(next_block->size_);
+                    utility::LogInfo("pool addr: {}",
+                                     fmt::ptr(&next_block_pool));
                     auto it = next_block_pool->find(next_block);
                     if (it == next_block_pool->end()) {
                         // Should never reach here
                         utility::LogError(
                                 "CUDAMemoryManager::Free: linked list "
-                                "node not found in pool.");
+                                "node {} not found in pool.",
+                                fmt::ptr(next_block));
                     }
                     next_block_pool->erase(it);
                     delete next_block;
@@ -220,7 +253,8 @@ void CUDAMemoryManager::Free(void* ptr, const Device& device) {
                     block_it->ptr_ = prev_block->ptr_;
 
                     // Remove orev_block from the pool
-                    auto prev_block_pool = get_pool(prev_block->size_);
+                    auto prev_block_pool =
+                            instance->get_pool(prev_block->size_);
                     auto it = prev_block_pool->find(prev_block);
                     if (it == prev_block_pool->end()) {
                         // Should never reach here
@@ -236,7 +270,7 @@ void CUDAMemoryManager::Free(void* ptr, const Device& device) {
                 }
 
                 block->in_use_ = false;
-                get_pool(block->size_)->emplace(block);
+                instance->get_pool(block->size_)->emplace(block);
             }
         } else {
             utility::LogError("CUDAMemoryManager::Free: Invalid pointer");
@@ -316,7 +350,7 @@ void CUDAMemoryManager::ReleaseCache() {
     // https://stackoverflow.com/questions/24263259/c-stdseterase-with-stdremove-if
     // https://stackoverflow.com/questions/2874441/deleting-elements-from-stdset-while-iterating
     utility::LogInfo("Releasing Cache");
-    auto release_pool = [](BlockPool& pool) {
+    auto release_pool = [](std::set<BlockPtr, BlockComparator>& pool) {
         auto it = pool.begin();
         auto end = pool.end();
         while (it != end) {
@@ -331,8 +365,18 @@ void CUDAMemoryManager::ReleaseCache() {
         }
     };
 
-    release_pool(*small_block_pool_);
-    release_pool(*large_block_pool_);
+    std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();
+    // utility::LogInfo("small_block_pool size before: {}",
+    //                  instance->small_block_pool_.size());
+    release_pool(*(instance->small_block_pool_));
+    // utility::LogInfo("small_block_pool size after: {}",
+    //                  instance->small_block_pool_.size());
+
+    // utility::LogInfo("large_block_pool size before: {}",
+    //                  instance->large_block_pool_.size());
+    release_pool(*(instance->large_block_pool_));
+    // utility::LogInfo("large_block_pool size after: {}",
+    //                  instance->large_block_pool_.size());
 }
 
 }  // namespace open3d

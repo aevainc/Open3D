@@ -11,7 +11,7 @@ int main() {
     MemoryManager::Free(ptr, device);
 
     void* ptr1 = MemoryManager::Malloc(8, device);
-    MemoryManager::ReleaseCache(device);
+    // MemoryManager::ReleaseCache(device);
 
     void* ptr2 = MemoryManager::Malloc(8, device);
 
