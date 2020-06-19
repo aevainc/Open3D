@@ -138,89 +138,93 @@ void CUDAMemoryManager::Free(void* ptr, const Device& device) {
                 // Release memory and check if merge is required
                 BlockPtr block = it->second;
                 allocated_blocks_.erase(it);
-                block->in_use_ = false;
 
-                auto pool = get_pool(block->size_);
-                pool->emplace(block);
-
-                // Merge towards next
+                // Merge free blocks towards next direction
                 // TODO: wrap it with a function
-                // BlockPtr block = head_block;
-                // while (block != nullptr && block->next_ != nullptr) {
-                //     BlockPtr next_block = block->next_;
-                //     if (next_block->prev_ != block) {
-                //         // Double check; should never reach here.
-                //         utility::LogError(
-                //                 "CUDAMemoryManager::Free: linked list
-                //                 nodes " "mismatch in next-direction
-                //                 merge.");
-                //     }
+                BlockPtr block_it = block;
+                while (block_it != nullptr && block_it->next_ != nullptr) {
+                    BlockPtr next_block = block_it->next_;
+                    if (next_block->prev_ != block_it) {
+                        // Double check; should never reach here.
+                        utility::LogError(
+                                "CUDAMemoryManager::Free: linked list nodes "
+                                "mismatch in next-direction merge.");
+                    }
 
-                //     if (next_block->in_use_) {
-                //         break;
-                //     }
+                    if (next_block->in_use_) {
+                        break;
+                    }
 
-                //     // Merge
-                //     block->next_ = next_block->next_;
-                //     block->size_ += next_block->size_;
+                    // Merge
+                    block_it->next_ = next_block->next_;
+                    if (block_it->next_) {
+                        block_it->next_->prev_ = block_it;
+                    }
+                    block_it->size_ += next_block->size_;
 
-                //     // Remove next_block from the pool
-                //     auto next_block_pool = get_pool(next_block->size_);
-                //     auto it = next_block_pool->find(next_block);
-                //     if (it == next_block_pool->end()) {
-                //         // Should never reach here
-                //         utility::LogError(
-                //                 "CUDAMemoryManager::Free: linked list
-                //                 node not " "found in pool.");
-                //     }
-                //     next_block_pool->erase(it);
-                //     delete next_block;
+                    // Remove next_block from the pool
+                    auto next_block_pool = get_pool(next_block->size_);
+                    auto it = next_block_pool->find(next_block);
+                    if (it == next_block_pool->end()) {
+                        // Should never reach here
+                        utility::LogError(
+                                "CUDAMemoryManager::Free: linked list "
+                                "node not found in pool.");
+                    }
+                    next_block_pool->erase(it);
+                    delete next_block;
 
-                //     block = block->next_;
+                    block_it = block_it->next_;
 
-                //     utility::LogInfo("Merging in the next-direction.");
-                // }
+                    utility::LogInfo("Merging in the next-direction.");
+                }
 
                 // Merge towards prev
                 // TODO: wrap it with a function
-                // block = head_block;
-                // while (block != nullptr && block->prev_ != nullptr) {
-                //     BlockPtr prev_block = block->prev_;
-                //     if (prev_block->next_ != block) {
-                //         // Double check; should never reach here.
-                //         utility::LogError(
-                //                 "CUDAMemoryManager::Free: linked list "
-                //                 "nodes "
-                //                 "mismatch in prev-direction merge: {} vs "
-                //                 "{}.",
-                //                 fmt::ptr(prev_block->next_),
-                //                 fmt::ptr(block));
-                //     }
+                block_it = block;
+                while (block_it != nullptr && block_it->prev_ != nullptr) {
+                    BlockPtr prev_block = block_it->prev_;
+                    if (prev_block->next_ != block_it) {
+                        // Double check; should never reach here.
+                        utility::LogError(
+                                "CUDAMemoryManager::Free: linked list "
+                                "nodes "
+                                "mismatch in prev-direction merge: {} vs "
+                                "{}.",
+                                fmt::ptr(prev_block->next_),
+                                fmt::ptr(block_it));
+                    }
 
-                // if (prev_block->in_use_) {
-                //     break;
-                // }
+                    if (prev_block->in_use_) {
+                        break;
+                    }
 
-                // // Merge
-                // block->prev_ = prev_block->prev_;
-                // block->size_ += prev_block->size_;
-                // block->ptr_ = prev_block->ptr_;
+                    // Merge
+                    block_it->prev_ = prev_block->prev_;
+                    if (block_it->prev_) {
+                        block_it->prev_->next_ = block_it;
+                    }
+                    block_it->size_ += prev_block->size_;
+                    block_it->ptr_ = prev_block->ptr_;
 
-                // // Remove next_block from the pool
-                // auto prev_block_pool = get_pool(prev_block->size_);
-                // auto it = prev_block_pool->find(prev_block);
-                // if (it == prev_block_pool->end()) {
-                //     // Should never reach here
-                //     utility::LogError(
-                //             "CUDAMemoryManager::Free: linked list
-                //             node not " "found in pool.");
-                // }
-                // prev_block_pool->erase(it);
-                // delete prev_block;
+                    // Remove orev_block from the pool
+                    auto prev_block_pool = get_pool(prev_block->size_);
+                    auto it = prev_block_pool->find(prev_block);
+                    if (it == prev_block_pool->end()) {
+                        // Should never reach here
+                        utility::LogError(
+                                "CUDAMemoryManager::Free: linked list"
+                                "node not found in pool.");
+                    }
+                    prev_block_pool->erase(it);
+                    delete prev_block;
 
-                //     block = block->prev_;
-                //     utility::LogInfo("Checking in the prev-direction.");
-                // }
+                    block_it = block_it->prev_;
+                    utility::LogInfo("Merging in the prev-direction.");
+                }
+
+                block->in_use_ = false;
+                get_pool(block->size_)->emplace(block);
             }
         } else {
             utility::LogError("CUDAMemoryManager::Free: Invalid pointer");
