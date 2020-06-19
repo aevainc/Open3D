@@ -100,6 +100,7 @@ struct Block;
 // We need raw pointers (instead of smart ptrs) for exact comparison and
 // reference
 typedef Block* BlockPtr;
+
 struct Block {
     int device_;   // gpu
     size_t size_;  // block size in bytes
