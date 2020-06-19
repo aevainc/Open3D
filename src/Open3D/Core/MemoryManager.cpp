@@ -44,6 +44,10 @@ void MemoryManager::Free(void* ptr, const Device& device) {
     return GetDeviceMemoryManager(device)->Free(ptr, device);
 }
 
+void MemoryManager::ReleaseCache(const Device& device) {
+    return GetDeviceMemoryManager(device)->ReleaseCache();
+}
+
 void MemoryManager::Memcpy(void* dst_ptr,
                            const Device& dst_device,
                            const void* src_ptr,

@@ -1,4 +1,5 @@
 #include "Image.h"
+#include "Open3D/Core/CUDAUtils.h"
 #include "Open3D/Open3D.h"
 
 using namespace open3d;
@@ -10,6 +11,8 @@ int main() {
     MemoryManager::Free(ptr, device);
 
     void* ptr1 = MemoryManager::Malloc(8, device);
+    MemoryManager::ReleaseCache(device);
+
     void* ptr2 = MemoryManager::Malloc(8, device);
 
     MemoryManager::Free(ptr1, device);

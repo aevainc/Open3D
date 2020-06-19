@@ -1,3 +1,4 @@
+
 // ----------------------------------------------------------------------------
 // -                        Open3D: www.open3d.org                            -
 // ----------------------------------------------------------------------------
@@ -59,6 +60,8 @@ public:
                              const Device& src_device,
                              size_t num_bytes);
 
+    static void ReleaseCache(const Device& device);
+
 protected:
     static std::shared_ptr<DeviceMemoryManager> GetDeviceMemoryManager(
             const Device& device);
@@ -73,6 +76,7 @@ public:
                         const void* src_ptr,
                         const Device& src_device,
                         size_t num_bytes) = 0;
+    virtual void ReleaseCache() = 0;
 };
 
 class CPUMemoryManager : public DeviceMemoryManager {
@@ -85,6 +89,7 @@ public:
                 const void* src_ptr,
                 const Device& src_device,
                 size_t num_bytes) override;
+    void ReleaseCache() override{};
 };
 
 #ifdef BUILD_CUDA_MODULE
@@ -95,9 +100,6 @@ struct Block;
 // We need raw pointers (instead of smart ptrs) for exact comparison and
 // reference
 typedef Block* BlockPtr;
-typedef bool (*Comparison)(const BlockPtr&, const BlockPtr&);
-typedef std::set<BlockPtr, Comparison> BlockPool;
-
 struct Block {
     int device_;   // gpu
     size_t size_;  // block size in bytes
@@ -123,7 +125,7 @@ struct Block {
 
 class CUDAMemoryManager : public DeviceMemoryManager {
 public:
-    CUDAMemoryManager();
+    CUDAMemoryManager(){};
     void* Malloc(size_t byte_size, const Device& device) override;
     void Free(void* ptr, const Device& device) override;
     void Memcpy(void* dst_ptr,
@@ -131,23 +133,14 @@ public:
                 const void* src_ptr,
                 const Device& src_device,
                 size_t num_bytes) override;
+    void ReleaseCache() override;
 
 protected:
     bool IsCUDAPointer(const void* ptr);
 
-    inline std::shared_ptr<BlockPool> get_pool(size_t byte_size) {
-        // largest "small" allocation is 1 MiB (1024 * 1024)
-        constexpr size_t kSmallSize = 1048576;
-        return byte_size <= kSmallSize ? small_block_pool_ : large_block_pool_;
-    }
-
     inline size_t align_size(size_t byte_size, size_t alignment = 4) {
         return ((byte_size + alignment - 1) / alignment) * alignment;
     }
-
-    std::unordered_map<void*, BlockPtr> allocated_blocks_;
-    std::shared_ptr<BlockPool> small_block_pool_;
-    std::shared_ptr<BlockPool> large_block_pool_;
 };
 #endif
 

@@ -24,6 +24,7 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
+#include "Open3D/Core/CUDAUtils.h"
 #include "Open3D/Core/MemoryManager.h"
 
 #include <cuda.h>
@@ -46,9 +47,20 @@ static bool BlockComparator(const BlockPtr& a, const BlockPtr& b) {
     return (size_t)a->ptr_ < (size_t)b->ptr_;
 }
 
-CUDAMemoryManager::CUDAMemoryManager() {
-    small_block_pool_ = std::make_shared<BlockPool>(BlockComparator);
-    large_block_pool_ = std::make_shared<BlockPool>(BlockComparator);
+/// Singletons
+typedef bool (*Comparison)(const BlockPtr&, const BlockPtr&);
+typedef std::set<BlockPtr, Comparison> BlockPool;
+
+static std::unordered_map<void*, BlockPtr> allocated_blocks_;
+static std::shared_ptr<BlockPool> small_block_pool_ =
+        std::make_shared<BlockPool>(BlockComparator);
+static std::shared_ptr<BlockPool> large_block_pool_ =
+        std::make_shared<BlockPool>(BlockComparator);
+
+static std::shared_ptr<BlockPool> get_pool(size_t byte_size) {
+    // largest "small" allocation is 1 MiB (1024 * 1024)
+    constexpr size_t kSmallSize = 1048576;
+    return byte_size <= kSmallSize ? small_block_pool_ : large_block_pool_;
 }
 
 void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
@@ -297,6 +309,30 @@ bool CUDAMemoryManager::IsCUDAPointer(const void* ptr) {
         return true;
     }
     return false;
+}
+
+void CUDAMemoryManager::ReleaseCache() {
+    // remove_if does not work for set
+    // https://stackoverflow.com/questions/24263259/c-stdseterase-with-stdremove-if
+    // https://stackoverflow.com/questions/2874441/deleting-elements-from-stdset-while-iterating
+    utility::LogInfo("Releasing Cache");
+    auto release_pool = [](BlockPool& pool) {
+        auto it = pool.begin();
+        auto end = pool.end();
+        while (it != end) {
+            BlockPtr block = *it;
+            if (block->prev_ == nullptr && block->next_ == nullptr) {
+                OPEN3D_CUDA_CHECK(cudaFree(block->ptr_));
+                delete block;
+                it = pool.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    };
+
+    release_pool(*small_block_pool_);
+    release_pool(*large_block_pool_);
 }
 
 }  // namespace open3d
