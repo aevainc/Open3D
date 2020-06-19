@@ -14,3 +14,6 @@ target_link_libraries(TestTPointCloud ${CMAKE_PROJECT_NAME})
 
 add_executable(TestTImage TestTImage.cpp)
 target_link_libraries(TestTImage ${CMAKE_PROJECT_NAME})
+
+add_executable(TestMemoryManager TestMemoryManager.cpp)
+target_link_libraries(TestMemoryManager ${CMAKE_PROJECT_NAME})

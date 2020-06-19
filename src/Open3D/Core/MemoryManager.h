@@ -91,7 +91,10 @@ public:
 // Refrence
 // https://github.com/pytorch/pytorch/blob/5fbec1f55df59156edff4084023086823227fbb0/c10/cuda/CUDACachingAllocator.cpp
 struct Block;
-typedef std::shared_ptr<Block> BlockPtr;
+
+// We need raw pointers (instead of smart ptrs) for exact comparison and
+// reference
+typedef Block* BlockPtr;
 typedef bool (*Comparison)(const BlockPtr&, const BlockPtr&);
 typedef std::set<BlockPtr, Comparison> BlockPool;
 
@@ -100,8 +103,22 @@ struct Block {
     size_t size_;  // block size in bytes
     void* ptr_;    // memory address
 
-    Block(int device, size_t size, void* ptr = nullptr)
-        : device_(device), size_(size), ptr_(ptr) {}
+    BlockPtr prev_;
+    BlockPtr next_;
+
+    bool in_use_;
+
+    Block(int device,
+          size_t size,
+          void* ptr = nullptr,
+          BlockPtr prev = nullptr,
+          BlockPtr next = nullptr)
+        : device_(device),
+          size_(size),
+          ptr_(ptr),
+          prev_(prev),
+          next_(next),
+          in_use_(false) {}
 };
 
 class CUDAMemoryManager : public DeviceMemoryManager {
