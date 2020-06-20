@@ -49,8 +49,7 @@ struct BlockComparator {
     }
 };
 
-/// Singletons
-
+/// Singleton
 class CUDACacher {
 public:
     static std::shared_ptr<CUDACacher> GetInstance() {
@@ -87,7 +86,6 @@ void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
     CUDADeviceSwitcher switcher(device);
     void* ptr;
 
-    utility::LogInfo("Malloc");
     if (device.GetType() == Device::DeviceType::CUDA) {
         std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();
 
@@ -141,9 +139,6 @@ void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
 
                 // Place the remain block to pool
                 instance->get_pool(remain_byte_size)->emplace(remain_block);
-                // utility::LogInfo(
-                //         "pool addr: {}",
-                //         fmt::ptr(&instance->get_pool(remain_byte_size)));
                 utility::LogInfo("Splitted: {}--{} == > {}--{}, {}--{} -->{}",
                                  fmt::ptr(found_block), found_block->size_,
                                  fmt::ptr(found_block), byte_size,
@@ -160,7 +155,6 @@ void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
 }
 
 void CUDAMemoryManager::Free(void* ptr, const Device& device) {
-    utility::LogInfo("Free");
     CUDADeviceSwitcher switcher(device);
 
     std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();
@@ -206,8 +200,6 @@ void CUDAMemoryManager::Free(void* ptr, const Device& device) {
                     // Remove next_block from the pool
                     auto next_block_pool =
                             instance->get_pool(next_block->size_);
-                    utility::LogInfo("pool addr: {}",
-                                     fmt::ptr(&next_block_pool));
                     auto it = next_block_pool->find(next_block);
                     if (it == next_block_pool->end()) {
                         // Should never reach here
