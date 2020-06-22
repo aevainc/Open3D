@@ -29,10 +29,8 @@
 
 #include <cstring>
 #include <memory>
-#include <set>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
 
 #include "Open3D/Core/Device.h"
 

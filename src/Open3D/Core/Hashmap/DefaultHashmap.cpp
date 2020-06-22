@@ -32,6 +32,8 @@
 
 #include "HashmapBase.h"
 
+#include <unordered_map>
+
 namespace open3d {
 
 std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_capacity,

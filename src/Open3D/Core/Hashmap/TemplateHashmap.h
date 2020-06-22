@@ -53,13 +53,14 @@ namespace open3d {
 
 template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
 std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_buckets,
+                                                    size_t init_capacity,
                                                     size_t dsize_key,
                                                     size_t dsize_value,
                                                     open3d::Device device) {
     static std::unordered_map<
             Device::DeviceType,
             std::function<std::shared_ptr<Hashmap<Hash, KeyEq>>(
-                    size_t, size_t, size_t, Device)>,
+                    size_t, size_t, size_t, size_t, Device)>,
             utility::hash_enum_class::hash>
             map_device_type_to_hashmap_constructor = {
                 {Device::DeviceType::CPU, CreateCPUHashmap<Hash, KeyEq>},
@@ -75,6 +76,17 @@ std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_buckets,
 
     auto constructor =
             map_device_type_to_hashmap_constructor.at(device.GetType());
-    return constructor(init_buckets, dsize_key, dsize_value, device);
+    return constructor(init_buckets, init_capacity, dsize_key, dsize_value,
+                       device);
 }
+
+template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
+std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_capacity,
+                                                    size_t dsize_key,
+                                                    size_t dsize_value,
+                                                    open3d::Device device) {
+    return CreateHashmap(init_capacity / kDefaultElemsPerBucket, init_capacity,
+                         dsize_key, dsize_value, device);
+}
+
 }  // namespace open3d

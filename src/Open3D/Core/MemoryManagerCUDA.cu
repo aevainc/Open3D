@@ -29,6 +29,8 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <set>
+#include <unordered_map>
 
 #include "Open3D/Core/CUDAState.cuh"
 #include "Open3D/Core/CUDAUtils.h"
@@ -117,6 +119,7 @@ void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
             new_block->in_use_ = true;
             instance->allocated_blocks_.insert({ptr, new_block});
         } else {
+            utility::LogInfo("Reusing memory");
             // Get raw ptr for return
             ptr = found_block->ptr_;
 

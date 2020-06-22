@@ -14,12 +14,19 @@ int main(int argc, char** argv) {
     timer.Stop();
     utility::LogInfo("[TestTPointCloud] Legacy VoxelDownSample time: {}",
                      timer.GetDuration());
-
     timer.Start();
     auto pcd_down = pcd.VoxelDownSample(0.01);
     timer.Stop();
     utility::LogInfo("[TestTPointCloud] VoxelDownSample: {}",
                      timer.GetDuration());
+
+    for (int i = 0; i < 10; ++i) {
+        timer.Start();
+        auto pcd_down = pcd.VoxelDownSample(0.01);
+        timer.Stop();
+        utility::LogInfo("[TestTPointCloud] VoxelDownSample: {}",
+                         timer.GetDuration());
+    }
 
     // auto pcd_down_legacy = std::make_shared<geometry::PointCloud>(
     //         tgeometry::PointCloud::ToLegacyPointCloud(pcd_down));
