@@ -91,37 +91,6 @@ public:
 };
 
 #ifdef BUILD_CUDA_MODULE
-// Refrence
-// https://github.com/pytorch/pytorch/blob/5fbec1f55df59156edff4084023086823227fbb0/c10/cuda/CUDACachingAllocator.cpp
-struct Block;
-
-// We need raw pointers (instead of smart ptrs) for exact comparison and
-// reference
-typedef Block* BlockPtr;
-
-struct Block {
-    int device_;   // gpu
-    size_t size_;  // block size in bytes
-    void* ptr_;    // memory address
-
-    BlockPtr prev_;
-    BlockPtr next_;
-
-    bool in_use_;
-
-    Block(int device,
-          size_t size,
-          void* ptr = nullptr,
-          BlockPtr prev = nullptr,
-          BlockPtr next = nullptr)
-        : device_(device),
-          size_(size),
-          ptr_(ptr),
-          prev_(prev),
-          next_(next),
-          in_use_(false) {}
-};
-
 class CUDAMemoryManager : public DeviceMemoryManager {
 public:
     CUDAMemoryManager(){};

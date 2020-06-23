@@ -16,6 +16,9 @@ int main(int argc, char** argv) {
                      timer.GetDuration());
 
     for (int i = 0; i < 10; ++i) {
+        if (i % 3 == 0) {
+            MemoryManager::ReleaseCache(Device("CUDA:0"));
+        }
         timer.Start();
         auto pcd_down = pcd.VoxelDownSample(0.01);
         timer.Stop();
