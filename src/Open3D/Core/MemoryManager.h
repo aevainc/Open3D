@@ -136,10 +136,6 @@ public:
 
 protected:
     bool IsCUDAPointer(const void* ptr);
-
-    inline size_t align_size(size_t byte_size, size_t alignment = 4) {
-        return ((byte_size + alignment - 1) / alignment) * alignment;
-    }
 };
 #endif
 

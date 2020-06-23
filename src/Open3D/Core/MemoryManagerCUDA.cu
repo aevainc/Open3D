@@ -63,39 +63,31 @@ public:
     }
 
 public:
+    typedef std::set<BlockPtr, BlockComparator> BlockPool;
+
+    inline size_t align_size(size_t byte_size, size_t alignment = 4) {
+        return ((byte_size + alignment - 1) / alignment) * alignment;
+    }
+
     CUDACacher() {
         small_block_pool_ = std::make_shared<BlockPool>();
         large_block_pool_ = std::make_shared<BlockPool>();
     }
 
-    typedef std::set<BlockPtr, BlockComparator> BlockPool;
-    std::unordered_map<void*, BlockPtr> allocated_blocks_;
-    std::shared_ptr<BlockPool> small_block_pool_;
-    std::shared_ptr<BlockPool> large_block_pool_;
-
-    std::shared_ptr<BlockPool>& get_pool(size_t byte_size) {
-        // largest "small" allocation is 1 MiB (1024 * 1024)
-        constexpr size_t kSmallSize = 1048576;
-        return byte_size <= kSmallSize ? small_block_pool_ : large_block_pool_;
+    ~CUDACacher() {
+        if (!allocated_blocks_.empty()) {
+            utility::LogError("CUDACacher: Memory leak!");
+        }
+        ReleaseCache();
     }
 
-    static std::shared_ptr<CUDACacher> instance_;
-};
-
-std::shared_ptr<CUDACacher> CUDACacher::instance_ = nullptr;
-
-void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
-    CUDADeviceSwitcher switcher(device);
-    void* ptr;
-
-    if (device.GetType() == Device::DeviceType::CUDA) {
-        std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();
-
+    void* Malloc(size_t byte_size, const Device& device) {
+        void* ptr;
         byte_size = align_size(byte_size);
         BlockPtr query_block = new Block(device.GetID(), byte_size);
 
         // Find corresponding pool
-        auto pool = instance->get_pool(byte_size);
+        auto pool = get_pool(byte_size);
 
         // Query block in the pool
         auto find_free_block = [&]() -> BlockPtr {
@@ -113,11 +105,11 @@ void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
 
         if (found_block == nullptr) {
             // Allocate and insert to the allocated pool
-            OPEN3D_CUDA_CHECK(cudaMalloc(static_cast<void**>(&ptr), byte_size));
+            OPEN3D_CUDA_CHECK(cudaMalloc(&ptr, byte_size));
 
             BlockPtr new_block = new Block(device.GetID(), byte_size, ptr);
             new_block->in_use_ = true;
-            instance->allocated_blocks_.insert({ptr, new_block});
+            allocated_blocks_.insert({ptr, new_block});
         } else {
             utility::LogInfo("Reusing memory");
             // Get raw ptr for return
@@ -141,7 +133,7 @@ void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
                 }
 
                 // Place the remain block to pool
-                instance->get_pool(remain_byte_size)->emplace(remain_block);
+                get_pool(remain_byte_size)->emplace(remain_block);
                 utility::LogInfo("Splitted: {}--{} == > {}--{}, {}--{} -->{}",
                                  fmt::ptr(found_block), found_block->size_,
                                  fmt::ptr(found_block), byte_size,
@@ -149,124 +141,173 @@ void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
                                  fmt::ptr(remain_block->next_));
             }
             found_block->in_use_ = true;
-            instance->allocated_blocks_.insert({ptr, found_block});
+            allocated_blocks_.insert({ptr, found_block});
         }
+
+        return ptr;
+    }
+
+    void Free(void* ptr, const Device& device) {
+        auto it = allocated_blocks_.find(ptr);
+
+        if (it == allocated_blocks_.end()) {
+            // Should never reach here!
+            utility::LogError(
+                    "CUDAMemoryManager::Free: Memory leak! Block "
+                    "should have been recorded.");
+        } else {
+            // Release memory and check if merge is required
+            BlockPtr block = it->second;
+            allocated_blocks_.erase(it);
+
+            // Merge free blocks towards next direction
+            // TODO: wrap it with a function
+            BlockPtr block_it = block;
+            while (block_it != nullptr && block_it->next_ != nullptr) {
+                BlockPtr next_block = block_it->next_;
+                if (next_block->prev_ != block_it) {
+                    // Double check; should never reach here.
+                    utility::LogError(
+                            "CUDAMemoryManager::Free: linked list nodes "
+                            "mismatch in next-direction merge.");
+                }
+
+                if (next_block->in_use_) {
+                    break;
+                }
+
+                // Merge
+                block_it->next_ = next_block->next_;
+                if (block_it->next_) {
+                    block_it->next_->prev_ = block_it;
+                }
+                block_it->size_ += next_block->size_;
+
+                // Remove next_block from the pool
+                auto next_block_pool = get_pool(next_block->size_);
+                auto it = next_block_pool->find(next_block);
+                if (it == next_block_pool->end()) {
+                    // Should never reach here
+                    utility::LogError(
+                            "CUDAMemoryManager::Free: linked list "
+                            "node {} not found in pool.",
+                            fmt::ptr(next_block));
+                }
+                next_block_pool->erase(it);
+                delete next_block;
+
+                block_it = block_it->next_;
+
+                utility::LogInfo("Merging in the next-direction.");
+            }
+
+            // Merge towards prev
+            // TODO: wrap it with a function
+            block_it = block;
+            while (block_it != nullptr && block_it->prev_ != nullptr) {
+                BlockPtr prev_block = block_it->prev_;
+                if (prev_block->next_ != block_it) {
+                    // Double check; should never reach here.
+                    utility::LogError(
+                            "CUDAMemoryManager::Free: linked list "
+                            "nodes "
+                            "mismatch in prev-direction merge: {} vs "
+                            "{}.",
+                            fmt::ptr(prev_block->next_), fmt::ptr(block_it));
+                }
+
+                if (prev_block->in_use_) {
+                    break;
+                }
+
+                // Merge
+                block_it->prev_ = prev_block->prev_;
+                if (block_it->prev_) {
+                    block_it->prev_->next_ = block_it;
+                }
+                block_it->size_ += prev_block->size_;
+                block_it->ptr_ = prev_block->ptr_;
+
+                // Remove orev_block from the pool
+                auto prev_block_pool = get_pool(prev_block->size_);
+                auto it = prev_block_pool->find(prev_block);
+                if (it == prev_block_pool->end()) {
+                    // Should never reach here
+                    utility::LogError(
+                            "CUDAMemoryManager::Free: linked list"
+                            "node not found in pool.");
+                }
+                prev_block_pool->erase(it);
+                delete prev_block;
+
+                block_it = block_it->prev_;
+                utility::LogInfo("Merging in the prev-direction.");
+            }
+
+            block->in_use_ = false;
+            get_pool(block->size_)->emplace(block);
+        }
+    }
+
+    void ReleaseCache() {
+        // remove_if does not work for set
+        // https://stackoverflow.com/questions/24263259/c-stdseterase-with-stdremove-if
+        // https://stackoverflow.com/questions/2874441/deleting-elements-from-stdset-while-iterating
+        auto release_pool = [](std::set<BlockPtr, BlockComparator>& pool) {
+            auto it = pool.begin();
+            auto end = pool.end();
+            while (it != end) {
+                BlockPtr block = *it;
+                if (block->prev_ == nullptr && block->next_ == nullptr) {
+                    OPEN3D_CUDA_CHECK(cudaFree(block->ptr_));
+                    delete block;
+                    it = pool.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        };
+
+        release_pool(*small_block_pool_);
+        release_pool(*large_block_pool_);
+    }
+
+    std::unordered_map<void*, BlockPtr> allocated_blocks_;
+    std::shared_ptr<BlockPool> small_block_pool_;
+    std::shared_ptr<BlockPool> large_block_pool_;
+
+    std::shared_ptr<BlockPool>& get_pool(size_t byte_size) {
+        // largest "small" allocation is 1 MiB (1024 * 1024)
+        constexpr size_t kSmallSize = 1048576;
+        return byte_size <= kSmallSize ? small_block_pool_ : large_block_pool_;
+    }
+
+    static std::shared_ptr<CUDACacher> instance_;
+};
+
+std::shared_ptr<CUDACacher> CUDACacher::instance_ = CUDACacher::GetInstance();
+
+void* CUDAMemoryManager::Malloc(size_t byte_size, const Device& device) {
+    CUDADeviceSwitcher switcher(device);
+
+    if (device.GetType() == Device::DeviceType::CUDA) {
+        std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();
+        return instance->Malloc(byte_size, device);
     } else {
         utility::LogError("CUDAMemoryManager::Malloc: Unimplemented device");
+        return nullptr;
     }
-    return ptr;
+    // Should never reach here
+    return nullptr;
 }
 
 void CUDAMemoryManager::Free(void* ptr, const Device& device) {
     CUDADeviceSwitcher switcher(device);
 
-    std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();
-
     if (device.GetType() == Device::DeviceType::CUDA) {
         if (ptr && IsCUDAPointer(ptr)) {
-            auto it = instance->allocated_blocks_.find(ptr);
-
-            if (it == instance->allocated_blocks_.end()) {
-                // Should never reach here!
-                utility::LogError(
-                        "CUDAMemoryManager::Free: Memory leak! Block "
-                        "should "
-                        "have been stored.");
-            } else {
-                // Release memory and check if merge is required
-                BlockPtr block = it->second;
-                instance->allocated_blocks_.erase(it);
-
-                // Merge free blocks towards next direction
-                // TODO: wrap it with a function
-                BlockPtr block_it = block;
-                while (block_it != nullptr && block_it->next_ != nullptr) {
-                    BlockPtr next_block = block_it->next_;
-                    if (next_block->prev_ != block_it) {
-                        // Double check; should never reach here.
-                        utility::LogError(
-                                "CUDAMemoryManager::Free: linked list nodes "
-                                "mismatch in next-direction merge.");
-                    }
-
-                    if (next_block->in_use_) {
-                        break;
-                    }
-
-                    // Merge
-                    block_it->next_ = next_block->next_;
-                    if (block_it->next_) {
-                        block_it->next_->prev_ = block_it;
-                    }
-                    block_it->size_ += next_block->size_;
-
-                    // Remove next_block from the pool
-                    auto next_block_pool =
-                            instance->get_pool(next_block->size_);
-                    auto it = next_block_pool->find(next_block);
-                    if (it == next_block_pool->end()) {
-                        // Should never reach here
-                        utility::LogError(
-                                "CUDAMemoryManager::Free: linked list "
-                                "node {} not found in pool.",
-                                fmt::ptr(next_block));
-                    }
-                    next_block_pool->erase(it);
-                    delete next_block;
-
-                    block_it = block_it->next_;
-
-                    utility::LogInfo("Merging in the next-direction.");
-                }
-
-                // Merge towards prev
-                // TODO: wrap it with a function
-                block_it = block;
-                while (block_it != nullptr && block_it->prev_ != nullptr) {
-                    BlockPtr prev_block = block_it->prev_;
-                    if (prev_block->next_ != block_it) {
-                        // Double check; should never reach here.
-                        utility::LogError(
-                                "CUDAMemoryManager::Free: linked list "
-                                "nodes "
-                                "mismatch in prev-direction merge: {} vs "
-                                "{}.",
-                                fmt::ptr(prev_block->next_),
-                                fmt::ptr(block_it));
-                    }
-
-                    if (prev_block->in_use_) {
-                        break;
-                    }
-
-                    // Merge
-                    block_it->prev_ = prev_block->prev_;
-                    if (block_it->prev_) {
-                        block_it->prev_->next_ = block_it;
-                    }
-                    block_it->size_ += prev_block->size_;
-                    block_it->ptr_ = prev_block->ptr_;
-
-                    // Remove orev_block from the pool
-                    auto prev_block_pool =
-                            instance->get_pool(prev_block->size_);
-                    auto it = prev_block_pool->find(prev_block);
-                    if (it == prev_block_pool->end()) {
-                        // Should never reach here
-                        utility::LogError(
-                                "CUDAMemoryManager::Free: linked list"
-                                "node not found in pool.");
-                    }
-                    prev_block_pool->erase(it);
-                    delete prev_block;
-
-                    block_it = block_it->prev_;
-                    utility::LogInfo("Merging in the prev-direction.");
-                }
-
-                block->in_use_ = false;
-                instance->get_pool(block->size_)->emplace(block);
-            }
+            std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();
+            instance->Free(ptr, device);
         } else {
             utility::LogError("CUDAMemoryManager::Free: Invalid pointer");
         }
@@ -341,37 +382,9 @@ bool CUDAMemoryManager::IsCUDAPointer(const void* ptr) {
 }
 
 void CUDAMemoryManager::ReleaseCache() {
-    // remove_if does not work for set
-    // https://stackoverflow.com/questions/24263259/c-stdseterase-with-stdremove-if
-    // https://stackoverflow.com/questions/2874441/deleting-elements-from-stdset-while-iterating
     utility::LogInfo("Releasing Cache");
-    auto release_pool = [](std::set<BlockPtr, BlockComparator>& pool) {
-        auto it = pool.begin();
-        auto end = pool.end();
-        while (it != end) {
-            BlockPtr block = *it;
-            if (block->prev_ == nullptr && block->next_ == nullptr) {
-                OPEN3D_CUDA_CHECK(cudaFree(block->ptr_));
-                delete block;
-                it = pool.erase(it);
-            } else {
-                ++it;
-            }
-        }
-    };
-
     std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();
-    // utility::LogInfo("small_block_pool size before: {}",
-    //                  instance->small_block_pool_.size());
-    release_pool(*(instance->small_block_pool_));
-    // utility::LogInfo("small_block_pool size after: {}",
-    //                  instance->small_block_pool_.size());
-
-    // utility::LogInfo("large_block_pool size before: {}",
-    //                  instance->large_block_pool_.size());
-    release_pool(*(instance->large_block_pool_));
-    // utility::LogInfo("large_block_pool size after: {}",
-    //                  instance->large_block_pool_.size());
+    instance->ReleaseCache();
 }
 
 }  // namespace open3d
