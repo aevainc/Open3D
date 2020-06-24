@@ -1,0 +1,92 @@
+set (KERNEL_SRC
+    kernel/IndexGetSet.cpp
+    kernel/IndexGetSetCPU.cpp
+    kernel/NonZero.cpp
+    kernel/NonZeroCPU.cpp
+    kernel/UnaryEW.cpp
+    kernel/UnaryEWCPU.cpp
+    kernel/BinaryEW.cpp
+    kernel/BinaryEWCPU.cpp
+    kernel/Reduction.cpp
+    kernel/ReductionCPU.cpp
+)
+
+set (KERNEL_CUDA_SRC
+    kernel/IndexGetSetCUDA.cu
+    kernel/NonZeroCUDA.cu
+    kernel/UnaryEWCUDA.cu
+    kernel/BinaryEWCUDA.cu
+    kernel/ReductionCUDA.cu
+)
+
+set (CORE_SRC
+    dlpack/DLPackConverter.cpp
+    AdvancedIndexing.cpp
+    ShapeUtil.cpp
+    CUDAUtils.cpp
+    Indexer.cpp
+    MemoryManager.cpp
+    MemoryManagerCPU.cpp
+    MemoryManagerCUDA.cu
+    Tensor.cpp
+    TensorKey.cpp
+    TensorList.cpp
+)
+
+set (CORE_CUDA_SRC
+    MemoryManagerCUDA.cu
+)
+
+set (HASHMAP_SRC
+    hashmap/TensorHash.cpp
+    hashmap/CPU/DefaultHashmapCPU.cpp
+    hashmap/DefaultHashmap.cpp
+)
+
+set (HASHMAP_CUDA_SRC
+    hashmap/CUDA/DefaultHashmapCUDA.cu
+)
+
+if (BUILD_CUDA_MODULE)
+    set (ALL_CORE_SRC
+        ${CORE_SRC}
+        ${CORE_CUDA_SRC}
+        ${KERNEL_SRC}
+        ${KERNEL_CUDA_SRC}
+        ${HASHMAP_SRC}
+        ${HASHMAP_CUDA_SRC}
+    )
+else()
+    set (ALL_CORE_SRC
+        ${CORE_SRC}
+        ${KERNEL_SRC}
+        ${HASHMAP_SRC}
+    )
+endif()
+
+# Create object library
+add_library(core OBJECT ${ALL_CORE_SRC})
+open3d_set_global_properties(core)
+open3d_link_3rdparty_libraries(core)
+open3d_show_and_abort_on_warning(core)
+
+if (BUILD_CUDA_MODULE)
+    target_include_directories(core SYSTEM PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+
+    cuda_add_executable(TestHashmap hashmap/TestHashmap.cu)
+    open3d_set_global_properties(TestHashmap)
+    target_link_libraries(TestHashmap ${CMAKE_PROJECT_NAME})
+
+    add_executable(test_tensorhash hashmap/test_tensorhash.cpp)
+    target_link_libraries(test_tensorhash ${CMAKE_PROJECT_NAME})
+
+    add_executable(TestTPointCloud hashmap/TestTPointCloud.cpp)
+    target_link_libraries(TestTPointCloud ${CMAKE_PROJECT_NAME})
+
+    add_executable(TestTImage hashmap/TestTImage.cpp)
+    target_link_libraries(TestTImage ${CMAKE_PROJECT_NAME})
+
+    add_executable(TestMemoryManager hashmap/TestMemoryManager.cpp)
+    target_link_libraries(TestMemoryManager ${CMAKE_PROJECT_NAME})
+
+endif()

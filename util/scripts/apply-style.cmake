@@ -34,10 +34,9 @@ function(style_apply_file_python FILE)
 endfunction()
 
 set(DIRECTORIES_OF_INTEREST_PYTHON
-    examples/Python
-    src/UnitTest/Python
+    examples/python
     docs
-    src/Python
+    python
 )
 
 message(STATUS "Python apply-style...")
@@ -79,7 +78,7 @@ function(style_apply_file_cpp FILE)
 endfunction()
 
 set(DIRECTORIES_OF_INTEREST_CPP
-    src
+    cpp
     examples
     docs/_static
 )

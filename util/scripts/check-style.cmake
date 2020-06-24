@@ -41,10 +41,9 @@ macro(style_check_file_python FILE)
 endmacro()
 
 set(DIRECTORIES_OF_INTEREST_PYTHON
-    examples/Python
-    src/UnitTest/Python
+    examples/python
     docs
-    src/Python
+    python
 )
 
 message(STATUS "Python check-style...")
@@ -86,7 +85,7 @@ macro(style_check_file_cpp FILE)
 endmacro()
 
 set(DIRECTORIES_OF_INTEREST_CPP
-    src
+    cpp
     examples
     docs/_static
 )
