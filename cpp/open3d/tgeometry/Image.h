@@ -111,6 +111,8 @@ public:
 
     core::Tensor AsTensor() { return data_; }
 
+    core::Tensor Unproject(const core::Tensor &intrinsic);
+
     // Usage:
     // std::shared_ptr<geometry::PointCloud> pcd_legacy =
     //         io::CreatePointCloudFromFile(filename);

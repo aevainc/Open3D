@@ -24,35 +24,51 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include "open3d/tgeometry/Image.h"
-#include "open3d/core/kernel/ImageOp.h"
+#pragma once
+
+#include "open3d/core/Tensor.h"
+#include "open3d/utility/Console.h"
 
 namespace open3d {
-namespace tgeometry {
-using namespace core;
+namespace core {
+namespace kernel {
 
-Image& Image::Clear() {
-    data_ = Tensor();
-    return *this;
-}
+/// Unproject: (1, H, W) -> (3, H, W)
+/// Filter: (*, H, W) -> (*, H, W)
+/// Odometry: (4, H, W) x (4, H, W) -> (7, H, W) (residual + jacobian)
+enum class ImageOpCode { Unproject, Odometry };
 
-bool Image::IsEmpty() const { return !HasData(); }
+void ImageUnaryEW(const Tensor& src,
+                  Tensor& dst,
+                  const Tensor& intrinsic,
+                  ImageOpCode op_code);
+void ImageBinaryEW(const Tensor& lhs,
+                   const Tensor& rhs,
+                   Tensor& dst,
+                   const Tensor& intrinsic,
+                   ImageOpCode op_code);
 
-Tensor Image::GetMinBound() const {
-    return Tensor(std::vector<float>({0.0, 0.0}), SizeVector({2}),
-                  Dtype::Float32, Device("CPU:0"));
-}
+void ImageUnaryEWCPU(const Tensor& src,
+                     Tensor& dst,
+                     const Tensor& intrinsic,
+                     ImageOpCode op_code);
+void ImageBinaryEWCPU(const Tensor& lhs,
+                      const Tensor& rhs,
+                      Tensor& dst,
+                      ImageOpCode op_code);
 
-Tensor Image::GetMaxBound() const {
-    return Tensor(std::vector<float>({static_cast<float>(width_),
-                                      static_cast<float>(height_)}),
-                  SizeVector({2}), Dtype::Float32, Device("CPU:0"));
-}
+#ifdef BUILD_CUDA_MODULE
+void ImageUnaryEWCUDA(const Tensor& src,
+                      Tensor& dst,
+                      const Tensor& intrinsic,
+                      ImageOpCode op_code);
+void ImageBinaryEWCUDA(const Tensor& lhs,
+                       const Tensor& rhs,
+                       Tensor& dst,
+                       const Tensor& intrinsic,
+                       ImageOpCode op_code);
+#endif
 
-Tensor Image::Unproject(const Tensor& intrinsic) {
-    Tensor vertex_map({3, height_, width_}, Dtype::Float32, device_);
-    ImageUnaryEW(data_, vertex_map, intrinsic, kernel::ImageOpCode::Unproject);
-    return vertex_map;
-}
-}  // namespace tgeometry
+}  // namespace kernel
+}  // namespace core
 }  // namespace open3d

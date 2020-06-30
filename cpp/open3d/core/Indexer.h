@@ -51,7 +51,7 @@ static constexpr int64_t MAX_INPUTS = 10;
 
 // Maximum number of outputs of an op. This number can be increased when
 // necessary.
-static constexpr int64_t MAX_OUTPUTS = 2;
+static constexpr int64_t MAX_OUTPUTS = 3;
 
 // Fixed-size array type usable from host and device.
 template <typename T, int size>
@@ -417,6 +417,16 @@ public:
     OPEN3D_HOST_DEVICE char* GetOutputPtr(int64_t output_idx,
                                           int64_t workload_idx) const {
         return GetWorkloadDataPtr(outputs_[output_idx], workload_idx);
+    }
+
+    /// Get 2D index for images stored with (*, H, W) format
+    /// This simplifies 2D workload and meshgrid operations
+    OPEN3D_HOST_DEVICE void GetWorkload2DIdx(int64_t workload_idx,
+                                             int64_t& x,
+                                             int64_t& y) const {
+        assert(ndims_ >= 2);
+        y = workload_idx / master_strides_[ndims_ - 2];
+        x = workload_idx % master_strides_[ndims_ - 2];
     }
 
 protected:

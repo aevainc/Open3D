@@ -23,36 +23,32 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
-
-#include "open3d/tgeometry/Image.h"
-#include "open3d/core/kernel/ImageOp.h"
+#include "ImageOp.h"
 
 namespace open3d {
-namespace tgeometry {
-using namespace core;
+namespace core {
+namespace kernel {
 
-Image& Image::Clear() {
-    data_ = Tensor();
-    return *this;
+void ImageUnaryEW(const Tensor& src,
+                  Tensor& dst,
+                  const Tensor& intrinsic,
+                  ImageOpCode op_code) {
+    if (src.GetDevice().GetType() == Device::DeviceType::CPU &&
+        dst.GetDevice().GetType() == Device::DeviceType::CPU) {
+        ImageUnaryEWCPU(src, dst, intrinsic, op_code);
+    } else if (src.GetDevice().GetType() == Device::DeviceType::CUDA &&
+               dst.GetDevice().GetType() == Device::DeviceType::CUDA) {
+        ImageUnaryEWCUDA(src, dst, intrinsic, op_code);
+    } else {
+        utility::LogError("Unsupported device");
+    }
 }
 
-bool Image::IsEmpty() const { return !HasData(); }
-
-Tensor Image::GetMinBound() const {
-    return Tensor(std::vector<float>({0.0, 0.0}), SizeVector({2}),
-                  Dtype::Float32, Device("CPU:0"));
-}
-
-Tensor Image::GetMaxBound() const {
-    return Tensor(std::vector<float>({static_cast<float>(width_),
-                                      static_cast<float>(height_)}),
-                  SizeVector({2}), Dtype::Float32, Device("CPU:0"));
-}
-
-Tensor Image::Unproject(const Tensor& intrinsic) {
-    Tensor vertex_map({3, height_, width_}, Dtype::Float32, device_);
-    ImageUnaryEW(data_, vertex_map, intrinsic, kernel::ImageOpCode::Unproject);
-    return vertex_map;
-}
-}  // namespace tgeometry
+void ImageBinaryEW(const Tensor& lhs,
+                   const Tensor& rhs,
+                   Tensor& dst,
+                   const Tensor& intrinsic,
+                   ImageOpCode op_code) {}
+}  // namespace kernel
+}  // namespace core
 }  // namespace open3d

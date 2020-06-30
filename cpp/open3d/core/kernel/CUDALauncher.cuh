@@ -131,6 +131,34 @@ public:
                 <<<grid_size, default_block_size, 0>>>(n, f);
         OPEN3D_GET_LAST_CUDA_ERROR("LaunchAdvancedIndexerKernel failed.");
     }
+
+    template <typename func_t>
+    static void LaunchImageBinaryKernel(const Indexer& indexer,
+                                        func_t element_kernel) {
+        OPEN3D_ASSERT_HOST_DEVICE_LAMBDA(func_t);
+
+        int64_t n = indexer.NumWorkloads();
+        printf("Indexer num workloads = %ld\n", n);
+        if (n == 0) {
+            return;
+        }
+        int64_t items_per_block = default_block_size * default_thread_size;
+        int64_t grid_size = (n + items_per_block - 1) / items_per_block;
+
+        auto f = [=] OPEN3D_HOST_DEVICE(int64_t workload_idx) {
+            int64_t x, y;
+            indexer.GetWorkload2DIdx(workload_idx, x, y);
+            element_kernel(x, y, indexer.GetInputPtr(0, workload_idx),
+                           indexer.GetOutputPtr(0, workload_idx),
+                           indexer.GetOutputPtr(1, workload_idx),
+                           indexer.GetOutputPtr(2, workload_idx));
+        };
+
+        ElementWiseKernel<default_block_size, default_thread_size>
+                <<<grid_size, default_block_size, 0>>>(n, f);
+        cudaDeviceSynchronize();
+        OPEN3D_GET_LAST_CUDA_ERROR("LaunchUnaryEWKernel failed.");
+    }
 };
 }  // namespace kernel
 }  // namespace core

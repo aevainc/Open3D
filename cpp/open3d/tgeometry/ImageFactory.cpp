@@ -56,6 +56,7 @@ tgeometry::Image Image::FromLegacyImage(const geometry::Image &image_legacy,
     size_t num_bytes = image_legacy.height_ * image_legacy.BytesPerLine();
     MemoryManager::MemcpyFromHost(image.data_.GetDataPtr(), device,
                                   image_legacy.data_.data(), num_bytes);
+    image.data_ = image.data_.Permute({2, 0, 1}).Contiguous();
     return image;
 }
 
@@ -72,8 +73,9 @@ geometry::Image Image::ToLegacyImage(const tgeometry::Image &image) {
                          DtypeUtil::ByteSize(image.dtype_));
     size_t num_bytes = image_legacy.height_ * image_legacy.BytesPerLine();
 
+    Tensor transposed = image.data_.Permute({1, 2, 0}).Contiguous();
     MemoryManager::MemcpyToHost(image_legacy.data_.data(),
-                                image.data_.GetDataPtr(), image.device_,
+                                transposed.GetDataPtr(), image.device_,
                                 num_bytes);
 
     return image_legacy;

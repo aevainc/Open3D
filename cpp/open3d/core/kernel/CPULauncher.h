@@ -163,6 +163,26 @@ public:
             LaunchReductionKernelSerial<scalar_t>(sub_indexer, element_kernel);
         }
     }
+
+    /// Specific kernels
+    template <typename func_t>
+    static void LaunchImageBinaryKernel(const Indexer& indexer,
+                                        func_t element_kernel) {
+        // #ifdef _OPENMP
+        // #pragma omp parallel for schedule(static)
+        // #endif
+        for (int64_t workload_idx = 0; workload_idx < indexer.NumWorkloads();
+             ++workload_idx) {
+            int64_t x, y;
+            indexer.GetWorkload2DIdx(workload_idx, x, y);
+            void* ptr = indexer.GetInputPtr(0, workload_idx);
+            float d = *reinterpret_cast<float*>(ptr);
+            std::cout << workload_idx << " " << ptr << " " << d << "\n";
+            element_kernel(x, y, ptr, indexer.GetOutputPtr(0, workload_idx),
+                           indexer.GetOutputPtr(1, workload_idx),
+                           indexer.GetOutputPtr(2, workload_idx));
+        }
+    }
 };
 
 }  // namespace kernel
