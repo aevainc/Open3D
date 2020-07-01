@@ -18,6 +18,7 @@ if (ENABLE_GUI)
     add_subdirectory(visualization/gui)
     set(GUI_OBJECTS "$<TARGET_OBJECTS:GUI>")
 endif()
+add_subdirectory(test_tmp)
 
 # Source group for Visual Studio
 add_source_group(camera)
