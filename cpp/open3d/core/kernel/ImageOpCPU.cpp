@@ -43,14 +43,11 @@ void CPUUnprojectKernel(int64_t x,
                         float cx,
                         float cy) {
     scalar_t d = static_cast<scalar_t>(*static_cast<const scalar_t*>(src));
-    std::cout << d << "\n";
-    if (d == 1202250) {
-        *static_cast<scalar_t*>(dst0) =
-                static_cast<scalar_t>(d * (x - cx) * inv_fx);
-        *static_cast<scalar_t*>(dst1) =
-                static_cast<scalar_t>(d * (y - cy) * inv_fy);
-        *static_cast<scalar_t*>(dst2) = d;
-    }
+    *static_cast<scalar_t*>(dst0) =
+            static_cast<scalar_t>(d * (x - cx) * inv_fx);
+    *static_cast<scalar_t*>(dst1) =
+            static_cast<scalar_t>(d * (y - cy) * inv_fy);
+    *static_cast<scalar_t*>(dst2) = d;
 }
 
 void ImageUnaryEWCPU(const Tensor& src,
@@ -67,8 +64,6 @@ void ImageUnaryEWCPU(const Tensor& src,
             // TODO: shape check
             Indexer indexer({src}, {dst[0], dst[1], dst[2]},
                             DtypePolicy::ALL_SAME);
-            std::cout << src.ToString() << "\n";
-            std::cout << DtypeUtil::ToString(src.GetDtype()) << "\n";
             DISPATCH_DTYPE_TO_TEMPLATE(src.GetDtype(), [&]() {
                 CPULauncher::LaunchImageBinaryKernel(
                         indexer, [=](int64_t x, int64_t y, const void* src,

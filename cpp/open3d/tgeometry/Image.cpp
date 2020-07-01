@@ -50,9 +50,9 @@ Tensor Image::GetMaxBound() const {
 }
 
 Tensor Image::Unproject(const Tensor& intrinsic) {
-    Tensor vertex_map({3, height_, width_}, Dtype::Float32, device_);
+    Tensor vertex_map({3, 1, height_, width_}, Dtype::Float32, device_);
     ImageUnaryEW(data_, vertex_map, intrinsic, kernel::ImageOpCode::Unproject);
-    return vertex_map;
+    return vertex_map.Reshape({3, height_, width_});
 }
 }  // namespace tgeometry
 }  // namespace open3d

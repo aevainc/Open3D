@@ -176,8 +176,6 @@ public:
             int64_t x, y;
             indexer.GetWorkload2DIdx(workload_idx, x, y);
             void* ptr = indexer.GetInputPtr(0, workload_idx);
-            float d = *reinterpret_cast<float*>(ptr);
-            std::cout << workload_idx << " " << ptr << " " << d << "\n";
             element_kernel(x, y, ptr, indexer.GetOutputPtr(0, workload_idx),
                            indexer.GetOutputPtr(1, workload_idx),
                            indexer.GetOutputPtr(2, workload_idx));
