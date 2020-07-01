@@ -133,12 +133,11 @@ public:
     }
 
     template <typename func_t>
-    static void LaunchImageBinaryKernel(const Indexer& indexer,
+    static void LaunchImageUnaryKernel(const Indexer& indexer,
                                         func_t element_kernel) {
         OPEN3D_ASSERT_HOST_DEVICE_LAMBDA(func_t);
 
         int64_t n = indexer.NumWorkloads();
-        printf("Indexer num workloads = %ld\n", n);
         if (n == 0) {
             return;
         }

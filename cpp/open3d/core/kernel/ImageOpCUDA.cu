@@ -60,15 +60,12 @@ void ImageUnaryEWCUDA(const Tensor& src,
     float cx = intrinsic[0][2].Item<float>();
     float cy = intrinsic[1][2].Item<float>();
 
-    printf("%f %f %f %f\n", fx, fy, cx, cy);
     switch (op_code) {
         case ImageOpCode::Unproject: {
-            std::cout << "Unproject!!!\n";
-            // TODO: shape check
             Indexer indexer({src}, {dst[0], dst[1], dst[2]},
                             DtypePolicy::ALL_SAME);
             DISPATCH_DTYPE_TO_TEMPLATE(src.GetDtype(), [&]() {
-                CUDALauncher::LaunchImageBinaryKernel(
+                CUDALauncher::LaunchImageUnaryKernel(
                         indexer, [=] OPEN3D_HOST_DEVICE(
                                          int64_t x, int64_t y, const void* src,
                                          void* dst0, void* dst1, void* dst2) {

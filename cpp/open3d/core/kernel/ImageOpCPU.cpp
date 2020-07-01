@@ -65,7 +65,7 @@ void ImageUnaryEWCPU(const Tensor& src,
             Indexer indexer({src}, {dst[0], dst[1], dst[2]},
                             DtypePolicy::ALL_SAME);
             DISPATCH_DTYPE_TO_TEMPLATE(src.GetDtype(), [&]() {
-                CPULauncher::LaunchImageBinaryKernel(
+                CPULauncher::LaunchImageUnaryKernel(
                         indexer, [=](int64_t x, int64_t y, const void* src,
                                      void* dst0, void* dst1, void* dst2) {
                             CPUUnprojectKernel<scalar_t>(x, y, src, dst0, dst1,

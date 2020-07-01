@@ -51,7 +51,7 @@ static constexpr int64_t MAX_INPUTS = 10;
 
 // Maximum number of outputs of an op. This number can be increased when
 // necessary.
-static constexpr int64_t MAX_OUTPUTS = 3;
+static constexpr int64_t MAX_OUTPUTS = 7;
 
 // Fixed-size array type usable from host and device.
 template <typename T, int size>

@@ -165,12 +165,13 @@ public:
     }
 
     /// Specific kernels
+    // TODO: variable output channels (change design?)
     template <typename func_t>
-    static void LaunchImageBinaryKernel(const Indexer& indexer,
-                                        func_t element_kernel) {
-        // #ifdef _OPENMP
-        // #pragma omp parallel for schedule(static)
-        // #endif
+    static void LaunchImageUnaryKernel(const Indexer& indexer,
+                                       func_t element_kernel) {
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
         for (int64_t workload_idx = 0; workload_idx < indexer.NumWorkloads();
              ++workload_idx) {
             int64_t x, y;
