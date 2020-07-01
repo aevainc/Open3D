@@ -15,10 +15,10 @@ if (BUILD_CUDA_MODULE)
 
     # tgeometry
     add_executable(TestTPointCloud TestTPointCloud.cpp)
-    target_link_libraries(TestTPointCloud ${CMAKE_PROJECT_NAME})
+    target_link_libraries(TestTPointCloud ${CMAKE_PROJECT_NAME} ${CUDA_CUBLAS_LIBRARIES} ${MKL_LIBRARIES} ${MAGMA_LIBRARIES})
 
     add_executable(TestTImage TestTImage.cpp)
-    target_link_libraries(TestTImage ${CMAKE_PROJECT_NAME})
+    target_link_libraries(TestTImage ${CMAKE_PROJECT_NAME} ${CUDA_CUBLAS_LIBRARIES} ${MKL_LIBRARIES} ${MAGMA_LIBRARIES})
 
     # algebra
     add_executable(TestMatmul TestMatmul.cpp)

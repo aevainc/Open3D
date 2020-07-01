@@ -88,11 +88,10 @@ open3d_set_global_properties(core)
 open3d_link_3rdparty_libraries(core)
 open3d_show_and_abort_on_warning(core)
 
-# config: https://github.com/eddelbuettel/mkl4deb
-# https://github.com/Eyescale/CMake/blob/master/FindMKL.cmake
 find_package(MKL REQUIRED)
 find_package(MAGMA REQUIRED)
-
 if (BUILD_CUDA_MODULE)
-    target_include_directories(core SYSTEM PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES} ${MKL_INCLUDE_DIR} ${MAGMA_INCLUDE_DIR})
+    target_include_directories(core SYSTEM PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES} ${MAGMA_INCLUDE_DIR} ${MKL_INCLUDE_DIR})
+else()
+    target_include_directories(core SYSTEM PRIVATE ${MKL_INCLUDE_DIR})
 endif()

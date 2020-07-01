@@ -22,6 +22,11 @@ int main(int argc, char** argv) {
     Tensor pcd_map = vertex_map.View({3, 480 * 640});
     tgeometry::PointCloud pcd(pcd_map.T());
 
+    Tensor transform = Tensor(std::vector<float>({1, 0, 0, 1, 0, -1, 0, 2, 0, 0,
+                                                  -1, 3, 0, 0, 0, 1}),
+                              {4, 4}, Dtype::Float32, Device("CUDA:0"));
+    pcd.Transform(transform);
+
     auto pcd_legacy = std::make_shared<geometry::PointCloud>(
             tgeometry::PointCloud::ToLegacyPointCloud(pcd));
     visualization::DrawGeometries({pcd_legacy});

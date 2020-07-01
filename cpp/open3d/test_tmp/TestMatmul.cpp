@@ -11,8 +11,9 @@ int main() {
     std::vector<float> vals{0, 1, 2, 3, 4, 5};
     for (auto device : devices) {
         Tensor A(vals, {2, 3}, core::Dtype::Float32, device);
-        Tensor B(vals, {3, 2}, core::Dtype::Float32, device);
-        Tensor C = Matmul(A, B);
+        Tensor R = Tensor(std::vector<float>({1, 0, 0, 0, -1, 0, 0, 0, -1}),
+                          {3, 3}, Dtype::Float32, device);
+        Tensor C = Matmul(A, R);
 
         std::cout << C.ToString() << "\n";
     }
