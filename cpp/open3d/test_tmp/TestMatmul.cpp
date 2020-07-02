@@ -11,10 +11,12 @@ int main() {
     std::vector<float> vals{0, 1, 2, 3, 4, 5};
     for (auto device : devices) {
         Tensor A(vals, {2, 3}, core::Dtype::Float32, device);
-        Tensor R = Tensor(std::vector<float>({1, 0, 0, 0, -1, 0, 0, 0, -1}),
+        Tensor R = Tensor(std::vector<float>({1, 0, 0, 0, -1, 1, 0, 0, -1}),
                           {3, 3}, Dtype::Float32, device);
         Tensor C = Matmul(A, R);
 
+        std::cout << A.ToString() << "\n";
+        std::cout << R.ToString() << "\n";
         std::cout << C.ToString() << "\n";
     }
 }

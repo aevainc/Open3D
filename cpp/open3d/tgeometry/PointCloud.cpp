@@ -137,12 +137,10 @@ Tensor PointCloud::GetCenter() const {
 
 PointCloud &PointCloud::Transform(const Tensor &transformation) {
     Tensor R = transformation.Slice(0, 0, 3).Slice(1, 0, 3);
-    // std::cout << R.ToString() << "\n";
     Tensor t = transformation.Slice(0, 0, 3).Slice(1, 3, 4);
-    // std::cout << t.ToString() << "\n";
     Tensor points_transformed =
-            Matmul(point_dict_.at("points").AsTensor(), R.T());
-    point_dict_.at("points") = TensorList(points_transformed);
+            Matmul(point_dict_.at("points").AsTensor(), R.T()) + t.T();
+    point_dict_.at("points").AsTensor() = points_transformed;
     return *this;
 }
 

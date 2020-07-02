@@ -20,6 +20,12 @@ if (BUILD_CUDA_MODULE)
     add_executable(TestTImage TestTImage.cpp)
     target_link_libraries(TestTImage ${CMAKE_PROJECT_NAME} ${CUDA_CUBLAS_LIBRARIES} ${MKL_LIBRARIES} ${MAGMA_LIBRARIES})
 
+    add_executable(TestPcdMergeLegacy TestPcdLegacyMerge.cpp)
+    target_link_libraries(TestPcdMergeLegacy ${CMAKE_PROJECT_NAME} ${CUDA_CUBLAS_LIBRARIES} ${MKL_LIBRARIES} ${MAGMA_LIBRARIES})
+
+add_executable(TestPcdMerge TestPcdMerge.cpp)
+    target_link_libraries(TestPcdMerge ${CMAKE_PROJECT_NAME} ${CUDA_CUBLAS_LIBRARIES} ${MKL_LIBRARIES} ${MAGMA_LIBRARIES})
+
     # algebra
     add_executable(TestMatmul TestMatmul.cpp)
     target_link_libraries(TestMatmul ${CMAKE_PROJECT_NAME} ${CUDA_CUBLAS_LIBRARIES} ${MKL_LIBRARIES} ${MAGMA_LIBRARIES})
