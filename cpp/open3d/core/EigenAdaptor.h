@@ -26,10 +26,11 @@
 
 #pragma once
 
-#include "Open3D/Utility/Eigen.h"
 #include "open3d/core/Tensor.h"
+#include "open3d/utility/Eigen.h"
 
 namespace open3d {
+namespace core {
 template <class T, int M, int N, int A>
 Tensor FromEigen(const Eigen::Matrix<T, M, N, A>& matrix) {
     Dtype dtype = DtypeUtil::FromType<T>();
@@ -71,4 +72,5 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> ToEigen(
         utility::LogError("Only supports RowMajor or ColumnMajor.");
     }
 }
+}  // namespace core
 }  // namespace open3d
