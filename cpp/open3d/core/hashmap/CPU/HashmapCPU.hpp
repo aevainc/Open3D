@@ -223,7 +223,7 @@ std::vector<size_t> CPUHashmap<Hash, KeyEq>::BucketSizes() {
     for (size_t i = 0; i < bucket_count; ++i) {
         ret.push_back(impl_->bucket_size(i));
     }
-    return std::move(ret);
+    return ret;
 }
 
 template <typename Hash, typename KeyEq>

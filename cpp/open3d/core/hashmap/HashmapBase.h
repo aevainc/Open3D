@@ -94,6 +94,7 @@ public:
           dsize_key_(dsize_key),
           dsize_value_(dsize_value),
           device_(device){};
+    virtual ~Hashmap(){};
 
     /// Rehash expects extra memory space at runtime, since it consists of
     /// 1) dumping all key value pairs to a buffer
