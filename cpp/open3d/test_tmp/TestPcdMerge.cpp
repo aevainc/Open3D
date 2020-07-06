@@ -19,8 +19,7 @@ int main(int argc, char** argv) {
 
     std::vector<Device> devices{Device("CUDA:0"), Device("CPU:0")};
     tgeometry::PointCloud pcd_global(Dtype::Float32, Device("CUDA:0"));
-
-    for (int i = 0; i < 3000; ++i) {
+    for (int i = 0; i < 300; ++i) {
         /// Load image
         std::string image_path =
                 fmt::format("{}/depth/{:06d}.png", root_path, i + 1);
@@ -48,6 +47,7 @@ int main(int argc, char** argv) {
     }
 
     auto pcd_vis = std::make_shared<geometry::PointCloud>(
-            tgeometry::PointCloud::ToLegacyPointCloud(pcd_global));
+            tgeometry::PointCloud::ToLegacyPointCloud(
+                    pcd_global.VoxelDownSample(0.05)));
     visualization::DrawGeometries({pcd_vis});
 }

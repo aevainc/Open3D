@@ -103,7 +103,7 @@ public:
         return byte_size <= kSmallSize ? small_block_pool_ : large_block_pool_;
     }
 
-    inline size_t align_bytes(size_t byte_size, size_t alignment = 4) {
+    inline size_t align_bytes(size_t byte_size, size_t alignment = 8) {
         return ((byte_size + alignment - 1) / alignment) * alignment;
     }
 
