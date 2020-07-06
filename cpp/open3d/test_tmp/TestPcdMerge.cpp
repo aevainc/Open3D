@@ -17,37 +17,41 @@ int main(int argc, char** argv) {
     auto trajectory = io::CreatePinholeCameraTrajectoryFromFile(
             fmt::format("{}/trajectory.log", root_path));
 
-    std::vector<Device> devices{Device("CUDA:0"), Device("CPU:0")};
-    tgeometry::PointCloud pcd_global(Dtype::Float32, Device("CUDA:0"));
-    for (int i = 0; i < 300; ++i) {
-        /// Load image
-        std::string image_path =
-                fmt::format("{}/depth/{:06d}.png", root_path, i + 1);
-        std::shared_ptr<geometry::Image> im_legacy =
-                io::CreateImageFromFile(image_path);
-        auto depth_legacy = im_legacy->ConvertDepthToFloatImage();
-        tgeometry::Image depth = tgeometry::Image::FromLegacyImage(
-                *depth_legacy, Device("CUDA:0"));
+    std::vector<Device> devices{Device("CPU:0"), Device("CUDA:0")};
 
-        /// Unproject
-        Tensor vertex_map = depth.Unproject(intrinsic);
-        Tensor pcd_map = vertex_map.View({3, 480 * 640});
-        tgeometry::PointCloud pcd(pcd_map.T());
+    for (auto device : devices) {
+        tgeometry::PointCloud pcd_global(Dtype::Float32, device);
+        for (int i = 0; i < 300; ++i) {
+            /// Load image
+            std::string image_path =
+                    fmt::format("{}/depth/{:06d}.png", root_path, i + 1);
+            std::shared_ptr<geometry::Image> im_legacy =
+                    io::CreateImageFromFile(image_path);
+            auto depth_legacy = im_legacy->ConvertDepthToFloatImage();
+            tgeometry::Image depth =
+                    tgeometry::Image::FromLegacyImage(*depth_legacy, device);
 
-        /// Transform
-        Eigen::Matrix4f extrinsic =
-                trajectory->parameters_[i].extrinsic_.inverse().cast<float>();
-        Tensor transform = FromEigen(extrinsic).Copy(Device("CUDA:0"));
-        pcd.Transform(transform);
+            /// Unproject
+            Tensor vertex_map = depth.Unproject(intrinsic);
+            Tensor pcd_map = vertex_map.View({3, 480 * 640});
+            tgeometry::PointCloud pcd(pcd_map.T());
 
-        /// Downsample and append
-        tgeometry::PointCloud pcd_down = pcd.VoxelDownSample(0.05);
-        pcd_global.point_dict_.at("points") +=
-                pcd_down.point_dict_.at("points");
+            /// Transform
+            Eigen::Matrix4f extrinsic = trajectory->parameters_[i]
+                                                .extrinsic_.inverse()
+                                                .cast<float>();
+            Tensor transform = FromEigen(extrinsic).Copy(device);
+            pcd.Transform(transform);
+
+            /// Downsample and append
+            tgeometry::PointCloud pcd_down = pcd.VoxelDownSample(0.05);
+            pcd_global.point_dict_.at("points") +=
+                    pcd_down.point_dict_.at("points");
+        }
+
+        auto pcd_vis = std::make_shared<geometry::PointCloud>(
+                tgeometry::PointCloud::ToLegacyPointCloud(
+                        pcd_global.VoxelDownSample(0.05)));
+        visualization::DrawGeometries({pcd_vis});
     }
-
-    auto pcd_vis = std::make_shared<geometry::PointCloud>(
-            tgeometry::PointCloud::ToLegacyPointCloud(
-                    pcd_global.VoxelDownSample(0.05)));
-    visualization::DrawGeometries({pcd_vis});
 }

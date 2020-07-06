@@ -52,7 +52,7 @@ std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_buckets,
     static std::unordered_map<Device::DeviceType,
                               std::function<std::shared_ptr<DefaultHashmap>(
                                       size_t, size_t, size_t, size_t, Device)>,
-                              utility::hash_enum_class::hash>
+                              utility::hash_enum_class>
             map_device_type_to_hashmap_constructor = {
                 {Device::DeviceType::CPU, _factory::CreateDefaultCPUHashmap},
 #if defined(BUILD_CUDA_MODULE)

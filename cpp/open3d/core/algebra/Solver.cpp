@@ -90,7 +90,7 @@ Tensor Solve(const Tensor &A, const Tensor &B) {
     static std::unordered_map<
             Device::DeviceType,
             std::function<void(Dtype, void *, void *, void *, int, int)>,
-            utility::hash_enum_class::hash>
+            utility::hash_enum_class>
             map_device_type_to_gesv = {
 #ifdef BUILD_CUDA_MODULE
                     {Device::DeviceType::CUDA, detail::SolverCUDABackend},

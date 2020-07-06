@@ -71,7 +71,7 @@ std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_buckets,
             Device::DeviceType,
             std::function<std::shared_ptr<Hashmap<Hash, KeyEq>>(
                     size_t, size_t, size_t, size_t, Device)>,
-            utility::hash_enum_class::hash>
+            utility::hash_enum_class>
             map_device_type_to_hashmap_constructor = {
                 {Device::DeviceType::CPU, CreateCPUHashmap<Hash, KeyEq>},
 #if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
