@@ -23,7 +23,6 @@ set (KERNEL_CUDA_SRC
 )
 
 set (CORE_SRC
-    dlpack/DLPackConverter.cpp
     AdvancedIndexing.cpp
     ShapeUtil.cpp
     CUDAUtils.cpp

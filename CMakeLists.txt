@@ -21,7 +21,6 @@ option(BUILD_FMT                 "Build fmtlib from source"                 ON)
 option(BUILD_GLEW                "Build glew from source"                   OFF)
 option(BUILD_GLFW                "Build glfw from source"                   OFF)
 option(BUILD_IMGUI               "Build Dear ImGui from source"             ON)
-option(BUILD_JSONCPP             "Build jsoncpp from source"                ON)
 option(BUILD_LIBLZF              "Build liblzf from source"                 ON)
 option(BUILD_PNG                 "Build png from source"                    OFF)
 option(BUILD_ZLIB                "Build zlib from source"                   OFF)
@@ -356,18 +355,36 @@ add_subdirectory(examples)
 install(EXPORT ${PROJECT_NAME}Targets NAMESPACE ${PROJECT_NAME}:: DESTINATION ${Open3D_INSTALL_CMAKE_DIR})
 export(EXPORT ${PROJECT_NAME}Targets NAMESPACE ${PROJECT_NAME}::)
 
-# `make check-style` errors if styling is not compliant
+# `make check-style` checks style for c++/cuda/python/ipynb files
 add_custom_target(check-style
-    COMMAND ${CMAKE_COMMAND}
-    -DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/util/scripts/check-style.cmake
+    COMMAND ${PYTHON_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/util/scripts/check_style.py
+    COMMENT "Python executable used for style check: ${PYTHON_EXECUTABLE}."
 )
 
-# `make apply-style` runs clang-format to format all source code
+# `make apply-style` applies style for c++/cuda/python/ipynb files
 add_custom_target(apply-style
+    COMMAND ${PYTHON_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/util/scripts/check_style.py --do_apply_style
+    COMMENT "Python executable used for style check: ${PYTHON_EXECUTABLE}."
+)
+
+# `make check-cpp-style` checks style for c++/cuda files.
+# This works outside of python virtualenv.
+add_custom_target(check-cpp-style
     COMMAND ${CMAKE_COMMAND}
     -DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/util/scripts/apply-style.cmake
+    -DDO_APPLY_STYLE=OFF
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/util/scripts/check_cpp_style.cmake
+)
+
+# `make apply-cpp-style` applies style for c++/cuda files.
+# This works outside of python virtualenv.
+add_custom_target(apply-cpp-style
+    COMMAND ${CMAKE_COMMAND}
+    -DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    -DDO_APPLY_STYLE=ON
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/util/scripts/check_cpp_style.cmake
 )
 
 function(open3d_aligned_print first second)
