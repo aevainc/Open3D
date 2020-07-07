@@ -78,6 +78,19 @@ struct DefaultKeyEq {
     size_t key_size_in_int_;
 };
 
+enum class ReturnPolicy {
+    None = 0,
+    Mask = 1,
+    // Return: iterators of <key, value> ptrs to internal memory
+    // This is with the std convention for comprehensive control
+    FoundIterators = 2,
+    InsertedIterators = 4,
+    // Return: value ptrs to internal memory
+    // This is for in-place value manipulation
+    FoundValuePtrs = 8,
+    InsertedValuePtrs = 16
+};
+
 /// Base class: shared interface
 template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
 class Hashmap {
@@ -104,8 +117,14 @@ public:
     virtual void Rehash(size_t buckets) = 0;
 
     /// Parallel insert contiguous arrays of keys and values.
-    /// Output iterators and masks can be nullptrs if return iterators are not
-    /// to be processed.
+    /// According to the policy, the return type can be:
+    /// 0: No output
+    /// 1: Mask only
+    /// Mask (1) +
+    /// 2:    InsertedIterators
+    /// 2+4:  InsertedIterators + FoundIterators
+    /// 8:    InsertedValuePtrs
+    /// 8+16: InsertedValuePtrs + FoundValuePtrs
     virtual void Insert(const void* input_keys,
                         const void* input_values,
                         iterator_t* output_iterators,

@@ -285,7 +285,8 @@ template <typename Hash, typename KeyEq>
 size_t CUDAHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
     const uint32_t blocksize = 128;
     const uint32_t num_blocks =
-            (gpu_context_.capacity_ + blocksize - 1) / blocksize;
+            (gpu_context_.bucket_count_ * WARP_SIZE + blocksize - 1) /
+            blocksize;
 
     uint32_t* iterator_count =
             (uint32_t*)MemoryManager::Malloc(sizeof(uint32_t), this->device_);
