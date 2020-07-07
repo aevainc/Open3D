@@ -24,38 +24,22 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#pragma once
-
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-
-#include "open3d/core/Tensor.h"
-#include "open3d/core/TensorList.h"
-#include "open3d/core/hashmap/TensorHash.h"
-#include "open3d/geometry/PointCloud.h"
-#include "open3d/tgeometry/Geometry3D.h"
+#include "open3d/tgeometry/VoxelGrid.h"
 
 namespace open3d {
 namespace tgeometry {
 using namespace core;
 
-class VoxelGrid : public Geometry3D {
-public:
-    /// \brief Default Constructor.
-    VoxelGrid(float voxel_size = 0.01,
-              int64_t resolution = 16,
-              const Device &device = Device("CPU:0"));
+VoxelGrid::VoxelGrid(float voxel_size, int64_t resolution, const Device &device)
+    : Geometry3D(Geometry::GeometryType::VoxelGrid),
+      voxel_size_(voxel_size),
+      subvolume_resolution_(resolution),
+      device_(device),
+      coord_map_(Dtype::Int32,
+                 Dtype::Float32,
+                 3,
+                 resolution * resolution * resolution,
+                 device_) {}
 
-    ~VoxelGrid() override{};
-
-protected:
-    float voxel_size_;
-    int64_t subvolume_resolution_;
-    Device device_;
-
-    // TensorHash: N x 3 Int64 => N x (resolution=16^3) Float32 Tensor
-    TensorHash coord_map_;
-};
 }  // namespace tgeometry
 }  // namespace open3d

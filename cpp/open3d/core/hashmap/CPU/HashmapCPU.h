@@ -53,6 +53,11 @@ public:
                 bool* output_masks,
                 size_t count);
 
+    void Activate(const void* input_keys,
+                  iterator_t* output_iterators,
+                  bool* output_masks,
+                  size_t count);
+
     void Find(const void* input_keys,
               iterator_t* output_iterators,
               bool* output_masks,

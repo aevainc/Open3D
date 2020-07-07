@@ -112,6 +112,16 @@ public:
                         bool* output_masks,
                         size_t count) = 0;
 
+    /// Parallel insert contiguous arrays of keys without copying values.
+    /// Activated entries will store unpredicted values, to be overwritten by
+    /// manipulating iterators.
+    /// Output iterators and masks can be nullptrs if return
+    /// iterators are not to be processed.
+    virtual void Activate(const void* input_keys,
+                          iterator_t* output_iterators,
+                          bool* output_masks,
+                          size_t count) = 0;
+
     /// Parallel find a contiguous array of keys.
     /// Output iterators and masks CANNOT be nullptrs as we have to interpret
     /// them.

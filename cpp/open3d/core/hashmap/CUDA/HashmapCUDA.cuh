@@ -161,6 +161,78 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
 }
 
 template <typename Hash, typename KeyEq>
+void CUDAHashmap<Hash, KeyEq>::Activate(const void* input_keys,
+                                        iterator_t* output_iterators,
+                                        bool* output_masks,
+                                        size_t count) {
+    utility::Timer timer;
+    timer.Start();
+    bool extern_alloc = (output_masks != nullptr);
+    if (!extern_alloc) {
+        output_masks = (bool*)MemoryManager::Malloc(count * sizeof(bool),
+                                                    this->device_);
+    }
+    const uint32_t num_blocks = (count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
+
+    auto iterator_ptrs =
+            (ptr_t*)MemoryManager::Malloc(sizeof(ptr_t) * count, this->device_);
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    OPEN3D_CUDA_CHECK(cudaGetLastError());
+    timer.Stop();
+    utility::LogDebug("[HashmapCUDA] Preparation takes {}",
+                      timer.GetDuration());
+
+    // Batch allocate
+    // int index = atomicAdd(heap_counter_, 1);
+    // assert(index < max_capacity_);
+    // return heap_[index];
+
+    /// Batch allocate iterators
+    timer.Start();
+    int heap_counter =
+            *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
+    *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_) =
+            heap_counter + count;
+    int iterator_heap_index0 = *thrust::device_ptr<uint32_t>(
+            gpu_context_.mem_mgr_ctx_.heap_ + heap_counter);
+
+    InsertKernelPass0<<<num_blocks, BLOCKSIZE_>>>(gpu_context_, input_keys,
+                                                  iterator_ptrs,
+                                                  iterator_heap_index0, count);
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    OPEN3D_CUDA_CHECK(cudaGetLastError());
+    timer.Stop();
+    utility::LogDebug("[HashmapCUDA] Pass0 takes {}", timer.GetDuration());
+
+    timer.Start();
+    InsertKernelPass1<<<num_blocks, BLOCKSIZE_>>>(
+            gpu_context_, input_keys, iterator_ptrs, output_masks, count);
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    OPEN3D_CUDA_CHECK(cudaGetLastError());
+    timer.Stop();
+    utility::LogDebug("[HashmapCUDA] Pass1 takes {}", timer.GetDuration());
+
+    timer.Start();
+    ActivateKernelPass2<<<num_blocks, BLOCKSIZE_>>>(
+            gpu_context_, iterator_ptrs, output_iterators, output_masks, count);
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    OPEN3D_CUDA_CHECK(cudaGetLastError());
+    timer.Stop();
+    utility::LogDebug("[HashmapCUDA] Pass2 takes {}", timer.GetDuration());
+
+    timer.Start();
+    MemoryManager::Free(iterator_ptrs, this->device_);
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    OPEN3D_CUDA_CHECK(cudaGetLastError());
+
+    if (!extern_alloc) {
+        MemoryManager::Free(output_masks, this->device_);
+    }
+    timer.Stop();
+    utility::LogDebug("[HashmapCUDA] Free takes {}", timer.GetDuration());
+}
+
+template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::Find(const void* input_keys,
                                     iterator_t* output_iterators,
                                     bool* output_masks,

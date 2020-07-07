@@ -512,6 +512,34 @@ __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 }
 
 template <typename Hash, typename KeyEq>
+__global__ void ActivateKernelPass2(
+        CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
+        ptr_t* iterator_ptrs,
+        iterator_t* iterators,
+        bool* masks,
+        size_t input_count) {
+    uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (tid < input_count) {
+        ptr_t iterator_ptr = iterator_ptrs[tid];
+
+        if (masks[tid]) {
+            iterator_t iterator =
+                    hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr);
+            if (iterators != nullptr) {
+                iterators[tid] = iterator;
+            }
+        } else {
+            hash_ctx.mem_mgr_ctx_.Free(iterator_ptr);
+
+            if (iterators != nullptr) {
+                iterators[tid] = iterator_t();
+            }
+        }
+    }
+}
+
+template <typename Hash, typename KeyEq>
 __global__ void EraseKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                  const void* keys,
                                  ptr_t* iterator_ptrs,

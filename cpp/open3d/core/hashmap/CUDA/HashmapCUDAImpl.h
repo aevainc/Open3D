@@ -123,6 +123,14 @@ __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                   size_t count);
 
 template <typename Hash, typename KeyEq>
+__global__ void ActivateKernelPass2(
+        CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
+        ptr_t* input_iterator_ptrs,
+        iterator_t* output_iterators,
+        bool* output_masks,
+        size_t count);
+
+template <typename Hash, typename KeyEq>
 __global__ void FindKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                            const void* input_keys,
                            iterator_t* output_iterators,
