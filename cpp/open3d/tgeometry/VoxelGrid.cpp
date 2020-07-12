@@ -25,21 +25,59 @@
 // ----------------------------------------------------------------------------
 
 #include "open3d/tgeometry/VoxelGrid.h"
+#include "open3d/core/TensorList.h"
 
 namespace open3d {
 namespace tgeometry {
 using namespace core;
 
-VoxelGrid::VoxelGrid(float voxel_size, int64_t resolution, const Device &device)
+VoxelGrid::VoxelGrid(float voxel_size,
+                     int64_t resolution,
+                     int64_t capacity,
+                     const Device &device)
     : Geometry3D(Geometry::GeometryType::VoxelGrid),
       voxel_size_(voxel_size),
-      subvolume_resolution_(resolution),
-      device_(device),
-      coord_map_(Dtype::Int32,
-                 Dtype::Float32,
-                 3,
-                 resolution * resolution * resolution,
-                 device_) {}
+      resolution_(resolution),
+      capacity_(capacity),
+      device_(device) {
+    hashmap_ = CreateDefaultHashmap(
+            capacity, 3 * sizeof(int64_t),
+            resolution * resolution * resolution * sizeof(float), device);
+}
+
+void VoxelGrid::Integrate(const tgeometry::Image &depth,
+                          const Tensor &intrinsic,
+                          const Tensor &pose) {
+    /// Unproject
+    Tensor vertex_map = depth.Unproject(intrinsic);
+    Tensor pcd_map = vertex_map.View({3, 480 * 640});
+    tgeometry::PointCloud pcd(pcd_map.T());
+    pcd.Transform(pose);
+    tgeometry::PointCloud pcd_down =
+            pcd.VoxelDownSample(voxel_size_ * resolution_);
+
+    Tensor coords = pcd_down.point_dict_["points"].AsTensor();
+    SizeVector coords_shape = coords.GetShape();
+    int64_t N = coords_shape[0];
+
+    utility::LogInfo("{} entries to be activated", N);
+    auto iterators = MemoryManager::Malloc(sizeof(iterator_t) * N, device_);
+    auto masks = MemoryManager::Malloc(sizeof(bool) * N, device_);
+
+    hashmap_->Activate(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
+                       static_cast<iterator_t *>(iterators),
+                       static_cast<bool *>(masks), N);
+
+    // Then manipulate iterators to integrate!
+    MemoryManager::Free(iterators, coords.GetDevice());
+    MemoryManager::Free(masks, coords.GetDevice());
+
+    auto all_iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * capacity_, device_);
+    size_t all_entries =
+            hashmap_->GetIterators(static_cast<iterator_t *>(all_iterators));
+    utility::LogInfo("{} entries in total", all_entries);
+}
 
 }  // namespace tgeometry
 }  // namespace open3d

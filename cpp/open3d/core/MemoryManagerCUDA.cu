@@ -88,7 +88,7 @@ class CUDACacher {
 public:
     static std::shared_ptr<CUDACacher> GetInstance() {
         if (instance_ == nullptr) {
-            utility::LogInfo("CUDACacher Instance created.");
+            utility::LogDebug("CUDACacher Instance created.");
             instance_ = std::make_shared<CUDACacher>();
         }
         return instance_;
@@ -144,7 +144,7 @@ public:
             new_block->in_use_ = true;
             allocated_blocks_.insert({ptr, new_block});
         } else {
-            utility::LogInfo("[CUDACacher] Reusing memory");
+            utility::LogDebug("[CUDACacher] Reusing memory");
             ptr = found_block->ptr_;
 
             size_t remain_size = found_block->size_ - alloc_size;
@@ -163,7 +163,7 @@ public:
 
                 // Place the remain block to cache pool
                 get_pool(remain_size)->emplace(remain_block);
-                utility::LogInfo(
+                utility::LogDebug(
                         "[CUDACacher] Splitted: {}--{} == > {}--{}, {}--{} "
                         "-->{}",
                         fmt::ptr(found_block), found_block->size_,
@@ -231,7 +231,7 @@ public:
 
                 block_it = block_it->next_;
 
-                utility::LogInfo(
+                utility::LogDebug(
                         "[CUDACacher] Merging in the forward direction.");
             }
 
@@ -262,7 +262,7 @@ public:
 
                 block_it = block_it->prev_;
 
-                utility::LogInfo(
+                utility::LogDebug(
                         "[CUDACacher] Merging in the backward direction.");
             }
 
@@ -401,7 +401,7 @@ bool CUDAMemoryManager::IsCUDAPointer(const void* ptr) {
 
 
 void CUDAMemoryManager::ReleaseCache() {
-    utility::LogInfo("Releasing Cache");
+    utility::LogDebug("Releasing Cache");
     std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();
     instance->ReleaseCache();
 }

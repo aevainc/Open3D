@@ -19,11 +19,11 @@ int main(int argc, char** argv) {
     auto trajectory = io::CreatePinholeCameraTrajectoryFromFile(
             fmt::format("{}/trajectory.log", root_path));
 
-    std::vector<Device> devices{Device("CPU:0"), Device("CUDA:0")};
+    std::vector<Device> devices{Device("CUDA:0")};
 
     for (auto device : devices) {
-        tgeometry::VoxelGrid voxel_grid(0.05, 16, device);
-        for (int i = 0; i < 300; ++i) {
+        tgeometry::VoxelGrid voxel_grid(0.05, 16, 10000, device);
+        for (int i = 0; i < 3000; ++i) {
             /// Load image
             std::string image_path =
                     fmt::format("{}/depth/{:06d}.png", root_path, i + 1);
@@ -32,13 +32,12 @@ int main(int argc, char** argv) {
             auto depth_legacy = im_legacy->ConvertDepthToFloatImage();
             tgeometry::Image depth =
                     tgeometry::Image::FromLegacyImage(*depth_legacy, device);
+            Eigen::Matrix4f pose_ = trajectory->parameters_[i]
+                                            .extrinsic_.inverse()
+                                            .cast<float>();
+            Tensor pose = FromEigen(pose_).Copy(device);
 
-            /// Unproject
-            Tensor vertex_map = depth.Unproject(intrinsic);
-            Tensor pcd_map = vertex_map.View({3, 480 * 640});
-            tgeometry::PointCloud pcd(pcd_map.T());
-
-            voxel_grid.Activate(pcd);
+            voxel_grid.Integrate(depth, intrinsic, pose);
         }
     }
 }

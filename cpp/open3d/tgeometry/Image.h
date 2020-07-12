@@ -111,7 +111,7 @@ public:
 
     core::Tensor AsTensor() { return data_; }
 
-    core::Tensor Unproject(const core::Tensor &intrinsic);
+    core::Tensor Unproject(const core::Tensor &intrinsic) const;
 
     // Usage:
     // std::shared_ptr<geometry::PointCloud> pcd_legacy =

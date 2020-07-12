@@ -32,9 +32,10 @@
 
 #include "open3d/core/Tensor.h"
 #include "open3d/core/TensorList.h"
-#include "open3d/core/hashmap/TensorHash.h"
-#include "open3d/geometry/PointCloud.h"
+#include "open3d/core/hashmap/HashmapBase.h"
 #include "open3d/tgeometry/Geometry3D.h"
+#include "open3d/tgeometry/Image.h"
+#include "open3d/tgeometry/PointCloud.h"
 
 namespace open3d {
 namespace tgeometry {
@@ -45,17 +46,49 @@ public:
     /// \brief Default Constructor.
     VoxelGrid(float voxel_size = 0.01,
               int64_t resolution = 16,
+              int64_t capacity = 1000,
               const Device &device = Device("CPU:0"));
 
     ~VoxelGrid() override{};
 
+    VoxelGrid &Clear() override { return *this; };
+
+    bool IsEmpty() const override { return false; };
+
+    Tensor GetMinBound() const override { return Tensor(); };
+
+    Tensor GetMaxBound() const override { return Tensor(); };
+
+    Tensor GetCenter() const override { return Tensor(); };
+
+    VoxelGrid &Transform(const Tensor &transformation) override {
+        return *this;
+    };
+
+    VoxelGrid &Translate(const Tensor &translation,
+                         bool relative = true) override {
+        return *this;
+    };
+
+    VoxelGrid &Scale(double scale, const Tensor &center) override {
+        return *this;
+    };
+
+    VoxelGrid &Rotate(const Tensor &R, const Tensor &center) override {
+        return *this;
+    };
+
+    void Integrate(const tgeometry::Image &depth,
+                   const Tensor &intrinsic,
+                   const Tensor &extrinsic);
+
 protected:
     float voxel_size_;
-    int64_t subvolume_resolution_;
+    int64_t resolution_;
+    int64_t capacity_;
     Device device_;
 
-    // TensorHash: N x 3 Int64 => N x (resolution=16^3) Float32 Tensor
-    TensorHash coord_map_;
+    std::shared_ptr<DefaultHashmap> hashmap_;
 };
 }  // namespace tgeometry
 }  // namespace open3d
