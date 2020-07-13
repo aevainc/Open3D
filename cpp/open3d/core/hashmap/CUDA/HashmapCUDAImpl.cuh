@@ -421,8 +421,7 @@ __global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
     if (tid < input_count) {
         /** First write ALL keys to avoid potential thread conflicts **/
-        ptr_t iterator_ptr =
-                hash_ctx.mem_mgr_ctx_.heap_[iterator_heap_index0 + tid];
+        ptr_t iterator_ptr = hash_ctx.mem_mgr_ctx_.Allocate();
         iterator_t iterator =
                 hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr);
 
@@ -431,6 +430,13 @@ __global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                            tid * hash_ctx.dsize_key_ / sizeof(int);
         for (int i = 0; i < hash_ctx.dsize_key_ / sizeof(int); ++i) {
             dst_key_ptr[i] = src_key_ptr[i];
+        }
+
+        if (input_count < 100) {
+            int64_t key0 = *reinterpret_cast<int64_t*>(dst_key_ptr);
+            int64_t key1 = *(reinterpret_cast<int64_t*>(dst_key_ptr) + 1);
+            int64_t key2 = *(reinterpret_cast<int64_t*>(dst_key_ptr) + 2);
+            printf("pass0 %d: %ld %ld %ld\n", tid, key0, key1, key2);
         }
 
         iterator_ptrs[tid] = iterator_ptr;
@@ -472,6 +478,14 @@ __global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
     if (tid < input_count) {
         masks[tid] = mask;
+
+        if (input_count < 100) {
+            int64_t key0 = *reinterpret_cast<const int64_t*>(key);
+            int64_t key1 = *(reinterpret_cast<const int64_t*>(key) + 1);
+            int64_t key2 = *(reinterpret_cast<const int64_t*>(key) + 2);
+            printf("pass1 %d->%d: %ld %ld %ld, %d\n", tid, iterator_ptr, key0,
+                   key1, key2, mask);
+        }
     }
 }
 
@@ -529,7 +543,25 @@ __global__ void ActivateKernelPass2(
             if (iterators != nullptr) {
                 iterators[tid] = iterator;
             }
+
+            void* key = iterator.first;
+            int64_t key0 = *reinterpret_cast<const int64_t*>(key);
+            int64_t key1 = *(reinterpret_cast<const int64_t*>(key) + 1);
+            int64_t key2 = *(reinterpret_cast<const int64_t*>(key) + 2);
+            printf("pass2 %d->%d: %ld, %ld, %ld, %d, %p\n", tid, iterator_ptr,
+                   key0, key1, key2, masks[tid], iterator.second);
+
         } else {
+            iterator_t iterator =
+                    hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr);
+            void* key = iterator.first;
+            int64_t key0 = *reinterpret_cast<const int64_t*>(key);
+            int64_t key1 = *(reinterpret_cast<const int64_t*>(key) + 1);
+            int64_t key2 = *(reinterpret_cast<const int64_t*>(key) + 2);
+
+            printf("pass2 else %d->%d: %ld, %ld, %ld, %d, %p\n", tid,
+                   iterator_ptr, key0, key1, key2, masks[tid], iterator.second);
+
             hash_ctx.mem_mgr_ctx_.Free(iterator_ptr);
 
             if (iterators != nullptr) {

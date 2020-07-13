@@ -57,7 +57,7 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     tgeometry::PointCloud pcd_down =
             pcd.VoxelDownSample(voxel_size_ * resolution_);
 
-    Tensor coords = pcd_down.point_dict_["points"].AsTensor();
+    Tensor coords = pcd_down.point_dict_["points"].AsTensor().To(Dtype::Int64);
     SizeVector coords_shape = coords.GetShape();
     int64_t N = coords_shape[0];
 
@@ -71,7 +71,6 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     hashmap_->Find(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
                    static_cast<iterator_t *>(iterators),
                    static_cast<bool *>(masks), N);
-    std::cout << coords.ToString() << "\n";
 
     // Then manipulate iterators to integrate!
     MemoryManager::Free(iterators, coords.GetDevice());
@@ -82,6 +81,7 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     size_t all_entries =
             hashmap_->GetIterators(static_cast<iterator_t *>(all_iterators));
     utility::LogInfo("{} entries in total", all_entries);
+    MemoryManager::Free(all_iterators, device_);
 }
 
 }  // namespace tgeometry

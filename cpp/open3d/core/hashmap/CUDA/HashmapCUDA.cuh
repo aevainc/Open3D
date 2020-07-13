@@ -116,13 +116,13 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
 
     /// Batch allocate iterators
     timer.Start();
-    int heap_counter =
-            *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
-    *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_) =
-            heap_counter + count;
-    int iterator_heap_index0 = *thrust::device_ptr<uint32_t>(
-            gpu_context_.mem_mgr_ctx_.heap_ + heap_counter);
-
+    // int heap_counter =
+    //         *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
+    // *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_) =
+    //         heap_counter + count;
+    // int iterator_heap_index0 = *thrust::device_ptr<uint32_t>(
+    //         gpu_context_.mem_mgr_ctx_.heap_ + heap_counter);
+    int iterator_heap_index0 = 0;
     InsertKernelPass0<<<num_blocks, BLOCKSIZE_>>>(gpu_context_, input_keys,
                                                   iterator_ptrs,
                                                   iterator_heap_index0, count);
@@ -171,6 +171,7 @@ void CUDAHashmap<Hash, KeyEq>::Activate(const void* input_keys,
     if (!extern_alloc) {
         output_masks = (bool*)MemoryManager::Malloc(count * sizeof(bool),
                                                     this->device_);
+        cudaMemset(output_masks, 0, sizeof(bool) * count);
     }
     const uint32_t num_blocks = (count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
 
@@ -189,13 +190,13 @@ void CUDAHashmap<Hash, KeyEq>::Activate(const void* input_keys,
 
     /// Batch allocate iterators
     timer.Start();
-    int heap_counter =
-            *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
-    *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_) =
-            heap_counter + count;
-    int iterator_heap_index0 = *thrust::device_ptr<uint32_t>(
-            gpu_context_.mem_mgr_ctx_.heap_ + heap_counter);
-
+    // int heap_counter =
+    //         *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
+    // *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_) =
+    //         heap_counter + count;
+    // int iterator_heap_index0 = *thrust::device_ptr<uint32_t>(
+    //         gpu_context_.mem_mgr_ctx_.heap_ + heap_counter);
+    int iterator_heap_index0 = 0;
     InsertKernelPass0<<<num_blocks, BLOCKSIZE_>>>(gpu_context_, input_keys,
                                                   iterator_ptrs,
                                                   iterator_heap_index0, count);
@@ -300,6 +301,24 @@ size_t CUDAHashmap<Hash, KeyEq>::GetIterators(iterator_t* output_iterators) {
     uint32_t ret;
     MemoryManager::Memcpy(&ret, Device("CPU:0"), iterator_count, this->device_,
                           sizeof(uint32_t));
+
+    uint32_t total_count = ret;
+    thrust::device_vector<iterator_t> all_iterators_device(
+            output_iterators, output_iterators + total_count);
+
+    // 2. Verbose check: every iterator should be observable in gt
+    for (size_t i = 0; i < total_count; ++i) {
+        iterator_t iterator = all_iterators_device[i];
+        int64_t key0 = *(thrust::device_ptr<int64_t>(
+                reinterpret_cast<int64_t*>(iterator.first)));
+        int64_t key1 = *(thrust::device_ptr<int64_t>(
+                reinterpret_cast<int64_t*>(iterator.first) + 1));
+        int64_t key2 = *(thrust::device_ptr<int64_t>(
+                reinterpret_cast<int64_t*>(iterator.first) + 2));
+        std::cout << key0 << ", " << key1 << ", " << key2 << "->"
+                  << iterator.second << "\n";
+    }
+
     return ret;
 }
 
