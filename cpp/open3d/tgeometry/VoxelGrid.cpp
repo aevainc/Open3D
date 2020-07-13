@@ -105,6 +105,7 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     // Then manipulate iterators to integrate!
     MemoryManager::Free(iterators, coords.GetDevice());
     MemoryManager::Free(masks, coords.GetDevice());
+    utility::LogInfo("ratio {}", hashmap_->avg_capacity_bucket_ratio());
 }
 
 }  // namespace tgeometry

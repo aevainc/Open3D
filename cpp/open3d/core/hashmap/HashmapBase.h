@@ -171,7 +171,6 @@ public:
 
     Device device_;
 
-protected:
     float avg_capacity_bucket_ratio() {
         return float(capacity_) / float(bucket_count_);
     }

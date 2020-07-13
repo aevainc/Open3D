@@ -93,6 +93,8 @@ void CPUHashmap<Hash, KeyEq>::Insert(const void* input_keys,
             output_masks[i] = 0;
         }
     }
+    this->capacity_ = impl_->size();
+    this->bucket_count_ = impl_->bucket_count();
 }
 
 template <typename Hash, typename KeyEq>
@@ -127,6 +129,8 @@ void CPUHashmap<Hash, KeyEq>::Activate(const void* input_keys,
             output_masks[i] = 0;
         }
     }
+    this->capacity_ = impl_->size();
+    this->bucket_count_ = impl_->bucket_count();
 }
 
 template <typename Hash, typename KeyEq>
@@ -143,7 +147,6 @@ void CPUHashmap<Hash, KeyEq>::Find(const void* input_keys,
             output_iterators[i] = iterator_t();
             output_masks[i] = 0;
         } else {
-            // void* key = iter->first;
             output_iterators[i] = iterator_t(iter->first, iter->second);
             output_masks[i] = 1;
         }
