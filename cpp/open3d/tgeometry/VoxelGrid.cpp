@@ -68,9 +68,9 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     hashmap_->Activate(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
                        static_cast<iterator_t *>(iterators),
                        static_cast<bool *>(masks), N);
-    hashmap_->Find(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
-                   static_cast<iterator_t *>(iterators),
-                   static_cast<bool *>(masks), N);
+    // hashmap_->Find(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
+    //                static_cast<iterator_t *>(iterators),
+    //                static_cast<bool *>(masks), N);
 
     // Then manipulate iterators to integrate!
     MemoryManager::Free(iterators, coords.GetDevice());

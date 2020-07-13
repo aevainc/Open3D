@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     std::vector<Device> devices{Device("CUDA:0")};
 
     for (auto device : devices) {
-        tgeometry::VoxelGrid voxel_grid(0.05, 16, 1000, device);
+        tgeometry::VoxelGrid voxel_grid(0.008, 16, 10000, device);
         for (int i = 0; i < 3000; ++i) {
             std::cout << i << "\n";
             /// Load image
