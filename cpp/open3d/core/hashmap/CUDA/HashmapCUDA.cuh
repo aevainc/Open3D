@@ -188,6 +188,11 @@ void CUDAHashmap<Hash, KeyEq>::Activate(const void* input_keys,
     timer.Start();
     int heap_counter =
             *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
+    if (heap_counter + count > this->capacity_) {
+        int factor =
+                std::max(2ul, (heap_counter + count) / this->capacity_ + 1);
+        Rehash(this->bucket_count_ * factor);
+    }
     *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_) =
             heap_counter + count;
     InsertKernelPass0<<<num_blocks, BLOCKSIZE_>>>(
@@ -362,8 +367,10 @@ void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
     auto output_values = MemoryManager::Malloc(
             this->dsize_value_ * iterator_count, this->device_);
 
-    UnpackIterators(output_iterators, /* masks = */ nullptr, output_keys,
-                    output_values, iterator_count);
+    if (iterator_count > 0) {
+        UnpackIterators(output_iterators, /* masks = */ nullptr, output_keys,
+                        output_values, iterator_count);
+    }
 
     this->bucket_count_ = buckets;
     this->capacity_ = buckets * kDefaultElemsPerBucket;
@@ -385,8 +392,10 @@ void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
     /// Insert back
     auto output_masks = (bool*)MemoryManager::Malloc(
             sizeof(bool) * iterator_count, this->device_);
-    Insert(output_keys, output_values, output_iterators, output_masks,
-           iterator_count);
+    if (iterator_count > 0) {
+        Insert(output_keys, output_values, output_iterators, output_masks,
+               iterator_count);
+    }
 
     MemoryManager::Free(output_iterators, this->device_);
     MemoryManager::Free(output_keys, this->device_);

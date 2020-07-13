@@ -49,6 +49,13 @@ VoxelGrid::VoxelGrid(float voxel_size,
 void VoxelGrid::Integrate(const tgeometry::Image &depth,
                           const Tensor &intrinsic,
                           const Tensor &pose) {
+    auto all_iterators = MemoryManager::Malloc(
+            sizeof(iterator_t) * hashmap_->capacity_, device_);
+    size_t all_entries =
+            hashmap_->GetIterators(static_cast<iterator_t *>(all_iterators));
+    utility::LogInfo("{} entries in total before unprojection", all_entries);
+    MemoryManager::Free(all_iterators, device_);
+
     /// Unproject
     Tensor vertex_map = depth.Unproject(intrinsic);
     Tensor pcd_map = vertex_map.View({3, 480 * 640});
@@ -56,6 +63,13 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     pcd.Transform(pose);
     tgeometry::PointCloud pcd_down =
             pcd.VoxelDownSample(voxel_size_ * resolution_);
+
+    all_iterators = MemoryManager::Malloc(
+            sizeof(iterator_t) * hashmap_->capacity_, device_);
+    all_entries =
+            hashmap_->GetIterators(static_cast<iterator_t *>(all_iterators));
+    utility::LogInfo("{} entries in total after unprojection", all_entries);
+    MemoryManager::Free(all_iterators, device_);
 
     Tensor coords = pcd_down.point_dict_["points"].AsTensor().To(Dtype::Int64);
     SizeVector coords_shape = coords.GetShape();
@@ -65,9 +79,24 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     auto iterators = MemoryManager::Malloc(sizeof(iterator_t) * N, device_);
     auto masks = MemoryManager::Malloc(sizeof(bool) * N, device_);
 
+    all_iterators = MemoryManager::Malloc(
+            sizeof(iterator_t) * hashmap_->capacity_, device_);
+    all_entries =
+            hashmap_->GetIterators(static_cast<iterator_t *>(all_iterators));
+    utility::LogInfo("{} entries in total before activation", all_entries);
+    MemoryManager::Free(all_iterators, device_);
+
     hashmap_->Activate(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
                        static_cast<iterator_t *>(iterators),
                        static_cast<bool *>(masks), N);
+
+    all_iterators = MemoryManager::Malloc(
+            sizeof(iterator_t) * hashmap_->capacity_, device_);
+    all_entries =
+            hashmap_->GetIterators(static_cast<iterator_t *>(all_iterators));
+    utility::LogInfo("{} entries in total after activation", all_entries);
+    MemoryManager::Free(all_iterators, device_);
+
     // hashmap_->Find(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
     //                static_cast<iterator_t *>(iterators),
     //                static_cast<bool *>(masks), N);
@@ -75,13 +104,6 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     // Then manipulate iterators to integrate!
     MemoryManager::Free(iterators, coords.GetDevice());
     MemoryManager::Free(masks, coords.GetDevice());
-
-    auto all_iterators =
-            MemoryManager::Malloc(sizeof(iterator_t) * capacity_, device_);
-    size_t all_entries =
-            hashmap_->GetIterators(static_cast<iterator_t *>(all_iterators));
-    utility::LogInfo("{} entries in total", all_entries);
-    MemoryManager::Free(all_iterators, device_);
 }
 
 }  // namespace tgeometry

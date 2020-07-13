@@ -32,11 +32,14 @@
 
 namespace open3d {
 namespace core {
+
 constexpr size_t kDefaultElemsPerBucket = 4;
 
 struct DefaultHash {
-    // Default constructor makes compiler happy. Undefined behavior, must set
-    // key_size_ before calling operator().
+    // Default constructor is required, since we need a struct instead of its
+    // pointer as a member in a hash table for CUDA kernel launches.
+    // Must set key_size_ before calling operator(), otherwise the behavior will
+    // be undefined.
     DefaultHash() {}
     DefaultHash(size_t key_size) : key_size_in_int_(key_size / sizeof(int)) {}
 
@@ -55,8 +58,10 @@ struct DefaultHash {
 };
 
 struct DefaultKeyEq {
-    // Default constructor makes compiler happy. Undefined behavior, must set
-    // key_size_ before calling operator().
+    // Default constructor is required, since we need a struct instead of its
+    // pointer as a member in a hash table for CUDA kernel launches.
+    // Must set key_size_ before calling operator(), otherwise the behavior will
+    // be undefined.
     DefaultKeyEq() {}
     DefaultKeyEq(size_t key_size) : key_size_in_int_(key_size / sizeof(int)) {}
 
@@ -80,23 +85,16 @@ struct DefaultKeyEq {
 
 enum class ReturnPolicy {
     None = 0,
-    Mask = 1,
-    // Return: iterators of <key, value> ptrs to internal memory
-    // This is with the std convention for comprehensive control
-    FoundIterators = 2,
-    InsertedIterators = 4,
-    // Return: value ptrs to internal memory
-    // This is for in-place value manipulation
-    FoundValuePtrs = 8,
-    InsertedValuePtrs = 16
+    // return: pair of <key, value> ptrs for general usage
+    Iterators = 1,
+    // return: value ptrs, optimized for sparse tensor lists
+    ValuePtrs = 2,
 };
 
-/// Base class: shared interface
 template <typename Hash = DefaultHash, typename KeyEq = DefaultKeyEq>
 class Hashmap {
 public:
-    /// Comprehensive constructor for the developer.
-    /// The developer knows all the parameter settings.
+    /// Comprehensive constructor with customized init buckets and capacity
     Hashmap(size_t init_buckets,
             size_t init_capacity,
             size_t dsize_key,
@@ -109,48 +107,36 @@ public:
           device_(device){};
     virtual ~Hashmap(){};
 
-    /// Rehash expects extra memory space at runtime, since it consists of
+    /// Rehash expects a lot of extra memory space at runtime,
+    /// since it consists of
     /// 1) dumping all key value pairs to a buffer
-    /// 2) create a new hash table
-    /// 3) parallel insert dumped key value pairs
-    /// 4) deallocate old hash table
+    /// 2) creating a new hash table
+    /// 3) parallel inserting dumped key value pairs
+    /// 4) deallocating old hash table
     virtual void Rehash(size_t buckets) = 0;
 
     /// Parallel insert contiguous arrays of keys and values.
-    /// According to the policy, the return type can be:
-    /// 0: No output
-    /// 1: Mask only
-    /// Mask (1) +
-    /// 2:    InsertedIterators
-    /// 2+4:  InsertedIterators + FoundIterators
-    /// 8:    InsertedValuePtrs
-    /// 8+16: InsertedValuePtrs + FoundValuePtrs
     virtual void Insert(const void* input_keys,
                         const void* input_values,
                         iterator_t* output_iterators,
                         bool* output_masks,
                         size_t count) = 0;
 
-    /// Parallel insert contiguous arrays of keys without copying values.
-    /// Activated entries will store unpredicted values, to be overwritten by
-    /// manipulating iterators.
-    /// Output iterators and masks can be nullptrs if return
-    /// iterators are not to be processed.
+    /// Parallel activate contiguous arrays of keys without copying values.
+    /// Specifically useful for large value elements (e.g., a tensor), where we
+    /// can do in-place management after activation.
     virtual void Activate(const void* input_keys,
                           iterator_t* output_iterators,
                           bool* output_masks,
                           size_t count) = 0;
 
     /// Parallel find a contiguous array of keys.
-    /// Output iterators and masks CANNOT be nullptrs as we have to interpret
-    /// them.
     virtual void Find(const void* input_keys,
                       iterator_t* output_iterators,
                       bool* output_masks,
                       size_t count) = 0;
 
     /// Parallel erase a contiguous array of keys.
-    /// Output masks can be a nullptr if return results are not to be processed.
     virtual void Erase(const void* input_keys,
                        bool* output_masks,
                        size_t count) = 0;
@@ -159,8 +145,6 @@ public:
     virtual size_t GetIterators(iterator_t* output_iterators) = 0;
 
     /// Parallel unpack iterators to contiguous arrays of keys and/or values.
-    /// Output keys and values can be nullptrs if they are not to be
-    /// processed/stored.
     virtual void UnpackIterators(const iterator_t* input_iterators,
                                  const bool* input_masks,
                                  void* output_keys,
@@ -168,15 +152,12 @@ public:
                                  size_t count) = 0;
 
     /// Parallel assign iterators in-place with associated values.
-    /// Note: users should manage the key-value correspondences around
-    /// iterators.
     virtual void AssignIterators(iterator_t* input_iterators,
                                  const bool* input_masks,
                                  const void* input_values,
                                  size_t count) = 0;
 
-    /// Return number of elems per bucket.
-    /// High performance not required, so directly returns a vector.
+    /// Return number of elements per bucket.
     virtual std::vector<size_t> BucketSizes() = 0;
 
     /// Return size / bucket_count.
@@ -192,16 +173,16 @@ public:
     Device device_;
 };
 
-/// Low level factory for customized functions
-/// User-friendly interface: just roughly estimate capacity, we handle
-/// bucket_count.
+/// Factory for customized template hash functions.
+/// Simplified interface: users roughly estimate capacity,
+/// while bucket_count is computed internally.
 template <typename Hash, typename KeyEq>
 std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_capacity,
                                                     size_t dsize_key,
                                                     size_t dsize_value,
                                                     Device device);
 
-/// Comprehensive interface
+/// Comprehensive interface: users also provide estimation of buckets.
 template <typename Hash, typename KeyEq>
 std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_buckets,
                                                     size_t init_capacity,
@@ -209,37 +190,36 @@ std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_buckets,
                                                     size_t dsize_value,
                                                     Device device);
 
-/// High level factory for default functions
-/// Factory interface for non-templated Default hashmap -- to be instantiated in
-/// implementations
+/// Factory for default hash functions
 typedef Hashmap<DefaultHash, DefaultKeyEq> DefaultHashmap;
 
-/// User-friendly interface: just roughly estimate capacity, we handle
-/// bucket_count.
+/// Simplified interface: users roughly estimate capacity,
+/// while bucket_count is computed internally.
 std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_capacity,
                                                      size_t dsize_key,
                                                      size_t dsize_value,
                                                      Device device);
 
-/// Comprehensive interface
+/// Comprehensive interface: users also provide estimation of buckets.
 std::shared_ptr<DefaultHashmap> CreateDefaultHashmap(size_t init_buckets,
                                                      size_t init_capacity,
                                                      size_t dsize_key,
                                                      size_t dsize_value,
                                                      Device device);
 
-namespace _factory {
+/// Internal implementations
 std::shared_ptr<DefaultHashmap> CreateDefaultCPUHashmap(size_t init_buckets,
                                                         size_t init_capacity,
                                                         size_t dsize_key,
                                                         size_t dsize_value,
                                                         Device device);
 
+#ifdef BUILD_CUDA_MODULE
 std::shared_ptr<DefaultHashmap> CreateDefaultCUDAHashmap(size_t init_buckets,
                                                          size_t init_capacity,
                                                          size_t dsize_key,
                                                          size_t dsize_value,
                                                          Device device);
-}  // namespace _factory
+#endif
 }  // namespace core
 }  // namespace open3d
