@@ -90,6 +90,7 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
                        static_cast<iterator_t *>(iterators),
                        static_cast<bool *>(masks), N);
 
+    utility::LogInfo("after activation: capacity = {}", hashmap_->capacity_);
     all_iterators = MemoryManager::Malloc(
             sizeof(iterator_t) * hashmap_->capacity_, device_);
     all_entries =

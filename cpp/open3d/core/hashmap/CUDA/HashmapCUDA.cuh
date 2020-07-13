@@ -188,11 +188,17 @@ void CUDAHashmap<Hash, KeyEq>::Activate(const void* input_keys,
     timer.Start();
     int heap_counter =
             *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
-    if (heap_counter + count > this->capacity_) {
-        int factor =
-                std::max(2ul, (heap_counter + count) / this->capacity_ + 1);
-        Rehash(this->bucket_count_ * factor);
+    uint32_t new_capacity = heap_counter + count;
+
+    if (new_capacity > this->capacity_) {
+        float avg_ratio = this->avg_capacity_bucket_ratio();
+        uint32_t exp_buckets = uint32_t(std::ceil(new_capacity / avg_ratio));
+
+        // At least increase by a factor of 2
+        Rehash(std::max(this->bucket_count_ * 2, exp_buckets));
     }
+    utility::LogInfo("before: heap_counter = {}, count = {}, capacity = {}",
+                     heap_counter, count, this->capacity_);
     *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_) =
             heap_counter + count;
     InsertKernelPass0<<<num_blocks, BLOCKSIZE_>>>(
@@ -357,23 +363,27 @@ void CUDAHashmap<Hash, KeyEq>::AssignIterators(iterator_t* input_iterators,
 
 template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
+    utility::LogInfo("Rehash: {} -> {}", this->bucket_count_, buckets);
     // TODO: add a size operator instead of rough estimation
     auto output_iterators = (iterator_t*)MemoryManager::Malloc(
             sizeof(iterator_t) * this->capacity_, this->device_);
     uint32_t iterator_count = GetIterators(output_iterators);
 
-    auto output_keys = MemoryManager::Malloc(this->dsize_key_ * iterator_count,
-                                             this->device_);
-    auto output_values = MemoryManager::Malloc(
-            this->dsize_value_ * iterator_count, this->device_);
-
+    void* output_keys;
+    void* output_values;
     if (iterator_count > 0) {
+        output_keys = MemoryManager::Malloc(this->dsize_key_ * iterator_count,
+                                            this->device_);
+        output_values = MemoryManager::Malloc(
+                this->dsize_value_ * iterator_count, this->device_);
+
         UnpackIterators(output_iterators, /* masks = */ nullptr, output_keys,
                         output_values, iterator_count);
     }
 
+    float avg_ratio = this->avg_capacity_bucket_ratio();
     this->bucket_count_ = buckets;
-    this->capacity_ = buckets * kDefaultElemsPerBucket;
+    this->capacity_ = uint32_t(std::ceil(buckets * avg_ratio));
 
     mem_mgr_ = std::make_shared<InternalKvPairManager>(
             this->capacity_, this->dsize_key_, this->dsize_value_,
@@ -390,20 +400,22 @@ void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
                                  sizeof(Slab) * buckets));
 
     /// Insert back
-    auto output_masks = (bool*)MemoryManager::Malloc(
-            sizeof(bool) * iterator_count, this->device_);
     if (iterator_count > 0) {
+        auto output_masks = (bool*)MemoryManager::Malloc(
+                sizeof(bool) * iterator_count, this->device_);
+
         Insert(output_keys, output_values, output_iterators, output_masks,
                iterator_count);
+
+        MemoryManager::Free(output_keys, this->device_);
+        MemoryManager::Free(output_values, this->device_);
+        MemoryManager::Free(output_masks, this->device_);
     }
 
     MemoryManager::Free(output_iterators, this->device_);
-    MemoryManager::Free(output_keys, this->device_);
-    MemoryManager::Free(output_values, this->device_);
-    MemoryManager::Free(output_masks, this->device_);
 }
 
-/// Bucket-related utilitiesx
+/// Bucket-related utilities
 /// Return number of elems per bucket
 template <typename Hash, typename KeyEq>
 std::vector<size_t> CUDAHashmap<Hash, KeyEq>::BucketSizes() {

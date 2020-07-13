@@ -169,8 +169,12 @@ public:
     uint32_t dsize_key_;
     uint32_t dsize_value_;
 
-public:
     Device device_;
+
+protected:
+    float avg_capacity_bucket_ratio() {
+        return float(capacity_) / float(bucket_count_);
+    }
 };
 
 /// Factory for customized template hash functions.

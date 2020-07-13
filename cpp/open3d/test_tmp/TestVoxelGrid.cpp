@@ -5,12 +5,15 @@
 #include "open3d/tgeometry/Image.h"
 #include "open3d/tgeometry/PointCloud.h"
 #include "open3d/tgeometry/VoxelGrid.h"
+#include "open3d/utility/Console.h"
 
 using namespace open3d;
 using namespace open3d::core;
 
 int main(int argc, char** argv) {
     std::string root_path = argv[1];
+
+    // utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
 
     Tensor intrinsic = Tensor(
             std::vector<float>({525.0, 0, 319.5, 0, 525.0, 239.5, 0, 0, 1}),
@@ -22,7 +25,7 @@ int main(int argc, char** argv) {
     std::vector<Device> devices{Device("CUDA:0")};
 
     for (auto device : devices) {
-        tgeometry::VoxelGrid voxel_grid(0.008, 16, 1000, device);
+        tgeometry::VoxelGrid voxel_grid(0.008, 16, 10, device);
         for (int i = 0; i < 3000; ++i) {
             std::cout << i << "\n";
             /// Load image
