@@ -103,12 +103,34 @@ public:
 
     float LoadFactor();
 
+    size_t size();
+
 protected:
     /// struct directly passed to kernels, cannot be a pointer
     CUDAHashmapImplContext<Hash, KeyEq> gpu_context_;
 
     std::shared_ptr<InternalKvPairManager> mem_mgr_;
     std::shared_ptr<InternalNodeManager> node_mgr_;
+
+    void Allocate(size_t bucket_count, size_t capacity);
+
+    void InsertImpl(const void* input_keys,
+                    const void* input_values,
+                    iterator_t* output_iterators,
+                    bool* output_masks,
+                    size_t count);
+
+    void ActivateImpl(const void* input_keys,
+                      iterator_t* output_iterators,
+                      bool* output_masks,
+                      size_t count);
+
+    void FindImpl(const void* input_keys,
+                  iterator_t* output_iterators,
+                  bool* output_masks,
+                  size_t count);
+
+    void EraseImpl(const void* input_keys, bool* output_masks, size_t count);
 };
 }  // namespace core
 }  // namespace open3d

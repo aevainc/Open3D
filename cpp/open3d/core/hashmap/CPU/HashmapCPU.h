@@ -81,6 +81,8 @@ public:
     std::vector<size_t> BucketSizes();
     float LoadFactor();
 
+    size_t size();
+
 private:
     std::shared_ptr<std::unordered_map<void*, void*, Hash, KeyEq>> impl_;
 

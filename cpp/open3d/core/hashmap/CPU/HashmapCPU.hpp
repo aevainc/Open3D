@@ -57,6 +57,11 @@ CPUHashmap<Hash, KeyEq>::~CPUHashmap() {
 };
 
 template <typename Hash, typename KeyEq>
+size_t CPUHashmap<Hash, KeyEq>::size() {
+    return impl_->size();
+};
+
+template <typename Hash, typename KeyEq>
 void CPUHashmap<Hash, KeyEq>::Insert(const void* input_keys,
                                      const void* input_values,
                                      iterator_t* output_iterators,

@@ -163,6 +163,8 @@ public:
     /// Return size / bucket_count.
     virtual float LoadFactor() = 0;
 
+    virtual size_t size() = 0;
+
 public:
     uint32_t bucket_count_;
     uint32_t capacity_;
