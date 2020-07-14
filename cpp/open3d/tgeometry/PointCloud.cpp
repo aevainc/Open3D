@@ -50,7 +50,7 @@ PointCloud::PointCloud(const Tensor &points_tensor)
     if (shape[1] != 3) {
         utility::LogError("PointCloud must be constructed from (N, 3) points.");
     }
-    point_dict_.emplace("points", TensorList(points_tensor));
+    point_dict_.emplace("points", TensorList::FromTensor(points_tensor));
 }
 
 PointCloud::PointCloud(
@@ -64,7 +64,7 @@ PointCloud::PointCloud(
     dtype_ = it->second.GetDtype();
     device_ = it->second.GetDevice();
 
-    auto shape = it->second.GetShape();
+    auto shape = it->second.GetElementShape();
     if (shape[0] != 3) {
         utility::LogError("PointCloud must be constructed from (N, 3) points.");
     }
@@ -121,17 +121,17 @@ PointCloud &PointCloud::Clear() {
 bool PointCloud::IsEmpty() const { return !HasPoints(); }
 
 Tensor PointCloud::GetMinBound() const {
-    point_dict_.at("points").AssertShape({3});
+    point_dict_.at("points").AssertElementShape({3});
     return point_dict_.at("points").AsTensor().Min({0});
 }
 
 Tensor PointCloud::GetMaxBound() const {
-    point_dict_.at("points").AssertShape({3});
+    point_dict_.at("points").AssertElementShape({3});
     return point_dict_.at("points").AsTensor().Max({0});
 }
 
 Tensor PointCloud::GetCenter() const {
-    point_dict_.at("points").AssertShape({3});
+    point_dict_.at("points").AssertElementShape({3});
     return point_dict_.at("points").AsTensor().Mean({0});
 }
 
@@ -145,8 +145,6 @@ PointCloud &PointCloud::Transform(const Tensor &transformation) {
 }
 
 PointCloud &PointCloud::Translate(const Tensor &translation, bool relative) {
-    shape_util::AssertShape(translation, {3},
-                            "translation must have shape (3,)");
     Tensor transform = translation.Copy();
     if (!relative) {
         transform -= GetCenter();
@@ -156,9 +154,8 @@ PointCloud &PointCloud::Translate(const Tensor &translation, bool relative) {
 }
 
 PointCloud &PointCloud::Scale(double scale, const Tensor &center) {
-    shape_util::AssertShape(center, {3}, "center must have shape (3,)");
-    point_dict_.at("points") = TensorList(
-            (point_dict_.at("points").AsTensor() - center) * scale + center);
+    point_dict_.at("points").AsTensor() =
+            (point_dict_.at("points").AsTensor() - center) * scale + center;
     return *this;
 }
 
@@ -192,8 +189,9 @@ PointCloud PointCloud::VoxelDownSample(
     Tensor coords = result.first;
     Tensor masks = result.second;
     auto pcd_down_map = std::unordered_map<std::string, TensorList>();
-    auto tl_pts = TensorList(coords.IndexGet({masks}).To(Dtype::Float32),
-                             /* inplace = */ false);
+    auto tl_pts =
+            TensorList::FromTensor(coords.IndexGet({masks}).To(Dtype::Float32),
+                                   /* inplace = */ false);
     timer.Stop();
     utility::LogInfo("[PointCloud] pts IndexGet takes {}", timer.GetDuration());
 
@@ -203,7 +201,8 @@ PointCloud PointCloud::VoxelDownSample(
         if (kv.first != "points" &&
             properties_to_skip.find(kv.first) == properties_to_skip.end()) {
             timer.Start();
-            auto tl = TensorList(kv.second.AsTensor().IndexGet({masks}), false);
+            auto tl = TensorList::FromTensor(
+                    kv.second.AsTensor().IndexGet({masks}), false);
             pcd_down_map.emplace(std::make_pair(kv.first, tl));
             timer.Stop();
             utility::LogInfo("[PointCloud] {} IndexGet takes {}", kv.first,
