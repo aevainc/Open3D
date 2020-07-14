@@ -173,5 +173,6 @@ __global__ void AssignIteratorsKernel(iterator_t* input_iterators,
                                       const void* input_values,
                                       size_t dsize_value,
                                       size_t iterator_count);
+
 }  // namespace core
 }  // namespace open3d

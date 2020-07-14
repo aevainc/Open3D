@@ -24,9 +24,9 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include "open3d/core/MemoryManager.h"
 #include "open3d/core/CUDAState.cuh"
 #include "open3d/core/CUDAUtils.h"
+#include "open3d/core/MemoryManager.h"
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -121,6 +121,10 @@ public:
     }
 
     void* Malloc(size_t byte_size, const Device& device) {
+        if (byte_size == 0) {
+            utility::LogError("[CUDACacher] Cannot allocate 0 bytes");
+        }
+
         auto find_free_block = [&](BlockPtr query_block) -> BlockPtr {
             auto pool = get_pool(query_block->size_);
             auto it = pool->lower_bound(query_block);
@@ -398,7 +402,6 @@ bool CUDAMemoryManager::IsCUDAPointer(const void* ptr) {
     }
     return false;
 }
-
 
 void CUDAMemoryManager::ReleaseCache() {
     utility::LogDebug("Releasing Cache");

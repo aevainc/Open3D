@@ -38,9 +38,6 @@ namespace open3d {
 namespace core {
 
 void* MemoryManager::Malloc(size_t byte_size, const Device& device) {
-    if (byte_size == 0) {
-        utility::LogError("Cannot allocate 0 bytes");
-    }
     return GetDeviceMemoryManager(device)->Malloc(byte_size, device);
 }
 

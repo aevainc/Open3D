@@ -56,34 +56,28 @@ CUDAHashmap<Hash, KeyEq>::CUDAHashmap(size_t init_buckets,
                                       Device device)
     : Hashmap<Hash, KeyEq>(
               init_buckets, init_capacity, dsize_key, dsize_value, device) {
-    utility::Timer timer;
-    timer.Start();
-
+    // Memory for key values
     mem_mgr_ = std::make_shared<InternalKvPairManager>(init_capacity, dsize_key,
                                                        dsize_value, device);
 
+    // Memory for hash table linked list nodes
     node_mgr_ = std::make_shared<InternalNodeManager>(device);
     gpu_context_.Setup(init_buckets, init_capacity, dsize_key, dsize_value,
                        node_mgr_->gpu_context_, mem_mgr_->gpu_context_);
 
+    // Memory for hash table
     gpu_context_.bucket_list_head_ = static_cast<Slab*>(
             MemoryManager::Malloc(sizeof(Slab) * init_buckets, device));
     OPEN3D_CUDA_CHECK(cudaMemset(gpu_context_.bucket_list_head_, 0xFF,
                                  sizeof(Slab) * init_buckets));
+
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
-
-    timer.Stop();
-    utility::LogInfo("[HashmapCUDA] constructor {}", timer.GetDuration());
 }
 
 template <typename Hash, typename KeyEq>
 CUDAHashmap<Hash, KeyEq>::~CUDAHashmap() {
-    utility::Timer timer;
-    timer.Start();
     MemoryManager::Free(gpu_context_.bucket_list_head_, this->device_);
-    timer.Stop();
-    utility::LogInfo("[HashmapCUDA] destructor takes {}", timer.GetDuration());
 }
 
 template <typename Hash, typename KeyEq>
@@ -92,68 +86,34 @@ void CUDAHashmap<Hash, KeyEq>::Insert(const void* input_keys,
                                       iterator_t* output_iterators,
                                       bool* output_masks,
                                       size_t count) {
-    utility::Timer timer;
-    timer.Start();
-    bool extern_alloc = (output_masks != nullptr);
-    if (!extern_alloc) {
-        output_masks = (bool*)MemoryManager::Malloc(count * sizeof(bool),
-                                                    this->device_);
+    bool extern_masks = (output_masks != nullptr);
+    if (!extern_masks) {
+        output_masks = static_cast<bool*>(
+                MemoryManager::Malloc(count * sizeof(bool), this->device_));
     }
+    auto iterator_ptrs = static_cast<ptr_t*>(
+            MemoryManager::Malloc(sizeof(ptr_t) * count, this->device_));
     const uint32_t num_blocks = (count + BLOCKSIZE_ - 1) / BLOCKSIZE_;
 
-    auto iterator_ptrs =
-            (ptr_t*)MemoryManager::Malloc(sizeof(ptr_t) * count, this->device_);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-    timer.Stop();
-    utility::LogDebug("[HashmapCUDA] Preparation takes {}",
-                      timer.GetDuration());
-
-    // Batch allocate
-    // int index = atomicAdd(heap_counter_, 1);
-    // assert(index < max_capacity_);
-    // return heap_[index];
-
-    /// Batch allocate iterators
-    timer.Start();
+    /// Pass 1
     int heap_counter =
             *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_);
     *thrust::device_ptr<int>(gpu_context_.mem_mgr_ctx_.heap_counter_) =
             heap_counter + count;
     InsertKernelPass0<<<num_blocks, BLOCKSIZE_>>>(
             gpu_context_, input_keys, iterator_ptrs, heap_counter, count);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-    timer.Stop();
-    utility::LogDebug("[HashmapCUDA] Pass0 takes {}", timer.GetDuration());
-
-    timer.Start();
     InsertKernelPass1<<<num_blocks, BLOCKSIZE_>>>(
             gpu_context_, input_keys, iterator_ptrs, output_masks, count);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-    timer.Stop();
-    utility::LogDebug("[HashmapCUDA] Pass1 takes {}", timer.GetDuration());
-
-    timer.Start();
     InsertKernelPass2<<<num_blocks, BLOCKSIZE_>>>(
             gpu_context_, input_values, iterator_ptrs, output_iterators,
             output_masks, count);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-    timer.Stop();
-    utility::LogDebug("[HashmapCUDA] Pass2 takes {}", timer.GetDuration());
-
-    timer.Start();
-    MemoryManager::Free(iterator_ptrs, this->device_);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-
-    if (!extern_alloc) {
+    if (!extern_masks) {
         MemoryManager::Free(output_masks, this->device_);
     }
-    timer.Stop();
-    utility::LogDebug("[HashmapCUDA] Free takes {}", timer.GetDuration());
+    MemoryManager::Free(iterator_ptrs, this->device_);
+
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    OPEN3D_CUDA_CHECK(cudaGetLastError());
 }
 
 template <typename Hash, typename KeyEq>
@@ -163,8 +123,8 @@ void CUDAHashmap<Hash, KeyEq>::Activate(const void* input_keys,
                                         size_t count) {
     utility::Timer timer;
     timer.Start();
-    bool extern_alloc = (output_masks != nullptr);
-    if (!extern_alloc) {
+    bool extern_masks = (output_masks != nullptr);
+    if (!extern_masks) {
         output_masks = (bool*)MemoryManager::Malloc(count * sizeof(bool),
                                                     this->device_);
         cudaMemset(output_masks, 0, sizeof(bool) * count);
@@ -229,7 +189,7 @@ void CUDAHashmap<Hash, KeyEq>::Activate(const void* input_keys,
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 
-    if (!extern_alloc) {
+    if (!extern_masks) {
         MemoryManager::Free(output_masks, this->device_);
     }
     timer.Stop();
@@ -255,8 +215,8 @@ template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::Erase(const void* input_keys,
                                      bool* output_masks,
                                      size_t count) {
-    bool extern_alloc = (output_masks != nullptr);
-    if (!extern_alloc) {
+    bool extern_masks = (output_masks != nullptr);
+    if (!extern_masks) {
         output_masks = (bool*)MemoryManager::Malloc(count * sizeof(bool),
                                                     this->device_);
     }
@@ -280,7 +240,7 @@ void CUDAHashmap<Hash, KeyEq>::Erase(const void* input_keys,
 
     MemoryManager::Free(iterator_ptrs, this->device_);
 
-    if (!extern_alloc) {
+    if (!extern_masks) {
         MemoryManager::Free(output_masks, this->device_);
     }
 }
