@@ -32,16 +32,18 @@ namespace kernel {
 
 void SpecialOpEW(SparseTensorList& sparse_tl,
                  const std::vector<Tensor>& inputs,
+                 const Projector& projector,
                  SpecialOpCode op_code) {
     if (sparse_tl.device_.GetType() == Device::DeviceType::CPU &&
         inputs[0].GetDevice().GetType() == Device::DeviceType::CPU) {
-        SpecialOpEWCPU(sparse_tl, inputs, op_code);
+        SpecialOpEWCPU(sparse_tl, inputs, projector, op_code);
     } else if (sparse_tl.device_.GetType() == Device::DeviceType::CUDA &&
                inputs[0].GetDevice().GetType() == Device::DeviceType::CUDA) {
-        SpecialOpEWCUDA(sparse_tl, inputs, op_code);
+        SpecialOpEWCUDA(sparse_tl, inputs, projector, op_code);
     } else {
         utility::LogError("Unsupported device");
     }
+    utility::LogInfo("[SpecialOpEW] quiting Ew");
 }
 
 }  // namespace kernel

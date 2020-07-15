@@ -579,6 +579,18 @@ public:
         cy_ = intrinsic[1][2].Item<float>();
 
         scale_ = scale;
+
+        // utility::LogInfo("intrinsics: {} {} {} {}", fx_, fy_, cx_, cy_);
+        // utility::LogInfo("extrinsics: {} {} {} {}", extrinsic_[0][0],
+        //                  extrinsic_[0][1], extrinsic_[0][2],
+        //                  extrinsic_[0][3]);
+        // utility::LogInfo("            {} {} {} {}", extrinsic_[1][0],
+        //                  extrinsic_[1][1], extrinsic_[1][2],
+        //                  extrinsic_[1][3]);
+        // utility::LogInfo("            {} {} {} {}", extrinsic_[0][0],
+        //                  extrinsic_[2][1], extrinsic_[2][2],
+        //                  extrinsic_[2][3]);
+        // utility::LogInfo("scale: {}", scale_);
     }
 
     OPEN3D_HOST_DEVICE void Transform(float x_in,
@@ -597,6 +609,17 @@ public:
                  z_in * extrinsic_[1][2] + extrinsic_[1][3];
         *z_out = x_in * extrinsic_[2][0] + y_in * extrinsic_[2][1] +
                  z_in * extrinsic_[2][2] + extrinsic_[2][3];
+        // printf("intrinsics: %f %f %f %f\n", fx_, fy_, cx_, cy_);
+        // printf("extrinsics: %f %f %f %f\n", extrinsic_[0][0],
+        // extrinsic_[0][1],
+        //        extrinsic_[0][2], extrinsic_[0][3]);
+        // printf("            %f %f %f %f\n", extrinsic_[1][0],
+        // extrinsic_[1][1],
+        //        extrinsic_[1][2], extrinsic_[1][3]);
+        // printf("            %f %f %f %f\n", extrinsic_[2][0],
+        // extrinsic_[2][1],
+        //        extrinsic_[2][2], extrinsic_[2][3]);
+        // printf("scale: %f\n", scale_);
     }
 
     OPEN3D_HOST_DEVICE void Project(float x_in,
@@ -605,8 +628,8 @@ public:
                                     float* u_out,
                                     float* v_out) const {
         float inv_z = 1.0f / z_in;
-        *u_out = x_in * inv_z + cx_;
-        *v_out = y_in * inv_z + cy_;
+        *u_out = fx_ * x_in * inv_z + cx_;
+        *v_out = fy_ * y_in * inv_z + cy_;
     }
 
 private:
@@ -636,6 +659,9 @@ public:
                              : stride;
         }
         tl_elem_size_ = stride;
+        utility::LogInfo("[SparseIndexer] {}, ({} {} {}), {}", ndims_,
+                         tl_strides_[0], tl_strides_[1], tl_strides_[2],
+                         tl_elem_size_);
 
         // TODO: adaptive, non-contiguous, etc
         input_byte_size_ = DtypeUtil::ByteSize(input_tensors[0].GetDtype());
@@ -648,8 +674,8 @@ public:
             int64_t workload_idx,
             int64_t* key_idx,
             int64_t* value_offset_idx) const {
-        *key_idx = workload_idx / sparse_tl_.size_;
-        *value_offset_idx = workload_idx % sparse_tl_.size_;
+        *key_idx = workload_idx / (tl_elem_size_);
+        *value_offset_idx = workload_idx % (tl_elem_size_);
     }
 
     OPEN3D_HOST_DEVICE void GetWorkloadValue3DIdx(int64_t value_offset_idx,
@@ -688,6 +714,13 @@ public:
                                                int64_t u,
                                                int64_t v) const {
         int64_t ndims = inputs_[tensor_idx].ndims_;
+        // printf("(%ld %ld) in (%ld %ld)\n", v, u,
+        //        inputs_[tensor_idx].shape_[ndims - 2],
+        //        inputs_[tensor_idx].shape_[ndims - 1]);
+        if (u < 0 || v < 0 || v >= inputs_[tensor_idx].shape_[ndims - 2] ||
+            u >= inputs_[tensor_idx].shape_[ndims - 1]) {
+            return nullptr;
+        }
         int64_t offset = v * inputs_[tensor_idx].byte_strides_[ndims - 2] +
                          u * inputs_[tensor_idx].byte_strides_[ndims - 1];
         return static_cast<char*>(inputs_[tensor_idx].data_ptr_) + offset;

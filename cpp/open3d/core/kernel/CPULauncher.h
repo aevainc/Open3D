@@ -194,29 +194,46 @@ public:
              ++workload_idx) {
             int64_t key_idx, value_idx;
             indexer.GetSparseWorkloadIdx(workload_idx, &key_idx, &value_idx);
+            // utility::LogDebug("[LaunchIntegrateKernel] {} -> {}, {}",
+            //                   workload_idx, key_idx, value_idx);
 
             int64_t xl, yl, zl;
             indexer.GetWorkloadValue3DIdx(value_idx, &xl, &yl, &zl);
+            // utility::LogDebug("[LaunchIntegrateKernel] {} -> {}, {}, {}",
+            //                   value_idx, xl, yl, zl);
 
             void* key_ptr = indexer.GetWorkloadKeyPtr(key_idx);
             int64_t xg = *(static_cast<int64_t*>(key_ptr) + 0);
             int64_t yg = *(static_cast<int64_t*>(key_ptr) + 1);
             int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
+            // utility::LogDebug("[LaunchIntegrateKernel] {} -> {}, {}, {}",
+            //                   key_idx, xg, yg, zg);
 
             int64_t resolution = indexer.tl_strides_[indexer.ndims_ - 2];
             int64_t x = (xg * resolution + xl);
             int64_t y = (yg * resolution + yl);
             int64_t z = (zg * resolution + zl);
+            // utility::LogDebug("[LaunchIntegrateKernel] {}, {}, {}", x, y, z);
 
             float xc, yc, zc;
             projector.Transform(static_cast<float>(x), static_cast<float>(y),
                                 static_cast<float>(z), &xc, &yc, &zc);
+            // utility::LogDebug(
+            //         "[LaunchIntegrateKernel] transform {}, {}, {} -> {}, {},
+            //         "
+            //         "{}",
+            //         x, y, z, xc, yc, zc);
 
             float u, v;
             projector.Project(xc, yc, zc, &u, &v);
-
-            element_kernel(indexer.GetWorkloadValuePtr(key_idx, value_idx),
-                           indexer.GetInputPtrFrom2D(0, u, v), zc);
+            // utility::LogDebug(
+            //         "[LaunchIntegrateKernel] project {}, {}, {} -> {}, {}",
+            //         xc, yc, zc, u, v);
+            void* input_ptr = indexer.GetInputPtrFrom2D(0, u, v);
+            // utility::LogDebug("[LaunchIntegrateKernel] input = {}",
+            //                   *static_cast<float*>(input_ptr));
+            void* value_ptr = indexer.GetWorkloadValuePtr(key_idx, value_idx);
+            element_kernel(value_ptr, input_ptr, zc);
         }
     }
 };

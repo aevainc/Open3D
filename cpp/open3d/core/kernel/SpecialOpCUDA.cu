@@ -34,11 +34,14 @@ namespace kernel {
 OPEN3D_HOST_DEVICE void CUDAIntegrateKernel(void* tsdf,
                                             const void* depth,
                                             float zc) {
-    *static_cast<float*>(tsdf) = (*static_cast<const float*>(depth) - zc);
+    if (tsdf != nullptr && depth != nullptr) {
+        *static_cast<float*>(tsdf) = (*static_cast<const float*>(depth) - zc);
+    }
 }
 
 void SpecialOpEWCUDA(SparseTensorList& sparse_tensor,
                      const std::vector<Tensor>& srcs,
+                     const Projector& projector,
                      SpecialOpCode op_code) {
     switch (op_code) {
         case SpecialOpCode::Integrate: {
@@ -46,7 +49,6 @@ void SpecialOpEWCUDA(SparseTensorList& sparse_tensor,
             // srcs[1]: intrinsic
             // srcs[2]: pose
             SparseIndexer indexer(sparse_tensor, {srcs[0]});
-            Projector projector(srcs[1], srcs[2]);
             CUDALauncher::LaunchIntegrateKernel(
                     indexer, projector,
                     [=] OPEN3D_HOST_DEVICE(void* tsdf, const void* depth,

@@ -32,11 +32,14 @@ namespace core {
 namespace kernel {
 
 void CPUIntegrateKernel(void* tsdf, const void* depth, float zc) {
-    *static_cast<float*>(tsdf) = (*static_cast<const float*>(depth) - zc);
+    if (tsdf != nullptr && depth != nullptr) {
+        *static_cast<float*>(tsdf) = (*static_cast<const float*>(depth) - zc);
+    }
 }
 
 void SpecialOpEWCPU(SparseTensorList& sparse_tensor,
                     const std::vector<Tensor>& inputs,
+                    const Projector& projector,
                     SpecialOpCode op_code) {
     switch (op_code) {
         case SpecialOpCode::Integrate: {
@@ -44,16 +47,17 @@ void SpecialOpEWCPU(SparseTensorList& sparse_tensor,
             // inputs[1]: intrinsic
             // inputs[2]: pose
             SparseIndexer indexer(sparse_tensor, {inputs[0]});
-            Projector projector(inputs[1], inputs[2], 0.008f);
             CPULauncher::LaunchIntegrateKernel(
                     indexer, projector,
                     [=](void* tsdf, const void* depth, float zc) {
                         CPUIntegrateKernel(tsdf, depth, zc);
                     });
+            utility::LogInfo("[SpecialOpEWCPU] CPULauncher finished");
             break;
         };
         default: { utility::LogError("Unsupported special op"); }
     }
+    utility::LogInfo("[SpecialOpEWCPU] Exiting SpecialOpEWCPU");
 }
 }  // namespace kernel
 }  // namespace core

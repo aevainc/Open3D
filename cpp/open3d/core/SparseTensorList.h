@@ -65,6 +65,25 @@ public:
         for (int64_t i = 0; i < ndims_; ++i) {
             element_shape_[i] = element_shape[i];
         }
+        utility::LogInfo("[SparseTensorList] {} {} {} {}", ndims_,
+                         element_shape_[0], element_shape_[1],
+                         element_shape_[2]);
+
+        // interleaved_ = true;
+        // for (int64_t i = 0; i < size_; ++i) {
+        //     void* key_ptr = ptrs[i * 2 + 0];
+        //     utility::LogInfo("key = {}, {}, {}",
+        //                      *static_cast<int64_t*>(key_ptr),
+        //                      *(static_cast<int64_t*>(key_ptr) + 1),
+        //                      *(static_cast<int64_t*>(key_ptr) + 2));
+        //     void* value_ptr = ptrs[i * 2 + 1];
+
+        //     for (int j = 0; j < 4096; ++j) {
+        //         *(static_cast<float*>(value_ptr) + j) = 0;
+        //         utility::LogInfo("value[{}] = {}", j,
+        //                          *(static_cast<float*>(value_ptr) + j));
+        //     }
+        // }
     }
 
     /// The shape for each element tensor in the tensorlist.

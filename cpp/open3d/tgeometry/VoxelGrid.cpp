@@ -25,11 +25,14 @@
 // ----------------------------------------------------------------------------
 
 #include "open3d/tgeometry/VoxelGrid.h"
+
+#include <Eigen/Dense>
+
+#include "open3d/core/EigenAdaptor.h"
 #include "open3d/core/SparseTensorList.h"
 #include "open3d/core/TensorList.h"
 #include "open3d/core/kernel/SpecialOp.h"
 #include "open3d/utility/Console.h"
-
 namespace open3d {
 namespace tgeometry {
 using namespace core;
@@ -50,10 +53,14 @@ VoxelGrid::VoxelGrid(float voxel_size,
 
 void VoxelGrid::Integrate(const tgeometry::Image &depth,
                           const Tensor &intrinsic,
-                          const Tensor &pose) {
+                          const Tensor &extrinsic) {
     /// Unproject
     Tensor vertex_map = depth.Unproject(intrinsic);
     Tensor pcd_map = vertex_map.View({3, 480 * 640});
+
+    /// Inverse is currently not available...
+    Eigen::Matrix4f pose_ = ToEigen<float>(extrinsic).inverse();
+    Tensor pose = FromEigen(pose_);
     tgeometry::PointCloud pcd(pcd_map.T());
     pcd.Transform(pose);
     tgeometry::PointCloud pcd_down =
@@ -73,16 +80,21 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     hashmap_->Find(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
                    static_cast<iterator_t *>(iterators),
                    static_cast<bool *>(masks), N);
+    utility::LogInfo("Active entries = {}", N);
 
     SparseTensorList sparse_tl(N, {resolution_, resolution_, resolution_},
                                Dtype::Float32, static_cast<void **>(iterators),
                                true, device_);
-    kernel::SpecialOpEWCUDA(sparse_tl, {intrinsic, pose},
-                            kernel::SpecialOpCode::Integrate);
+    Projector projector(intrinsic, extrinsic, voxel_size_);
+    kernel::SpecialOpEW(sparse_tl, {depth.data_}, projector,
+                        kernel::SpecialOpCode::Integrate);
+    utility::LogInfo("[VoxelGrid] Kernel launch finished");
 
     // Then manipulate iterators to integrate!
     MemoryManager::Free(iterators, coords.GetDevice());
+    utility::LogInfo("[VoxelGrid] iterators freed");
     MemoryManager::Free(masks, coords.GetDevice());
+    utility::LogInfo("[VoxelGrid] masks freed");
 
     utility::LogInfo("Hashmap size = {}", hashmap_->size());
 }

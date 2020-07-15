@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     auto trajectory = io::CreatePinholeCameraTrajectoryFromFile(
             fmt::format("{}/trajectory.log", root_path));
 
-    std::vector<Device> devices{Device("CUDA:0")};
+    std::vector<Device> devices{Device("CPU:0")};
 
     for (auto device : devices) {
         tgeometry::VoxelGrid voxel_grid(0.008, 16, 10, device);
@@ -35,12 +35,11 @@ int main(int argc, char** argv) {
             auto depth_legacy = im_legacy->ConvertDepthToFloatImage();
             tgeometry::Image depth =
                     tgeometry::Image::FromLegacyImage(*depth_legacy, device);
-            Eigen::Matrix4f pose_ = trajectory->parameters_[i]
-                                            .extrinsic_.inverse()
-                                            .cast<float>();
-            Tensor pose = FromEigen(pose_).Copy(device);
+            Eigen::Matrix4f extrinsic_ =
+                    trajectory->parameters_[i].extrinsic_.cast<float>();
+            Tensor extrinsic = FromEigen(extrinsic_).Copy(device);
 
-            voxel_grid.Integrate(depth, intrinsic, pose);
+            voxel_grid.Integrate(depth, intrinsic, extrinsic);
         }
     }
 }
