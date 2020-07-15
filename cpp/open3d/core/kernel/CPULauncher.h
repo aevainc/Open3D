@@ -182,6 +182,43 @@ public:
                            indexer.GetOutputPtr(2, workload_idx));
         }
     }
+
+    template <typename func_t>
+    static void LaunchIntegrateKernel(const SparseIndexer& indexer,
+                                      const Projector& projector,
+                                      func_t element_kernel) {
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+        for (int64_t workload_idx = 0; workload_idx < indexer.NumWorkloads();
+             ++workload_idx) {
+            int64_t key_idx, value_idx;
+            indexer.GetSparseWorkloadIdx(workload_idx, &key_idx, &value_idx);
+
+            int64_t xl, yl, zl;
+            indexer.GetWorkloadValue3DIdx(value_idx, &xl, &yl, &zl);
+
+            void* key_ptr = indexer.GetWorkloadKeyPtr(key_idx);
+            int64_t xg = *(static_cast<int64_t*>(key_ptr) + 0);
+            int64_t yg = *(static_cast<int64_t*>(key_ptr) + 1);
+            int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
+
+            int64_t resolution = indexer.tl_strides_[indexer.ndims_ - 2];
+            int64_t x = (xg * resolution + xl);
+            int64_t y = (yg * resolution + yl);
+            int64_t z = (zg * resolution + zl);
+
+            float xc, yc, zc;
+            projector.Transform(static_cast<float>(x), static_cast<float>(y),
+                                static_cast<float>(z), &xc, &yc, &zc);
+
+            float u, v;
+            projector.Project(xc, yc, zc, &u, &v);
+
+            element_kernel(indexer.GetWorkloadValuePtr(key_idx, value_idx),
+                           indexer.GetInputPtrFrom2D(0, u, v), zc);
+        }
+    }
 };
 
 }  // namespace kernel

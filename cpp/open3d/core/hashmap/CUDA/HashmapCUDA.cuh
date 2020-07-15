@@ -247,6 +247,13 @@ void CUDAHashmap<Hash, KeyEq>::FindImpl(const void* input_keys,
             gpu_context_, input_keys, output_iterators, output_masks, count);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
+
+    // thrust::device_vector<void*> all_iterators_device(
+    //         (void**)output_iterators, (void**)output_iterators + count * 2);
+    // for (int i = 0; i < count * 2; ++i) {
+    //     void* iterator = all_iterators_device[i];
+    //     std::cout << iterator << "\n";
+    // }
 }
 
 template <typename Hash, typename KeyEq>

@@ -11,6 +11,8 @@ set (KERNEL_SRC
     kernel/ReductionCPU.cpp
     kernel/ImageOp.cpp
     kernel/ImageOpCPU.cpp
+    kernel/SpecialOp.cpp
+    kernel/SpecialOpCPU.cpp
 )
 
 set (KERNEL_CUDA_SRC
@@ -20,6 +22,7 @@ set (KERNEL_CUDA_SRC
     kernel/BinaryEWCUDA.cu
     kernel/ReductionCUDA.cu
     kernel/ImageOpCUDA.cu
+    kernel/SpecialOpCUDA.cu
 )
 
 set (CORE_SRC

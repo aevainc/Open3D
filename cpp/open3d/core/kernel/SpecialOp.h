@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include "open3d/core/SparseTensorList.h"
 #include "open3d/core/Tensor.h"
 #include "open3d/utility/Console.h"
 
@@ -36,16 +37,16 @@ namespace kernel {
 enum class SpecialOpCode { Integrate };
 
 void SpecialOpEW(SparseTensorList& tgt,
-                 const std::vector<Tensor>& helpers,
+                 const std::vector<Tensor>& inputs,
                  SpecialOpCode op_code);
 
 void SpecialOpEWCPU(SparseTensorList& tgt,
-                    const std::vector<Tensor>& helpers,
+                    const std::vector<Tensor>& inputs,
                     SpecialOpCode op_code);
 
 #ifdef BUILD_CUDA_MODULE
 void SpecialOpEWCUDA(SparseTensorList& tgt,
-                     const std::vector<Tensor>& helpers,
+                     const std::vector<Tensor>& inputs,
                      SpecialOpCode op_code);
 #endif
 

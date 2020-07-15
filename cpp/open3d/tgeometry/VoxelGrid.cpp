@@ -25,7 +25,9 @@
 // ----------------------------------------------------------------------------
 
 #include "open3d/tgeometry/VoxelGrid.h"
+#include "open3d/core/SparseTensorList.h"
 #include "open3d/core/TensorList.h"
+#include "open3d/core/kernel/SpecialOp.h"
 #include "open3d/utility/Console.h"
 
 namespace open3d {
@@ -68,9 +70,15 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
                        static_cast<iterator_t *>(iterators),
                        static_cast<bool *>(masks), N);
 
-    // hashmap_->Find(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
-    //                static_cast<iterator_t *>(iterators),
-    //                static_cast<bool *>(masks), N);
+    hashmap_->Find(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
+                   static_cast<iterator_t *>(iterators),
+                   static_cast<bool *>(masks), N);
+
+    SparseTensorList sparse_tl(N, {resolution_, resolution_, resolution_},
+                               Dtype::Float32, static_cast<void **>(iterators),
+                               true, device_);
+    kernel::SpecialOpEWCUDA(sparse_tl, {intrinsic, pose},
+                            kernel::SpecialOpCode::Integrate);
 
     // Then manipulate iterators to integrate!
     MemoryManager::Free(iterators, coords.GetDevice());

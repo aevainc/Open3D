@@ -158,6 +158,52 @@ public:
         cudaDeviceSynchronize();
         OPEN3D_GET_LAST_CUDA_ERROR("LaunchUnaryEWKernel failed.");
     }
+
+    template <typename func_t>
+    static void LaunchIntegrateKernel(const SparseIndexer& indexer,
+                                      const Projector& projector,
+                                      func_t element_kernel) {
+        OPEN3D_ASSERT_HOST_DEVICE_LAMBDA(func_t);
+
+        int64_t n = indexer.NumWorkloads();
+        if (n == 0) {
+            return;
+        }
+        int64_t items_per_block = default_block_size * default_thread_size;
+        int64_t grid_size = (n + items_per_block - 1) / items_per_block;
+
+        auto f = [=] OPEN3D_HOST_DEVICE(int64_t workload_idx) {
+            int64_t key_idx, value_idx;
+            indexer.GetSparseWorkloadIdx(workload_idx, &key_idx, &value_idx);
+
+            int64_t xl, yl, zl;
+            indexer.GetWorkloadValue3DIdx(value_idx, &xl, &yl, &zl);
+
+            void* key_ptr = indexer.GetWorkloadKeyPtr(key_idx);
+            int64_t xg = *(static_cast<int64_t*>(key_ptr) + 0);
+            int64_t yg = *(static_cast<int64_t*>(key_ptr) + 1);
+            int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
+
+            int64_t resolution = indexer.tl_strides_[indexer.ndims_ - 2];
+            int64_t x = (xg * resolution + xl);
+            int64_t y = (yg * resolution + yl);
+            int64_t z = (zg * resolution + zl);
+
+            float xc, yc, zc;
+            projector.Transform(static_cast<float>(x), static_cast<float>(y),
+                                static_cast<float>(z), &xc, &yc, &zc);
+            float u, v;
+            projector.Project(xc, yc, zc, &u, &v);
+
+            element_kernel(indexer.GetWorkloadValuePtr(key_idx, value_idx),
+                           indexer.GetInputPtrFrom2D(0, u, v), zc);
+        };
+
+        ElementWiseKernel<default_block_size, default_thread_size>
+                <<<grid_size, default_block_size, 0>>>(n, f);
+        cudaDeviceSynchronize();
+        OPEN3D_GET_LAST_CUDA_ERROR("LaunchIntegrateKernel failed.");
+    }
 };
 }  // namespace kernel
 }  // namespace core
