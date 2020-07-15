@@ -60,7 +60,7 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
 
     /// Inverse is currently not available...
     Eigen::Matrix4f pose_ = ToEigen<float>(extrinsic).inverse();
-    Tensor pose = FromEigen(pose_);
+    Tensor pose = FromEigen(pose_).Copy(device_);
     tgeometry::PointCloud pcd(pcd_map.T());
     pcd.Transform(pose);
     tgeometry::PointCloud pcd_down =
