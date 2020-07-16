@@ -184,7 +184,7 @@ public:
             int64_t yg = *(static_cast<int64_t*>(key_ptr) + 1);
             int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
 
-            int64_t resolution = indexer.tl_strides_[indexer.ndims_ - 2];
+            int64_t resolution = indexer.sparse_tl_.data_desc_.GetStride(-2);
             int64_t x = (xg * resolution + xl);
             int64_t y = (yg * resolution + yl);
             int64_t z = (zg * resolution + zl);
@@ -197,8 +197,10 @@ public:
             projector.Project(xc, yc, zc, &u, &v);
 
             void* input_ptr = indexer.GetInputPtrFrom2D(0, u, v);
-            void* value_ptr = indexer.GetWorkloadValuePtr(key_idx, value_idx);
-            element_kernel(value_ptr, input_ptr, zc);
+            void* tsdf_ptr = indexer.GetWorkloadValuePtr(0, key_idx, value_idx);
+            void* weight_ptr =
+                    indexer.GetWorkloadValuePtr(1, key_idx, value_idx);
+            element_kernel(tsdf_ptr, weight_ptr, input_ptr, zc);
         };
 
         ElementWiseKernel<default_block_size, default_thread_size>

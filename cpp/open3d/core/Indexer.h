@@ -579,18 +579,6 @@ public:
         cy_ = intrinsic[1][2].Item<float>();
 
         scale_ = scale;
-
-        // utility::LogInfo("intrinsics: {} {} {} {}", fx_, fy_, cx_, cy_);
-        // utility::LogInfo("extrinsics: {} {} {} {}", extrinsic_[0][0],
-        //                  extrinsic_[0][1], extrinsic_[0][2],
-        //                  extrinsic_[0][3]);
-        // utility::LogInfo("            {} {} {} {}", extrinsic_[1][0],
-        //                  extrinsic_[1][1], extrinsic_[1][2],
-        //                  extrinsic_[1][3]);
-        // utility::LogInfo("            {} {} {} {}", extrinsic_[0][0],
-        //                  extrinsic_[2][1], extrinsic_[2][2],
-        //                  extrinsic_[2][3]);
-        // utility::LogInfo("scale: {}", scale_);
     }
 
     OPEN3D_HOST_DEVICE void Transform(float x_in,
@@ -609,17 +597,6 @@ public:
                  z_in * extrinsic_[1][2] + extrinsic_[1][3];
         *z_out = x_in * extrinsic_[2][0] + y_in * extrinsic_[2][1] +
                  z_in * extrinsic_[2][2] + extrinsic_[2][3];
-        // printf("intrinsics: %f %f %f %f\n", fx_, fy_, cx_, cy_);
-        // printf("extrinsics: %f %f %f %f\n", extrinsic_[0][0],
-        // extrinsic_[0][1],
-        //        extrinsic_[0][2], extrinsic_[0][3]);
-        // printf("            %f %f %f %f\n", extrinsic_[1][0],
-        // extrinsic_[1][1],
-        //        extrinsic_[1][2], extrinsic_[1][3]);
-        // printf("            %f %f %f %f\n", extrinsic_[2][0],
-        // extrinsic_[2][1],
-        //        extrinsic_[2][2], extrinsic_[2][3]);
-        // printf("scale: %f\n", scale_);
     }
 
     OPEN3D_HOST_DEVICE void Project(float x_in,
@@ -647,24 +624,7 @@ public:
     SparseIndexer(const SparseTensorList& sparse_tl,
                   const std::vector<Tensor>& input_tensors) {
         sparse_tl_ = sparse_tl;
-        tl_byte_size_ = DtypeUtil::ByteSize(sparse_tl.dtype_);
-        ndims_ = sparse_tl_.ndims_;
 
-        int64_t stride = 1;
-        for (int64_t i = ndims_ - 1; i >= 0; --i) {
-            tl_strides_[i] = stride;
-            // Handles 0-sized dimensions
-            stride = sparse_tl_.element_shape_[i] > 1
-                             ? stride * sparse_tl_.element_shape_[i]
-                             : stride;
-        }
-        tl_elem_size_ = stride;
-        utility::LogInfo("[SparseIndexer] {}, ({} {} {}), {}", ndims_,
-                         tl_strides_[0], tl_strides_[1], tl_strides_[2],
-                         tl_elem_size_);
-
-        // TODO: adaptive, non-contiguous, etc
-        input_byte_size_ = DtypeUtil::ByteSize(input_tensors[0].GetDtype());
         for (size_t i = 0; i < input_tensors.size(); ++i) {
             inputs_[i] = TensorRef(input_tensors[i]);
         }
@@ -674,8 +634,8 @@ public:
             int64_t workload_idx,
             int64_t* key_idx,
             int64_t* value_offset_idx) const {
-        *key_idx = workload_idx / (tl_elem_size_);
-        *value_offset_idx = workload_idx % (tl_elem_size_);
+        *key_idx = workload_idx / (sparse_tl_.data_desc_.num_elems_);
+        *value_offset_idx = workload_idx % (sparse_tl_.data_desc_.num_elems_);
     }
 
     OPEN3D_HOST_DEVICE void GetWorkloadValue3DIdx(int64_t value_offset_idx,
@@ -683,10 +643,11 @@ public:
                                                   int64_t* y,
                                                   int64_t* z) const {
         // [-3, -2, -1] corresponds to resolution^2, resolution, 1
-        *z = value_offset_idx / (tl_strides_[ndims_ - 3]);
-        *y = (value_offset_idx % (tl_strides_[ndims_ - 3])) /
-             tl_strides_[ndims_ - 2];
-        *x = value_offset_idx % (tl_strides_[ndims_ - 2]);
+        int64_t resolution2 = sparse_tl_.data_desc_.GetStride(-3);
+        int64_t resolution = sparse_tl_.data_desc_.GetStride(-2);
+        *z = value_offset_idx / resolution2;
+        *y = (value_offset_idx % resolution2) / resolution;
+        *x = value_offset_idx % resolution;
     }
 
     OPEN3D_HOST_DEVICE void* GetWorkloadKeyPtr(int64_t key_idx) const {
@@ -699,7 +660,9 @@ public:
         }
     }
     OPEN3D_HOST_DEVICE void* GetWorkloadValuePtr(
-            int64_t key_idx, int64_t value_offset_idx) const {
+            int64_t tensor_idx,
+            int64_t key_idx,
+            int64_t value_offset_idx) const {
         uint8_t* base;
         if (sparse_tl_.interleaved_) {
             base = static_cast<uint8_t*>(sparse_tl_.ptrs_[key_idx * 2 + 1]);
@@ -707,16 +670,14 @@ public:
             base = static_cast<uint8_t*>(
                     sparse_tl_.ptrs_[sparse_tl_.size_ + key_idx]);
         }
-        return base + value_offset_idx * tl_byte_size_;
+        return base +
+               sparse_tl_.data_desc_.GetOffset(tensor_idx, value_offset_idx);
     }
 
     OPEN3D_HOST_DEVICE void* GetInputPtrFrom2D(int64_t tensor_idx,
                                                int64_t u,
                                                int64_t v) const {
         int64_t ndims = inputs_[tensor_idx].ndims_;
-        // printf("(%ld %ld) in (%ld %ld)\n", v, u,
-        //        inputs_[tensor_idx].shape_[ndims - 2],
-        //        inputs_[tensor_idx].shape_[ndims - 1]);
         if (u < 0 || v < 0 || v >= inputs_[tensor_idx].shape_[ndims - 2] ||
             u >= inputs_[tensor_idx].shape_[ndims - 1]) {
             return nullptr;
@@ -727,15 +688,11 @@ public:
     }
 
     OPEN3D_HOST_DEVICE int64_t NumWorkloads() const {
-        return sparse_tl_.size_ * tl_elem_size_;
+        return sparse_tl_.size_ * sparse_tl_.data_desc_.num_elems_;
     }
 
 public:
     SparseTensorList sparse_tl_;
-    int64_t ndims_;
-    int64_t tl_elem_size_;
-    int64_t tl_byte_size_;
-    int64_t tl_strides_[MAX_DIMS];
 
     // Assume contiguous
     size_t input_byte_size_;

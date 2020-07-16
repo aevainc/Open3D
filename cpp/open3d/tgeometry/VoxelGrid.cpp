@@ -48,7 +48,7 @@ VoxelGrid::VoxelGrid(float voxel_size,
       device_(device) {
     hashmap_ = CreateDefaultHashmap(
             capacity, 3 * sizeof(int64_t),
-            resolution * resolution * resolution * sizeof(float), device);
+            2 * resolution * resolution * resolution * sizeof(float), device);
 }
 
 void VoxelGrid::Integrate(const tgeometry::Image &depth,
@@ -84,9 +84,9 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
 
     utility::LogInfo("Active entries = {}", N);
 
-    SparseTensorList sparse_tl(N, {resolution_, resolution_, resolution_},
-                               Dtype::Float32, static_cast<void **>(iterators),
-                               true, device_);
+    SparseTensorList sparse_tl(N, static_cast<void **>(iterators), true,
+                               {resolution_, resolution_, resolution_},
+                               {Dtype::Float32, Dtype::Float32}, device_);
     Projector projector(intrinsic, extrinsic, voxel_size_);
     kernel::SpecialOpEW(sparse_tl, {depth.data_}, projector,
                         kernel::SpecialOpCode::Integrate);

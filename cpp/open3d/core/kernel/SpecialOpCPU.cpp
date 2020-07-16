@@ -31,9 +31,15 @@ namespace open3d {
 namespace core {
 namespace kernel {
 
-void CPUIntegrateKernel(void* tsdf, const void* depth, float zc) {
-    if (tsdf != nullptr && depth != nullptr) {
-        *static_cast<float*>(tsdf) = (*static_cast<const float*>(depth) - zc);
+void CPUIntegrateKernel(void* tsdf, void* weight, const void* depth, float zc) {
+    if (depth != nullptr && weight != nullptr && zc > 0) {
+        // TODO: truncation
+        float sdf = (*static_cast<const float*>(depth) - zc);
+        float tsdf_sum = *static_cast<float*>(tsdf);
+        float weight_sum = *static_cast<float*>(weight);
+        *static_cast<float*>(tsdf) =
+                (weight_sum * tsdf_sum + sdf) / (weight_sum + 1);
+        *static_cast<float*>(weight) = weight_sum + 1;
     }
 }
 
@@ -49,8 +55,8 @@ void SpecialOpEWCPU(SparseTensorList& sparse_tensor,
             SparseIndexer indexer(sparse_tensor, {inputs[0]});
             CPULauncher::LaunchIntegrateKernel(
                     indexer, projector,
-                    [=](void* tsdf, const void* depth, float zc) {
-                        CPUIntegrateKernel(tsdf, depth, zc);
+                    [=](void* tsdf, void* weight, const void* depth, float zc) {
+                        CPUIntegrateKernel(tsdf, weight, depth, zc);
                     });
             utility::LogInfo("[SpecialOpEWCPU] CPULauncher finished");
             break;
