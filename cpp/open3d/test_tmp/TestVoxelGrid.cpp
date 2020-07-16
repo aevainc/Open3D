@@ -39,7 +39,11 @@ int main(int argc, char** argv) {
                     trajectory->parameters_[i].extrinsic_.cast<float>();
             Tensor extrinsic = FromEigen(extrinsic_).Copy(device);
 
+            utility::Timer timer;
+            timer.Start();
             voxel_grid.Integrate(depth, intrinsic, extrinsic);
+            timer.Stop();
+            utility::LogInfo("Integration takes {}", timer.GetDuration());
         }
     }
 }

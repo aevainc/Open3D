@@ -165,6 +165,8 @@ void CUDAHashmap<Hash, KeyEq>::Activate(const void* input_keys,
                                         iterator_t* output_iterators,
                                         bool* output_masks,
                                         size_t count) {
+    static int rehash_count = 0;
+
     bool extern_masks = (output_masks != nullptr);
     if (!extern_masks) {
         output_masks = static_cast<bool*>(
@@ -174,13 +176,15 @@ void CUDAHashmap<Hash, KeyEq>::Activate(const void* input_keys,
     // Check capacity
     int capacity = size();
     uint32_t new_capacity = capacity + count;
-
+    utility::LogInfo("Rehash count = {}, capacity = {}", rehash_count,
+                     this->capacity_);
     if (new_capacity > this->capacity_) {
         float avg_ratio = this->avg_capacity_bucket_ratio();
         uint32_t exp_buckets = uint32_t(std::ceil(new_capacity / avg_ratio));
 
         // At least increase by a factor of 2
         Rehash(std::max(this->bucket_count_ * 2, exp_buckets));
+        rehash_count++;
     }
 
     ActivateImpl(input_keys, output_iterators, output_masks, count);

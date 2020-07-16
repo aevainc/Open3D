@@ -63,6 +63,7 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     Tensor pose = FromEigen(pose_).Copy(device_);
     tgeometry::PointCloud pcd(pcd_map.T());
     pcd.Transform(pose);
+
     tgeometry::PointCloud pcd_down =
             pcd.VoxelDownSample(voxel_size_ * resolution_);
 
@@ -80,6 +81,7 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     hashmap_->Find(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
                    static_cast<iterator_t *>(iterators),
                    static_cast<bool *>(masks), N);
+
     utility::LogInfo("Active entries = {}", N);
 
     SparseTensorList sparse_tl(N, {resolution_, resolution_, resolution_},
