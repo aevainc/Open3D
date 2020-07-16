@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     auto trajectory = io::CreatePinholeCameraTrajectoryFromFile(
             fmt::format("{}/trajectory.log", root_path));
 
-    std::vector<Device> devices{Device("CPU:0"), Device("CUDA:0")};
+    std::vector<Device> devices{Device("CUDA:0"), Device("CPU:0")};
 
     for (auto device : devices) {
         tgeometry::PointCloud pcd_global(Dtype::Float32, device);
