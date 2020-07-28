@@ -27,6 +27,7 @@ set (KERNEL_CUDA_SRC
 
 set (CORE_SRC
     AdvancedIndexing.cpp
+    SparseIndexer.cpp
     ShapeUtil.cpp
     CUDAUtils.cpp
     Indexer.cpp

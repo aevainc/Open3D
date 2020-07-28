@@ -116,10 +116,6 @@ __global__ void ResetInternalKvPairManagerKernel(
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < ctx.max_capacity_) {
         ctx.heap_[i] = i;
-
-        for (int j = 0; j < ctx.dsize_value_; ++j) {
-            ctx.values_[j] = 0;
-        }
     }
 }
 
@@ -163,6 +159,7 @@ public:
         OPEN3D_CUDA_CHECK(cudaGetLastError());
 
         int heap_counter = 0;
+        cudaMemset(gpu_context_.values_, 0, max_capacity_ * dsize_value_);
         MemoryManager::Memcpy(gpu_context_.heap_counter_, device_,
                               &heap_counter, Device("CPU:0"), sizeof(int));
     }

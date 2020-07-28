@@ -35,23 +35,43 @@ namespace open3d {
 namespace core {
 namespace kernel {
 
-enum class SpecialOpCode { Integrate };
+enum class SpecialOpCode { Integrate, MarchingCubes, RayCasting };
 
-void SpecialOpEW(SparseTensorList& tgt,
-                 const std::vector<Tensor>& inputs,
-                 const Projector& projector,
+/// Read from sparse tensor lists and tensors, write to sparse tensor lists
+/// (Integrate, MarchingCubes)
+void SpecialOpEW(const std::vector<Tensor>& input_tensors,
+                 const std::vector<SparseTensorList>& input_sparse_tls,
+                 SparseTensorList& output_sparse_tl,
                  SpecialOpCode op_code);
 
-void SpecialOpEWCPU(SparseTensorList& tgt,
-                    const std::vector<Tensor>& inputs,
-                    const Projector& projector,
+void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
+                    const std::vector<SparseTensorList>& input_sparse_tls,
+                    SparseTensorList& output_sparse_tl,
                     SpecialOpCode op_code);
 
 #ifdef BUILD_CUDA_MODULE
-void SpecialOpEWCUDA(SparseTensorList& tgt,
-                     const std::vector<Tensor>& inputs,
-                     const Projector& projector,
+void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
+                     const std::vector<SparseTensorList>& input_sparse_tls,
+                     SparseTensorList& output_sparse_tl,
                      SpecialOpCode op_code);
+#endif
+
+/// Read from sparse tensor lists and tensors, write to tensors (RayCasting)
+// void SpecialOpEW(const std::vector<Tensor>& input_tensors,
+//                  const std::vector<SparseTensorList>& input_sparse_tls,
+//                  Tensor& output_tensor,
+//                  SpecialOpCode op_code);
+
+// void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
+//                     const std::vector<SparseTensorList>& input_sparse_tls,
+//                     Tensor& output_tensor,
+//                     SpecialOpCode op_code);
+
+// #ifdef BUILD_CUDA_MODULE
+// void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
+//                      const std::vector<SparseTensorList>& input_sparse_tls,
+//                      Tensor& output_tensor,
+//                      SpecialOpCode op_code);
 #endif
 
 }  // namespace kernel

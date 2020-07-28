@@ -601,5 +601,38 @@ IndexerIterator::Iterator IndexerIterator::end() const {
     return IndexerIterator::Iterator();
 }
 
+Projector::Projector(const Tensor& intrinsic,
+                     const Tensor& extrinsic,
+                     float scale) {
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            extrinsic_[i][j] = extrinsic[i][j].Item<float>();
+        }
+    }
+
+    fx_ = intrinsic[0][0].Item<float>();
+    fy_ = intrinsic[1][1].Item<float>();
+    cx_ = intrinsic[0][2].Item<float>();
+    cy_ = intrinsic[1][2].Item<float>();
+
+    scale_ = scale;
+}
+
+NDArrayIndexer::NDArrayIndexer(const SizeVector& shape,
+                               int64_t element_byte_size,
+                               const void* ptr) {
+    int64_t N = static_cast<int64_t>(shape.size());
+    if (N > MAX_RESOLUTION_DIMS) {
+        utility::LogError(
+                "Indexer array size too large, only <= {} is supported, but "
+                "get {}.",
+                MAX_RESOLUTION_DIMS, N);
+    }
+    for (int64_t i = 0; i < N; ++i) {
+        shape_[i] = shape[i];
+    }
+    element_byte_size_ = element_byte_size;
+    ptr_ = const_cast<void*>(ptr);
+}
 }  // namespace core
 }  // namespace open3d

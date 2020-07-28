@@ -45,6 +45,7 @@ class VoxelGrid : public Geometry3D {
 public:
     /// \brief Default Constructor.
     VoxelGrid(float voxel_size = 0.01,
+              float sdf_trunc = 0.03,
               int64_t resolution = 16,
               int64_t capacity = 1000,
               const Device &device = Device("CPU:0"));
@@ -84,6 +85,8 @@ public:
 
 protected:
     float voxel_size_;
+    float sdf_trunc_;
+
     int64_t resolution_;
     int64_t capacity_;
     Device device_;

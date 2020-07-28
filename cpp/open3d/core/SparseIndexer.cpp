@@ -24,55 +24,40 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#pragma once
-
-#include <cstddef>
-#include <memory>
-#include <string>
-
-#include "open3d/core/Blob.h"
-#include "open3d/core/CUDAUtils.h"
-#include "open3d/core/Device.h"
-#include "open3d/core/Dtype.h"
-#include "open3d/core/ShapeUtil.h"
-#include "open3d/core/SizeVector.h"
-#include "open3d/core/Tensor.h"
-#include "open3d/core/TensorKey.h"
+#include "open3d/core/SparseIndexer.h"
+#include <bits/stdint-intn.h>
 
 namespace open3d {
 namespace core {
+SparseIndexer::SparseIndexer(const SparseTensorList& sparse_tl,
+                             int64_t workload_per_entry) {
+    ptrs_ = sparse_tl.ptrs_;
+    size_ = sparse_tl.size_;
 
-class SparseTensorList {
-public:
-    SparseTensorList() = default;
+    // interleaved_: factor_ = 2, value's offset_ = 1
+    // non-interleaved_: factor_ = 1, value's offset_ = size_
+    if (sparse_tl.interleaved_) {
+        factor_ = 2;
+        offset_ = 1;
+    } else {
+        factor_ = 1;
+        offset_ = size_;
+    }
 
-    SparseTensorList(void** ptrs,
-                     size_t size,
-                     bool interleaved,
-                     const std::vector<SizeVector>& shapes,
-                     const std::vector<Dtype>& dtypes,
-                     const Device& device = Device("CPU:0"))
-        // Interleaved:
-        // k0ptr, v0ptr, k1ptr, v1ptr, ...
-        // Else:
-        // k0ptr, k1ptr, ..., v0ptr, v1ptr, ...
-        : ptrs_(ptrs),
-          size_(size),
-          interleaved_(interleaved),
-          device_(device),
-          shapes_(shapes),
-          dtypes_(dtypes) {}
+    workload_per_entry_ = workload_per_entry;
+    num_tensors_ = static_cast<int64_t>(sparse_tl.shapes_.size());
 
-    /// The shape for each element tensor in the sparse tensor list.
-    void** ptrs_;
-    int64_t size_;
-    bool interleaved_;
+    for (int64_t i = 0; i < num_tensors_; ++i) {
+        dtype_byte_sizes_[i] = DtypeUtil::ByteSize(sparse_tl.dtypes_[i]);
+    }
 
-    Device device_;
+    byte_offsets_[0] = 0;
+    for (size_t i = 1; i < sparse_tl.shapes_.size(); ++i) {
+        byte_offsets_[i] =
+                byte_offsets_[i - 1] + sparse_tl.shapes_[i - 1].NumElements() *
+                                               dtype_byte_sizes_[i - 1];
+    }
+}
 
-    // Interpret chunk of data with various shapes and dtypes
-    std::vector<SizeVector> shapes_;
-    std::vector<Dtype> dtypes_;
-};
 }  // namespace core
 }  // namespace open3d

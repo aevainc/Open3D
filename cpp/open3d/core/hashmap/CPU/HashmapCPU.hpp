@@ -116,6 +116,7 @@ void CPUHashmap<Hash, KeyEq>::Activate(const void* input_keys,
                 MemoryManager::Malloc(this->dsize_key_, this->device_));
         uint8_t* dummy_value = static_cast<uint8_t*>(
                 MemoryManager::Malloc(this->dsize_value_, this->device_));
+        memset(dummy_value, 0, this->dsize_value_);
 
         MemoryManager::Memcpy(dst_key, this->device_, src_key, this->device_,
                               this->dsize_key_);

@@ -562,25 +562,16 @@ private:
     const Indexer& indexer_;
 };
 
+/// Helper class for converting coordinates/indices between 3D/3D, 3D/2D, 2D/3D.
 class Projector {
 public:
+    /// intrinsic: pinhole camera matrix, stored in fx, fy, cx, cy
+    /// extrinsic: world to camera transform, stored in a 3x4 matrix
     Projector(const Tensor& intrinsic,
               const Tensor& extrinsic,
-              float scale = 1.0f) {
-        for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 4; ++j) {
-                extrinsic_[i][j] = extrinsic[i][j].Item<float>();
-            }
-        }
+              float scale = 1.0f);
 
-        fx_ = intrinsic[0][0].Item<float>();
-        fy_ = intrinsic[1][1].Item<float>();
-        cx_ = intrinsic[0][2].Item<float>();
-        cy_ = intrinsic[1][2].Item<float>();
-
-        scale_ = scale;
-    }
-
+    /// Transform a 3D coordinate in camera coordinate to world coordinate
     OPEN3D_HOST_DEVICE void Transform(float x_in,
                                       float y_in,
                                       float z_in,
@@ -599,6 +590,7 @@ public:
                  z_in * extrinsic_[2][2] + extrinsic_[2][3];
     }
 
+    /// Project a 3D coordinate in camera coordinate to a 2D uv coordinate
     OPEN3D_HOST_DEVICE void Project(float x_in,
                                     float y_in,
                                     float z_in,
@@ -607,6 +599,18 @@ public:
         float inv_z = 1.0f / z_in;
         *u_out = fx_ * x_in * inv_z + cx_;
         *v_out = fy_ * y_in * inv_z + cy_;
+    }
+
+    /// Unproject a 2D uv coordinate with depth to 3D in camera coordinate
+    OPEN3D_HOST_DEVICE void Unproject(float u_in,
+                                      float v_in,
+                                      float d_in,
+                                      float* x_out,
+                                      float* y_out,
+                                      float* z_out) const {
+        *x_out = (u_in - cx_) * d_in / fx_;
+        *y_out = (v_in - cy_) * d_in / fy_;
+        *z_out = d_in;
     }
 
 private:
@@ -619,84 +623,97 @@ private:
     float scale_;
 };
 
-class SparseIndexer {
+/// Convert between ND coordinates and their corresponding linear offsets
+/// Internal conversions:
+/// 2D: height (y), weight (x)
+/// 3D: z, y, x
+/// 4D: time, z, y, x
+const int64_t MAX_RESOLUTION_DIMS = 4;
+class NDArrayIndexer {
 public:
-    SparseIndexer(const SparseTensorList& sparse_tl,
-                  const std::vector<Tensor>& input_tensors) {
-        sparse_tl_ = sparse_tl;
+    NDArrayIndexer(const SizeVector& shape,
+                   int64_t element_byte_size,
+                   const void* ptr = nullptr);
 
-        for (size_t i = 0; i < input_tensors.size(); ++i) {
-            inputs_[i] = TensorRef(input_tensors[i]);
-        }
+    OPEN3D_HOST_DEVICE void Convert2DToOffset(int64_t x_in,
+                                              int64_t y_in,
+                                              int64_t* ind_out) const {
+        *ind_out = y_in * shape_[1] + x_in;
+        printf("(%ld, %ld) x (%ld %ld) => %ld\n", x_in, y_in, shape_[1],
+               shape_[0], *ind_out);
+    }
+    OPEN3D_HOST_DEVICE void Convert3DToOffset(int64_t x_in,
+                                              int64_t y_in,
+                                              int64_t z_in,
+                                              int64_t* ind_out) const {
+        *ind_out = (z_in * shape_[1] + y_in) * shape_[2] + x_in;
+    }
+    OPEN3D_HOST_DEVICE void Convert4DToOffset(int64_t x_in,
+                                              int64_t y_in,
+                                              int64_t z_in,
+                                              int64_t t_in,
+                                              int64_t* ind_out) const {
+        *ind_out = ((t_in * shape_[1] + z_in) * shape_[2] + y_in) * shape_[3] +
+                   x_in;
     }
 
-    OPEN3D_HOST_DEVICE void GetSparseWorkloadIdx(
-            int64_t workload_idx,
-            int64_t* key_idx,
-            int64_t* value_offset_idx) const {
-        *key_idx = workload_idx / (sparse_tl_.data_desc_.num_elems_);
-        *value_offset_idx = workload_idx % (sparse_tl_.data_desc_.num_elems_);
+    OPEN3D_HOST_DEVICE void ConvertOffsetTo2D(int64_t ind_in,
+                                              int64_t* x_out,
+                                              int64_t* y_out) const {
+        *x_out = ind_in % shape_[1];
+        *y_out = ind_in / shape_[1];
+    }
+    OPEN3D_HOST_DEVICE void ConvertOffsetTo3D(int64_t ind_in,
+                                              int64_t* x_out,
+                                              int64_t* y_out,
+                                              int64_t* z_out) const {
+        *x_out = ind_in % shape_[2];
+        ind_in = (ind_in - *x_out) / shape_[2];
+        *y_out = ind_in % shape_[1];
+        *z_out = ind_in / shape_[1];
+    }
+    OPEN3D_HOST_DEVICE void ConvertOffsetTo4D(int64_t ind_in,
+                                              int64_t* x_out,
+                                              int64_t* y_out,
+                                              int64_t* z_out,
+                                              int64_t* t_out) const {
+        *x_out = ind_in % shape_[3];
+        ind_in = (ind_in - *x_out) / shape_[3];
+        *y_out = ind_in % shape_[2];
+        ind_in = (ind_in - *y_out) / shape_[2];
+        *z_out = ind_in % shape_[1];
+        *t_out = ind_in / shape_[1];
     }
 
-    OPEN3D_HOST_DEVICE void GetWorkloadValue3DIdx(int64_t value_offset_idx,
-                                                  int64_t* x,
-                                                  int64_t* y,
-                                                  int64_t* z) const {
-        // [-3, -2, -1] corresponds to resolution^2, resolution, 1
-        int64_t resolution2 = sparse_tl_.data_desc_.GetStride(-3);
-        int64_t resolution = sparse_tl_.data_desc_.GetStride(-2);
-        *z = value_offset_idx / resolution2;
-        *y = (value_offset_idx % resolution2) / resolution;
-        *x = value_offset_idx % resolution;
+    OPEN3D_HOST_DEVICE bool InBoundary2D(float x, float y) const {
+        return y >= 0 && x >= 0 && y <= shape_[0] - 1.0f &&
+               x <= shape_[1] - 1.0f;
+    }
+    OPEN3D_HOST_DEVICE bool InBoundary3D(float x, float y, float z) const {
+        return z >= 0 && y >= 0 && x >= 0 && z <= shape_[0] - 1.0f &&
+               y <= shape_[1] - 1.0f && x <= shape_[2] - 1.0f;
+    }
+    OPEN3D_HOST_DEVICE bool InBoundary4D(float x,
+                                         float y,
+                                         float z,
+                                         float t) const {
+        return t >= 0 && z >= 0 && y >= 0 && x >= 0 && t <= shape_[0] - 1.0f &&
+               z <= shape_[1] - 1.0f && y <= shape_[2] - 1.0f &&
+               x <= shape_[3] - 1.0f;
     }
 
-    OPEN3D_HOST_DEVICE void* GetWorkloadKeyPtr(int64_t key_idx) const {
-        if (sparse_tl_.interleaved_) {
-            return static_cast<void*>(
-                    static_cast<uint8_t*>(sparse_tl_.ptrs_[key_idx * 2 + 0]));
-        } else {
-            return static_cast<void*>(
-                    static_cast<uint8_t*>(sparse_tl_.ptrs_[key_idx]));
-        }
-    }
-    OPEN3D_HOST_DEVICE void* GetWorkloadValuePtr(
-            int64_t tensor_idx,
-            int64_t key_idx,
-            int64_t value_offset_idx) const {
-        uint8_t* base;
-        if (sparse_tl_.interleaved_) {
-            base = static_cast<uint8_t*>(sparse_tl_.ptrs_[key_idx * 2 + 1]);
-        } else {
-            base = static_cast<uint8_t*>(
-                    sparse_tl_.ptrs_[sparse_tl_.size_ + key_idx]);
-        }
-        return base +
-               sparse_tl_.data_desc_.GetOffset(tensor_idx, value_offset_idx);
+    OPEN3D_HOST_DEVICE int64_t GetShape(int i) const { return shape_[i]; }
+
+    OPEN3D_HOST_DEVICE void* GetPtrFromOffset(int64_t offset) const {
+        return static_cast<void*>(static_cast<uint8_t*>(ptr_) +
+                                  offset * element_byte_size_);
     }
 
-    OPEN3D_HOST_DEVICE void* GetInputPtrFrom2D(int64_t tensor_idx,
-                                               int64_t u,
-                                               int64_t v) const {
-        int64_t ndims = inputs_[tensor_idx].ndims_;
-        if (u < 0 || v < 0 || v >= inputs_[tensor_idx].shape_[ndims - 2] ||
-            u >= inputs_[tensor_idx].shape_[ndims - 1]) {
-            return nullptr;
-        }
-        int64_t offset = v * inputs_[tensor_idx].byte_strides_[ndims - 2] +
-                         u * inputs_[tensor_idx].byte_strides_[ndims - 1];
-        return static_cast<char*>(inputs_[tensor_idx].data_ptr_) + offset;
-    }
-
-    OPEN3D_HOST_DEVICE int64_t NumWorkloads() const {
-        return sparse_tl_.size_ * sparse_tl_.data_desc_.num_elems_;
-    }
-
-public:
-    SparseTensorList sparse_tl_;
-
-    // Assume contiguous
-    size_t input_byte_size_;
-    TensorRef inputs_[MAX_DIMS];
+private:
+    void* ptr_;
+    int64_t shape_[MAX_RESOLUTION_DIMS];
+    int64_t element_byte_size_;
 };
+
 }  // namespace core
 }  // namespace open3d

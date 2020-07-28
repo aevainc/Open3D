@@ -30,21 +30,28 @@ namespace open3d {
 namespace core {
 namespace kernel {
 
-void SpecialOpEW(SparseTensorList& sparse_tl,
-                 const std::vector<Tensor>& inputs,
-                 const Projector& projector,
+void SpecialOpEW(const std::vector<Tensor>& input_tensors,
+                 const std::vector<SparseTensorList>& input_sparse_tls,
+                 SparseTensorList& output_sparse_tl,
                  SpecialOpCode op_code) {
-    if (sparse_tl.device_.GetType() == Device::DeviceType::CPU &&
-        inputs[0].GetDevice().GetType() == Device::DeviceType::CPU) {
-        SpecialOpEWCPU(sparse_tl, inputs, projector, op_code);
-    } else if (sparse_tl.device_.GetType() == Device::DeviceType::CUDA &&
-               inputs[0].GetDevice().GetType() == Device::DeviceType::CUDA) {
-        SpecialOpEWCUDA(sparse_tl, inputs, projector, op_code);
+    if (output_sparse_tl.device_.GetType() == Device::DeviceType::CPU &&
+        input_tensors[0].GetDevice().GetType() == Device::DeviceType::CPU) {
+        SpecialOpEWCPU(input_tensors, input_sparse_tls, output_sparse_tl,
+                       op_code);
+    } else if (output_sparse_tl.device_.GetType() == Device::DeviceType::CUDA &&
+               input_tensors[0].GetDevice().GetType() ==
+                       Device::DeviceType::CUDA) {
+        SpecialOpEWCUDA(input_tensors, input_sparse_tls, output_sparse_tl,
+                        op_code);
     } else {
         utility::LogError("Unsupported device");
     }
-    utility::LogInfo("[SpecialOpEW] quiting Ew");
 }
+
+// void SpecialOpEW(const std::vector<Tensor>& input_tensors,
+//                  const std::vector<SparseTensorList>& input_sparse_tls,
+//                  Tensor& output_tensor,
+//                  SpecialOpCode op_code) {}
 
 }  // namespace kernel
 }  // namespace core

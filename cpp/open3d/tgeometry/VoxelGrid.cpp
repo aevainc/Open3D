@@ -38,11 +38,13 @@ namespace tgeometry {
 using namespace core;
 
 VoxelGrid::VoxelGrid(float voxel_size,
+                     float sdf_trunc,
                      int64_t resolution,
                      int64_t capacity,
                      const Device &device)
     : Geometry3D(Geometry::GeometryType::VoxelGrid),
       voxel_size_(voxel_size),
+      sdf_trunc_(sdf_trunc),
       resolution_(resolution),
       capacity_(capacity),
       device_(device) {
@@ -84,12 +86,16 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
 
     utility::LogInfo("Active entries = {}", N);
 
-    SparseTensorList sparse_tl(N, static_cast<void **>(iterators), true,
-                               {resolution_, resolution_, resolution_},
-                               {Dtype::Float32, Dtype::Float32}, device_);
-    Projector projector(intrinsic, extrinsic, voxel_size_);
-    kernel::SpecialOpEW(sparse_tl, {depth.data_}, projector,
-                        kernel::SpecialOpCode::Integrate);
+    SizeVector shape = SizeVector{resolution_, resolution_, resolution_};
+    SparseTensorList sparse_tl(static_cast<void **>(iterators), N, true,
+                               {shape, shape}, {Dtype::Float32, Dtype::Float32},
+                               device_);
+    Tensor voxel_size(std::vector<float>{voxel_size_}, {1}, Dtype::Float32);
+    Tensor sdf_trunc(std::vector<float>{sdf_trunc_}, {1}, Dtype::Float32);
+
+    kernel::SpecialOpEW(
+            {depth.data_, intrinsic, extrinsic, voxel_size, sdf_trunc}, {},
+            sparse_tl, kernel::SpecialOpCode::Integrate);
     utility::LogInfo("[VoxelGrid] Kernel launch finished");
 
     // Then manipulate iterators to integrate!
