@@ -161,59 +161,17 @@ public:
     }
 
     template <typename func_t>
-    static void LaunchIntegrateKernel(const SparseIndexer& sparse_indexer,
-                                      const NDArrayIndexer& indexer3d,
-                                      const NDArrayIndexer& indexer2d,
-                                      const Projector& projector,
-                                      func_t element_kernel) {
+    static void LaunchGeneralKernel(int64_t n, func_t element_kernel) {
         OPEN3D_ASSERT_HOST_DEVICE_LAMBDA(func_t);
 
-        int64_t n = sparse_indexer.NumWorkloads();
         if (n == 0) {
             return;
         }
         int64_t items_per_block = default_block_size * default_thread_size;
         int64_t grid_size = (n + items_per_block - 1) / items_per_block;
 
-        auto f = [=] OPEN3D_HOST_DEVICE(int64_t workload_idx) {
-            int64_t key_idx, value_idx;
-            sparse_indexer.GetSparseWorkloadIdx(workload_idx, &key_idx,
-                                                &value_idx);
-
-            int64_t xl, yl, zl;
-            indexer3d.ConvertOffsetTo3D(value_idx, &xl, &yl, &zl);
-
-            void* key_ptr = sparse_indexer.GetWorkloadKeyPtr(key_idx);
-            int64_t xg = *(static_cast<int64_t*>(key_ptr) + 0);
-            int64_t yg = *(static_cast<int64_t*>(key_ptr) + 1);
-            int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
-
-            int64_t resolution = indexer3d.GetShape(0);
-            int64_t x = (xg * resolution + xl);
-            int64_t y = (yg * resolution + yl);
-            int64_t z = (zg * resolution + zl);
-
-            float xc, yc, zc, u, v;
-            projector.Transform(static_cast<float>(x), static_cast<float>(y),
-                                static_cast<float>(z), &xc, &yc, &zc);
-            projector.Project(xc, yc, zc, &u, &v);
-
-            if (indexer2d.InBoundary2D(u, v)) {
-                int64_t offset;
-                indexer2d.Convert2DToOffset(static_cast<int64_t>(u),
-                                            static_cast<int64_t>(v), &offset);
-
-                void* depth_ptr = indexer2d.GetPtrFromOffset(offset);
-                void* tsdf_ptr = sparse_indexer.GetWorkloadValuePtr(0, key_idx,
-                                                                    value_idx);
-                void* weight_ptr = sparse_indexer.GetWorkloadValuePtr(
-                        1, key_idx, value_idx);
-                element_kernel(tsdf_ptr, weight_ptr, depth_ptr, zc);
-            }
-        };
-
         ElementWiseKernel<default_block_size, default_thread_size>
-                <<<grid_size, default_block_size, 0>>>(n, f);
+                <<<grid_size, default_block_size, 0>>>(n, element_kernel);
         cudaDeviceSynchronize();
         OPEN3D_GET_LAST_CUDA_ERROR("LaunchIntegrateKernel failed.");
     }

@@ -185,54 +185,12 @@ public:
     }
 
     template <typename func_t>
-    static void LaunchIntegrateKernel(const SparseIndexer& sparse_indexer,
-                                      const NDArrayIndexer& indexer3d,
-                                      const NDArrayIndexer& indexer2d,
-                                      const Projector& projector,
-                                      func_t element_kernel) {
-        // #ifdef _OPENMP
-        // #pragma omp parallel for schedule(static)
-        // #endif
-
-        for (int64_t workload_idx = 0;
-             workload_idx < sparse_indexer.NumWorkloads(); ++workload_idx) {
-            int64_t key_idx, value_idx;
-            sparse_indexer.GetSparseWorkloadIdx(workload_idx, &key_idx,
-                                                &value_idx);
-
-            int64_t xl, yl, zl;
-            indexer3d.ConvertOffsetTo3D(value_idx, &xl, &yl, &zl);
-
-            void* key_ptr = sparse_indexer.GetWorkloadKeyPtr(key_idx);
-            int64_t xg = *(static_cast<int64_t*>(key_ptr) + 0);
-            int64_t yg = *(static_cast<int64_t*>(key_ptr) + 1);
-            int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
-
-            int64_t resolution = indexer3d.GetShape(0);
-            int64_t x = (xg * resolution + xl);
-            int64_t y = (yg * resolution + yl);
-            int64_t z = (zg * resolution + zl);
-
-            float xc, yc, zc, u, v;
-            projector.Transform(static_cast<float>(x), static_cast<float>(y),
-                                static_cast<float>(z), &xc, &yc, &zc);
-            projector.Project(xc, yc, zc, &u, &v);
-            printf("%ld -> (%ld, %ld) -> ([%ld %ld %ld], [%ld %ld %ld]) -> "
-                   "(%ld %ld %ld) -> (%f %f)\n",
-                   workload_idx, key_idx, value_idx, xg, yg, zg, xl, yl, zl, x,
-                   y, z, u, v);
-
-            if (indexer2d.InBoundary2D(u, v)) {
-                int64_t offset;
-                indexer2d.Convert2DToOffset(static_cast<int64_t>(u),
-                                            static_cast<int64_t>(v), &offset);
-                void* depth_ptr = indexer2d.GetPtrFromOffset(offset);
-                void* tsdf_ptr = sparse_indexer.GetWorkloadValuePtr(key_idx, 0,
-                                                                    value_idx);
-                void* weight_ptr = sparse_indexer.GetWorkloadValuePtr(
-                        key_idx, 1, value_idx);
-                element_kernel(tsdf_ptr, weight_ptr, depth_ptr, zc);
-            }
+    static void LaunchGeneralKernel(int64_t n, func_t element_kernel) {
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+        for (int64_t workload_idx = 0; workload_idx < n; ++workload_idx) {
+            element_kernel(workload_idx);
         }
     }
 };

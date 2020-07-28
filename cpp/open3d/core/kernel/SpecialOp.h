@@ -72,7 +72,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
 //                      const std::vector<SparseTensorList>& input_sparse_tls,
 //                      Tensor& output_tensor,
 //                      SpecialOpCode op_code);
-#endif
+// #endif
 
 }  // namespace kernel
 }  // namespace core

@@ -639,8 +639,6 @@ public:
                                               int64_t y_in,
                                               int64_t* ind_out) const {
         *ind_out = y_in * shape_[1] + x_in;
-        printf("(%ld, %ld) x (%ld %ld) => %ld\n", x_in, y_in, shape_[1],
-               shape_[0], *ind_out);
     }
     OPEN3D_HOST_DEVICE void Convert3DToOffset(int64_t x_in,
                                               int64_t y_in,

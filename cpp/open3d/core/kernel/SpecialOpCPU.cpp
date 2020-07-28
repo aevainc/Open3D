@@ -33,28 +33,7 @@ namespace open3d {
 namespace core {
 namespace kernel {
 
-void CPUIntegrateKernel(void* tsdf,
-                        void* weight,
-                        const void* depth,
-                        float zc,
-                        float sdf_trunc) {
-    float d = *static_cast<const float*>(depth);
-    float sdf = d - zc;
-    if (d > 0 && zc > 0 && sdf >= -sdf_trunc) {
-        printf("Integrate kernel: %f = %f - %f\n", sdf, d, zc);
-
-        sdf = sdf < sdf_trunc ? sdf : sdf_trunc;
-        sdf /= sdf_trunc;
-
-        float tsdf_sum = *static_cast<float*>(tsdf);
-        float weight_sum = *static_cast<float*>(weight);
-        *static_cast<float*>(tsdf) =
-                (weight_sum * tsdf_sum + sdf) / (weight_sum + 1);
-        *static_cast<float*>(weight) = weight_sum + 1;
-        printf("(%f %f) + (%f 1) => (%f, %f)\n", tsdf_sum, weight_sum, sdf,
-               *static_cast<float*>(tsdf), *static_cast<float*>(weight));
-    }
-}
+void CPUIntegrateKernel(int64_t workload_idx) {}
 
 void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                     const std::vector<SparseTensorList>& input_sparse_tls,
@@ -79,11 +58,68 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
 
             Projector projector(input_tensors[1], input_tensors[2], voxel_size);
 
-            CPULauncher::LaunchIntegrateKernel(
-                    sparse_indexer, indexer3d, indexer2d, projector,
-                    [=](void* tsdf, void* weight, const void* depth, float zc) {
-                        CPUIntegrateKernel(tsdf, weight, depth, zc, sdf_trunc);
-                    });
+            int64_t n = sparse_indexer.NumWorkloads();
+            CPULauncher::LaunchGeneralKernel(n, [=](int64_t workload_idx) {
+                int64_t key_idx, value_idx;
+                sparse_indexer.GetSparseWorkloadIdx(workload_idx, &key_idx,
+                                                    &value_idx);
+
+                int64_t xl, yl, zl;
+                indexer3d.ConvertOffsetTo3D(value_idx, &xl, &yl, &zl);
+
+                void* key_ptr = sparse_indexer.GetWorkloadKeyPtr(key_idx);
+                int64_t xg = *(static_cast<int64_t*>(key_ptr) + 0);
+                int64_t yg = *(static_cast<int64_t*>(key_ptr) + 1);
+                int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
+
+                int64_t resolution = indexer3d.GetShape(0);
+                int64_t x = (xg * resolution + xl);
+                int64_t y = (yg * resolution + yl);
+                int64_t z = (zg * resolution + zl);
+
+                float xc, yc, zc, u, v;
+                projector.Transform(static_cast<float>(x),
+                                    static_cast<float>(y),
+                                    static_cast<float>(z), &xc, &yc, &zc);
+                projector.Project(xc, yc, zc, &u, &v);
+                // printf("%ld -> (%ld, %ld) -> ([%ld %ld %ld], [%ld %ld
+                // %ld]) -> "
+                //        "(%ld %ld %ld) -> (%f %f)\n",
+                //        workload_idx, key_idx, value_idx, xg, yg, zg,
+                //        xl, yl, zl, x, y, z, u, v);
+
+                if (!indexer2d.InBoundary2D(u, v)) {
+                    return;
+                }
+
+                int64_t offset;
+                indexer2d.Convert2DToOffset(static_cast<int64_t>(u),
+                                            static_cast<int64_t>(v), &offset);
+                float depth = *static_cast<const float*>(
+                        indexer2d.GetPtrFromOffset(offset));
+
+                float sdf = depth - zc;
+                if (depth <= 0 || zc <= 0 || sdf < -sdf_trunc) {
+                    return;
+                }
+                sdf = sdf < sdf_trunc ? sdf : sdf_trunc;
+                sdf /= sdf_trunc;
+
+                void* tsdf_ptr = sparse_indexer.GetWorkloadValuePtr(key_idx, 0,
+                                                                    value_idx);
+                void* weight_ptr = sparse_indexer.GetWorkloadValuePtr(
+                        key_idx, 1, value_idx);
+
+                float tsdf_sum = *static_cast<float*>(tsdf_ptr);
+                float weight_sum = *static_cast<float*>(weight_ptr);
+                *static_cast<float*>(tsdf_ptr) =
+                        (weight_sum * tsdf_sum + sdf) / (weight_sum + 1);
+                *static_cast<float*>(weight_ptr) = weight_sum + 1;
+                // printf("(%f %f) + (%f 1) => (%f, %f)\n", tsdf_sum,
+                // weight_sum,
+                //        sdf, *static_cast<float*>(tsdf_ptr),
+                //        *static_cast<float*>(weight_ptr));
+            });
             utility::LogInfo("[SpecialOpEWCPU] CPULauncher finished");
             break;
         };

@@ -31,26 +31,6 @@ namespace open3d {
 namespace core {
 namespace kernel {
 
-void OPEN3D_HOST_DEVICE CUDAIntegrateKernel(void* tsdf,
-                                            void* weight,
-                                            const void* depth,
-                                            float zc,
-                                            float sdf_trunc) {
-    if (depth != nullptr && weight != nullptr && zc > 0) {
-        float sdf = (*static_cast<const float*>(depth) - zc);
-        if (sdf >= -sdf_trunc) {
-            sdf = sdf < sdf_trunc ? sdf : sdf_trunc;
-            sdf /= sdf_trunc;
-
-            float tsdf_sum = *static_cast<float*>(tsdf);
-            float weight_sum = *static_cast<float*>(weight);
-            *static_cast<float*>(tsdf) =
-                    (weight_sum * tsdf_sum + sdf) / (weight_sum + 1);
-            *static_cast<float*>(weight) = weight_sum + 1;
-        }
-    }
-}
-
 void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                      const std::vector<SparseTensorList>& input_sparse_tls,
                      SparseTensorList& output_sparse_tl,
@@ -60,6 +40,8 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
             // sparse_tls: tsdf grid
             // tensors: depth, intrinsic, extrinsic
             SizeVector grid_shape = output_sparse_tl.shapes_[0];
+            float voxel_size = input_tensors[3][0].Item<float>();
+            float sdf_trunc = input_tensors[4][0].Item<float>();
 
             SparseIndexer sparse_indexer(output_sparse_tl,
                                          grid_shape.NumElements());
@@ -69,16 +51,74 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
             NDArrayIndexer indexer2d({chw[1], chw[2]},
                                      DtypeUtil::ByteSize(Dtype::Float32),
                                      input_tensors[0].GetDataPtr());
-            Projector projector(input_tensors[1], input_tensors[2]);
-            float sdf_trunc = input_tensors[3][0].Item<float>();
 
-            CUDALauncher::LaunchIntegrateKernel(
-                    sparse_indexer, indexer3d, indexer2d, projector,
-                    [=] OPEN3D_HOST_DEVICE(void* tsdf, void* weight,
-                                           const void* depth, float zc) {
-                        CUDAIntegrateKernel(tsdf, weight, depth, zc, sdf_trunc);
-                    });
-            utility::LogInfo("[SpecialOpEWCPU] CUDALauncher finished");
+            Projector projector(input_tensors[1], input_tensors[2], voxel_size);
+            int64_t n = sparse_indexer.NumWorkloads();
+
+            CUDALauncher::LaunchGeneralKernel(n, [=] OPEN3D_HOST_DEVICE(
+                                                         int64_t workload_idx) {
+                int64_t key_idx, value_idx;
+                sparse_indexer.GetSparseWorkloadIdx(workload_idx, &key_idx,
+                                                    &value_idx);
+
+                int64_t xl, yl, zl;
+                indexer3d.ConvertOffsetTo3D(value_idx, &xl, &yl, &zl);
+
+                void* key_ptr = sparse_indexer.GetWorkloadKeyPtr(key_idx);
+                int64_t xg = *(static_cast<int64_t*>(key_ptr) + 0);
+                int64_t yg = *(static_cast<int64_t*>(key_ptr) + 1);
+                int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
+
+                int64_t resolution = indexer3d.GetShape(0);
+                int64_t x = (xg * resolution + xl);
+                int64_t y = (yg * resolution + yl);
+                int64_t z = (zg * resolution + zl);
+
+                float xc, yc, zc, u, v;
+                projector.Transform(static_cast<float>(x),
+                                    static_cast<float>(y),
+                                    static_cast<float>(z), &xc, &yc, &zc);
+                projector.Project(xc, yc, zc, &u, &v);
+                // printf("%ld -> (%ld, %ld) -> ([%ld %ld %ld], [%ld %ld
+                // "
+                //        "%ld]) -> "
+                //        "(%ld %ld %ld) -> (%f %f)\n",
+                //        workload_idx, key_idx, value_idx, xg, yg, zg,
+                //        xl, yl, zl, x, y, z, u, v);
+
+                if (!indexer2d.InBoundary2D(u, v)) {
+                    return;
+                }
+
+                int64_t offset;
+                indexer2d.Convert2DToOffset(static_cast<int64_t>(u),
+                                            static_cast<int64_t>(v), &offset);
+                float depth = *static_cast<const float*>(
+                        indexer2d.GetPtrFromOffset(offset));
+
+                float sdf = depth - zc;
+                if (depth <= 0 || zc <= 0 || sdf < -sdf_trunc) {
+                    return;
+                }
+                sdf = sdf < sdf_trunc ? sdf : sdf_trunc;
+                sdf /= sdf_trunc;
+
+                void* tsdf_ptr = sparse_indexer.GetWorkloadValuePtr(key_idx, 0,
+                                                                    value_idx);
+                void* weight_ptr = sparse_indexer.GetWorkloadValuePtr(
+                        key_idx, 1, value_idx);
+
+                float tsdf_sum = *static_cast<float*>(tsdf_ptr);
+                float weight_sum = *static_cast<float*>(weight_ptr);
+                *static_cast<float*>(tsdf_ptr) =
+                        (weight_sum * tsdf_sum + sdf) / (weight_sum + 1);
+                *static_cast<float*>(weight_ptr) = weight_sum + 1;
+                // printf("(%f %f) + (%f 1) => (%f, %f)\n", tsdf_sum,
+                //        weight_sum, sdf,
+                //        *static_cast<float*>(tsdf_ptr),
+                //        *static_cast<float*>(weight_ptr));
+            });
+            utility::LogInfo("[SpecialOpEWCUDA] CUDALauncher finished");
             break;
         };
         default: { utility::LogError("Unsupported special op"); }
