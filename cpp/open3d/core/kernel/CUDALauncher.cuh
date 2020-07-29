@@ -162,7 +162,7 @@ public:
 
     template <typename func_t>
     static void LaunchGeneralKernel(int64_t n, func_t element_kernel) {
-        OPEN3D_ASSERT_HOST_DEVICE_LAMBDA(func_t);
+        // OPEN3D_ASSERT_HOST_DEVICE_LAMBDA(func_t);
 
         if (n == 0) {
             return;

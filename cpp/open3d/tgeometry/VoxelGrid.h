@@ -83,6 +83,8 @@ public:
                    const Tensor &intrinsic,
                    const Tensor &extrinsic);
 
+    void ExtractSurfacePoints();
+
 protected:
     float voxel_size_;
     float sdf_trunc_;

@@ -73,8 +73,8 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     SizeVector coords_shape = coords.GetShape();
     int64_t N = coords_shape[0];
 
-    auto iterators = MemoryManager::Malloc(sizeof(iterator_t) * N, device_);
-    auto masks = MemoryManager::Malloc(sizeof(bool) * N, device_);
+    void *iterators = MemoryManager::Malloc(sizeof(iterator_t) * N, device_);
+    void *masks = MemoryManager::Malloc(sizeof(bool) * N, device_);
 
     hashmap_->Activate(static_cast<void *>(coords.GetBlob()->GetDataPtr()),
                        static_cast<iterator_t *>(iterators),
@@ -105,6 +105,52 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     utility::LogInfo("[VoxelGrid] masks freed");
 
     utility::LogInfo("Hashmap size = {}", hashmap_->size());
+}
+
+void VoxelGrid::ExtractSurfacePoints() {
+    int64_t n = hashmap_->size();
+    utility::LogInfo("n = {}", n);
+    void *tsdf_iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * n, device_);
+    void *surf_iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * n, device_);
+    void *keys = MemoryManager::Malloc(3 * sizeof(int64_t) * n, device_);
+    void *masks = MemoryManager::Malloc(sizeof(bool) * n, device_);
+
+    hashmap_->GetIterators(static_cast<iterator_t *>(tsdf_iterators));
+
+    SizeVector shape = SizeVector{resolution_, resolution_, resolution_};
+    SparseTensorList sparse_tsdf_tl(static_cast<void **>(tsdf_iterators), n,
+                                    true, {shape, shape},
+                                    {Dtype::Float32, Dtype::Float32}, device_);
+
+    hashmap_->UnpackIterators(static_cast<iterator_t *>(tsdf_iterators),
+                              /* masks = */ nullptr, keys, nullptr, n);
+
+    /// Each voxel corresponds to ptrs to 3 vertices
+    auto surface_hashmap = CreateDefaultHashmap(
+            hashmap_->size(), 3 * sizeof(int64_t),
+            3 * resolution_ * resolution_ * resolution_ * sizeof(int), device_);
+
+    surface_hashmap->Activate(keys, static_cast<iterator_t *>(surf_iterators),
+                              static_cast<bool *>(masks), n);
+
+    SparseTensorList sparse_surf_tl(static_cast<void **>(surf_iterators), n,
+                                    true, {shape, shape, shape},
+                                    {Dtype::Int32, Dtype::Int32, Dtype::Int32},
+                                    device_);
+    utility::LogInfo("sparse surf tl done");
+
+    Tensor voxel_size(std::vector<float>{voxel_size_}, {1}, Dtype::Float32);
+
+    kernel::SpecialOpEW({voxel_size}, {sparse_tsdf_tl}, sparse_surf_tl,
+                        kernel::SpecialOpCode::ExtractSurface);
+
+    MemoryManager::Free(tsdf_iterators, device_);
+    MemoryManager::Free(surf_iterators, device_);
+    MemoryManager::Free(keys, device_);
+    MemoryManager::Free(masks, device_);
+    MemoryManager::ReleaseCache(device_);
 }
 
 }  // namespace tgeometry

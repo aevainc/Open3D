@@ -54,6 +54,7 @@ CPUHashmap<Hash, KeyEq>::~CPUHashmap() {
         MemoryManager::Free(kv_pair.first, this->device_);
         MemoryManager::Free(kv_pair.second, this->device_);
     }
+    impl_->clear();
 };
 
 template <typename Hash, typename KeyEq>

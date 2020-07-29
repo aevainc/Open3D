@@ -35,7 +35,12 @@ namespace open3d {
 namespace core {
 namespace kernel {
 
-enum class SpecialOpCode { Integrate, MarchingCubes, RayCasting };
+enum class SpecialOpCode {
+    Integrate,
+    ExtractSurface,
+    MarchingCubes,
+    RayCasting
+};
 
 /// Read from sparse tensor lists and tensors, write to sparse tensor lists
 /// (Integrate, MarchingCubes)

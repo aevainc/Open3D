@@ -176,8 +176,8 @@ void CUDAHashmap<Hash, KeyEq>::Activate(const void* input_keys,
     // Check capacity
     int capacity = size();
     uint32_t new_capacity = capacity + count;
-    utility::LogInfo("Rehash count = {}, capacity = {}", rehash_count,
-                     this->capacity_);
+    utility::LogInfo("Rehash count = {}, capacity = {}, new_capacity = {}", count,
+                     this->capacity_, new_capacity);
     if (new_capacity > this->capacity_) {
         float avg_ratio = this->avg_capacity_bucket_ratio();
         uint32_t exp_buckets = uint32_t(std::ceil(new_capacity / avg_ratio));
@@ -376,7 +376,7 @@ void CUDAHashmap<Hash, KeyEq>::AssignIterators(iterator_t* input_iterators,
 
 template <typename Hash, typename KeyEq>
 void CUDAHashmap<Hash, KeyEq>::Rehash(size_t buckets) {
-    utility::LogInfo("Rehash: {} -> {}", this->bucket_count_, buckets);
+    utility::LogInfo("Rehashing: {} -> {}", this->bucket_count_, buckets);
     // TODO: add a size operator instead of rough estimation
     auto output_iterators = (iterator_t*)MemoryManager::Malloc(
             sizeof(iterator_t) * this->capacity_, this->device_);

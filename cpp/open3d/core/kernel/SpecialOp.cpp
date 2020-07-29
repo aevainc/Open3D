@@ -34,13 +34,10 @@ void SpecialOpEW(const std::vector<Tensor>& input_tensors,
                  const std::vector<SparseTensorList>& input_sparse_tls,
                  SparseTensorList& output_sparse_tl,
                  SpecialOpCode op_code) {
-    if (output_sparse_tl.device_.GetType() == Device::DeviceType::CPU &&
-        input_tensors[0].GetDevice().GetType() == Device::DeviceType::CPU) {
+    if (output_sparse_tl.device_.GetType() == Device::DeviceType::CPU) {
         SpecialOpEWCPU(input_tensors, input_sparse_tls, output_sparse_tl,
                        op_code);
-    } else if (output_sparse_tl.device_.GetType() == Device::DeviceType::CUDA &&
-               input_tensors[0].GetDevice().GetType() ==
-                       Device::DeviceType::CUDA) {
+    } else if (output_sparse_tl.device_.GetType() == Device::DeviceType::CUDA) {
         SpecialOpEWCUDA(input_tensors, input_sparse_tls, output_sparse_tl,
                         op_code);
     } else {
