@@ -83,7 +83,7 @@ public:
                    const Tensor &intrinsic,
                    const Tensor &extrinsic);
 
-    void ExtractSurfacePoints();
+    tgeometry::PointCloud ExtractSurfacePoints();
 
 protected:
     float voxel_size_;

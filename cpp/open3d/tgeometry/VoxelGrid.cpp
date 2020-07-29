@@ -93,9 +93,10 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     Tensor voxel_size(std::vector<float>{voxel_size_}, {1}, Dtype::Float32);
     Tensor sdf_trunc(std::vector<float>{sdf_trunc_}, {1}, Dtype::Float32);
 
+    Tensor output_dummy;
     kernel::SpecialOpEW(
             {depth.data_, intrinsic, extrinsic, voxel_size, sdf_trunc}, {},
-            sparse_tl, kernel::SpecialOpCode::Integrate);
+            output_dummy, sparse_tl, kernel::SpecialOpCode::Integrate);
     utility::LogInfo("[VoxelGrid] Kernel launch finished");
 
     // Then manipulate iterators to integrate!
@@ -107,7 +108,7 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     utility::LogInfo("Hashmap size = {}", hashmap_->size());
 }
 
-void VoxelGrid::ExtractSurfacePoints() {
+tgeometry::PointCloud VoxelGrid::ExtractSurfacePoints() {
     int64_t n = hashmap_->size();
     utility::LogInfo("n = {}", n);
     void *tsdf_iterators =
@@ -142,8 +143,8 @@ void VoxelGrid::ExtractSurfacePoints() {
     utility::LogInfo("sparse surf tl done");
 
     Tensor voxel_size(std::vector<float>{voxel_size_}, {1}, Dtype::Float32);
-
-    kernel::SpecialOpEW({voxel_size}, {sparse_tsdf_tl}, sparse_surf_tl,
+    Tensor output;
+    kernel::SpecialOpEW({voxel_size}, {sparse_tsdf_tl}, output, sparse_surf_tl,
                         kernel::SpecialOpCode::ExtractSurface);
 
     MemoryManager::Free(tsdf_iterators, device_);
@@ -151,6 +152,8 @@ void VoxelGrid::ExtractSurfacePoints() {
     MemoryManager::Free(keys, device_);
     MemoryManager::Free(masks, device_);
     MemoryManager::ReleaseCache(device_);
+
+    return tgeometry::PointCloud(output.T());
 }
 
 }  // namespace tgeometry

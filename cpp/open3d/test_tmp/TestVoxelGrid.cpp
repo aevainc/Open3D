@@ -45,6 +45,9 @@ int main(int argc, char** argv) {
             timer.Stop();
             utility::LogInfo("Integration takes {}", timer.GetDuration());
         }
-        voxel_grid.ExtractSurfacePoints();
+        tgeometry::PointCloud pcd = voxel_grid.ExtractSurfacePoints();
+        auto pcd_legacy = std::make_shared<geometry::PointCloud>(
+                tgeometry::PointCloud::ToLegacyPointCloud(pcd));
+        open3d::visualization::DrawGeometries({pcd_legacy});
     }
 }

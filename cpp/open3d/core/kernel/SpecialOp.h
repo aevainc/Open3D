@@ -46,17 +46,20 @@ enum class SpecialOpCode {
 /// (Integrate, MarchingCubes)
 void SpecialOpEW(const std::vector<Tensor>& input_tensors,
                  const std::vector<SparseTensorList>& input_sparse_tls,
+                 Tensor& output_tensor,
                  SparseTensorList& output_sparse_tl,
                  SpecialOpCode op_code);
 
 void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                     const std::vector<SparseTensorList>& input_sparse_tls,
+                    Tensor& output_tensor,
                     SparseTensorList& output_sparse_tl,
                     SpecialOpCode op_code);
 
 #ifdef BUILD_CUDA_MODULE
 void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                      const std::vector<SparseTensorList>& input_sparse_tls,
+                     Tensor& output_tensor,
                      SparseTensorList& output_sparse_tl,
                      SpecialOpCode op_code);
 #endif

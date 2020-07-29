@@ -33,6 +33,7 @@ namespace kernel {
 
 void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                      const std::vector<SparseTensorList>& input_sparse_tls,
+                     Tensor& output_tensor,
                      SparseTensorList& output_sparse_tl,
                      SpecialOpCode op_code) {
     utility::LogInfo("SpecialOpEWCUDA");
@@ -130,9 +131,22 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                                        grid_shape.NumElements());
             int64_t n = tsdf_indexer.NumWorkloads();
 
-            int* count = static_cast<int*>(MemoryManager::Malloc(
-                    sizeof(int), output_sparse_tl.device_));
-            cudaMemset(count, 0, sizeof(int));
+            Device device = output_sparse_tl.device_;
+            Tensor count(std::vector<int>{0}, {1}, Dtype::Int32, device);
+            int* count_ptr = static_cast<int*>(count.GetDataPtr());
+
+            // TODO: adaptive
+            int total_count = 600000;
+            Tensor vertices_x({total_count}, Dtype::Float32, device);
+            Tensor vertices_y({total_count}, Dtype::Float32, device);
+            Tensor vertices_z({total_count}, Dtype::Float32, device);
+            float* vertices_x_ptr =
+                    static_cast<float*>(vertices_x.GetDataPtr());
+            float* vertices_y_ptr =
+                    static_cast<float*>(vertices_y.GetDataPtr());
+            float* vertices_z_ptr =
+                    static_cast<float*>(vertices_z.GetDataPtr());
+
             CUDALauncher::LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(
                                                          int64_t workload_idx) {
                 int64_t key_idx, value_idx;
@@ -198,26 +212,45 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                         surf_indexer.GetWorkloadValuePtr(key_idx, 2, offset_z));
 
                 if (weight_x > 0 && tsdf_x * tsdf_o < 0) {
-                    int idx = atomicAdd(count, 1);
-                    *vertex_ind_x = int(x);
-                    printf("x, idx = %d\n", idx);
+                    float ratio = tsdf_x / (tsdf_x - tsdf_o);
+                    int idx = atomicAdd(count_ptr, 1);
+                    *vertex_ind_x = idx;
+                    vertices_x_ptr[idx] = x + ratio * voxel_size;
+                    vertices_y_ptr[idx] = y;
+                    vertices_z_ptr[idx] = z;
                 }
                 if (weight_y > 0 && tsdf_y * tsdf_o < 0) {
-                    int idx = atomicAdd(count, 1);
-                    *vertex_ind_y = int(y);
-                    printf("y, idx = %d\n", idx);
+                    float ratio = tsdf_y / (tsdf_y - tsdf_o);
+                    int idx = atomicAdd(count_ptr, 1);
+                    *vertex_ind_y = idx;
+                    vertices_x_ptr[idx] = x;
+                    vertices_y_ptr[idx] = y + ratio * voxel_size;
+                    vertices_z_ptr[idx] = z;
                 }
                 if (weight_z > 0 && tsdf_z * tsdf_o < 0) {
-                    int idx = atomicAdd(count, 1);
-                    *vertex_ind_z = int(z);
-                    printf("z, idx = %d\n", idx);
+                    float ratio = tsdf_z / (tsdf_z - tsdf_o);
+                    int idx = atomicAdd(count_ptr, 1);
+                    *vertex_ind_z = idx;
+                    vertices_x_ptr[idx] = x;
+                    vertices_y_ptr[idx] = y;
+                    vertices_z_ptr[idx] = z + ratio * voxel_size;
                 }
             });
+
+            int actual_count = count[0].Item<int>();
+
+            output_tensor = Tensor({3, actual_count}, Dtype::Float32, device);
+            output_tensor[0].Slice(0, 0, actual_count) =
+                    vertices_x.Slice(0, 0, actual_count);
+            output_tensor[1].Slice(0, 0, actual_count) =
+                    vertices_y.Slice(0, 0, actual_count);
+            output_tensor[2].Slice(0, 0, actual_count) =
+                    vertices_z.Slice(0, 0, actual_count);
             break;
         }
         default: { utility::LogError("Unsupported special op"); }
     }
-}
+}  // namespace kernel
 }  // namespace kernel
 }  // namespace core
 }  // namespace open3d
