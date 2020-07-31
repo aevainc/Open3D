@@ -136,7 +136,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
             int* count_ptr = static_cast<int*>(count.GetDataPtr());
 
             // TODO: adaptive
-            int total_count = 600000;
+            int total_count = 1400000;
             Tensor vertices_x({total_count}, Dtype::Float32, device);
             Tensor vertices_y({total_count}, Dtype::Float32, device);
             Tensor vertices_z({total_count}, Dtype::Float32, device);
