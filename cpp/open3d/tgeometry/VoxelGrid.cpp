@@ -108,7 +108,59 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     utility::LogInfo("Hashmap size = {}", hashmap_->size());
 }
 
+std::pair<SparseTensorList, Tensor> VoxelGrid::ExtractNearestNeighbors() {
+    int64_t n = hashmap_->size();
+    void *block_iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * n, device_);
+
+    hashmap_->GetIterators(static_cast<iterator_t *>(block_iterators));
+
+    Tensor keys({n, 3}, Dtype::Int64, device_);
+    hashmap_->UnpackIterators(static_cast<iterator_t *>(block_iterators),
+                              nullptr, keys.GetDataPtr(), nullptr, n);
+    std::cout << keys.ToString() << "\n";
+
+    Tensor keys_nb({27, n, 3}, Dtype::Int64, device_);
+    void *nb_iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * n * 27, device_);
+    Tensor masks_nb({27, n}, Dtype::Bool, device_);
+    for (int nb = 0; nb < 27; ++nb) {
+        int dz = nb / 9;
+        int dy = (nb % 9) / 3;
+        int dx = nb % 3;
+        Tensor dt = Tensor(std::vector<int64_t>{dx - 1, dy - 1, dz - 1}, {1, 3},
+                           Dtype::Int64, device_);
+        keys_nb[nb] = keys + dt;
+    }
+
+    hashmap_->Find(keys_nb.GetDataPtr(),
+                   static_cast<iterator_t *>(nb_iterators),
+                   static_cast<bool *>(masks_nb.GetDataPtr()), n * 27);
+
+    for (int nb = 0; nb < 27; ++nb) {
+        int dz = nb / 9;
+        int dy = (nb % 9) / 3;
+        int dx = nb % 3;
+        Tensor mask_nb = masks_nb[nb];
+        utility::LogInfo("{}: ({}, {}, {}) => {}", nb, dx - 1, dy - 1, dz - 1,
+                         mask_nb.To(Dtype::Int32).Sum({0}).Item<int>());
+    }
+
+    /// 27 * n nbs (some of them are empty), each pointing to a TSDF and a
+    /// weight Tensor
+    SizeVector shape = SizeVector{resolution_, resolution_, resolution_};
+    SparseTensorList sparse_nb_tsdf_tl(
+            static_cast<void **>(nb_iterators), 27 * n, true, {shape, shape},
+            {Dtype::Float32, Dtype::Float32}, device_);
+
+    return std::make_pair(sparse_nb_tsdf_tl, masks_nb);
+}
+
 tgeometry::PointCloud VoxelGrid::ExtractSurfacePoints() {
+    SparseTensorList sparse_nb_tsdf_tl;
+    Tensor masks_nb;
+    std::tie(sparse_nb_tsdf_tl, masks_nb) = ExtractNearestNeighbors();
+
     int64_t n = hashmap_->size();
     utility::LogInfo("n = {}", n);
     void *tsdf_iterators =

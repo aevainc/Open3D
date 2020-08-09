@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "open3d/core/SparseTensorList.h"
 #include "open3d/core/Tensor.h"
 #include "open3d/core/TensorList.h"
 #include "open3d/core/hashmap/HashmapBase.h"
@@ -83,6 +84,7 @@ public:
                    const Tensor &intrinsic,
                    const Tensor &extrinsic);
 
+    std::pair<SparseTensorList, Tensor> ExtractNearestNeighbors();
     tgeometry::PointCloud ExtractSurfacePoints();
 
 protected:
