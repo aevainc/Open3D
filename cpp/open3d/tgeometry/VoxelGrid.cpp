@@ -196,8 +196,9 @@ tgeometry::PointCloud VoxelGrid::ExtractSurfacePoints() {
 
     Tensor voxel_size(std::vector<float>{voxel_size_}, {1}, Dtype::Float32);
     Tensor output;
-    kernel::SpecialOpEW({voxel_size}, {sparse_tsdf_tl}, output, sparse_surf_tl,
-                        kernel::SpecialOpCode::ExtractSurface);
+    kernel::SpecialOpEW({voxel_size, masks_nb},
+                        {sparse_tsdf_tl, sparse_nb_tsdf_tl}, output,
+                        sparse_surf_tl, kernel::SpecialOpCode::ExtractSurface);
 
     MemoryManager::Free(tsdf_iterators, device_);
     MemoryManager::Free(surf_iterators, device_);

@@ -122,11 +122,19 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
             SizeVector grid_shape = output_sparse_tl.shapes_[0];
             float voxel_size = input_tensors[0][0].Item<float>();
 
+            // res x res x res
             NDArrayIndexer indexer3d(grid_shape,
                                      DtypeUtil::ByteSize(Dtype::Int32));
-
+            // 27 x n
+            NDArrayIndexer indexer2d(input_tensors[1].GetShape(),
+                                     DtypeUtil::ByteSize(Dtype::Bool),
+                                     input_tensors[1].GetDataPtr());
+            // n => res x res x res
             SparseIndexer tsdf_indexer(input_sparse_tls[0],
                                        grid_shape.NumElements());
+            // 27 x n => res x res x res
+            SparseIndexer tsdf_nb_indexer(input_sparse_tls[1],
+                                          grid_shape.NumElements());
             SparseIndexer surf_indexer(output_sparse_tl,
                                        grid_shape.NumElements());
             int64_t n = tsdf_indexer.NumWorkloads();
@@ -158,16 +166,41 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
 
                 int64_t resolution = indexer3d.GetShape(0);
 
-                /// We don't handle boundaries for now -- come back later!
-                if (xl == resolution - 1 || yl == resolution - 1 ||
-                    zl == resolution - 1) {
-                    return;
-                }
+                // Check if boundary neighbors exist
+                bool flag_x = false, flag_y = false, flag_z = false;
+                if (xl == resolution - 1) {
+                    flag_x = true;
+                    int64_t offset;
+                    indexer2d.Convert2DToOffset(1, key_idx, &offset);
+                    void* ptr = indexer2d.GetPtrFromOffset(offset);
+                    bool nb_valid = *static_cast<bool*>(ptr);
 
-                int64_t offset_x, offset_y, offset_z;
-                indexer3d.Convert3DToOffset(xl + 1, yl, zl, &offset_x);
-                indexer3d.Convert3DToOffset(xl, yl + 1, zl, &offset_y);
-                indexer3d.Convert3DToOffset(xl, yl, zl + 1, &offset_z);
+                    if (!nb_valid) {
+                        return;
+                    }
+                }
+                if (yl == resolution - 1) {
+                    flag_y = true;
+                    int64_t offset;
+                    indexer2d.Convert2DToOffset(3, key_idx, &offset);
+                    void* ptr = indexer2d.GetPtrFromOffset(offset);
+                    bool nb_valid = *static_cast<bool*>(ptr);
+
+                    if (!nb_valid) {
+                        return;
+                    }
+                }
+                if (zl == resolution - 1) {
+                    flag_z = true;
+                    int64_t offset;
+                    indexer2d.Convert2DToOffset(9, key_idx, &offset);
+                    void* ptr = indexer2d.GetPtrFromOffset(offset);
+                    bool nb_valid = *static_cast<bool*>(ptr);
+
+                    if (!nb_valid) {
+                        return;
+                    }
+                }
 
                 /// Query values from tsdf grid
                 float tsdf_o =
@@ -189,32 +222,85 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                 float y = (yg * resolution + yl) * voxel_size;
                 float z = (zg * resolution + zl) * voxel_size;
 
-                float tsdf_x = *static_cast<float*>(
-                        tsdf_indexer.GetWorkloadValuePtr(key_idx, 0, offset_x));
-                float weight_x = *static_cast<float*>(
-                        tsdf_indexer.GetWorkloadValuePtr(key_idx, 1, offset_x));
+                int64_t offset_x, offset_y, offset_z;
+                indexer3d.Convert3DToOffset(xl + 1, yl, zl, &offset_x);
+                indexer3d.Convert3DToOffset(xl, yl + 1, zl, &offset_y);
+                indexer3d.Convert3DToOffset(xl, yl, zl + 1, &offset_z);
 
-                float tsdf_y = *static_cast<float*>(
-                        tsdf_indexer.GetWorkloadValuePtr(key_idx, 0, offset_y));
-                float weight_y = *static_cast<float*>(
-                        tsdf_indexer.GetWorkloadValuePtr(key_idx, 1, offset_y));
+                float tsdf_x;
+                float weight_x;
+                if (!flag_x) {
+                    tsdf_x = *static_cast<float*>(
+                            tsdf_indexer.GetWorkloadValuePtr(key_idx, 0,
+                                                             offset_x));
+                    weight_x = *static_cast<float*>(
+                            tsdf_indexer.GetWorkloadValuePtr(key_idx, 1,
+                                                             offset_x));
+                } else {
+                    int64_t nb_offset_x;
+                    indexer3d.Convert3DToOffset(0, yl, zl, &nb_offset_x);
+                    tsdf_x = *static_cast<float*>(
+                            tsdf_nb_indexer.GetWorkloadValuePtr(key_idx, 0,
+                                                                nb_offset_x));
+                    weight_x = *static_cast<float*>(
+                            tsdf_nb_indexer.GetWorkloadValuePtr(key_idx, 1,
+                                                                nb_offset_x));
+                }
 
-                float tsdf_z = *static_cast<float*>(
-                        tsdf_indexer.GetWorkloadValuePtr(key_idx, 0, offset_z));
-                float weight_z = *static_cast<float*>(
-                        tsdf_indexer.GetWorkloadValuePtr(key_idx, 1, offset_z));
+                float tsdf_y;
+                float weight_y;
+                if (!flag_y) {
+                    tsdf_y = *static_cast<float*>(
+                            tsdf_indexer.GetWorkloadValuePtr(key_idx, 0,
+                                                             offset_y));
+                    weight_y = *static_cast<float*>(
+                            tsdf_indexer.GetWorkloadValuePtr(key_idx, 1,
+                                                             offset_y));
+                } else {
+                    int64_t nb_offset_y;
+                    indexer3d.Convert3DToOffset(xl, 0, zl, &nb_offset_y);
+                    tsdf_y = *static_cast<float*>(
+                            tsdf_nb_indexer.GetWorkloadValuePtr(
+                                    3 * n + key_idx, 0, nb_offset_y));
+                    weight_y = *static_cast<float*>(
+                            tsdf_nb_indexer.GetWorkloadValuePtr(
+                                    3 * n + key_idx, 1, nb_offset_y));
+                }
 
-                int* vertex_ind_x = static_cast<int*>(
-                        surf_indexer.GetWorkloadValuePtr(key_idx, 0, offset_x));
-                int* vertex_ind_y = static_cast<int*>(
-                        surf_indexer.GetWorkloadValuePtr(key_idx, 1, offset_y));
-                int* vertex_ind_z = static_cast<int*>(
-                        surf_indexer.GetWorkloadValuePtr(key_idx, 2, offset_z));
+                float tsdf_z;
+                float weight_z;
+                if (!flag_z) {
+                    tsdf_z = *static_cast<float*>(
+                            tsdf_indexer.GetWorkloadValuePtr(key_idx, 0,
+                                                             offset_z));
+                    weight_z = *static_cast<float*>(
+                            tsdf_indexer.GetWorkloadValuePtr(key_idx, 1,
+                                                             offset_z));
+                } else {
+                    int64_t nb_offset_z;
+                    indexer3d.Convert3DToOffset(xl, yl, 0, &nb_offset_z);
+                    tsdf_z = *static_cast<float*>(
+                            tsdf_nb_indexer.GetWorkloadValuePtr(
+                                    9 * n + key_idx, 0, nb_offset_z));
+                    weight_z = *static_cast<float*>(
+                            tsdf_nb_indexer.GetWorkloadValuePtr(
+                                    9 * n + key_idx, 1, nb_offset_z));
+                }
+
+                // int* vertex_ind_x = static_cast<int*>(
+                //         surf_indexer.GetWorkloadValuePtr(key_idx, 0,
+                //         offset_x));
+                // int* vertex_ind_y = static_cast<int*>(
+                //         surf_indexer.GetWorkloadValuePtr(key_idx, 1,
+                //         offset_y));
+                // int* vertex_ind_z = static_cast<int*>(
+                //         surf_indexer.GetWorkloadValuePtr(key_idx, 2,
+                //         offset_z));
 
                 if (weight_x > 0 && tsdf_x * tsdf_o < 0) {
                     float ratio = tsdf_x / (tsdf_x - tsdf_o);
                     int idx = atomicAdd(count_ptr, 1);
-                    *vertex_ind_x = idx;
+                    // *vertex_ind_x = idx;
                     vertices_x_ptr[idx] = x + ratio * voxel_size;
                     vertices_y_ptr[idx] = y;
                     vertices_z_ptr[idx] = z;
@@ -222,7 +308,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                 if (weight_y > 0 && tsdf_y * tsdf_o < 0) {
                     float ratio = tsdf_y / (tsdf_y - tsdf_o);
                     int idx = atomicAdd(count_ptr, 1);
-                    *vertex_ind_y = idx;
+                    // *vertex_ind_y = idx;
                     vertices_x_ptr[idx] = x;
                     vertices_y_ptr[idx] = y + ratio * voxel_size;
                     vertices_z_ptr[idx] = z;
@@ -230,7 +316,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                 if (weight_z > 0 && tsdf_z * tsdf_o < 0) {
                     float ratio = tsdf_z / (tsdf_z - tsdf_o);
                     int idx = atomicAdd(count_ptr, 1);
-                    *vertex_ind_z = idx;
+                    // *vertex_ind_z = idx;
                     vertices_x_ptr[idx] = x;
                     vertices_y_ptr[idx] = y;
                     vertices_z_ptr[idx] = z + ratio * voxel_size;
