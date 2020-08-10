@@ -39,7 +39,8 @@ enum class SpecialOpCode {
     Integrate,
     ExtractSurface,
     MarchingCubes,
-    RayCasting
+    RayCasting,
+    Check
 };
 
 /// Read from sparse tensor lists and tensors, write to sparse tensor lists
