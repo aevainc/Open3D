@@ -126,6 +126,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
             NDArrayIndexer indexer3d(grid_shape,
                                      DtypeUtil::ByteSize(Dtype::Int32));
             // 27 x n
+            SizeVector nshape = input_tensors[1].GetShape();
             NDArrayIndexer indexer2d(input_tensors[1].GetShape(),
                                      DtypeUtil::ByteSize(Dtype::Bool),
                                      input_tensors[1].GetDataPtr());
@@ -146,7 +147,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
             int* count_ptr = static_cast<int*>(count.GetDataPtr());
 
             // TODO: adaptive
-            int total_count = 1400000;
+            int total_count = 18000000;
             Tensor vertices_x({total_count}, Dtype::Float32, device);
             Tensor vertices_y({total_count}, Dtype::Float32, device);
             Tensor vertices_z({total_count}, Dtype::Float32, device);
@@ -238,14 +239,14 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                             tsdf_indexer.GetWorkloadValuePtr(key_idx, 1,
                                                              offset_x));
                 } else {
-                    // int64_t nb_offset_x;
-                    // indexer3d.Convert3DToOffset(0, yl, zl, &nb_offset_x);
-                    // void* ptr = tsdf_nb_indexer.GetWorkloadValuePtr(
-                    //         2 * m + key_idx, 1, 0);
-                    // printf("0, %p / %ld, %ld\n", nb_offset_x, ptr, m, n);
-                    // weight_x = *static_cast<float*>(
-                    //         tsdf_nb_indexer.GetWorkloadValuePtr(
-                    //                 m * 14 + key_idx, 1, 0));
+                    int64_t nb_offset_x;
+                    indexer3d.Convert3DToOffset(0, yl, zl, &nb_offset_x);
+                    tsdf_x = *static_cast<float*>(
+                            tsdf_nb_indexer.GetWorkloadValuePtr(
+                                    14 * m + key_idx, 0, nb_offset_x));
+                    weight_x = *static_cast<float*>(
+                            tsdf_nb_indexer.GetWorkloadValuePtr(
+                                    14 * m + key_idx, 1, nb_offset_x));
                 }
 
                 float tsdf_y;
@@ -262,10 +263,10 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                     indexer3d.Convert3DToOffset(xl, 0, zl, &nb_offset_y);
                     tsdf_y = *static_cast<float*>(
                             tsdf_nb_indexer.GetWorkloadValuePtr(
-                                    16 * n + key_idx, 0, nb_offset_y));
+                                    16 * m + key_idx, 0, nb_offset_y));
                     weight_y = *static_cast<float*>(
                             tsdf_nb_indexer.GetWorkloadValuePtr(
-                                    16 * n + key_idx, 1, nb_offset_y));
+                                    16 * m + key_idx, 1, nb_offset_y));
                 }
 
                 float tsdf_z;
@@ -282,26 +283,26 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                     indexer3d.Convert3DToOffset(xl, yl, 0, &nb_offset_z);
                     tsdf_z = *static_cast<float*>(
                             tsdf_nb_indexer.GetWorkloadValuePtr(
-                                    22 * n + key_idx, 0, nb_offset_z));
+                                    22 * m + key_idx, 0, nb_offset_z));
                     weight_z = *static_cast<float*>(
                             tsdf_nb_indexer.GetWorkloadValuePtr(
-                                    22 * n + key_idx, 1, nb_offset_z));
+                                    22 * m + key_idx, 1, nb_offset_z));
                 }
 
-                // int* vertex_ind_x = static_cast<int*>(
-                //         surf_indexer.GetWorkloadValuePtr(key_idx, 0,
-                //         offset_x));
-                // int* vertex_ind_y = static_cast<int*>(
-                //         surf_indexer.GetWorkloadValuePtr(key_idx, 1,
-                //         offset_y));
-                // int* vertex_ind_z = static_cast<int*>(
-                //         surf_indexer.GetWorkloadValuePtr(key_idx, 2,
-                //         offset_z));
+                int* vertex_ind_x =
+                        static_cast<int*>(surf_indexer.GetWorkloadValuePtr(
+                                key_idx, 0, value_idx));
+                int* vertex_ind_y =
+                        static_cast<int*>(surf_indexer.GetWorkloadValuePtr(
+                                key_idx, 1, value_idx));
+                int* vertex_ind_z =
+                        static_cast<int*>(surf_indexer.GetWorkloadValuePtr(
+                                key_idx, 2, value_idx));
 
                 if (weight_x > 0 && tsdf_x * tsdf_o < 0) {
                     float ratio = tsdf_x / (tsdf_x - tsdf_o);
                     int idx = atomicAdd(count_ptr, 1);
-                    // *vertex_ind_x = idx;
+                    *vertex_ind_x = idx;
                     vertices_x_ptr[idx] = x + ratio * voxel_size;
                     vertices_y_ptr[idx] = y;
                     vertices_z_ptr[idx] = z;
@@ -309,7 +310,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                 if (weight_y > 0 && tsdf_y * tsdf_o < 0) {
                     float ratio = tsdf_y / (tsdf_y - tsdf_o);
                     int idx = atomicAdd(count_ptr, 1);
-                    // *vertex_ind_y = idx;
+                    *vertex_ind_y = idx;
                     vertices_x_ptr[idx] = x;
                     vertices_y_ptr[idx] = y + ratio * voxel_size;
                     vertices_z_ptr[idx] = z;
@@ -317,7 +318,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                 if (weight_z > 0 && tsdf_z * tsdf_o < 0) {
                     float ratio = tsdf_z / (tsdf_z - tsdf_o);
                     int idx = atomicAdd(count_ptr, 1);
-                    // *vertex_ind_z = idx;
+                    *vertex_ind_z = idx;
                     vertices_x_ptr[idx] = x;
                     vertices_y_ptr[idx] = y;
                     vertices_z_ptr[idx] = z + ratio * voxel_size;
@@ -325,6 +326,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
             });
 
             int actual_count = count[0].Item<int>();
+            std::cout << actual_count << "\n";
 
             output_tensor = Tensor({3, actual_count}, Dtype::Float32, device);
             output_tensor[0].Slice(0, 0, actual_count) =

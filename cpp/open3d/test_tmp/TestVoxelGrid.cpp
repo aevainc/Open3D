@@ -22,11 +22,11 @@ int main(int argc, char** argv) {
     auto trajectory = io::CreatePinholeCameraTrajectoryFromFile(
             fmt::format("{}/trajectory.log", root_path));
 
-    std::vector<Device> devices{Device("CPU:0")};  //, Device("CPU:0")};
+    std::vector<Device> devices{Device("CUDA:0"), Device("CPU:0")};
 
     for (auto device : devices) {
-        tgeometry::VoxelGrid voxel_grid(0.005, 0.024, 16, 10, device);
-        for (int i = 0; i < 1; ++i) {
+        tgeometry::VoxelGrid voxel_grid(0.008, 0.024, 16, 10, device);
+        for (int i = 0; i < 3000; ++i) {
             /// Load image
             std::string image_path =
                     fmt::format("{}/depth/{:06d}.png", root_path, i + 1);
