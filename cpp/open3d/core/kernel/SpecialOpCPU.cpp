@@ -303,30 +303,45 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
 
                 if (weight_x > 0 && tsdf_x * tsdf_o < 0) {
                     float ratio = tsdf_x / (tsdf_x - tsdf_o);
-                    int idx = *count_ptr;
-                    *vertex_ind_x = idx;
-                    vertices_x_ptr[idx] = x + ratio * voxel_size;
-                    vertices_y_ptr[idx] = y;
-                    vertices_z_ptr[idx] = z;
-                    *count_ptr += 1;
+#ifdef _OPENMP
+#pragma omp critical
+#endif
+                    {
+                        int idx = *count_ptr;
+                        *vertex_ind_x = idx;
+                        vertices_x_ptr[idx] = x + ratio * voxel_size;
+                        vertices_y_ptr[idx] = y;
+                        vertices_z_ptr[idx] = z;
+                        *count_ptr += 1;
+                    }
                 }
                 if (weight_y > 0 && tsdf_y * tsdf_o < 0) {
                     float ratio = tsdf_y / (tsdf_y - tsdf_o);
-                    int idx = *count_ptr;
-                    *vertex_ind_y = idx;
-                    vertices_x_ptr[idx] = x;
-                    vertices_y_ptr[idx] = y + ratio * voxel_size;
-                    vertices_z_ptr[idx] = z;
-                    *count_ptr += 1;
+#ifdef _OPENMP
+#pragma omp critical
+#endif
+                    {
+                        int idx = *count_ptr;
+                        *vertex_ind_y = idx;
+                        vertices_x_ptr[idx] = x;
+                        vertices_y_ptr[idx] = y + ratio * voxel_size;
+                        vertices_z_ptr[idx] = z;
+                        *count_ptr += 1;
+                    }
                 }
                 if (weight_z > 0 && tsdf_z * tsdf_o < 0) {
                     float ratio = tsdf_z / (tsdf_z - tsdf_o);
-                    int idx = *count_ptr;
-                    *vertex_ind_z = idx;
-                    vertices_x_ptr[idx] = x;
-                    vertices_y_ptr[idx] = y;
-                    vertices_z_ptr[idx] = z + ratio * voxel_size;
-                    *count_ptr += 1;
+#ifdef _OPENMP
+#pragma omp critical
+#endif
+                    {
+                        int idx = *count_ptr;
+                        *vertex_ind_z = idx;
+                        vertices_x_ptr[idx] = x;
+                        vertices_y_ptr[idx] = y;
+                        vertices_z_ptr[idx] = z + ratio * voxel_size;
+                        *count_ptr += 1;
+                    }
                 }
             });
 
@@ -344,7 +359,7 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
         default: { utility::LogError("Unsupported special op"); }
     }
     utility::LogInfo("[SpecialOpEWCPU] Exiting SpecialOpEWCPU");
-}
+}  // namespace kernel
 }  // namespace kernel
 }  // namespace core
 }  // namespace open3d
