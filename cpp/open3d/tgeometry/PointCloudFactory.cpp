@@ -71,6 +71,20 @@ inline Eigen::Vector3d FromTensor3d(const Tensor& tensor) {
     }
 }
 
+inline Eigen::Vector3i FromTensor3i(const Tensor& tensor) {
+    Dtype dtype = tensor.GetDtype();
+    if (dtype == Dtype::Int64) {
+        return Eigen::Vector3i(tensor[0].Item<int64_t>(),
+                               tensor[1].Item<int64_t>(),
+                               tensor[2].Item<int64_t>());
+    } else if (dtype == Dtype::Int32) {
+        return Eigen::Vector3i(tensor[0].Item<int>(), tensor[1].Item<int>(),
+                               tensor[2].Item<int>());
+    } else {
+        utility::LogError("Unsupported dtype for FromTensor3d.");
+    }
+}
+
 tgeometry::PointCloud PointCloud::FromLegacyPointCloud(
         const geometry::PointCloud& pcd_legacy, Dtype dtype, Device device) {
     tgeometry::PointCloud pcd(dtype, device);
@@ -146,6 +160,35 @@ geometry::PointCloud PointCloud::ToLegacyPointCloud(
         pcd_legacy.normals_.resize(N);
         for (int64_t i = 0; i < N; ++i) {
             pcd_legacy.normals_[i] = FromTensor3d(ns_tensor[i]);
+        }
+    }
+
+    return pcd_legacy;
+}
+
+geometry::TriangleMesh PointCloud::ToLegacyTriangleMesh(
+        const tgeometry::PointCloud& pcd) {
+    geometry::TriangleMesh pcd_legacy;
+
+    Device host = Device("CPU:0");
+
+    if (pcd.HasPoints()) {
+        Tensor pts_tensor =
+                pcd.point_dict_.find("points")->second.AsTensor().Copy(host);
+        int64_t N = pts_tensor.GetShape()[0];
+        pcd_legacy.vertices_.resize(N);
+        for (int64_t i = 0; i < N; ++i) {
+            pcd_legacy.vertices_[i] = FromTensor3d(pts_tensor[i]);
+        }
+    }
+
+    if (pcd.HasTriangles()) {
+        Tensor tris_tensor =
+                pcd.point_dict_.find("triangles")->second.AsTensor().Copy(host);
+        int64_t N = tris_tensor.GetShape()[0];
+        pcd_legacy.triangles_.resize(N);
+        for (int64_t i = 0; i < N; ++i) {
+            pcd_legacy.triangles_[i] = FromTensor3i(tris_tensor[i]);
         }
     }
 

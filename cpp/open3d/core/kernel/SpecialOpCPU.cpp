@@ -261,7 +261,6 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
             // output_sparse_tl: surface grid
             // tensors: voxel_size, sdf_trunc
             SizeVector grid_shape = output_sparse_tl.shapes_[0];
-            float voxel_size = input_tensors[0][0].Item<float>();
 
             // res x res x res
             NDArrayIndexer indexer3d(grid_shape,
@@ -270,22 +269,22 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
             NDArrayIndexer indexer2d(input_tensors[1].GetShape(),
                                      DtypeUtil::ByteSize(Dtype::Bool),
                                      input_tensors[1].GetDataPtr());
-            // n => res x res x res
+
+            // n => res x res x res x 2
             SparseIndexer tsdf_indexer(input_sparse_tls[0],
                                        grid_shape.NumElements());
 
-            // 27 x n => res x res x res
+            // 27 x n => res x res x res x 2
             SparseIndexer tsdf_nb_indexer(input_sparse_tls[1],
                                           grid_shape.NumElements());
 
-            // 27 x n => res x res x res x 4
-            // each should contain [3 x vtx_idx, table_idx]
-            // can be optimized later
+            // 27 x n => res x res x res x 4 [3 x vtx_idx, table_idx]
             SparseIndexer surf_nb_indexer(output_sparse_tl,
                                           grid_shape.NumElements());
 
             int64_t n = tsdf_indexer.NumWorkloads();
             int64_t m = input_tensors[1].GetShape()[1];
+            std::cout << n << " " << m << "\n";
 
             Device device = output_sparse_tl.device_;
 
@@ -305,10 +304,14 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
 
                 // Enumerate 8 neighbor corners (including itself)
                 int table_index = 0;
+                int* table_index_ptr =
+                        static_cast<int*>(surf_nb_indexer.GetWorkloadValuePtr(
+                                13 * m + key_idx, 3, value_idx));
+                *table_index_ptr = 0;
                 for (int i = 0; i < 8; ++i) {
-                    int64_t xl_i = xl + (i & 1);
-                    int64_t yl_i = yl + (i & 2);
-                    int64_t zl_i = zl + (i & 4);
+                    int64_t xl_i = xl + vtx_shifts[i][0];
+                    int64_t yl_i = yl + vtx_shifts[i][1];
+                    int64_t zl_i = zl + vtx_shifts[i][2];
 
                     int dx = xl_i / resolution;
                     int dy = yl_i / resolution;
@@ -326,23 +329,26 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                     int64_t nb_value_idx;
                     indexer3d.Convert3DToOffset(
                             xl_i - dx * resolution, yl_i - dy * resolution,
-                            zl_i - dz * resolution, &nb_value_x);
-                    float tsdf_i = *static_cast<float*>(
-                            tsdf_nb_indexer.GetWorkloadValuePtr(
-                                    nb_idx * m + key_idx, 0, nb_value_idx));
+                            zl_i - dz * resolution, &nb_value_idx);
                     float weight_i = *static_cast<float*>(
                             tsdf_nb_indexer.GetWorkloadValuePtr(
                                     nb_idx * m + key_idx, 1, nb_value_idx));
-                    if (weight_i == 0 || fabsf(tsdf_i) >= 0.95) return;
+                    if (weight_i == 0) return;
+
+                    float tsdf_i = *static_cast<float*>(
+                            tsdf_nb_indexer.GetWorkloadValuePtr(
+                                    nb_idx * m + key_idx, 0, nb_value_idx));
 
                     table_index |= ((tsdf_i < 0) ? (1 << i) : 0);
                 }
+                *table_index_ptr = table_index;
+
                 if (table_index == 0 || table_index == 255) return;
 
                 // Enumerate 12 edges
                 int edges_w_vertices = edge_table[table_index];
                 for (int i = 0; i < 12; ++i) {
-                    if (edges_w_vertices & (1 << edge)) {
+                    if (edges_w_vertices & (1 << i)) {
                         int64_t xl_i = xl + edge_shifts[i][0];
                         int64_t yl_i = yl + edge_shifts[i][1];
                         int64_t zl_i = zl + edge_shifts[i][2];
@@ -358,7 +364,7 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                         int64_t nb_value_idx;
                         indexer3d.Convert3DToOffset(
                                 xl_i - dx * resolution, yl_i - dy * resolution,
-                                zl_i - dz * resolution, &nb_value_x);
+                                zl_i - dz * resolution, &nb_value_idx);
                         int* vertex_idx = static_cast<int*>(
                                 surf_nb_indexer.GetWorkloadValuePtr(
                                         nb_idx * m + key_idx, edge_i,
@@ -369,28 +375,30 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                     }
                 }
 
-                // Not an atomic write
-                int* tri_ptr =
-                        static_cast<int*>(surf_nb_indexer.GetWorkloadValuePtr(
-                                13 * m + key_idx, 3, value_idx));
-                *tri_ptr = table_index;
-
-#ifdef _OPENMP
-#pragma omp critical
-#endif
+                // #ifdef _OPENMP
+                // #pragma omp critical
+                // #endif
                 { *tri_count_ptr += tri_count[table_index]; }
             });
 
+            std::cout << output_tensor.ToString() << "\n";
             break;
         }
 
         case SpecialOpCode::MarchingCubesPass1: {
+            utility::LogInfo("MC Pass1");
             // input_sparse_tls: tsdf grid
             // output_sparse_tl: surface grid
             // tensors: voxel_size, sdf_trunc
             SizeVector grid_shape = output_sparse_tl.shapes_[0];
             float voxel_size = input_tensors[0][0].Item<float>();
-            int count = input_tensors[1][0].Item<int>();
+            int triangle_count = input_tensors[1][0].Item<int>();
+            std::cout << triangle_count << "\n";
+
+            // std::cout << input_tensors[0].ToString() << "\n";
+            // std::cout << input_tensors[1].ToString() << "\n";
+            // std::cout << input_tensors[2].ToString() << "\n";
+            // return;
 
             // res x res x res
             NDArrayIndexer indexer3d(grid_shape,
@@ -411,11 +419,12 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                                        grid_shape.NumElements());
 
             int64_t n = tsdf_indexer.NumWorkloads();
-            int64_t m = input_tensors[1].GetShape()[1];
+            int64_t m = input_tensors[2].GetShape()[1];
+            std::cout << n << " " << m << "\n";
 
             Device device = output_sparse_tl.device_;
 
-            int vtx_count_bound = 3 * count;
+            int vtx_count_bound = 3 * triangle_count;
             Tensor vertices_x({vtx_count_bound}, Dtype::Float32, device);
             Tensor vertices_y({vtx_count_bound}, Dtype::Float32, device);
             Tensor vertices_z({vtx_count_bound}, Dtype::Float32, device);
@@ -427,7 +436,7 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                     static_cast<float*>(vertices_z.GetDataPtr());
 
             Tensor vtx_count(std::vector<int>{0}, {1}, Dtype::Int32, device);
-            int* vtx_count_ptr = static_cast<int*>(count.GetDataPtr());
+            int* vtx_count_ptr = static_cast<int*>(vtx_count.GetDataPtr());
 
             // Pass 1: allocate points and
             CPULauncher::LaunchGeneralKernel(n, [=](int64_t workload_idx) {
@@ -444,20 +453,18 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                                 key_idx, 0, value_idx));
 
                 // Enumerate 8 neighbor corners (including itself)
-                int table_index = 0;
                 for (int i = 0; i < 3; ++i) {
                     int* vertex_idx =
                             static_cast<int*>(surf_indexer.GetWorkloadValuePtr(
                                     key_idx, i, value_idx));
 
-                    // not allocated or already assigned. no race condition here
                     if (*vertex_idx != -1) {
                         continue;
                     }
 
-                    int64_t xl_i = xl + (i == 1);
-                    int64_t yl_i = yl + (i == 2);
-                    int64_t zl_i = zl + (i == 3);
+                    int64_t xl_i = xl + int(i == 0);
+                    int64_t yl_i = yl + int(i == 1);
+                    int64_t zl_i = zl + int(i == 2);
 
                     int dx = xl_i / resolution;
                     int dy = yl_i / resolution;
@@ -465,42 +472,31 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
 
                     int nb_idx = (dx + 1) + (dy + 1) * 3 + (dz + 1) * 9;
 
-                    // // Must be true
-                    // int64_t offset;
-                    // indexer2d.Convert2DToOffset(key_idx, nb_idx, &offset);
-                    // bool nb_valid = *static_cast<bool*>(
-                    // indexer2d.GetPtrFromOffset(offset));
-                    // if (!nb_valid) return;
-
                     int64_t nb_value_idx;
                     indexer3d.Convert3DToOffset(
                             xl_i - dx * resolution, yl_i - dy * resolution,
-                            zl_i - dz * resolution, &nb_value_x);
+                            zl_i - dz * resolution, &nb_value_idx);
 
                     float tsdf_i = *static_cast<float*>(
                             tsdf_nb_indexer.GetWorkloadValuePtr(
                                     nb_idx * m + key_idx, 0, nb_value_idx));
 
-#ifdef _OPENMP
-#pragma omp critical
-#endif
+                    // #ifdef _OPENMP
+                    // #pragma omp critical
+                    // #endif
                     if (tsdf_i * tsdf_o < 0) {
                         float ratio = tsdf_i / (tsdf_i - tsdf_o);
-
-                        int* vertex_ind = static_cast<int*>(
-                                surf_indexer.GetWorkloadValuePtr(key_idx, i,
-                                                                 value_idx));
 
                         void* key_ptr = tsdf_indexer.GetWorkloadKeyPtr(key_idx);
                         int64_t xg = *(static_cast<int64_t*>(key_ptr) + 0);
                         int64_t yg = *(static_cast<int64_t*>(key_ptr) + 1);
                         int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
 
-                        int idx;
                         // https://stackoverflow.com/questions/4034908/fetch-and-add-using-openmp-atomic-operations
-#ifdef _OPENMP
-#pragma omp atomic capture
-#endif
+                        int idx;
+                        // #ifdef _OPENMP
+                        // #pragma omp atomic capture
+                        // #endif
                         {
                             idx = *vtx_count_ptr;
                             *vtx_count_ptr += 1;
@@ -519,7 +515,8 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                 }
             });
 
-            int actual_count = vtx_count[0].GetItem<int>();
+            int actual_count = vtx_count[0].Item<int>();
+            std::cout << actual_count << "\n";
             output_tensor = Tensor({3, actual_count}, Dtype::Float32, device);
             output_tensor[0].Slice(0, 0, actual_count) =
                     vertices_x.Slice(0, 0, actual_count);
@@ -532,33 +529,33 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
         }
 
         case SpecialOpCode::MarchingCubesPass2: {
+            utility::LogInfo("MC Pass2");
             // input_sparse_tls: tsdf grid
             // output_sparse_tl: surface grid
             // tensors: voxel_size, sdf_trunc
             SizeVector grid_shape = output_sparse_tl.shapes_[0];
-            float voxel_size = input_tensors[0][0].Item<float>();
-            int triangle_count = input_tensors[1][0].Item<float>();
+            int triangle_count = input_tensors[1][0].Item<int>();
 
             // res x res x res
             NDArrayIndexer indexer3d(grid_shape,
                                      DtypeUtil::ByteSize(Dtype::Int32));
             // 27 x n
-            NDArrayIndexer indexer2d(input_tensors[1].GetShape(),
+            NDArrayIndexer indexer2d(input_tensors[2].GetShape(),
                                      DtypeUtil::ByteSize(Dtype::Bool),
-                                     input_tensors[1].GetDataPtr());
+                                     input_tensors[2].GetDataPtr());
 
-            SparseIndexer tsdf_indexer(input_sparse_tls[0],
+            SparseIndexer surf_indexer(input_sparse_tls[0],
                                        grid_shape.NumElements());
-
             SparseIndexer surf_nb_indexer(output_sparse_tl,
                                           grid_shape.NumElements());
 
-            int64_t n = tsdf_indexer.NumWorkloads();
-            int64_t m = input_tensors[1].GetShape()[1];
+            int64_t n = surf_indexer.NumWorkloads();
+            int64_t m = input_tensors[2].GetShape()[1];
+            std::cout << n << " " << m << "\n";
 
             Device device = output_sparse_tl.device_;
             output_tensor = Tensor({triangle_count * 3}, Dtype::Int32, device);
-            int* tri_ptr = static_cast<int*>(triangles.GetDataPtr());
+            int* tri_ptr = static_cast<int*>(output_tensor.GetDataPtr());
 
             Tensor count(std::vector<int>{0}, {1}, Dtype::Int32, device);
             int* tri_count_ptr = static_cast<int*>(count.GetDataPtr());
@@ -566,7 +563,7 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
             // Pass 2: connect vertices
             CPULauncher::LaunchGeneralKernel(n, [=](int64_t workload_idx) {
                 int64_t key_idx, value_idx;
-                tsdf_indexer.GetSparseWorkloadIdx(workload_idx, &key_idx,
+                surf_indexer.GetSparseWorkloadIdx(workload_idx, &key_idx,
                                                   &value_idx);
 
                 int64_t xl, yl, zl;
@@ -574,21 +571,29 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                 int64_t resolution = indexer3d.GetShape(0);
 
                 int table_index =
-                        *static_cast<int*>(surf_nb_indexer.GetWorkloadValuePtr(
-                                13 * m + key_idx, 3, value_idx));
+                        *static_cast<int*>(surf_indexer.GetWorkloadValuePtr(
+                                key_idx, 3, value_idx));
                 if (tri_count[table_index] == 0) return;
 
                 for (size_t tri = 0; tri < 16; tri += 3) {
                     if (tri_table[table_index][tri] == -1) return;
 
-                    int tri_idx = atomicAdd(tri_count_ptr, 3);
+                    int tri_idx;
+                    // #ifdef _OPENMP
+                    // #pragma omp atomic capture
+                    // #endif
+                    {
+                        tri_idx = *tri_count_ptr;
+                        *tri_count_ptr += 3;
+                    }
+
                     for (size_t vertex = 0; vertex < 3; ++vertex) {
                         int edge = tri_table[table_index][tri + vertex];
 
                         int64_t xl_i = xl + edge_shifts[edge][0];
                         int64_t yl_i = yl + edge_shifts[edge][1];
                         int64_t zl_i = zl + edge_shifts[edge][2];
-                        int64_t edge_idx = edge_shift[edge][3];
+                        int64_t edge_i = edge_shift[edge][3];
 
                         int dx = xl_i / resolution;
                         int dy = yl_i / resolution;
@@ -599,7 +604,7 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                         int64_t nb_value_idx;
                         indexer3d.Convert3DToOffset(
                                 xl_i - dx * resolution, yl_i - dy * resolution,
-                                zl_i - dz * resolution, &nb_value_x);
+                                zl_i - dz * resolution, &nb_value_idx);
 
                         tri_ptr[tri_idx + 2 - vertex] = *static_cast<int*>(
                                 surf_nb_indexer.GetWorkloadValuePtr(
@@ -609,6 +614,9 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                 }
             });
 
+            output_tensor = output_tensor.View({triangle_count, 3});
+            std::cout << count.ToString() << "\n";
+            std::cout << triangle_count << "\n";
             break;
         }
 

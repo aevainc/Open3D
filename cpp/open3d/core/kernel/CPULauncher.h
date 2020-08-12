@@ -186,9 +186,9 @@ public:
 
     template <typename func_t>
     static void LaunchGeneralKernel(int64_t n, func_t element_kernel) {
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static)
-#endif
+        // #ifdef _OPENMP
+        // #pragma omp parallel for schedule(static)
+        // #endif
         for (int64_t workload_idx = 0; workload_idx < n; ++workload_idx) {
             element_kernel(workload_idx);
         }

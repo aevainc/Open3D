@@ -337,6 +337,11 @@ const Eigen::Vector3i shift[8] = {
         Eigen::Vector3i(1, 1, 1), Eigen::Vector3i(0, 1, 1),
 };
 
+const int vtx_shifts[8][3] = {
+        {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0},
+        {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 1, 1},
+};
+
 // First 3 elements: edge start vertex coordinate (assume origin at (0, 0, 0))
 // The last element: edge direction {0: x, 1: y, 2: z}
 const Eigen::Vector4i edge_shift[12] = {

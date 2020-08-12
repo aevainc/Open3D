@@ -238,70 +238,99 @@ tgeometry::PointCloud VoxelGrid::ExtractSurfacePoints() {
     return tgeometry::PointCloud(output.T());
 }
 
-void VoxelGrid::MarchingCubes() {
-    // int64_t n = hashmap_->size();
-    // void *block_iterators =
-    //         MemoryManager::Malloc(sizeof(iterator_t) * n, device_);
-    // void *nb_iterators =
-    //         MemoryManager::Malloc(sizeof(iterator_t) * n * 27, device_);
+tgeometry::PointCloud VoxelGrid::MarchingCubes() {
+    int64_t n = hashmap_->size();
+    void *tsdf_iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * n, device_);
+    void *surf_iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * n, device_);
+    void *tsdf_nb_iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * n * 27, device_);
+    void *surf_nb_iterators =
+            MemoryManager::Malloc(sizeof(iterator_t) * n * 27, device_);
 
-    // // Get all TSDF blocks and their keys
-    // hashmap_->GetIterators(static_cast<iterator_t *>(block_iterators));
+    // Fetch active keys
+    Tensor keys({n, 3}, Dtype::Int64, device_);
+    hashmap_->GetIterators(static_cast<iterator_t *>(tsdf_iterators));
+    hashmap_->UnpackIterators(static_cast<iterator_t *>(tsdf_iterators),
+                              nullptr, keys.GetDataPtr(), nullptr, n);
 
-    // Tensor keys({n, 3}, Dtype::Int64, device_);
-    // hashmap_->UnpackIterators(static_cast<iterator_t *>(block_iterators),
-    //                           nullptr, keys.GetDataPtr(), nullptr, n);
+    // Activate relevant surfaces
+    Tensor masks({n}, Dtype::Bool, device_);
+    auto surf_hashmap = CreateDefaultHashmap(
+            hashmap_->size(), 3 * sizeof(int64_t),
+            4 * resolution_ * resolution_ * resolution_ * sizeof(int), device_);
+    surf_hashmap->Activate(keys.GetDataPtr(),
+                           static_cast<iterator_t *>(surf_iterators),
+                           static_cast<bool *>(masks.GetDataPtr()), n);
 
-    // // Get neighbors per TSDF block
-    // Tensor keys_nb({27, n, 3}, Dtype::Int64, device_);
-    // Tensor masks_nb({27, n}, Dtype::Bool, device_);
-    // for (int nb = 0; nb < 27; ++nb) {
-    //     int dz = nb / 9;
-    //     int dy = (nb % 9) / 3;
-    //     int dx = nb % 3;
-    //     Tensor dt = Tensor(std::vector<int64_t>{dx - 1, dy - 1, dz - 1}, {1,
-    //     3},
-    //                        Dtype::Int64, device_);
-    //     keys_nb[nb] = keys + dt;
-    // }
-    // hashmap_->Find(keys_nb.GetDataPtr(),
-    //                static_cast<iterator_t *>(nb_iterators),
-    //                static_cast<bool *>(masks_nb.GetDataPtr()), n * 27);
+    // Get neighbors per tsdf / surf block
+    Tensor keys_nb({27, n, 3}, Dtype::Int64, device_);
+    Tensor masks_nb({27, n}, Dtype::Bool, device_);
+    for (int nb = 0; nb < 27; ++nb) {
+        int dz = nb / 9;
+        int dy = (nb % 9) / 3;
+        int dx = nb % 3;
+        Tensor dt = Tensor(std::vector<int64_t>{dx - 1, dy - 1, dz - 1}, {1, 3},
+                           Dtype::Int64, device_);
+        keys_nb[nb] = keys + dt;
+    }
 
-    // for (int nb = 0; nb < 27; ++nb) {
-    //     int dz = nb / 9;
-    //     int dy = (nb % 9) / 3;
-    //     int dx = nb % 3;
-    //     Tensor mask_nb = masks_nb[nb];
-    //     utility::LogInfo("{}: ({}, {}, {}) => {}", nb, dx - 1, dy - 1, dz -
-    //     1,
-    //                      mask_nb.To(Dtype::Int32).Sum({0}).Item<int>());
-    // }
+    hashmap_->Find(keys_nb.GetDataPtr(),
+                   static_cast<iterator_t *>(tsdf_nb_iterators),
+                   static_cast<bool *>(masks_nb.GetDataPtr()), n * 27);
+    surf_hashmap->Find(keys_nb.GetDataPtr(),
+                       static_cast<iterator_t *>(surf_nb_iterators),
+                       static_cast<bool *>(masks_nb.GetDataPtr()), n * 27);
 
-    // // Then prepare output tensors:
-    // // Smaller hashmap with voxels and triangles
-    // // Need: a prefix-sum array for triangles
-    // SparseTensorList sparse_tsdf_tl(static_cast<void **>(block_iterators), n,
-    //                                 true, {shape, shape},
-    //                                 {Dtype::Float32, Dtype::Float32},
-    //                                 device_);
-    // SparseTensorList sparse_nb_tsdf_tl(
-    //         static_cast<void **>(nb_iterators), 27 * n, true, {shape, shape},
-    //         {Dtype::Float32, Dtype::Float32}, device_);
+    SizeVector shape = SizeVector{resolution_, resolution_, resolution_};
 
-    // SizeVector shape = SizeVector{resolution_, resolution_, resolution_};
+    SparseTensorList sparse_tsdf_tl(static_cast<void **>(tsdf_iterators), n,
+                                    true, {shape, shape},
+                                    {Dtype::Float32, Dtype::Float32}, device_);
+    SparseTensorList sparse_nb_tsdf_tl(
+            static_cast<void **>(tsdf_nb_iterators), 27 * n, true,
+            {shape, shape}, {Dtype::Float32, Dtype::Float32}, device_);
 
-    // Tensor voxel_size(std::vector<float>{voxel_size_}, {1}, Dtype::Float32);
-    // Tensor output;
-    // kernel::SpecialOpEW({voxel_size, masks_nb},
-    //                     {sparse_tsdf_tl, sparse_nb_tsdf_tl}, output,
-    //                     sparse_surf_tl,
-    //                     kernel::SpecialOpCode::ExtractSurface);
+    SparseTensorList sparse_surf_tl(
+            static_cast<void **>(surf_iterators), n, true,
+            {shape, shape, shape, shape},
+            {Dtype::Int32, Dtype::Int32, Dtype::Int32, Dtype::Int32}, device_);
+    SparseTensorList sparse_nb_surf_tl(
+            static_cast<void **>(surf_nb_iterators), 27 * n, true,
+            {shape, shape, shape, shape},
+            {Dtype::Int32, Dtype::Int32, Dtype::Int32, Dtype::Int32}, device_);
 
-    // MemoryManager::Free(block_iterators, device_);
-    // MemoryManager::Free(surf_iterators, device_);
-    // MemoryManager::Free(nb_iterators, device_);
-    // MemoryManager::ReleaseCache(device_);
+    Tensor voxel_size(std::vector<float>{voxel_size_}, {1}, Dtype::Float32);
+
+    Tensor triangle_count;
+    kernel::SpecialOpEW({voxel_size, masks_nb},
+                        {sparse_tsdf_tl, sparse_nb_tsdf_tl}, triangle_count,
+                        sparse_nb_surf_tl,
+                        kernel::SpecialOpCode::MarchingCubesPass0);
+
+    Tensor vertices;
+    kernel::SpecialOpEW({voxel_size, triangle_count, masks_nb},
+                        {sparse_tsdf_tl, sparse_nb_tsdf_tl}, vertices,
+                        sparse_surf_tl,
+                        kernel::SpecialOpCode::MarchingCubesPass1);
+
+    Tensor triangles;
+    kernel::SpecialOpEW({voxel_size, triangle_count, masks_nb},
+                        {sparse_surf_tl}, triangles, sparse_nb_surf_tl,
+                        kernel::SpecialOpCode::MarchingCubesPass2);
+
+    MemoryManager::Free(tsdf_iterators, device_);
+    MemoryManager::Free(tsdf_nb_iterators, device_);
+
+    MemoryManager::Free(surf_iterators, device_);
+    MemoryManager::Free(surf_nb_iterators, device_);
+
+    MemoryManager::ReleaseCache(device_);
+    auto pcd = tgeometry::PointCloud(vertices.T());
+    pcd.point_dict_["triangles"] =
+            TensorList::FromTensor(triangles.Copy(device_));
+    return pcd;
 }
 
 }  // namespace tgeometry

@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     auto trajectory = io::CreatePinholeCameraTrajectoryFromFile(
             fmt::format("{}/trajectory.log", root_path));
 
-    std::vector<Device> devices{Device("CUDA:0"), Device("CPU:0")};
+    std::vector<Device> devices{Device("CPU:0")};
 
     for (auto device : devices) {
         tgeometry::VoxelGrid voxel_grid(0.008, 0.024, 16, 10, device);
@@ -47,10 +47,13 @@ int main(int argc, char** argv) {
         }
 
         // voxel_grid.ExtractNearestNeighbors();
-        tgeometry::PointCloud pcd = voxel_grid.ExtractSurfacePoints();
-        auto pcd_legacy = std::make_shared<geometry::PointCloud>(
-                tgeometry::PointCloud::ToLegacyPointCloud(pcd));
+        auto mesh = voxel_grid.MarchingCubes();
+        // auto pcd = voxel_grid.ExtractSurfacePoints();
+        auto mesh_legacy = std::make_shared<geometry::TriangleMesh>(
+                tgeometry::PointCloud::ToLegacyTriangleMesh(mesh));
+        // mesh_legacy->ComputeVertexNormals();
+        // mesh_legacy->ComputeTriangleNormals();
         // io::WritePointCloud(device.ToString() + ".ply", *pcd_legacy);
-        open3d::visualization::DrawGeometries({pcd_legacy});
+        open3d::visualization::DrawGeometries({mesh_legacy});
     }
 }

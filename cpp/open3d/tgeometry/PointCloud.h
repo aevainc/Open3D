@@ -33,6 +33,7 @@
 
 #include "open3d/core/Tensor.h"
 #include "open3d/core/TensorList.h"
+#include "open3d/geometry/TriangleMesh.h"
 #include "open3d/tgeometry/Geometry3D.h"
 
 namespace open3d {
@@ -110,6 +111,11 @@ public:
                point_dict_.at("normals").GetSize() > 0;
     }
 
+    bool HasTriangles() const {
+        return point_dict_.find("triangles") != point_dict_.end() &&
+               point_dict_.at("triangles").GetSize() > 0;
+    }
+
 public:
     std::unordered_map<std::string, TensorList> point_dict_;
 
@@ -127,6 +133,9 @@ public:
             Device device = Device("CPU:0"));
 
     static geometry::PointCloud ToLegacyPointCloud(
+            const tgeometry::PointCloud &pcd);
+
+    static geometry::TriangleMesh ToLegacyTriangleMesh(
             const tgeometry::PointCloud &pcd);
 
 protected:
