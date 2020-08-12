@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 
     for (auto device : devices) {
         tgeometry::VoxelGrid voxel_grid(0.008, 0.024, 16, 10, device);
-        for (int i = 0; i < 3000; ++i) {
+        for (int i = 0; i < 300; ++i) {
             /// Load image
             std::string image_path =
                     fmt::format("{}/depth/{:06d}.png", root_path, i + 1);
@@ -51,9 +51,10 @@ int main(int argc, char** argv) {
         // auto pcd = voxel_grid.ExtractSurfacePoints();
         auto mesh_legacy = std::make_shared<geometry::TriangleMesh>(
                 tgeometry::PointCloud::ToLegacyTriangleMesh(mesh));
-        // mesh_legacy->ComputeVertexNormals();
+        mesh_legacy->ComputeVertexNormals();
         // mesh_legacy->ComputeTriangleNormals();
         // io::WritePointCloud(device.ToString() + ".ply", *pcd_legacy);
+        io::WriteTriangleMesh("mesh.ply", *mesh_legacy, true);
         open3d::visualization::DrawGeometries({mesh_legacy});
     }
 }

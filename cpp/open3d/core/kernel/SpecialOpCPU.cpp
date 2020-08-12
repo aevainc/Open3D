@@ -300,6 +300,7 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
 
                 int64_t xl, yl, zl;
                 indexer3d.ConvertOffsetTo3D(value_idx, &xl, &yl, &zl);
+                bool flag = key_idx == 296 && xl == 2 && yl == 2 && zl == 9;
                 int64_t resolution = indexer3d.GetShape(0);
 
                 // Enumerate 8 neighbor corners (including itself)
@@ -340,6 +341,9 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                                     nb_idx * m + key_idx, 0, nb_value_idx));
 
                     table_index |= ((tsdf_i < 0) ? (1 << i) : 0);
+                }
+                if (flag) {
+                    printf("pass0: %d\n", table_index);
                 }
                 *table_index_ptr = table_index;
 
@@ -446,6 +450,7 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
 
                 int64_t xl, yl, zl;
                 indexer3d.ConvertOffsetTo3D(value_idx, &xl, &yl, &zl);
+
                 int64_t resolution = indexer3d.GetShape(0);
 
                 float tsdf_o =
@@ -484,34 +489,31 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                     // #ifdef _OPENMP
                     // #pragma omp critical
                     // #endif
-                    if (tsdf_i * tsdf_o < 0) {
-                        float ratio = tsdf_i / (tsdf_i - tsdf_o);
+                    // if (tsdf_i * tsdf_o < 0) {
+                    float ratio = tsdf_i / (tsdf_i - tsdf_o);
 
-                        void* key_ptr = tsdf_indexer.GetWorkloadKeyPtr(key_idx);
-                        int64_t xg = *(static_cast<int64_t*>(key_ptr) + 0);
-                        int64_t yg = *(static_cast<int64_t*>(key_ptr) + 1);
-                        int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
+                    void* key_ptr = tsdf_indexer.GetWorkloadKeyPtr(key_idx);
+                    int64_t xg = *(static_cast<int64_t*>(key_ptr) + 0);
+                    int64_t yg = *(static_cast<int64_t*>(key_ptr) + 1);
+                    int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
 
-                        // https://stackoverflow.com/questions/4034908/fetch-and-add-using-openmp-atomic-operations
-                        int idx;
-                        // #ifdef _OPENMP
-                        // #pragma omp atomic capture
-                        // #endif
-                        {
-                            idx = *vtx_count_ptr;
-                            *vtx_count_ptr += 1;
-                        }
-                        *vertex_idx = idx;
-                        vertices_x_ptr[idx] =
-                                voxel_size *
-                                (xg * resolution + xl + ratio * int(i == 0));
-                        vertices_y_ptr[idx] =
-                                voxel_size *
-                                (yg * resolution + yl + ratio * int(i == 1));
-                        vertices_z_ptr[idx] =
-                                voxel_size *
-                                (zg * resolution + zl + ratio * int(i == 2));
+                    // https://stackoverflow.com/questions/4034908/fetch-and-add-using-openmp-atomic-operations
+                    int idx;
+                    // #ifdef _OPENMP
+                    // #pragma omp atomic capture
+                    // #endif
+                    {
+                        idx = *vtx_count_ptr;
+                        *vtx_count_ptr += 1;
                     }
+                    *vertex_idx = idx;
+                    vertices_x_ptr[idx] = voxel_size * (xg * resolution + xl +
+                                                        ratio * int(i == 0));
+                    vertices_y_ptr[idx] = voxel_size * (yg * resolution + yl +
+                                                        ratio * int(i == 1));
+                    vertices_z_ptr[idx] = voxel_size * (zg * resolution + zl +
+                                                        ratio * int(i == 2));
+                    //}
                 }
             });
 
@@ -568,11 +570,16 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
 
                 int64_t xl, yl, zl;
                 indexer3d.ConvertOffsetTo3D(value_idx, &xl, &yl, &zl);
+                bool flag = key_idx == 296 && xl == 2 && yl == 2 && zl == 9;
+
                 int64_t resolution = indexer3d.GetShape(0);
 
                 int table_index =
                         *static_cast<int*>(surf_indexer.GetWorkloadValuePtr(
                                 key_idx, 3, value_idx));
+                if (flag) {
+                    printf("pass2: %d\n", table_index);
+                }
                 if (tri_count[table_index] == 0) return;
 
                 for (size_t tri = 0; tri < 16; tri += 3) {
@@ -606,10 +613,17 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                                 xl_i - dx * resolution, yl_i - dy * resolution,
                                 zl_i - dz * resolution, &nb_value_idx);
 
-                        tri_ptr[tri_idx + 2 - vertex] = *static_cast<int*>(
+                        int vtx_idx = *static_cast<int*>(
                                 surf_nb_indexer.GetWorkloadValuePtr(
                                         nb_idx * m + key_idx, edge_i,
                                         nb_value_idx));
+                        if (vtx_idx < 0) {
+                            printf("%ld, %ld, (%ld, %ld, %ld), SHOULD NEVER "
+                                   "REACH HERE!\n",
+                                   key_idx, vertex, xl, yl, zl);
+                            return;
+                        }
+                        tri_ptr[tri_idx + 2 - vertex] = vtx_idx;
                     }
                 }
             });
