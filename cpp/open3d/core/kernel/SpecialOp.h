@@ -38,7 +38,9 @@ namespace kernel {
 enum class SpecialOpCode {
     Integrate,
     ExtractSurface,
-    MarchingCubes,
+    MarchingCubesPass0,
+    MarchingCubesPass1,
+    MarchingCubesPass2,
     RayCasting,
     Check
 };

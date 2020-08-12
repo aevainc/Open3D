@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 
     for (auto device : devices) {
         tgeometry::VoxelGrid voxel_grid(0.008, 0.024, 16, 10, device);
-        for (int i = 0; i < 300; ++i) {
+        for (int i = 0; i < 3000; ++i) {
             /// Load image
             std::string image_path =
                     fmt::format("{}/depth/{:06d}.png", root_path, i + 1);

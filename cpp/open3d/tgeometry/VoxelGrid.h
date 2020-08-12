@@ -87,6 +87,8 @@ public:
     std::pair<SparseTensorList, Tensor> ExtractNearestNeighbors();
     tgeometry::PointCloud ExtractSurfacePoints();
 
+    void MarchingCubes();
+
 protected:
     float voxel_size_;
     float sdf_trunc_;
