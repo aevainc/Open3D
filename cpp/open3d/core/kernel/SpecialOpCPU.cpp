@@ -300,7 +300,7 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
 
                 int64_t xl, yl, zl;
                 indexer3d.ConvertOffsetTo3D(value_idx, &xl, &yl, &zl);
-                bool flag = key_idx == 296 && xl == 2 && yl == 2 && zl == 9;
+
                 int64_t resolution = indexer3d.GetShape(0);
 
                 // Enumerate 8 neighbor corners (including itself)
@@ -342,9 +342,7 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
 
                     table_index |= ((tsdf_i < 0) ? (1 << i) : 0);
                 }
-                if (flag) {
-                    printf("pass0: %d\n", table_index);
-                }
+
                 *table_index_ptr = table_index;
 
                 if (table_index == 0 || table_index == 255) return;
@@ -379,10 +377,12 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                     }
                 }
 
-                // #ifdef _OPENMP
-                // #pragma omp critical
-                // #endif
-                { *tri_count_ptr += tri_count[table_index]; }
+                int local_tri_count = tri_count[table_index];
+
+#ifdef _OPENMP
+#pragma omp atomic
+#endif
+                *tri_count_ptr += local_tri_count;
             });
 
             std::cout << output_tensor.ToString() << "\n";
@@ -486,10 +486,6 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                             tsdf_nb_indexer.GetWorkloadValuePtr(
                                     nb_idx * m + key_idx, 0, nb_value_idx));
 
-                    // #ifdef _OPENMP
-                    // #pragma omp critical
-                    // #endif
-                    // if (tsdf_i * tsdf_o < 0) {
                     float ratio = tsdf_i / (tsdf_i - tsdf_o);
 
                     void* key_ptr = tsdf_indexer.GetWorkloadKeyPtr(key_idx);
@@ -499,9 +495,9 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
 
                     // https://stackoverflow.com/questions/4034908/fetch-and-add-using-openmp-atomic-operations
                     int idx;
-                    // #ifdef _OPENMP
-                    // #pragma omp atomic capture
-                    // #endif
+#ifdef _OPENMP
+#pragma omp atomic capture
+#endif
                     {
                         idx = *vtx_count_ptr;
                         *vtx_count_ptr += 1;
@@ -513,7 +509,6 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                                                         ratio * int(i == 1));
                     vertices_z_ptr[idx] = voxel_size * (zg * resolution + zl +
                                                         ratio * int(i == 2));
-                    //}
                 }
             });
 
@@ -570,25 +565,22 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
 
                 int64_t xl, yl, zl;
                 indexer3d.ConvertOffsetTo3D(value_idx, &xl, &yl, &zl);
-                bool flag = key_idx == 296 && xl == 2 && yl == 2 && zl == 9;
 
                 int64_t resolution = indexer3d.GetShape(0);
 
                 int table_index =
                         *static_cast<int*>(surf_indexer.GetWorkloadValuePtr(
                                 key_idx, 3, value_idx));
-                if (flag) {
-                    printf("pass2: %d\n", table_index);
-                }
+
                 if (tri_count[table_index] == 0) return;
 
                 for (size_t tri = 0; tri < 16; tri += 3) {
                     if (tri_table[table_index][tri] == -1) return;
 
                     int tri_idx;
-                    // #ifdef _OPENMP
-                    // #pragma omp atomic capture
-                    // #endif
+#ifdef _OPENMP
+#pragma omp atomic capture
+#endif
                     {
                         tri_idx = *tri_count_ptr;
                         *tri_count_ptr += 3;
