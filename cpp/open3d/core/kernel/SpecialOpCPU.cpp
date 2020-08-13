@@ -155,6 +155,7 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
             Tensor vertices_x({total_count}, Dtype::Float32, device);
             Tensor vertices_y({total_count}, Dtype::Float32, device);
             Tensor vertices_z({total_count}, Dtype::Float32, device);
+
             float* vertices_x_ptr =
                     static_cast<float*>(vertices_x.GetDataPtr());
             float* vertices_y_ptr =
@@ -439,6 +440,13 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
             float* vertices_z_ptr =
                     static_cast<float*>(vertices_z.GetDataPtr());
 
+            Tensor normals_x({vtx_count_bound}, Dtype::Float32, device);
+            Tensor normals_y({vtx_count_bound}, Dtype::Float32, device);
+            Tensor normals_z({vtx_count_bound}, Dtype::Float32, device);
+            float* normals_x_ptr = static_cast<float*>(normals_x.GetDataPtr());
+            float* normals_y_ptr = static_cast<float*>(normals_y.GetDataPtr());
+            float* normals_z_ptr = static_cast<float*>(normals_z.GetDataPtr());
+
             Tensor vtx_count(std::vector<int>{0}, {1}, Dtype::Int32, device);
             int* vtx_count_ptr = static_cast<int*>(vtx_count.GetDataPtr());
 
@@ -456,6 +464,70 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                 float tsdf_o =
                         *static_cast<float*>(tsdf_indexer.GetWorkloadValuePtr(
                                 key_idx, 0, value_idx));
+                float n_o[3], n_p[3];
+
+                for (int n = 0; n < 3; ++n) {
+                    int64_t xl_p = xl + int(n == 0);
+                    int64_t yl_p = yl + int(n == 1);
+                    int64_t zl_p = zl + int(n == 2);
+
+                    int64_t xl_n = xl - int(n == 0);
+                    int64_t yl_n = yl - int(n == 1);
+                    int64_t zl_n = zl - int(n == 2);
+
+                    int dx_p = xl_p / resolution;
+                    int dy_p = yl_p / resolution;
+                    int dz_p = zl_p / resolution;
+
+                    int dx_n = xl_n >= 0 ? 0 : -1;
+                    int dy_n = yl_n >= 0 ? 0 : -1;
+                    int dz_n = zl_n >= 0 ? 0 : -1;
+
+                    int nb_idx_p = (dx_p + 1) + (dy_p + 1) * 3 + (dz_p + 1) * 9;
+                    int nb_idx_n = (dx_n + 1) + (dy_n + 1) * 3 + (dz_n + 1) * 9;
+
+                    int64_t nb_mask_offset_p;
+                    indexer2d.Convert2DToOffset(key_idx, nb_idx_p,
+                                                &nb_mask_offset_p);
+                    bool nb_valid_p = *static_cast<bool*>(
+                            indexer2d.GetPtrFromOffset(nb_mask_offset_p));
+                    int64_t nb_value_idx_p;
+                    indexer3d.Convert3DToOffset(
+                            xl_p - dx_p * resolution, yl_p - dy_p * resolution,
+                            zl_p - dz_p * resolution, &nb_value_idx_p);
+                    float tsdf_p =
+                            nb_valid_p
+                                    ? *static_cast<float*>(
+                                              tsdf_nb_indexer
+                                                      .GetWorkloadValuePtr(
+                                                              nb_idx_p * m +
+                                                                      key_idx,
+                                                              0,
+                                                              nb_value_idx_p))
+                                    : 0;
+
+                    int64_t nb_mask_offset_n;
+                    indexer2d.Convert2DToOffset(key_idx, nb_idx_n,
+                                                &nb_mask_offset_n);
+                    bool nb_valid_n = *static_cast<bool*>(
+                            indexer2d.GetPtrFromOffset(nb_mask_offset_n));
+                    int64_t nb_value_idx_n;
+                    indexer3d.Convert3DToOffset(
+                            xl_n - dx_n * resolution, yl_n - dy_n * resolution,
+                            zl_n - dz_n * resolution, &nb_value_idx_n);
+                    float tsdf_n =
+                            nb_valid_n
+                                    ? *static_cast<float*>(
+                                              tsdf_nb_indexer
+                                                      .GetWorkloadValuePtr(
+                                                              nb_idx_n * m +
+                                                                      key_idx,
+                                                              0,
+                                                              nb_value_idx_n))
+                                    : 0;
+
+                    n_o[n] = (tsdf_p - tsdf_n) / (2 * voxel_size);
+                }
 
                 // Enumerate 8 neighbor corners (including itself)
                 for (int i = 0; i < 3; ++i) {
@@ -486,6 +558,73 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                             tsdf_nb_indexer.GetWorkloadValuePtr(
                                     nb_idx * m + key_idx, 0, nb_value_idx));
 
+                    for (int n = 0; n < 3; ++n) {
+                        int64_t xl_p = xl + int(n == 0) + 1;
+                        int64_t yl_p = yl + int(n == 1) + 1;
+                        int64_t zl_p = zl + int(n == 2) + 1;
+
+                        int64_t xl_n = xl - int(n == 0) - 1;
+                        int64_t yl_n = yl - int(n == 1) - 1;
+                        int64_t zl_n = zl - int(n == 2) - 1;
+
+                        int dx_p = xl_p / resolution;
+                        int dy_p = yl_p / resolution;
+                        int dz_p = zl_p / resolution;
+
+                        int dx_n = xl_n >= 0 ? 0 : -1;
+                        int dy_n = yl_n >= 0 ? 0 : -1;
+                        int dz_n = zl_n >= 0 ? 0 : -1;
+
+                        int nb_idx_p =
+                                (dx_p + 1) + (dy_p + 1) * 3 + (dz_p + 1) * 9;
+                        int nb_idx_n =
+                                (dx_n + 1) + (dy_n + 1) * 3 + (dz_n + 1) * 9;
+
+                        int64_t nb_mask_offset_p;
+                        indexer2d.Convert2DToOffset(key_idx, nb_idx_p,
+                                                    &nb_mask_offset_p);
+                        bool nb_valid_p = *static_cast<bool*>(
+                                indexer2d.GetPtrFromOffset(nb_mask_offset_p));
+                        int64_t nb_value_idx_p;
+                        indexer3d.Convert3DToOffset(xl_p - dx_p * resolution,
+                                                    yl_p - dy_p * resolution,
+                                                    zl_p - dz_p * resolution,
+                                                    &nb_value_idx_p);
+                        float tsdf_p =
+                                nb_valid_p
+                                        ? *static_cast<float*>(
+                                                  tsdf_nb_indexer
+                                                          .GetWorkloadValuePtr(
+                                                                  nb_idx_p * m +
+                                                                          key_idx,
+                                                                  0,
+                                                                  nb_value_idx_p))
+                                        : 0;
+
+                        int64_t nb_mask_offset_n;
+                        indexer2d.Convert2DToOffset(key_idx, nb_idx_n,
+                                                    &nb_mask_offset_n);
+                        bool nb_valid_n = *static_cast<bool*>(
+                                indexer2d.GetPtrFromOffset(nb_mask_offset_n));
+                        int64_t nb_value_idx_n;
+                        indexer3d.Convert3DToOffset(xl_n - dx_n * resolution,
+                                                    yl_n - dy_n * resolution,
+                                                    zl_n - dz_n * resolution,
+                                                    &nb_value_idx_n);
+                        float tsdf_n =
+                                nb_valid_n
+                                        ? *static_cast<float*>(
+                                                  tsdf_nb_indexer
+                                                          .GetWorkloadValuePtr(
+                                                                  nb_idx_n * m +
+                                                                          key_idx,
+                                                                  0,
+                                                                  nb_value_idx_n))
+                                        : 0;
+
+                        n_p[n] = (tsdf_p - tsdf_n) / (2 * voxel_size);
+                    }
+
                     float ratio = tsdf_i / (tsdf_i - tsdf_o);
 
                     void* key_ptr = tsdf_indexer.GetWorkloadKeyPtr(key_idx);
@@ -509,18 +648,36 @@ void SpecialOpEWCPU(const std::vector<Tensor>& input_tensors,
                                                         ratio * int(i == 1));
                     vertices_z_ptr[idx] = voxel_size * (zg * resolution + zl +
                                                         ratio * int(i == 2));
+
+                    float ratio_x = ratio * int(i == 0);
+                    float ratio_y = ratio * int(i == 1);
+                    float ratio_z = ratio * int(i == 2);
+                    float nx = n_o[0] * (1 - ratio_x) + n_p[0] * ratio_x;
+                    float ny = n_o[1] * (1 - ratio_y) + n_p[1] * ratio_y;
+                    float nz = n_o[2] * (1 - ratio_z) + n_p[2] * ratio_z;
+                    float norm = sqrtf(nx * nx + ny * ny + nz * nz);
+
+                    normals_x_ptr[idx] = -nx / norm;
+                    normals_y_ptr[idx] = -ny / norm;
+                    normals_z_ptr[idx] = -nz / norm;
                 }
             });
 
             int actual_count = vtx_count[0].Item<int>();
             std::cout << actual_count << "\n";
-            output_tensor = Tensor({3, actual_count}, Dtype::Float32, device);
+            output_tensor = Tensor({6, actual_count}, Dtype::Float32, device);
             output_tensor[0].Slice(0, 0, actual_count) =
                     vertices_x.Slice(0, 0, actual_count);
             output_tensor[1].Slice(0, 0, actual_count) =
                     vertices_y.Slice(0, 0, actual_count);
             output_tensor[2].Slice(0, 0, actual_count) =
                     vertices_z.Slice(0, 0, actual_count);
+            output_tensor[3].Slice(0, 0, actual_count) =
+                    normals_x.Slice(0, 0, actual_count);
+            output_tensor[4].Slice(0, 0, actual_count) =
+                    normals_y.Slice(0, 0, actual_count);
+            output_tensor[5].Slice(0, 0, actual_count) =
+                    normals_z.Slice(0, 0, actual_count);
 
             break;
         }

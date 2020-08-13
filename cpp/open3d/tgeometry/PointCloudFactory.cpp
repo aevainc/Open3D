@@ -182,6 +182,17 @@ geometry::TriangleMesh PointCloud::ToLegacyTriangleMesh(
         }
     }
 
+    if (pcd.HasNormals()) {
+        utility::LogInfo("Normals found!");
+        Tensor ns_tensor =
+                pcd.point_dict_.find("normals")->second.AsTensor().Copy(host);
+        int64_t N = ns_tensor.GetShape()[0];
+        pcd_legacy.vertex_normals_.resize(N);
+        for (int64_t i = 0; i < N; ++i) {
+            pcd_legacy.vertex_normals_[i] = FromTensor3d(ns_tensor[i]);
+        }
+    }
+
     if (pcd.HasTriangles()) {
         Tensor tris_tensor =
                 pcd.point_dict_.find("triangles")->second.AsTensor().Copy(host);

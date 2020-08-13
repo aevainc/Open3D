@@ -327,7 +327,10 @@ tgeometry::PointCloud VoxelGrid::MarchingCubes() {
     MemoryManager::Free(surf_nb_iterators, device_);
 
     MemoryManager::ReleaseCache(device_);
-    auto pcd = tgeometry::PointCloud(vertices.T());
+
+    auto pcd = tgeometry::PointCloud(vertices.T().Slice(1, 0, 3));
+    pcd.point_dict_["normals"] =
+            TensorList::FromTensor(vertices.T().Slice(1, 3, 6));
     pcd.point_dict_["triangles"] =
             TensorList::FromTensor(triangles.Copy(device_));
     return pcd;

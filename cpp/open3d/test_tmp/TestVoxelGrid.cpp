@@ -47,14 +47,16 @@ int main(int argc, char** argv) {
         }
 
         // voxel_grid.ExtractNearestNeighbors();
-        auto mesh = voxel_grid.MarchingCubes();
-        // auto pcd = voxel_grid.ExtractSurfacePoints();
-        auto mesh_legacy = std::make_shared<geometry::TriangleMesh>(
-                tgeometry::PointCloud::ToLegacyTriangleMesh(mesh));
-        mesh_legacy->ComputeVertexNormals();
-        // mesh_legacy->ComputeTriangleNormals();
-        // io::WritePointCloud(device.ToString() + ".ply", *pcd_legacy);
-        io::WriteTriangleMesh("mesh.ply", *mesh_legacy, true);
-        open3d::visualization::DrawGeometries({mesh_legacy});
+        // auto mesh = voxel_grid.MarchingCubes();
+        auto pcd = voxel_grid.ExtractSurfacePoints();
+        return 0;
+
+        // auto mesh_legacy = std::make_shared<geometry::TriangleMesh>(
+        //         tgeometry::PointCloud::ToLegacyTriangleMesh(mesh));
+        // // mesh_legacy->ComputeVertexNormals();
+        // // mesh_legacy->ComputeTriangleNormals();
+        // // io::WritePointCloud(device.ToString() + ".ply", *pcd_legacy);
+        // io::WriteTriangleMesh("mesh.ply", *mesh_legacy, true);
+        // open3d::visualization::DrawGeometries({mesh_legacy});
     }
 }
