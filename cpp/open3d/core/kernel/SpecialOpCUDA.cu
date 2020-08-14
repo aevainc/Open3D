@@ -181,10 +181,12 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                     int64_t xl_i = xl + int(i == 0);
                     int64_t yl_i = yl + int(i == 1);
                     int64_t zl_i = zl + int(i == 2);
+                    // printf("%d, (%ld %ld %ld) => (%ld %ld %ld)\n", i, xl, yl,
+                    //        zl, xl_i, yl_i, zl_i);
 
-                    int dx = xl_i / resolution;
-                    int dy = yl_i / resolution;
-                    int dz = zl_i / resolution;
+                    int dx = xl_i >= resolution ? 1 : 0;
+                    int dy = yl_i >= resolution ? 1 : 0;
+                    int dz = zl_i >= resolution ? 1 : 0;
 
                     int nb_idx = (dx + 1) + (dy + 1) * 3 + (dz + 1) * 9;
 
@@ -222,14 +224,14 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                         int64_t zg = *(static_cast<int64_t*>(key_ptr) + 2);
 
                         vertices_x_ptr[idx] =
-                                voxel_size *
-                                (xg * resolution + xl + ratio * int(i == 0));
+                                voxel_size * (xg * resolution + xl +
+                                              (1 - ratio) * int(i == 0));
                         vertices_y_ptr[idx] =
-                                voxel_size *
-                                (yg * resolution + yl + ratio * int(i == 1));
+                                voxel_size * (yg * resolution + yl +
+                                              (1 - ratio) * int(i == 1));
                         vertices_z_ptr[idx] =
-                                voxel_size *
-                                (zg * resolution + zl + ratio * int(i == 2));
+                                voxel_size * (zg * resolution + zl +
+                                              (1 - ratio) * int(i == 2));
                     }
                 }
             });
@@ -543,13 +545,13 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                                     nb_idx * m + key_idx, 0, nb_value_idx));
 
                     for (int n = 0; n < 3; ++n) {
-                        int64_t xl_p = xl + int(n == 0) + 1;
-                        int64_t yl_p = yl + int(n == 1) + 1;
-                        int64_t zl_p = zl + int(n == 2) + 1;
+                        int64_t xl_p = xl_i + int(n == 0);
+                        int64_t yl_p = yl_i + int(n == 1);
+                        int64_t zl_p = zl_i + int(n == 2);
 
-                        int64_t xl_n = xl - int(n == 0) - 1;
-                        int64_t yl_n = yl - int(n == 1) - 1;
-                        int64_t zl_n = zl - int(n == 2) - 1;
+                        int64_t xl_n = xl_i - int(n == 0);
+                        int64_t yl_n = yl_i - int(n == 1);
+                        int64_t zl_n = zl_i - int(n == 2);
 
                         int dx_p = xl_p / resolution;
                         int dy_p = yl_p / resolution;
@@ -621,9 +623,9 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
 
                     *vertex_idx = idx;
 
-                    float ratio_x = ratio * int(i == 0);
-                    float ratio_y = ratio * int(i == 1);
-                    float ratio_z = ratio * int(i == 2);
+                    float ratio_x = (1 - ratio) * int(i == 0);
+                    float ratio_y = (1 - ratio) * int(i == 1);
+                    float ratio_z = (1 - ratio) * int(i == 2);
 
                     vertices_x_ptr[idx] =
                             voxel_size * (xg * resolution + xl + (ratio_x));
@@ -631,10 +633,13 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
                             voxel_size * (yg * resolution + yl + (ratio_y));
                     vertices_z_ptr[idx] =
                             voxel_size * (zg * resolution + zl + (ratio_z));
+                    // printf("%f => %f %f %f => %f %f %f\n", ratio, ratio_x,
+                    //        ratio_y, ratio_z, vertices_x_ptr[idx],
+                    //        vertices_y_ptr[idx], vertices_z_ptr[idx]);
 
-                    float nx = n_o[0] * (1 - ratio_x) + n_p[0] * (ratio_x);
-                    float ny = n_o[1] * (1 - ratio_y) + n_p[1] * (ratio_y);
-                    float nz = n_o[2] * (1 - ratio_z) + n_p[2] * (ratio_z);
+                    float nx = n_o[0] * (ratio) + n_p[0] * (1 - ratio);
+                    float ny = n_o[1] * (ratio) + n_p[1] * (1 - ratio);
+                    float nz = n_o[2] * (ratio) + n_p[2] * (1 - ratio);
                     float norm = sqrtf(nx * nx + ny * ny + nz * nz);
 
                     normals_x_ptr[idx] = nx / norm;

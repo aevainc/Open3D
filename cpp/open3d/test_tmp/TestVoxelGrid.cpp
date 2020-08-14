@@ -22,10 +22,10 @@ int main(int argc, char** argv) {
     auto trajectory = io::CreatePinholeCameraTrajectoryFromFile(
             fmt::format("{}/trajectory.log", root_path));
 
-    std::vector<Device> devices{Device("CUDA:0"), Device("CPU:0")};
+    std::vector<Device> devices{Device("CUDA:0")};
 
     for (auto device : devices) {
-        tgeometry::VoxelGrid voxel_grid(0.008, 0.024, 16, 10, device);
+        tgeometry::VoxelGrid voxel_grid(3.0 / 512, 0.04, 16, 10, device);
         for (int i = 0; i < 3000; ++i) {
             /// Load image
             std::string image_path =
@@ -46,17 +46,16 @@ int main(int argc, char** argv) {
             utility::LogInfo("Integration takes {}", timer.GetDuration());
         }
 
-        // voxel_grid.ExtractNearestNeighbors();
-        // auto mesh = voxel_grid.MarchingCubes();
-        auto pcd = voxel_grid.ExtractSurfacePoints();
-        return 0;
+        // auto pcd = voxel_grid.ExtractSurfacePoints();
+        // auto pcd_legacy = std::make_shared<geometry::PointCloud>(
+        //         tgeometry::PointCloud::ToLegacyPointCloud(pcd));
+        // open3d::visualization::DrawGeometries({pcd_legacy});
 
-        // auto mesh_legacy = std::make_shared<geometry::TriangleMesh>(
-        //         tgeometry::PointCloud::ToLegacyTriangleMesh(mesh));
-        // // mesh_legacy->ComputeVertexNormals();
-        // // mesh_legacy->ComputeTriangleNormals();
-        // // io::WritePointCloud(device.ToString() + ".ply", *pcd_legacy);
-        // io::WriteTriangleMesh("mesh.ply", *mesh_legacy, true);
-        // open3d::visualization::DrawGeometries({mesh_legacy});
+        auto mesh = voxel_grid.MarchingCubes();
+        auto mesh_legacy = std::make_shared<geometry::TriangleMesh>(
+                tgeometry::PointCloud::ToLegacyTriangleMesh(mesh));
+        open3d::io::WriteTriangleMesh("mesh.ply", *mesh_legacy);
+        mesh_legacy->ComputeVertexNormals();
+        open3d::visualization::DrawGeometries({mesh_legacy});
     }
 }
