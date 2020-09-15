@@ -57,8 +57,6 @@ void ScalableTSDFVolume::Integrate(
         const Eigen::Matrix4d &extrinsic) {
     if ((image.depth_.num_of_channels_ != 1) ||
         (image.depth_.bytes_per_channel_ != 4) ||
-        (image.depth_.width_ != intrinsic.width_) ||
-        (image.depth_.height_ != intrinsic.height_) ||
         (color_type_ == TSDFVolumeColorType::RGB8 &&
          image.color_.num_of_channels_ != 3) ||
         (color_type_ == TSDFVolumeColorType::RGB8 &&
@@ -66,22 +64,37 @@ void ScalableTSDFVolume::Integrate(
         (color_type_ == TSDFVolumeColorType::Gray32 &&
          image.color_.num_of_channels_ != 1) ||
         (color_type_ == TSDFVolumeColorType::Gray32 &&
-         image.color_.bytes_per_channel_ != 4) ||
-        (color_type_ != TSDFVolumeColorType::NoColor &&
-         image.color_.width_ != intrinsic.width_) ||
-        (color_type_ != TSDFVolumeColorType::NoColor &&
-         image.color_.height_ != intrinsic.height_)) {
+         image.color_.bytes_per_channel_ != 4)) {
         utility::LogError(
                 "[ScalableTSDFVolume::Integrate] Unsupported image format.");
     }
+    if ((image.depth_.width_ != intrinsic.width_) ||
+        (image.depth_.height_ != intrinsic.height_)) {
+        utility::LogError(
+                "[ScalableTSDFVolume::Integrate] depth image size is ({} x "
+                "{}), "
+                "but got ({} x {}) from intrinsic.",
+                image.depth_.width_, image.depth_.height_, intrinsic.width_,
+                intrinsic.height_);
+    }
+    if (color_type_ != TSDFVolumeColorType::NoColor &&
+        (image.color_.width_ != intrinsic.width_ ||
+         image.color_.height_ != intrinsic.height_)) {
+        utility::LogError(
+                "[ScalableTSDFVolume::Integrate] color image size is ({} x "
+                "{}), "
+                "but got ({} x {}) from intrinsic.",
+                image.color_.width_, image.color_.height_, intrinsic.width_,
+                intrinsic.height_);
+    }
+
     auto depth2cameradistance =
             geometry::Image::CreateDepthToCameraDistanceMultiplierFloatImage(
                     intrinsic);
     auto pointcloud = geometry::PointCloud::CreateFromDepthImage(
             image.depth_, intrinsic, extrinsic, 1000.0, 1000.0,
             depth_sampling_stride_);
-    std::unordered_set<Eigen::Vector3i,
-                       utility::hash_eigen::hash<Eigen::Vector3i>>
+    std::unordered_set<Eigen::Vector3i, utility::hash_eigen<Eigen::Vector3i>>
             touched_volume_units_;
     for (const auto &point : pointcloud->points_) {
         auto min_bound = LocateVolumeUnit(
@@ -215,7 +228,7 @@ ScalableTSDFVolume::ExtractTriangleMesh() {
     auto mesh = std::make_shared<geometry::TriangleMesh>();
     double half_voxel_length = voxel_length_ * 0.5;
     std::unordered_map<
-            Eigen::Vector4i, int, utility::hash_eigen::hash<Eigen::Vector4i>,
+            Eigen::Vector4i, int, utility::hash_eigen<Eigen::Vector4i>,
             std::equal_to<Eigen::Vector4i>,
             Eigen::aligned_allocator<std::pair<const Eigen::Vector4i, int>>>
             edgeindex_to_vertexindex;

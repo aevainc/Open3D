@@ -24,9 +24,8 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-namespace open3d {  /// Kernels
+namespace open3d {
 namespace core {
-/// Device proxy
 template <typename Hash, typename KeyEq>
 CUDAHashmapImplContext<Hash, KeyEq>::CUDAHashmapImplContext()
     : bucket_count_(0), bucket_list_head_(nullptr) {}
@@ -415,14 +414,15 @@ template <typename Hash, typename KeyEq>
 __global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                   const void* keys,
                                   ptr_t* iterator_ptrs,
-                                  int iterator_heap_index0,
+                                  int heap_counter_prev,
                                   size_t input_count) {
     uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (tid < input_count) {
         /** First write ALL keys to avoid potential thread conflicts **/
+        // ptr_t iterator_ptr = hash_ctx.mem_mgr_ctx_.Allocate();
         ptr_t iterator_ptr =
-                hash_ctx.mem_mgr_ctx_.heap_[iterator_heap_index0 + tid];
+                hash_ctx.mem_mgr_ctx_.heap_[heap_counter_prev + tid];
         iterator_t iterator =
                 hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr);
 
@@ -432,6 +432,13 @@ __global__ void InsertKernelPass0(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
         for (int i = 0; i < hash_ctx.dsize_key_ / sizeof(int); ++i) {
             dst_key_ptr[i] = src_key_ptr[i];
         }
+
+        // if (input_count < 100) {
+        //     int64_t key0 = *reinterpret_cast<int64_t*>(dst_key_ptr);
+        //     int64_t key1 = *(reinterpret_cast<int64_t*>(dst_key_ptr) + 1);
+        //     int64_t key2 = *(reinterpret_cast<int64_t*>(dst_key_ptr) + 2);
+        //     printf("pass0 %d: %ld %ld %ld\n", tid, key0, key1, key2);
+        // }
 
         iterator_ptrs[tid] = iterator_ptr;
     }
@@ -472,6 +479,15 @@ __global__ void InsertKernelPass1(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
     if (tid < input_count) {
         masks[tid] = mask;
+
+        // if (input_count < 100) {
+        //     int64_t key0 = *reinterpret_cast<const int64_t*>(key);
+        //     int64_t key1 = *(reinterpret_cast<const int64_t*>(key) + 1);
+        //     int64_t key2 = *(reinterpret_cast<const int64_t*>(key) + 2);
+        //     printf("pass1 %d->%d: %ld %ld %ld, %d\n", tid, iterator_ptr,
+        //     key0,
+        //            key1, key2, mask);
+        // }
     }
 }
 
@@ -502,6 +518,54 @@ __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                 iterators[tid] = iterator;
             }
         } else {
+            hash_ctx.mem_mgr_ctx_.Free(iterator_ptr);
+
+            if (iterators != nullptr) {
+                iterators[tid] = iterator_t();
+            }
+        }
+    }
+}
+
+template <typename Hash, typename KeyEq>
+__global__ void ActivateKernelPass2(
+        CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
+        ptr_t* iterator_ptrs,
+        iterator_t* iterators,
+        bool* masks,
+        size_t input_count) {
+    uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (tid < input_count) {
+        ptr_t iterator_ptr = iterator_ptrs[tid];
+
+        if (masks[tid]) {
+            iterator_t iterator =
+                    hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr);
+            if (iterators != nullptr) {
+                iterators[tid] = iterator;
+            }
+
+            // void* key = iterator.first;
+            // int64_t key0 = *reinterpret_cast<const int64_t*>(key);
+            // int64_t key1 = *(reinterpret_cast<const int64_t*>(key) + 1);
+            // int64_t key2 = *(reinterpret_cast<const int64_t*>(key) + 2);
+            // printf("pass2 %d->%d: %ld, %ld, %ld, %d, %p\n", tid,
+            // iterator_ptr,
+            //        key0, key1, key2, masks[tid], iterator.second);
+
+        } else {
+            // iterator_t iterator =
+            //         hash_ctx.mem_mgr_ctx_.extract_iterator(iterator_ptr);
+            // void* key = iterator.first;
+            // int64_t key0 = *reinterpret_cast<const int64_t*>(key);
+            // int64_t key1 = *(reinterpret_cast<const int64_t*>(key) + 1);
+            // int64_t key2 = *(reinterpret_cast<const int64_t*>(key) + 2);
+
+            // printf("pass2 else %d->%d: %ld, %ld, %ld, %d, %p\n", tid,
+            //        iterator_ptr, key0, key1, key2, masks[tid],
+            //        iterator.second);
+
             hash_ctx.mem_mgr_ctx_.Free(iterator_ptr);
 
             if (iterators != nullptr) {
@@ -572,24 +636,15 @@ __global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
 
     hash_ctx.node_mgr_ctx_.Init(tid, lane_id);
 
-    uint32_t count = 0;
-    uint32_t prev_count = 0;
-
-    // TODO simplify code
-    // count head node
     uint32_t src_unit_data =
             *hash_ctx.get_unit_ptr_from_list_head(wid, lane_id);
     bool is_active = src_unit_data != EMPTY_PAIR_PTR;
-    count = __popc(__ballot_sync(PAIR_PTR_LANES_MASK, is_active));
-    if (lane_id == 0) {
-        prev_count = atomicAdd(iterator_count, count);
-    }
-    __syncwarp(0xffffffff);
-    prev_count = __shfl_sync(ACTIVE_LANES_MASK, prev_count, 0, WARP_WIDTH);
 
     if (is_active && ((1 << lane_id) & PAIR_PTR_LANES_MASK)) {
-        iterators[prev_count + lane_id] =
+        iterator_t iterator =
                 hash_ctx.mem_mgr_ctx_.extract_iterator(src_unit_data);
+        int index = atomicAdd(iterator_count, 1);
+        iterators[index] = iterator;
     }
 
     ptr_t next = __shfl_sync(ACTIVE_LANES_MASK, src_unit_data,
@@ -599,16 +654,12 @@ __global__ void GetIteratorsKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
     while (next != EMPTY_SLAB_PTR) {
         src_unit_data = *hash_ctx.get_unit_ptr_from_list_nodes(next, lane_id);
         is_active = (src_unit_data != EMPTY_PAIR_PTR);
-        count = __popc(__ballot_sync(PAIR_PTR_LANES_MASK, is_active));
-        if (lane_id == 0) {
-            prev_count = atomicAdd(iterator_count, count);
-        }
-        __syncwarp(0xffffffff);
-        prev_count = __shfl_sync(ACTIVE_LANES_MASK, prev_count, 0, WARP_WIDTH);
 
         if (is_active && ((1 << lane_id) & PAIR_PTR_LANES_MASK)) {
-            iterators[prev_count + lane_id] =
+            iterator_t iterator =
                     hash_ctx.mem_mgr_ctx_.extract_iterator(src_unit_data);
+            int index = atomicAdd(iterator_count, 1);
+            iterators[index] = iterator;
         }
         next = __shfl_sync(ACTIVE_LANES_MASK, src_unit_data, NEXT_SLAB_PTR_LANE,
                            WARP_WIDTH);

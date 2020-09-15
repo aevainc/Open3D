@@ -26,7 +26,7 @@
 
 #pragma once
 #include "open3d/core/Tensor.h"
-#include "open3d/core/hashmap/HashmapBase.h"
+#include "open3d/core/hashmap/Hashmap.h"
 
 namespace open3d {
 namespace core {
@@ -55,8 +55,10 @@ public:
     /// Mask
     Tensor Assign(Tensor coords, Tensor values);
 
+    static std::pair<Tensor, Tensor> Unique(const Tensor &tensor);
+
 protected:
-    std::shared_ptr<DefaultHashmap> hashmap_;
+    std::shared_ptr<Hashmap> hashmap_;
 
     Dtype key_type_;
     Dtype value_type_;
@@ -67,6 +69,5 @@ protected:
     Device device_;
 };
 
-std::pair<Tensor, Tensor> Unique(const Tensor &tensor);
 }  // namespace core
 }  // namespace open3d

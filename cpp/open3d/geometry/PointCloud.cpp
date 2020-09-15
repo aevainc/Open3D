@@ -25,15 +25,16 @@
 // ----------------------------------------------------------------------------
 
 #include "open3d/geometry/PointCloud.h"
-#include "open3d/geometry/BoundingVolume.h"
-#include "open3d/geometry/TriangleMesh.h"
 
 #include <Eigen/Dense>
 #include <numeric>
 
+#include "open3d/geometry/BoundingVolume.h"
 #include "open3d/geometry/KDTreeFlann.h"
 #include "open3d/geometry/Qhull.h"
+#include "open3d/geometry/TriangleMesh.h"
 #include "open3d/utility/Console.h"
+#include "open3d/utility/Eigen.h"
 
 namespace open3d {
 namespace geometry {
@@ -317,7 +318,7 @@ std::shared_ptr<PointCloud> PointCloud::VoxelDownSample(
         utility::LogError("[VoxelDownSample] voxel_size is too small.");
     }
     std::unordered_map<Eigen::Vector3i, AccumulatedPoint,
-                       utility::hash_eigen::hash<Eigen::Vector3i>>
+                       utility::hash_eigen<Eigen::Vector3i>>
             voxelindex_to_accpoint;
 
     Eigen::Vector3d ref_coord;
@@ -366,7 +367,7 @@ PointCloud::VoxelDownSampleAndTrace(double voxel_size,
         utility::LogError("[VoxelDownSample] voxel_size is too small.");
     }
     std::unordered_map<Eigen::Vector3i, AccumulatedPointForTrace,
-                       utility::hash_eigen::hash<Eigen::Vector3i>>
+                       utility::hash_eigen<Eigen::Vector3i>>
             voxelindex_to_accpoint;
     int cid_temp[3] = {1, 2, 4};
     for (size_t i = 0; i < points_.size(); i++) {
@@ -541,35 +542,9 @@ PointCloud::ComputeMeanAndCovariance() const {
         return std::make_tuple(Eigen::Vector3d::Zero(),
                                Eigen::Matrix3d::Identity());
     }
-    Eigen::Matrix<double, 9, 1> cumulants;
-    cumulants.setZero();
-    for (const auto &point : points_) {
-        cumulants(0) += point(0);
-        cumulants(1) += point(1);
-        cumulants(2) += point(2);
-        cumulants(3) += point(0) * point(0);
-        cumulants(4) += point(0) * point(1);
-        cumulants(5) += point(0) * point(2);
-        cumulants(6) += point(1) * point(1);
-        cumulants(7) += point(1) * point(2);
-        cumulants(8) += point(2) * point(2);
-    }
-    cumulants /= (double)points_.size();
-    Eigen::Vector3d mean;
-    Eigen::Matrix3d covariance;
-    mean(0) = cumulants(0);
-    mean(1) = cumulants(1);
-    mean(2) = cumulants(2);
-    covariance(0, 0) = cumulants(3) - cumulants(0) * cumulants(0);
-    covariance(1, 1) = cumulants(6) - cumulants(1) * cumulants(1);
-    covariance(2, 2) = cumulants(8) - cumulants(2) * cumulants(2);
-    covariance(0, 1) = cumulants(4) - cumulants(0) * cumulants(1);
-    covariance(1, 0) = covariance(0, 1);
-    covariance(0, 2) = cumulants(5) - cumulants(0) * cumulants(2);
-    covariance(2, 0) = covariance(0, 2);
-    covariance(1, 2) = cumulants(7) - cumulants(1) * cumulants(2);
-    covariance(2, 1) = covariance(1, 2);
-    return std::make_tuple(mean, covariance);
+    std::vector<size_t> all_idx(points_.size());
+    std::iota(all_idx.begin(), all_idx.end(), 0);
+    return utility::ComputeMeanAndCovariance(points_, all_idx);
 }
 
 std::vector<double> PointCloud::ComputeMahalanobisDistance() const {

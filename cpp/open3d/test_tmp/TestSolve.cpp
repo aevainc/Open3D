@@ -25,8 +25,7 @@
 // ----------------------------------------------------------------------------
 
 #include "open3d/Open3D.h"
-
-#include "open3d/core/algebra/Solver.h"
+#include "open3d/core/linalg/Solve.h"
 
 using namespace open3d;
 using namespace open3d::core;
@@ -54,7 +53,8 @@ int main() {
     for (auto device : devices) {
         Tensor A_device = A.Copy(device);
         Tensor B_device = B.Copy(device);
-        Tensor X = Solve(A_device, B_device);
+        Tensor X;
+        Solve(A_device, B_device, X);
         std::cout << X.ToString() << "\n";
     }
 }

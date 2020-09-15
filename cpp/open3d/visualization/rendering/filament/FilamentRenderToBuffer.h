@@ -39,6 +39,7 @@ class SwapChain;
 
 namespace open3d {
 namespace visualization {
+namespace rendering {
 
 class FilamentRenderer;
 class FilamentScene;
@@ -53,7 +54,7 @@ public:
     FilamentRenderToBuffer(filament::Engine& engine, FilamentRenderer& parent);
     ~FilamentRenderToBuffer() override;
 
-    void SetDimensions(std::size_t width, std::size_t height) override;
+    void SetDimensions(std::uint32_t width, std::uint32_t height) override;
     void CopySettings(const View* view) override;
     View& GetView() override;
 
@@ -81,5 +82,6 @@ private:
     void Render();
 };
 
+}  // namespace rendering
 }  // namespace visualization
 }  // namespace open3d

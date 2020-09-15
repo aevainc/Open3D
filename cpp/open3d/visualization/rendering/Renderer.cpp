@@ -32,6 +32,7 @@
 
 namespace open3d {
 namespace visualization {
+namespace rendering {
 
 static const ResourceLoadRequest::ErrorCallback kDefaultErrorHandler =
         [](const ResourceLoadRequest& request,
@@ -93,8 +94,8 @@ void Renderer::RenderToImage(
             // is made mutable
             [render, cb](const RenderToBuffer::Buffer& buffer) mutable {
                 auto image = std::make_shared<geometry::Image>();
-                image->width_ = buffer.width;
-                image->height_ = buffer.height;
+                image->width_ = int(buffer.width);
+                image->height_ = int(buffer.height);
                 image->num_of_channels_ = 3;
                 image->bytes_per_channel_ = 1;
                 image->data_ = std::vector<uint8_t>(buffer.bytes,
@@ -104,5 +105,6 @@ void Renderer::RenderToImage(
             });
 }
 
+}  // namespace rendering
 }  // namespace visualization
 }  // namespace open3d

@@ -41,53 +41,37 @@
 // compilers even if BUILD_CUDA_MODULE is enabled.
 // .cu targets include both.
 
-#include "open3d/core/hashmap/CPU/HashmapCPU.hpp"
+#include "open3d/core/hashmap/CPU/TemplateHashmapCPU.hpp"
 
 #if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
-#include "open3d/core/hashmap/CUDA/HashmapCUDA.cuh"
+#include "open3d/core/hashmap/CUDA/TemplateHashmapCUDA.cuh"
 #endif
 
 #include <unordered_map>
 
 namespace open3d {
 namespace core {
-template <typename Hash, typename KeyEq>
-std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_capacity,
-                                                    size_t dsize_key,
-                                                    size_t dsize_value,
-                                                    Device device) {
-    return CreateHashmap<Hash, KeyEq>(init_capacity / kDefaultElemsPerBucket,
-                                      init_capacity, dsize_key, dsize_value,
-                                      device);
-}
 
 template <typename Hash, typename KeyEq>
-std::shared_ptr<Hashmap<Hash, KeyEq>> CreateHashmap(size_t init_buckets,
-                                                    size_t init_capacity,
-                                                    size_t dsize_key,
-                                                    size_t dsize_value,
-                                                    Device device) {
-    static std::unordered_map<
-            Device::DeviceType,
-            std::function<std::shared_ptr<Hashmap<Hash, KeyEq>>(
-                    size_t, size_t, size_t, size_t, Device)>,
-            utility::hash_enum_class::hash>
-            map_device_type_to_hashmap_constructor = {
-                {Device::DeviceType::CPU, CreateCPUHashmap<Hash, KeyEq>},
-#if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
-                {Device::DeviceType::CUDA, CreateCUDAHashmap<Hash, KeyEq>}
-#endif
-            };
-
-    if (map_device_type_to_hashmap_constructor.find(device.GetType()) ==
-        map_device_type_to_hashmap_constructor.end()) {
-        utility::LogError("CreateHashmap: Unimplemented device");
+std::shared_ptr<DeviceHashmap<Hash, KeyEq>> CreateTemplateDeviceHashmap(
+        size_t init_buckets,
+        size_t init_capacity,
+        size_t dsize_key,
+        size_t dsize_value,
+        const Device &device) {
+    if (device.GetType() == Device::DeviceType::CPU) {
+        return CreateTemplateCPUHashmap<Hash, KeyEq>(
+                init_buckets, init_capacity, dsize_key, dsize_value, device);
     }
-
-    auto constructor =
-            map_device_type_to_hashmap_constructor.at(device.GetType());
-    return constructor(init_buckets, init_capacity, dsize_key, dsize_value,
-                       device);
+#if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
+    else if (device.GetType() == Device::DeviceType::CUDA) {
+        return CreateTemplateCUDAHashmap<Hash, KeyEq>(
+                init_buckets, init_capacity, dsize_key, dsize_value, device);
+    }
+#endif
+    else {
+        utility::LogError("[CreateTemplateHashmap]: Unimplemented device");
+    }
 }
 }  // namespace core
 }  // namespace open3d

@@ -31,6 +31,7 @@
 
 namespace open3d {
 namespace visualization {
+namespace rendering {
 
 class Camera;
 class Scene;
@@ -40,8 +41,6 @@ class LightDirectionInteractorLogic : public MatrixInteractorLogic {
 
 public:
     LightDirectionInteractorLogic(Scene* scene, Camera* camera);
-
-    void SetDirectionalLight(LightHandle dir_light);
 
     void Rotate(int dx, int dy) override;
 
@@ -58,7 +57,7 @@ private:
     Eigen::Vector3f light_dir_at_mouse_down_;
 
     struct UIObj {
-        GeometryHandle handle;
+        std::string name;
         Camera::Transform transform;
     };
     std::vector<UIObj> ui_objs_;
@@ -66,5 +65,6 @@ private:
     void ClearUI();
 };
 
+}  // namespace rendering
 }  // namespace visualization
 }  // namespace open3d

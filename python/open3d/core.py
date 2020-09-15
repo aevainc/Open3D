@@ -2,10 +2,18 @@ import open3d as o3d
 import numpy as np
 
 from open3d.pybind.core import Dtype
+from open3d.pybind.core import DtypeCode
 from open3d.pybind.core import Device
-from open3d.pybind.core import DtypeUtil
 from open3d.pybind.core import cuda
+from open3d.pybind.core import nns
 from open3d.pybind.core import NoneType
+from open3d.pybind.core import TensorList
+from open3d.pybind.core import SizeVector
+from open3d.pybind.core import matmul as pybind_matmul
+from open3d.pybind.core import lstsq as pybind_lstsq
+from open3d.pybind.core import solve as pybind_solve
+from open3d.pybind.core import inv as pybind_inv
+from open3d.pybind.core import svd as pybind_svd
 
 none = NoneType()
 
@@ -21,27 +29,12 @@ def _numpy_dtype_to_dtype(numpy_dtype):
         return Dtype.Int64
     elif numpy_dtype == np.uint8:
         return Dtype.UInt8
+    elif numpy_dtype == np.uint16:
+        return Dtype.UInt16
     elif numpy_dtype == np.bool:
         return Dtype.Bool
     else:
         raise ValueError("Unsupported numpy dtype:", numpy_dtype)
-
-
-class SizeVector(o3d.pybind.core.SizeVector):
-    """
-    SizeVector is a vector of integers for specifying shape, strides, etc.
-    """
-
-    def __init__(self, values=None):
-        if values is None:
-            values = []
-        # TODO: determine whether conversion can be done in C++ as well.
-        if isinstance(values, tuple) or isinstance(values, list):
-            values = np.array(values)
-        if not isinstance(values, np.ndarray) or values.ndim != 1:
-            raise ValueError(
-                "SizeVector only takes 1-D list, tuple or Numpy array.")
-        super(SizeVector, self).__init__(values.astype(np.int64))
 
 
 def cast_to_py_tensor(func):
@@ -94,6 +87,97 @@ def _to_o3d_tensor_key(key):
         raise TypeError("Invalid key type {}.".format(type(key)))
 
 
+@cast_to_py_tensor
+def matmul(lhs, rhs):
+    """
+    Matrix multiplication between Tensor \param lhs and Tensor \param rhs
+
+    Args:
+      lhs: Tensor of shape (m, k)
+      rhs: Tensor of shape (k, n)
+
+    Returns:
+      Tensor of shape (m, n)
+
+    - Both tensors should share the same device and dtype.
+    - Int32, Int64, Float32, Float64 are supported,
+      but results of big integers' matmul are not guaranteed, overflow can happen.
+    """
+    return pybind_matmul(lhs, rhs)
+
+
+@cast_to_py_tensor
+def solve(lhs, rhs):
+    """
+    Returns X by solving linear system AX = B with LU decomposition,
+    where A is Tensor \param lhs and B is Tensor \param rhs.
+
+    Args:
+      lhs: Tensor of shape (n, n)
+      rhs: Tensor of shape (n, k)
+
+    Returns:
+      Tensor of shape (n, k)
+
+    - Both tensors should share the same device and dtype.
+    - Float32 and Float64 are supported.
+    """
+    return pybind_solve(lhs, rhs)
+
+
+@cast_to_py_tensor
+def lstsq(lhs, rhs):
+    """
+    Returns X by solving linear system AX = B with QR decomposition,
+    where A is Tensor \param lhs and B is Tensor \param rhs.
+
+    Args:
+      lhs: Tensor of shape (m, n), m >= n and is a full rank matrix.
+      rhs: Tensor of shape (m, k)
+
+    Returns:
+      Tensor of shape (n, k)
+
+    - Both tensors should share the same device and dtype.
+    - Float32 and Float64 are supported.
+    """
+    return pybind_lstsq(lhs, rhs)
+
+
+@cast_to_py_tensor
+def inv(val):
+    """
+    Returns matrix's inversion with LU decomposition.
+
+    Args:
+      val: Tensor of shape (m, m) and is an invertable matrix
+
+    Returns:
+      Tensor of shape (m, m)
+
+    - Float32 and Float64 are supported.
+    """
+    return pybind_inv(val)
+
+
+@cast_to_py_tensor
+def svd(val):
+    """
+    Returns matrix's SVD decomposition: U S VT = A, where A is Tensor \param val.
+
+    Args:
+      val: Tensor of shape (m, n).
+
+    Returns: a tuple of tensors:
+      U: Tensor of shape (m, n)
+      S: Tensor of shape (min(m, n))
+      VT: Tensor of shape (n, n)
+
+    - Float32 and Float64 are supported.
+    """
+    return pybind_svd(val)
+
+
 class Tensor(o3d.pybind.core.Tensor):
     """
     Open3D Tensor class. A Tensor is a view of data blob with shape, strides
@@ -101,7 +185,7 @@ class Tensor(o3d.pybind.core.Tensor):
     """
 
     def __init__(self, data, dtype=None, device=None):
-        if isinstance(data, tuple) or isinstance(data, list):
+        if isinstance(data, (tuple, list, int, float)):
             data = np.array(data)
         if not isinstance(data, np.ndarray):
             raise ValueError("data must be a list, tuple, or Numpy array.")
@@ -125,6 +209,8 @@ class Tensor(o3d.pybind.core.Tensor):
 
     @cast_to_py_tensor
     def __setitem__(self, key, value):
+        if not isinstance(value, Tensor):
+            value = Tensor(value, self.dtype, self.device)
         if isinstance(key, tuple):
             o3d_tensor_keys = [_to_o3d_tensor_key(k) for k in key]
             super(Tensor, self)._setitem_vector(o3d_tensor_keys, value)
@@ -194,6 +280,30 @@ class Tensor(o3d.pybind.core.Tensor):
         if not isinstance(shape, SizeVector):
             shape = SizeVector(shape)
         return super(Tensor, Tensor).ones(shape, dtype, device)
+
+    @staticmethod
+    @cast_to_py_tensor
+    def eye(n, dtype=Dtype.Float64, device=Device("CPU:0")):
+        """
+        Create an identity square matrix.
+
+        Args:
+            n (int): size of square matrix
+            dtype (Dtype): Data type of the tensor.
+            device (Device): Device where the tensor is created.
+        """
+        return super(Tensor, Tensor).eye(n, dtype, device)
+
+    @staticmethod
+    @cast_to_py_tensor
+    def diag(value):
+        """
+        Create an diagonal square matrix.
+
+        Args:
+            value (Tensor): array of numbers on the diagonal
+        """
+        return super(Tensor, Tensor).diag(value)
 
     @cast_to_py_tensor
     def cuda(self, device_id=0):
@@ -489,11 +599,116 @@ class Tensor(o3d.pybind.core.Tensor):
         return super(Tensor, self).to(dtype, copy)
 
     @cast_to_py_tensor
+    def contiguous(self):
+        """
+        Returns a contiguous Tensor containing the same data in the same device.
+        If self tensor is already contiguous, the same underlying memory will be
+        used.
+        """
+        return super(Tensor, self).contiguous()
+
+    @cast_to_py_tensor
+    def T(self):
+        """
+        Expects input to be <= 2-D Tensor by swapping dimension 0 and 1.
+        0-D and 1-D Tensor remains the same.
+        """
+        return super(Tensor, self).T()
+
+    @cast_to_py_tensor
     def nonzero(self, as_tuple=False):
         if as_tuple:
             return super(Tensor, self)._non_zero_numpy()
         else:
             return super(Tensor, self)._non_zero()
+
+    @cast_to_py_tensor
+    def matmul(self, value):
+        """
+        Matrix multiplication between Tensor \param self and Tensor \param value
+
+        Args:
+          self: Tensor of shape (m, k)
+          value: Tensor of shape (k, n)
+
+        Returns:
+          Tensor of shape (m, n)
+
+        - Both tensors should share the same device and dtype.
+        - Int32, Int64, Float32, Float64 are supported,
+          but results of big integers' matmul are not guaranteed, overflow can happen.
+        """
+        return super(Tensor, self).matmul(value)
+
+    @cast_to_py_tensor
+    def solve(self, value):
+        """
+        Returns X by solving linear system AX = B with LU decomposition,
+        where A is Tensor \param self and B is Tensor \param value.
+
+        Args:
+          self: Tensor of shape (n, n)
+          value: Tensor of shape (n, k)
+
+        Returns:
+          Tensor of shape (n, k)
+
+        - Both tensors should share the same device and dtype.
+        - Float32 and Float64 are supported.
+        """
+        return super(Tensor, self).solve(value)
+
+    @cast_to_py_tensor
+    def lstsq(self, value):
+        """
+        Returns X by solving linear system AX = B with QR decomposition,
+        where A is Tensor \param self and B is Tensor \param value.
+        Use it only when A is non-square.
+
+        Args:
+          self: Tensor of shape (m, n), m >= n and is a full rank matrix.
+          value: Tensor of shape (m, k)
+
+        Returns:
+          Tensor of shape (n, k)
+
+        - Both tensors should share the same device and dtype.
+        - Float32 and Float64 are supported.
+        - The result can be unexpected when A is not a full-rank matrix and the backend is cuda.
+        """
+        return super(Tensor, self).lstsq(value)
+
+    @cast_to_py_tensor
+    def inv(self):
+        """
+        Returns matrix's inversion with LU decomposition.
+
+        Args:
+          self: Tensor of shape (m, m) and is an invertable matrix
+
+        Returns:
+          Tensor of shape (m, m)
+
+        - Float32 and Float64 are supported.
+        """
+        return super(Tensor, self).inv()
+
+    @cast_to_py_tensor
+    def svd(self):
+        """
+        Returns matrix's SVD decomposition: U S VT = A, where A is Tensor \param self.
+
+        Args:
+          self: Tensor of shape (m, n).
+
+        Returns: a tuple of tensors:
+          U: Tensor of shape (m, n)
+          S: Tensor of shape (min(m, n))
+          VT: Tensor of shape (n, n)
+
+        - Float32 and Float64 are supported.
+        """
+        return super(Tensor, self).svd()
 
     def __add__(self, value):
         return self.add(value)
@@ -518,6 +733,9 @@ class Tensor(o3d.pybind.core.Tensor):
 
     def __rmul__(self, value):
         return self.mul(value)
+
+    def __matmul__(self, value):
+        return self.matmul(value)
 
     def __imul__(self, value):
         return self.mul_(value)
@@ -628,7 +846,7 @@ class Tensor(o3d.pybind.core.Tensor):
         elif isinstance(dim, int):
             dim = self._reduction_dim_to_size_vector([dim])
         else:
-            raise TypeError("dim must be int or None, but got {}".format(dim))
+            raise TypeError("dim must be int or None, but got {}.".format(dim))
         return super(Tensor, self).argmin_(dim)
 
     @cast_to_py_tensor
@@ -646,8 +864,20 @@ class Tensor(o3d.pybind.core.Tensor):
         elif isinstance(dim, int):
             dim = self._reduction_dim_to_size_vector([dim])
         else:
-            raise TypeError("dim must be int or None, but got {}".format(dim))
+            raise TypeError("dim must be int or None, but got {}.".format(dim))
         return super(Tensor, self).argmax_(dim)
+
+    @cast_to_py_tensor
+    def isclose(self, other, rtol=1e-5, atol=1e-8):
+        """
+        Element-wise test if the tensor value is close to other.
+        - If the device is not the same: throws exception.
+        - If the dtype is not the same: throws exception.
+        - If the shape is not the same: throws exception.
+        - For each element in the returned tensor:
+          abs(self - other) <= (atol + rtol * abs(other)).
+        """
+        return super(Tensor, self).isclose(other, rtol, atol)
 
     def __lt__(self, value):
         return self.lt(value)
@@ -667,126 +897,59 @@ class Tensor(o3d.pybind.core.Tensor):
     def __ge__(self, value):
         return self.ge(value)
 
-
-def cast_to_py_tensorlist(func):
-    """
-    Args:
-        func: function returning a `o3d.pybind.core.Tensor`.
-
-    Return:
-        A function which returns a python object `Tensor`.
-    """
-
-    def wrapped_func(self, *args, **kwargs):
-        result = func(self, *args, **kwargs)
-        wrapped_result = TensorList([0])
-        wrapped_result.shallow_copy_from(result)
-        return wrapped_result
-
-    return wrapped_func
-
-
-class TensorList(o3d.pybind.core.TensorList):
-    """
-    Open3D TensorList class. A TensorList is an extendable tensor at the 0-th dimension.
-    It is similar to python list, but uses Open3D's tensor memory management system.
-    """
-
-    def __init__(self, shape, dtype=None, device=None, size=None):
-        if isinstance(shape, list) or isinstance(shape, tuple):
-            shape = SizeVector(shape)
-        elif isinstance(shape, SizeVector):
-            pass
+    @cast_to_py_tensor
+    def item(self):
+        """
+        Returns scalar value of a scalar Tensor, the Tensor mush have empty
+        shape ().
+        """
+        if self.dtype == Dtype.Float32:
+            return super(Tensor, self)._item_float()
+        elif self.dtype == Dtype.Float64:
+            return super(Tensor, self)._item_double()
+        elif self.dtype == Dtype.Int32:
+            return super(Tensor, self)._item_int32_t()
+        elif self.dtype == Dtype.Int64:
+            return super(Tensor, self)._item_int64_t()
+        elif self.dtype == Dtype.UInt8:
+            return super(Tensor, self)._item_uint8_t()
+        elif self.dtype == Dtype.UInt16:
+            return super(Tensor, self)._item_uint16_t()
+        elif self.dtype == Dtype.Bool:
+            return super(Tensor, self)._item_bool()
         else:
-            raise ValueError('shape must be a list, tuple, or SizeVector')
+            raise TypeError("Unspported type when calling item()")
 
-        if dtype is None:
-            dtype = Dtype.Float32
-        if device is None:
-            device = Device("CPU:0")
-        if size is None:
-            size = 0
 
-        super(TensorList, self).__init__(shape, dtype, device, size)
+class Hashmap(o3d.pybind.core.Hashmap):
+    """
+    Open3D Hashmap class. A Hashmap is a map from key to data wrapped by Tensors.
+    """
+
+    def __init__(self, init_capacity, dtype_key, dtype_value, device=None):
+        super(Hashmap, self).__init__(init_capacity, dtype_key, dtype_value,
+                                      device)
 
     @cast_to_py_tensor
-    def __getitem__(self, index):
-        '''
-        \index can be a
-        \slice, or \list or \tuple of int: return a TensorList
-        \int: return a Tensor
-        '''
-        if isinstance(index, int):
-            return self._getitem(index)
-        else:
-            raise ValueError('Unsupported index type, only int is supported.')
-
-    def __setitem__(self, index, value):
-        '''
-        If \index is a single int, \value is a Tensor;
-        If \index is a list of ints, \value is correspondingly a TensorList.
-        '''
-        if isinstance(index, int) and isinstance(value, Tensor):
-            self._setitem(index, value)
-
-        else:
-            raise ValueError(
-                'Unsupported index type.'
-                'Use tensorlist.tensor() to assign value with slices or advanced indexing'
-            )
-
-    @cast_to_py_tensorlist
-    def __iadd__(self, other):
-        return super(TensorList, self).__iadd__(other)
-
-    @cast_to_py_tensorlist
-    def __add__(self, other):
-        return super(TensorList, self).__add__(other)
+    def insert(self, keys, values):
+        return super(Hashmap, self).insert(keys, values)
 
     @cast_to_py_tensor
-    def tensor(self):
-        return super(TensorList, self).tensor()
+    def find(self, keys):
+        return super(Hashmap, self).find(keys)
 
-    @staticmethod
-    @cast_to_py_tensorlist
-    def concat(tl_a, tl_b):
-        return super(TensorList, TensorList).concat(tl_a, tl_b)
+    @cast_to_py_tensor
+    def activate(self, keys):
+        return super(Hashmap, self).activate(keys)
 
-    @staticmethod
-    @cast_to_py_tensorlist
-    def from_tensor(tensor, inplace=False):
-        """
-        Returns a TensorList from an existing tensor.
-        Args:
-            tensor: The internal Tensor to construct from, whose 0-th dimension
-                    corresponds to the size of the tensorlist.
-            inplace: Reuse tensor memory in place if True, else make a copy.
-        """
+    @cast_to_py_tensor
+    def erase(self, keys):
+        return super(Hashmap, self).erase(keys)
 
-        if not isinstance(tensor, Tensor):
-            raise ValueError('tensor must be a Tensor')
+    @cast_to_py_tensor
+    def unpack_iterators(self, iterators, masks):
+        return super(Hashmap, self).unpack_iterators(iterators, masks)
 
-        return super(TensorList, TensorList).from_tensor(tensor, inplace)
-
-    @staticmethod
-    @cast_to_py_tensorlist
-    def from_tensors(tensors, device=None):
-        """
-        Returns a TensorList from a list of existing tensors.
-        Args:
-            tensors: The list of Tensor to construct from.
-                     The tensors' shapes should be compatible.
-            device: The device where the tensorlist is targeted.
-        """
-
-        if not isinstance(tensors, list) and not isinstance(tensors, tuple):
-            raise ValueError('tensors must be a list or tuple')
-
-        for tensor in tensors:
-            if not isinstance(tensor, Tensor):
-                raise ValueError(
-                    'every element of the input list must be a valid tensor')
-        if device is None:
-            device = Device("CPU:0")
-
-        return super(TensorList, TensorList).from_tensors(tensors, device)
+    @cast_to_py_tensor
+    def assign_iterators(self, iterators, values, masks=Tensor([])):
+        return super(Hashmap, self).assign_iterators(iterators, values, masks)

@@ -45,10 +45,6 @@ void MemoryManager::Free(void* ptr, const Device& device) {
     return GetDeviceMemoryManager(device)->Free(ptr, device);
 }
 
-void MemoryManager::ReleaseCache(const Device& device) {
-    return GetDeviceMemoryManager(device)->ReleaseCache();
-}
-
 void MemoryManager::Memcpy(void* dst_ptr,
                            const Device& dst_device,
                            const void* src_ptr,
@@ -101,14 +97,19 @@ std::shared_ptr<DeviceMemoryManager> MemoryManager::GetDeviceMemoryManager(
         const Device& device) {
     static std::unordered_map<Device::DeviceType,
                               std::shared_ptr<DeviceMemoryManager>,
-                              utility::hash_enum_class::hash>
+                              utility::hash_enum_class>
             map_device_type_to_memory_manager = {
                     {Device::DeviceType::CPU,
                      std::make_shared<CPUMemoryManager>()},
 #ifdef BUILD_CUDA_MODULE
+#ifdef BUILD_CACHED_CUDA_MANAGER
                     {Device::DeviceType::CUDA,
-                     std::make_shared<CUDAMemoryManager>()},
-#endif
+                     std::make_shared<CUDACachedMemoryManager>()},
+#else
+                    {Device::DeviceType::CUDA,
+                     std::make_shared<CUDASimpleMemoryManager>()},
+#endif  // BUILD_CACHED_CUDA_MANAGER
+#endif  // BUILD_CUDA_MODULE
             };
     if (map_device_type_to_memory_manager.find(device.GetType()) ==
         map_device_type_to_memory_manager.end()) {

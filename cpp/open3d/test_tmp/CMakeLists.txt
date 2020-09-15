@@ -1,6 +1,3 @@
-find_package(MKL REQUIRED)
-find_package(MAGMA REQUIRED)
-
 if (BUILD_CUDA_MODULE)
     # core
     cuda_add_executable(TestHashmap TestHashmap.cu)

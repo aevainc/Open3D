@@ -39,6 +39,7 @@ class TextureSampler;
 
 namespace open3d {
 namespace visualization {
+namespace rendering {
 
 class FilamentMaterialModifier : public MaterialModifier {
 public:
@@ -60,9 +61,11 @@ public:
     MaterialModifier& SetParameter(const char* parameter,
                                    const Eigen::Vector3f& value) override;
     MaterialModifier& SetColor(const char* parameter,
-                               const Eigen::Vector3f& value) override;
+                               const Eigen::Vector3f& value,
+                               bool srgb) override;
     MaterialModifier& SetColor(const char* parameter,
-                               const Eigen::Vector4f& value) override;
+                               const Eigen::Vector4f& value,
+                               bool srgb) override;
 
     MaterialModifier& SetTexture(
             const char* parameter,
@@ -78,5 +81,6 @@ private:
     std::shared_ptr<filament::MaterialInstance> material_instance_;
 };
 
+}  // namespace rendering
 }  // namespace visualization
 }  // namespace open3d

@@ -25,12 +25,14 @@
 // ----------------------------------------------------------------------------
 
 #include "TensorHash.h"
+
 #include <unordered_map>
+
 #include "open3d/utility/Timer.h"
 
 namespace open3d {
 namespace core {
-std::pair<Tensor, Tensor> Unique(const Tensor &tensor) {
+std::pair<Tensor, Tensor> TensorHash::Unique(const Tensor &tensor) {
     /// TODO: sanity checks and multiple axises
     utility::Timer timer, total_timer;
     total_timer.Start();
@@ -89,7 +91,7 @@ TensorHash::TensorHash(Tensor coords, Tensor values, bool insert /* = true */) {
 
     int64_t N = coords_shape[0];
 
-    size_t key_size = DtypeUtil::ByteSize(key_type_) * key_dim_;
+    size_t key_size = key_type_.ByteSize() * key_dim_;
     if (key_size > MAX_KEY_BYTESIZE) {
         utility::LogError(
                 "TensorHash::Unsupported key size: at most {} bytes per "
@@ -97,11 +99,14 @@ TensorHash::TensorHash(Tensor coords, Tensor values, bool insert /* = true */) {
                 "supported, received {} bytes per key",
                 MAX_KEY_BYTESIZE, key_size);
     }
-    size_t value_size = DtypeUtil::ByteSize(value_type_) * value_dim_;
+    size_t value_size = value_type_.ByteSize() * value_dim_;
+
+    Dtype key_dtype(Dtype::DtypeCode::Object, key_size, "key");
+    Dtype val_dtype(Dtype::DtypeCode::Object, value_size, "val");
 
     // Create hashmap and reserve twice input size
-    hashmap_ =
-            CreateDefaultHashmap(N, key_size, value_size, coords.GetDevice());
+    hashmap_ = std::make_shared<Hashmap>(N, key_dtype, val_dtype,
+                                         coords.GetDevice());
 
     if (insert) {
         auto iterators = MemoryManager::Malloc(sizeof(iterator_t) * N,
@@ -123,7 +128,7 @@ std::pair<Tensor, Tensor> TensorHash::Insert(Tensor coords, Tensor values) {
 
     timer.Start();
     // Device check
-    if (coords.GetDevice().GetType() != hashmap_->device_.GetType()) {
+    if (coords.GetDevice().GetType() != hashmap_->GetDevice().GetType()) {
         utility::LogError(
                 "TensorHash::Input tensors and hashmap device mismatch.");
     }
@@ -196,7 +201,7 @@ std::pair<Tensor, Tensor> TensorHash::Insert(Tensor coords, Tensor values) {
 
 std::pair<Tensor, Tensor> TensorHash::Query(Tensor coords) {
     // Device check
-    if (coords.GetDevice().GetType() != hashmap_->device_.GetType()) {
+    if (coords.GetDevice().GetType() != hashmap_->GetDevice().GetType()) {
         utility::LogError(
                 "TensorHash::Input tensors and hashmap device mismatch.");
     }
@@ -243,7 +248,7 @@ std::pair<Tensor, Tensor> TensorHash::Query(Tensor coords) {
 
 Tensor TensorHash::Assign(Tensor coords, Tensor values) {
     // Device check
-    if (coords.GetDevice().GetType() != hashmap_->device_.GetType()) {
+    if (coords.GetDevice().GetType() != hashmap_->GetDevice().GetType()) {
         utility::LogError(
                 "TensorHash::Input tensors and hashmap device mismatch.");
     }

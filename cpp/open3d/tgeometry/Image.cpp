@@ -25,34 +25,57 @@
 // ----------------------------------------------------------------------------
 
 #include "open3d/tgeometry/Image.h"
+
+#include "open3d/core/Dtype.h"
+#include "open3d/core/ShapeUtil.h"
+#include "open3d/core/Tensor.h"
 #include "open3d/core/kernel/ImageOp.h"
+#include "open3d/utility/Console.h"
 
 namespace open3d {
 namespace tgeometry {
-using namespace core;
 
-Image& Image::Clear() {
-    data_ = Tensor();
-    return *this;
+Image::Image(int64_t rows,
+             int64_t cols,
+             int64_t channels,
+             core::Dtype dtype,
+             const core::Device &device)
+    : Geometry(Geometry::GeometryType::Image, 2) {
+    if (rows < 0) {
+        utility::LogError("rows must be >= 0, but got {}.", rows);
+    }
+    if (cols < 0) {
+        utility::LogError("cols must be >= 0, but got {}.", cols);
+    }
+    if (channels <= 0) {
+        utility::LogError("channels must be > 0, but got {}.", channels);
+    }
+    data_ = core::Tensor({rows, cols, channels}, dtype, device);
 }
 
-bool Image::IsEmpty() const { return !HasData(); }
-
-Tensor Image::GetMinBound() const {
-    return Tensor(std::vector<float>({0.0, 0.0}), SizeVector({2}),
-                  Dtype::Float32, Device("CPU:0"));
+Image::Image(const core::Tensor &tensor)
+    : Geometry(Geometry::GeometryType::Image, 2) {
+    if (!tensor.IsContiguous()) {
+        utility::LogError("Input tensor must be contiguous.");
+    }
+    if (tensor.NumDims() == 2) {
+        data_ = tensor.Reshape(
+                core::shape_util::Concat(tensor.GetShape(), {1}));
+    } else if (tensor.NumDims() == 3) {
+        data_ = tensor;
+    } else {
+        utility::LogError("Input tensor must be 2-D or 3-D, but got shape {}.",
+                          tensor.GetShape().ToString());
+    }
 }
 
-Tensor Image::GetMaxBound() const {
-    return Tensor(std::vector<float>({static_cast<float>(width_),
-                                      static_cast<float>(height_)}),
-                  SizeVector({2}), Dtype::Float32, Device("CPU:0"));
-}
-
-Tensor Image::Unproject(const Tensor& intrinsic) {
-    Tensor vertex_map({3, 1, height_, width_}, Dtype::Float32, device_);
-    ImageUnaryEW(data_, vertex_map, intrinsic, kernel::ImageOpCode::Unproject);
-    return vertex_map.Reshape({3, height_, width_});
+core::Tensor Image::Unproject(const core::Tensor &intrinsic) {
+    core::Tensor vertex_map({3, 1, GetRows(), GetCols()}, core::Dtype::Float32,
+                            GetDevice());
+    core::kernel::ImageUnaryEW(data_.Permute({2, 0, 1}).Contiguous(),
+                               vertex_map, intrinsic,
+                               core::kernel::ImageOpCode::Unproject);
+    return vertex_map.Reshape({3, GetRows(), GetCols()});
 }
 }  // namespace tgeometry
 }  // namespace open3d

@@ -1,6 +1,5 @@
 #include "open3d/Open3D.h"
-
-#include "open3d/core/algebra/Matmul.h"
+#include "open3d/core/linalg/Matmul.h"
 
 using namespace open3d;
 using namespace open3d::core;
@@ -13,7 +12,8 @@ int main() {
         Tensor A(vals, {2, 3}, core::Dtype::Float32, device);
         Tensor R = Tensor(std::vector<float>({1, 0, 0, 0, -1, 1, 0, 0, -1}),
                           {3, 3}, Dtype::Float32, device);
-        Tensor C = Matmul(A, R);
+        Tensor C;
+        Matmul(A, R, C);
 
         std::cout << A.ToString() << "\n";
         std::cout << R.ToString() << "\n";

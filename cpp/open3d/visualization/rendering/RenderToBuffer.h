@@ -32,6 +32,7 @@
 
 namespace open3d {
 namespace visualization {
+namespace rendering {
 
 class Scene;
 class View;
@@ -49,7 +50,7 @@ public:
 
     virtual ~RenderToBuffer() = default;
 
-    virtual void SetDimensions(std::size_t width, std::size_t height) = 0;
+    virtual void SetDimensions(std::uint32_t width, std::uint32_t height) = 0;
     virtual void CopySettings(const View* view) = 0;
     virtual View& GetView() = 0;
     // BufferReadyCallback does not need to free Buffer::bytes.
@@ -57,5 +58,6 @@ public:
     virtual void RequestFrame(Scene* scene, BufferReadyCallback cb) = 0;
 };
 
+}  // namespace rendering
 }  // namespace visualization
 }  // namespace open3d

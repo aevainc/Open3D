@@ -43,7 +43,7 @@ ImageLabel::ImageLabel(const char* image_path) : impl_(new ImageLabel::Impl()) {
     impl_->image_ = std::make_shared<UIImage>(image_path);
 }
 
-ImageLabel::ImageLabel(visualization::TextureHandle texture_id,
+ImageLabel::ImageLabel(visualization::rendering::TextureHandle texture_id,
                        float u0 /*= 0.0f*/,
                        float v0 /*= 0.0f*/,
                        float u1 /*= 1.0f*/,
@@ -81,11 +81,10 @@ Widget::DrawResult ImageLabel::Draw(const DrawContext& context) {
         params = impl_->image_->CalcDrawParams(context.renderer, frame);
     }
 
-    if (params.texture != visualization::TextureHandle::kBad) {
+    if (params.texture != visualization::rendering::TextureHandle::kBad) {
         ImTextureID image_id =
                 reinterpret_cast<ImTextureID>(params.texture.GetId());
-        ImGui::SetCursorPos(ImVec2(params.pos_x - context.uiOffsetX,
-                                   params.pos_y - context.uiOffsetY));
+        ImGui::SetCursorScreenPos(ImVec2(params.pos_x, params.pos_y));
         ImGui::Image(image_id, ImVec2(params.width, params.height),
                      ImVec2(params.u0, params.v0),
                      ImVec2(params.u1, params.v1));
@@ -95,26 +94,26 @@ Widget::DrawResult ImageLabel::Draw(const DrawContext& context) {
         const char* error_text = "  Error\nloading\n image";
         Color fg(1.0, 1.0, 1.0);
         ImGui::GetWindowDrawList()->AddRectFilled(
-                ImVec2(frame.x, frame.y),
-                ImVec2(frame.GetRight(), frame.GetBottom()),
+                ImVec2(float(frame.x), float(frame.y)),
+                ImVec2(float(frame.GetRight()), float(frame.GetBottom())),
                 IM_COL32(255, 0, 0, 255));
         ImGui::GetWindowDrawList()->AddRect(
-                ImVec2(frame.x, frame.y),
-                ImVec2(frame.GetRight(), frame.GetBottom()),
+                ImVec2(float(frame.x), float(frame.y)),
+                ImVec2(float(frame.GetRight()), float(frame.GetBottom())),
                 IM_COL32(255, 255, 255, 255));
-        ImGui::PushStyleColor(ImGuiCol_Text, util::colorToImgui(fg));
+        ImGui::PushStyleColor(ImGuiCol_Text, colorToImgui(fg));
 
         auto padding = ImGui::GetStyle().FramePadding;
         float wrap_width = frame.width - std::ceil(2.0f * padding.x);
         float wrapX = ImGui::GetCursorPos().x + wrap_width;
         auto* font = ImGui::GetFont();
-        auto text_size = font->CalcTextSizeA(
-                context.theme.font_size, wrap_width, wrap_width, error_text);
+        auto text_size =
+                font->CalcTextSizeA(float(context.theme.font_size), wrap_width,
+                                    wrap_width, error_text);
         float x = (float(frame.width) - text_size.x) / 2.0f;
         float y = (float(frame.height) - text_size.y) / 2.0f;
 
-        ImGui::SetCursorPos(ImVec2(x + frame.x - context.uiOffsetX,
-                                   y + frame.y - context.uiOffsetY));
+        ImGui::SetCursorScreenPos(ImVec2(x + frame.x, y + frame.y));
         ImGui::PushTextWrapPos(wrapX);
         ImGui::TextWrapped("%s", error_text);
         ImGui::PopTextWrapPos();

@@ -25,6 +25,7 @@
 // ----------------------------------------------------------------------------
 
 #include <unordered_map>
+
 #include "open3d/geometry/Image.h"
 #include "open3d/tgeometry/Image.h"
 
@@ -37,10 +38,9 @@ static const std::unordered_map<int, Dtype> kBytesToDtypeMap = {
         {1, Dtype::UInt8}, {2, Dtype::UInt16}, {4, Dtype::Float32}};
 
 tgeometry::Image Image::FromLegacyImage(const geometry::Image &image_legacy,
-                                        Device device) {
-    tgeometry::Image image;
+                                        const Device &device) {
     if (image_legacy.IsEmpty()) {
-        return image;
+        return tgeometry::Image();
     }
 
     auto iter = kBytesToDtypeMap.find(image_legacy.bytes_per_channel_);
@@ -50,33 +50,28 @@ tgeometry::Image Image::FromLegacyImage(const geometry::Image &image_legacy,
     }
 
     Dtype dtype = iter->second;
-    image.Prepare(image_legacy.width_, image_legacy.height_,
-                  image_legacy.num_of_channels_, dtype, device);
+
+    tgeometry::Image image(image_legacy.height_, image_legacy.width_,
+                           image_legacy.num_of_channels_, dtype, device);
 
     size_t num_bytes = image_legacy.height_ * image_legacy.BytesPerLine();
     MemoryManager::MemcpyFromHost(image.data_.GetDataPtr(), device,
                                   image_legacy.data_.data(), num_bytes);
-    image.data_ = image.data_.Permute({2, 0, 1}).Contiguous();
     return image;
 }
 
-geometry::Image Image::ToLegacyImage(const tgeometry::Image &image) {
+geometry::Image Image::ToLegacyImage() {
     geometry::Image image_legacy;
-    if (image.IsEmpty()) {
+    if (IsEmpty()) {
         return image_legacy;
     }
 
-    utility::LogInfo("{}, {}, {}, {}", image.width_, image.height_,
-                     image.num_of_channels_, DtypeUtil::ToString(image.dtype_));
-
-    image_legacy.Prepare(image.width_, image.height_, image.num_of_channels_,
-                         DtypeUtil::ByteSize(image.dtype_));
+    image_legacy.Prepare(GetCols(), GetRows(), GetChannels(),
+                         GetDtype().ByteSize());
     size_t num_bytes = image_legacy.height_ * image_legacy.BytesPerLine();
 
-    Tensor transposed = image.data_.Permute({1, 2, 0}).Contiguous();
-    MemoryManager::MemcpyToHost(image_legacy.data_.data(),
-                                transposed.GetDataPtr(), image.device_,
-                                num_bytes);
+    MemoryManager::MemcpyToHost(image_legacy.data_.data(), GetDataPtr(),
+                                GetDevice(), num_bytes);
 
     return image_legacy;
 }

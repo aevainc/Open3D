@@ -81,7 +81,7 @@ public:
     /// Clear all elements in the geometry.
     virtual Geometry& Clear() = 0;
 
-    /// Returns `true` iff the geometry is empty.
+    /// Returns true iff the geometry is empty.
     virtual bool IsEmpty() const = 0;
 
     /// Returns one of registered geometry types.
@@ -95,7 +95,7 @@ private:
     GeometryType geometry_type_ = GeometryType::Unspecified;
 
     /// Number of dimensions of the geometry.
-    int dimension_ = 3;
+    int dimension_;
 };
 
 }  // namespace tgeometry

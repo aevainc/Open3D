@@ -25,198 +25,170 @@
 // ----------------------------------------------------------------------------
 
 #include "open3d/tgeometry/PointCloud.h"
-#include "open3d/geometry/PointCloud.h"
 
 #include <Eigen/Core>
+#include <string>
 #include <unordered_map>
 
+#include "open3d/core/EigenConverter.h"
 #include "open3d/core/ShapeUtil.h"
 #include "open3d/core/Tensor.h"
 #include "open3d/core/TensorList.h"
-#include "open3d/core/algebra/Matmul.h"
 #include "open3d/core/hashmap/TensorHash.h"
-#include "open3d/utility/Timer.h"
+#include "open3d/core/linalg/Matmul.h"
 
 namespace open3d {
 namespace tgeometry {
 
-using namespace core;
-
-PointCloud::PointCloud(const Tensor &points_tensor)
-    : Geometry3D(Geometry::GeometryType::PointCloud),
-      dtype_(points_tensor.GetDtype()),
-      device_(points_tensor.GetDevice()) {
-    auto shape = points_tensor.GetShape();
-    if (shape[1] != 3) {
-        utility::LogError("PointCloud must be constructed from (N, 3) points.");
-    }
-    point_dict_.emplace("points", TensorList(points_tensor));
+PointCloud::PointCloud(core::Dtype dtype, const core::Device &device)
+    : Geometry(Geometry::GeometryType::PointCloud, 3),
+      device_(device),
+      point_attr_(TensorListMap("points")) {
+    SetPoints(core::TensorList({3}, dtype, device_));
 }
 
-PointCloud::PointCloud(
-        const std::unordered_map<std::string, TensorList> &point_dict)
-    : Geometry3D(Geometry::GeometryType::PointCloud) {
-    auto it = point_dict.find("points");
-    if (it == point_dict.end()) {
-        utility::LogError("PointCloud must include key \"points\".");
-    }
-
-    dtype_ = it->second.GetDtype();
-    device_ = it->second.GetDevice();
-
-    auto shape = it->second.GetShape();
-    if (shape[0] != 3) {
-        utility::LogError("PointCloud must be constructed from (N, 3) points.");
-    }
-
-    for (auto kv : point_dict) {
-        if (device_ != kv.second.GetDevice()) {
-            utility::LogError("TensorList device mismatch!");
-        }
-        point_dict_.emplace(kv.first, kv.second);
-    }
+PointCloud::PointCloud(const core::TensorList &points)
+    : PointCloud(points.GetDtype(), points.GetDevice()) {
+    points.AssertElementShape({3});
+    SetPoints(points);
 }
 
-TensorList &PointCloud::operator[](const std::string &key) {
-    auto it = point_dict_.find(key);
-    if (it == point_dict_.end()) {
-        utility::LogError("Unknown key {} in PointCloud point_dict_.", key);
-    }
-
-    return it->second;
+PointCloud::PointCloud(const std::unordered_map<std::string, core::TensorList>
+                               &map_keys_to_tensorlists)
+    : PointCloud(map_keys_to_tensorlists.at("points").GetDtype(),
+                 map_keys_to_tensorlists.at("points").GetDevice()) {
+    map_keys_to_tensorlists.at("points").AssertElementShape({3});
+    point_attr_.Assign(map_keys_to_tensorlists);
 }
 
-void PointCloud::SyncPushBack(
-        const std::unordered_map<std::string, Tensor> &point_struct) {
-    // Check if "point"" exists
-    auto it = point_struct.find("points");
-    if (it == point_struct.end()) {
-        utility::LogError("Point must include key \"points\".");
-    }
-
-    auto size = point_dict_.find("points")->second.GetSize();
-    for (auto kv : point_struct) {
-        // Check existance of key in point_dict
-        auto it = point_dict_.find(kv.first);
-        if (it == point_dict_.end()) {
-            utility::LogError("Unknown key {} in PointCloud dictionary.",
-                              kv.first);
-        }
-
-        // Check size consistency
-        auto size_it = it->second.GetSize();
-        if (size_it != size) {
-            utility::LogError("Size mismatch ({}, {}) between ({}, {}).",
-                              "points", size, kv.first, size_it);
-        }
-        it->second.PushBack(kv.second);
-    }
+core::Tensor PointCloud::GetMinBound() const {
+    return GetPoints().AsTensor().Min({0});
 }
 
-PointCloud &PointCloud::Clear() {
-    point_dict_.clear();
+core::Tensor PointCloud::GetMaxBound() const {
+    return GetPoints().AsTensor().Max({0});
+}
+
+core::Tensor PointCloud::GetCenter() const {
+    return GetPoints().AsTensor().Mean({0});
+}
+
+PointCloud &PointCloud::Transform(const core::Tensor &transformation) {
+    core::Tensor R = transformation.Slice(0, 0, 3).Slice(1, 0, 3);
+    core::Tensor t = transformation.Slice(0, 0, 3).Slice(1, 3, 4);
+    core::Tensor points_transformed;
+    core::Matmul(GetPoints().AsTensor(), R.T(), points_transformed);
+    points_transformed += t.T();
+    GetPoints().AsTensor() = points_transformed;
     return *this;
 }
 
-bool PointCloud::IsEmpty() const { return !HasPoints(); }
-
-Tensor PointCloud::GetMinBound() const {
-    point_dict_.at("points").AssertShape({3});
-    return point_dict_.at("points").AsTensor().Min({0});
-}
-
-Tensor PointCloud::GetMaxBound() const {
-    point_dict_.at("points").AssertShape({3});
-    return point_dict_.at("points").AsTensor().Max({0});
-}
-
-Tensor PointCloud::GetCenter() const {
-    point_dict_.at("points").AssertShape({3});
-    return point_dict_.at("points").AsTensor().Mean({0});
-}
-
-PointCloud &PointCloud::Transform(const Tensor &transformation) {
-    Tensor R = transformation.Slice(0, 0, 3).Slice(1, 0, 3);
-    Tensor t = transformation.Slice(0, 0, 3).Slice(1, 3, 4);
-    Tensor points_transformed =
-            Matmul(point_dict_.at("points").AsTensor(), R.T()) + t.T();
-    point_dict_.at("points").AsTensor() = points_transformed;
-    return *this;
-}
-
-PointCloud &PointCloud::Translate(const Tensor &translation, bool relative) {
-    shape_util::AssertShape(translation, {3},
-                            "translation must have shape (3,)");
-    Tensor transform = translation.Copy();
+PointCloud &PointCloud::Translate(const core::Tensor &translation,
+                                  bool relative) {
+    translation.AssertShape({3});
+    core::Tensor transform = translation.Copy();
     if (!relative) {
         transform -= GetCenter();
     }
-    point_dict_.at("points").AsTensor() += transform;
+    GetPoints().AsTensor() += transform;
     return *this;
 }
 
-PointCloud &PointCloud::Scale(double scale, const Tensor &center) {
-    shape_util::AssertShape(center, {3}, "center must have shape (3,)");
-    point_dict_.at("points") = TensorList(
-            (point_dict_.at("points").AsTensor() - center) * scale + center);
+PointCloud &PointCloud::Scale(double scale, const core::Tensor &center) {
+    center.AssertShape({3});
+    core::Tensor points = GetPoints().AsTensor();
+    points.Sub_(center).Mul_(scale).Add_(center);
     return *this;
 }
 
-PointCloud &PointCloud::Rotate(const Tensor &R, const Tensor &center) {
+PointCloud &PointCloud::Rotate(const core::Tensor &R,
+                               const core::Tensor &center) {
     utility::LogError("Unimplemented");
     return *this;
+}
+
+tgeometry::PointCloud PointCloud::FromLegacyPointCloud(
+        const geometry::PointCloud &pcd_legacy,
+        core::Dtype dtype,
+        const core::Device &device) {
+    tgeometry::PointCloud pcd(dtype, device);
+    if (pcd_legacy.HasPoints()) {
+        pcd.SetPoints(core::eigen_converter::EigenVector3dVectorToTensorList(
+                pcd_legacy.points_, dtype, device));
+    } else {
+        utility::LogWarning(
+                "Creating from an empty legacy pointcloud, an empty pointcloud "
+                "with default dtype and device will be created.");
+    }
+    if (pcd_legacy.HasColors()) {
+        pcd.SetPointColors(
+                core::eigen_converter::EigenVector3dVectorToTensorList(
+                        pcd_legacy.colors_, dtype, device));
+    }
+    if (pcd_legacy.HasNormals()) {
+        pcd.SetPointNormals(
+                core::eigen_converter::EigenVector3dVectorToTensorList(
+                        pcd_legacy.normals_, dtype, device));
+    }
+    return pcd;
+}
+
+geometry::PointCloud PointCloud::ToLegacyPointCloud() const {
+    geometry::PointCloud pcd_legacy;
+    if (HasPoints()) {
+        const core::TensorList &points = GetPoints();
+        for (int64_t i = 0; i < points.GetSize(); i++) {
+            pcd_legacy.points_.push_back(
+                    core::eigen_converter::TensorToEigenVector3d(points[i]));
+        }
+    }
+    if (HasPointColors()) {
+        const core::TensorList &colors = GetPointColors();
+        for (int64_t i = 0; i < colors.GetSize(); i++) {
+            pcd_legacy.colors_.push_back(
+                    core::eigen_converter::TensorToEigenVector3d(colors[i]));
+        }
+    }
+    if (HasPointNormals()) {
+        const core::TensorList &normals = GetPointNormals();
+        for (int64_t i = 0; i < normals.GetSize(); i++) {
+            pcd_legacy.normals_.push_back(
+                    core::eigen_converter::TensorToEigenVector3d(normals[i]));
+        }
+    }
+    return pcd_legacy;
 }
 
 PointCloud PointCloud::VoxelDownSample(
         float voxel_size,
         const std::unordered_set<std::string> &properties_to_skip) const {
-    utility::Timer timer;
-    timer.Start();
     auto tensor_quantized =
-            point_dict_.find("points")->second.AsTensor() / voxel_size;
-    timer.Stop();
-    utility::LogInfo("[PointCloud] operator Div takes {}", timer.GetDuration());
+            point_attr_.find("points")->second.AsTensor() / voxel_size;
 
-    timer.Start();
-    auto tensor_quantized_int64 = tensor_quantized.To(Dtype::Int64);
-    timer.Stop();
-    utility::LogInfo("[PointCloud] To(Int64) takes {}", timer.GetDuration());
-    CudaSync();
+    auto tensor_quantized_int64 = tensor_quantized.To(core::Dtype::Int64);
 
-    timer.Start();
-    auto result = Unique(tensor_quantized_int64);
-    timer.Stop();
-    utility::LogInfo("[PointCloud] Unique takes {}", timer.GetDuration());
+    auto result = core::TensorHash::Unique(tensor_quantized_int64);
 
-    timer.Start();
-    Tensor coords = result.first;
-    Tensor masks = result.second;
-    auto pcd_down_map = std::unordered_map<std::string, TensorList>();
-    auto tl_pts = TensorList(coords.IndexGet({masks}).To(Dtype::Float32),
-                             /* inplace = */ false);
-    timer.Stop();
-    utility::LogInfo("[PointCloud] pts IndexGet takes {}", timer.GetDuration());
+    core::Tensor coords = result.first;
+    core::Tensor masks = result.second;
+    auto pcd_down_map = std::unordered_map<std::string, core::TensorList>();
+    auto tl_pts = core::TensorList::FromTensor(
+            coords.IndexGet({masks}).To(core::Dtype::Float32),
+            /* inplace = */ false);
 
-    timer.Start();
     pcd_down_map.emplace(std::make_pair("points", tl_pts));
-    for (auto kv : point_dict_) {
+    for (auto kv : point_attr_) {
         if (kv.first != "points" &&
             properties_to_skip.find(kv.first) == properties_to_skip.end()) {
-            timer.Start();
-            auto tl = TensorList(kv.second.AsTensor().IndexGet({masks}), false);
+            auto tl = core::TensorList::FromTensor(
+                    kv.second.AsTensor().IndexGet({masks}), false);
             pcd_down_map.emplace(std::make_pair(kv.first, tl));
-            timer.Stop();
-            utility::LogInfo("[PointCloud] {} IndexGet takes {}", kv.first,
-                             timer.GetDuration());
         }
     }
 
     PointCloud pcd_down(pcd_down_map);
-    timer.Stop();
-    utility::LogInfo("[PointCloud] constructor {}", timer.GetDuration());
 
     return pcd_down;
 }
-
 }  // namespace tgeometry
 }  // namespace open3d

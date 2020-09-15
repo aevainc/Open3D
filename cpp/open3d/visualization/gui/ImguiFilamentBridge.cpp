@@ -44,32 +44,33 @@
 
 #include "open3d/visualization/gui/ImguiFilamentBridge.h"
 
-#include <fcntl.h>
-#include <filamat/MaterialBuilder.h>
+// 4068: Filament has some clang-specific vectorizing pragma's that MSVC flags
+// 4305: LightManager.h needs to specify some constants as floats
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4068 4305)
+#endif  // _MSC_VER
+
 #include <filament/Fence.h>
-#include <filament/IndexBuffer.h>
-#include <filament/Material.h>
-#include <filament/MaterialInstance.h>
 #include <filament/RenderableManager.h>
 #include <filament/Scene.h>
-#include <filament/Texture.h>
 #include <filament/TextureSampler.h>
 #include <filament/TransformManager.h>
-#include <filament/VertexBuffer.h>
-#include <imgui.h>
 #include <utils/EntityManager.h>
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif  // _MSC_VER
+
+#include <fcntl.h>
+#include <imgui.h>
+
 #include <cerrno>
-#include <cstddef>  // <filament/Engine> recursive includes needs this, std::size_t especially
 #include <iostream>
 #include <map>
 #include <vector>
 
-#if !defined(WIN32)
-#include <unistd.h>
-#else
-#include <io.h>
-#endif
-
+#include "open3d/utility/FileSystem.h"
 #include "open3d/visualization/gui/Application.h"
 #include "open3d/visualization/gui/Color.h"
 #include "open3d/visualization/gui/Gui.h"
@@ -90,89 +91,10 @@ namespace open3d {
 namespace visualization {
 namespace gui {
 
-static std::string GetIOErrorString(int errno_val) {
-    switch (errno_val) {
-        case EPERM:
-            return "Operation not permitted";
-        case EACCES:
-            return "Access denied";
-        case EAGAIN:
-            return "EAGAIN";
-#ifndef WIN32
-        case EDQUOT:
-            return "Over quota";
-#endif
-        case EEXIST:
-            return "File already exists";
-        case EFAULT:
-            return "Bad filename pointer";
-        case EINTR:
-            return "open() interrupted by a signal";
-        case EIO:
-            return "I/O error";
-        case ELOOP:
-            return "Too many symlinks, could be a loop";
-        case EMFILE:
-            return "Process is out of file descriptors";
-        case ENAMETOOLONG:
-            return "Filename is too long";
-        case ENFILE:
-            return "File system table is full";
-        case ENOENT:
-            return "No such file or directory";
-        case ENOSPC:
-            return "No space available to create file";
-        case ENOTDIR:
-            return "Bad path";
-        case EOVERFLOW:
-            return "File is too big";
-        case EROFS:
-            return "Can't modify file on read-only filesystem";
-        default: {
-            std::stringstream s;
-            s << "IO error " << errno_val << " (see cerrno)";
-            return s.str();
-        }
-    }
-}
-
-static bool ReadBinaryFile(const std::string& path,
-                           std::vector<char>* bytes,
-                           std::string* error_str) {
-    bytes->clear();
-    if (error_str) {
-        *error_str = "";
-    }
-
-    // Open file
-    int fd = open(path.c_str(), O_RDONLY);
-    if (fd == -1) {
-        if (error_str) {
-            *error_str = GetIOErrorString(errno);
-        }
-        return false;
-    }
-
-    // Get file size
-    off_t filesize = (off_t)lseek(fd, 0, SEEK_END);
-    lseek(fd, 0, SEEK_SET);  // reset file pointer back to beginning
-
-    // Read data
-    bytes->resize(filesize);
-    bool result = true;
-    if (read(fd, bytes->data(), filesize) != filesize) {
-        result = false;
-    }
-
-    // We're done, close and return
-    close(fd);
-    return result;
-}
-
 static Material* LoadMaterialTemplate(const std::string& path, Engine& engine) {
     std::vector<char> bytes;
     std::string error_str;
-    if (!ReadBinaryFile(path, &bytes, &error_str)) {
+    if (!utility::filesystem::FReadToBuffer(path, bytes, &error_str)) {
         std::cout << "[ERROR] Could not read " << path << ": " << error_str
                   << std::endl;
         return nullptr;
@@ -239,24 +161,27 @@ struct ImguiFilamentBridge::Impl {
     filament::Texture* font_texture_ = nullptr;
     bool has_synced_ = false;
 
-    visualization::FilamentRenderer* renderer_ = nullptr;  // we do not own this
-    visualization::FilamentView* view_ = nullptr;          // we do not own this
+    visualization::rendering::FilamentRenderer* renderer_ =
+            nullptr;  // we do not own this
+    visualization::rendering::FilamentView* view_ =
+            nullptr;  // we do not own this
 };
 
 ImguiFilamentBridge::ImguiFilamentBridge(
-        visualization::FilamentRenderer* renderer, const Size& window_size)
+        visualization::rendering::FilamentRenderer* renderer,
+        const Size& window_size)
     : impl_(new ImguiFilamentBridge::Impl()) {
     impl_->renderer_ = renderer;
     // The UI needs a special material (just a pass-through blit)
     std::string resource_path = Application::GetInstance().GetResourcePath();
-    impl_->uiblit_material_ =
-            LoadMaterialTemplate(resource_path + "/ui_blit.filamat",
-                                 visualization::EngineInstance::GetInstance());
-    impl_->image_material_ =
-            LoadMaterialTemplate(resource_path + "/img_blit.filamat",
-                                 visualization::EngineInstance::GetInstance());
+    impl_->uiblit_material_ = LoadMaterialTemplate(
+            resource_path + "/ui_blit.filamat",
+            visualization::rendering::EngineInstance::GetInstance());
+    impl_->image_material_ = LoadMaterialTemplate(
+            resource_path + "/img_blit.filamat",
+            visualization::rendering::EngineInstance::GetInstance());
 
-    auto& engine = visualization::EngineInstance::GetInstance();
+    auto& engine = visualization::rendering::EngineInstance::GetInstance();
     impl_->uiblit_pool_ = MaterialPool(&engine, impl_->uiblit_material_);
     impl_->image_pool_ = MaterialPool(&engine, impl_->image_material_);
 
@@ -265,13 +190,10 @@ ImguiFilamentBridge::ImguiFilamentBridge(
     auto scene = renderer->GetGuiScene();
 
     auto view_id = scene->AddView(0, 0, window_size.width, window_size.height);
-    impl_->view_ =
-            dynamic_cast<visualization::FilamentView*>(scene->GetView(view_id));
+    impl_->view_ = dynamic_cast<visualization::rendering::FilamentView*>(
+            scene->GetView(view_id));
 
     auto native_view = impl_->view_->GetNativeView();
-    native_view->setClearTargets(false, false, false);
-    native_view->setRenderTarget(
-            filament::View::TargetBufferFlags::DEPTH_AND_STENCIL);
     native_view->setPostProcessingEnabled(false);
     native_view->setShadowsEnabled(false);
 
@@ -284,7 +206,7 @@ void ImguiFilamentBridge::CreateAtlasTextureAlpha8(unsigned char* pixels,
                                                    int width,
                                                    int height,
                                                    int bytes_per_px) {
-    auto& engine = visualization::EngineInstance::GetInstance();
+    auto& engine = visualization::rendering::EngineInstance::GetInstance();
 
     engine.destroy(impl_->font_texture_);
 
@@ -307,7 +229,7 @@ void ImguiFilamentBridge::CreateAtlasTextureAlpha8(unsigned char* pixels,
 }
 
 ImguiFilamentBridge::~ImguiFilamentBridge() {
-    auto& engine = visualization::EngineInstance::GetInstance();
+    auto& engine = visualization::rendering::EngineInstance::GetInstance();
 
     engine.destroy(impl_->renderable_);
     impl_->uiblit_pool_.drain();
@@ -369,7 +291,7 @@ public:
 void ImguiFilamentBridge::Update(ImDrawData* imgui_data) {
     impl_->has_synced_ = false;
 
-    auto& engine = visualization::EngineInstance::GetInstance();
+    auto& engine = visualization::rendering::EngineInstance::GetInstance();
 
     auto& rcm = engine.getRenderableManager();
 
@@ -412,9 +334,10 @@ void ImguiFilamentBridge::Update(ImDrawData* imgui_data) {
             pair.second = impl_->image_pool_.pull();
             auto tex_id_long = reinterpret_cast<uintptr_t>(pair.first.id_);
             auto tex_id = std::uint16_t(tex_id_long);
-            auto tex_handle = visualization::TextureHandle(tex_id);
-            auto tex = visualization::EngineInstance::GetResourceManager()
-                               .GetTexture(tex_handle);
+            auto tex_handle = visualization::rendering::TextureHandle(tex_id);
+            auto tex = visualization::rendering::EngineInstance::
+                               GetResourceManager()
+                                       .GetTexture(tex_handle);
             auto tex_sh_ptr = tex.lock();
             pair.second->setParameter(kImageTexParamName, tex_sh_ptr.get(),
                                       sampler);
@@ -465,20 +388,20 @@ void ImguiFilamentBridge::OnWindowResized(const Window& window) {
     impl_->view_->SetViewport(0, 0, size.width, size.height);
 
     auto camera = impl_->view_->GetCamera();
-    camera->SetProjection(visualization::Camera::Projection::Ortho, 0.0,
-                          size.width, size.height, 0.0, 0.0, 1.0);
+    camera->SetProjection(visualization::rendering::Camera::Projection::Ortho,
+                          0.0, size.width, size.height, 0.0, 0.0, 1.0);
 }
 
 void ImguiFilamentBridge::CreateVertexBuffer(size_t buffer_index,
                                              size_t capacity) {
     SyncThreads();
 
-    auto& engine = visualization::EngineInstance::GetInstance();
+    auto& engine = visualization::rendering::EngineInstance::GetInstance();
 
     engine.destroy(impl_->vertex_buffers_[buffer_index]);
     impl_->vertex_buffers_[buffer_index] =
             VertexBuffer::Builder()
-                    .vertexCount(capacity)
+                    .vertexCount(std::uint32_t(capacity))
                     .bufferCount(1)
                     .attribute(VertexAttribute::POSITION, 0,
                                VertexBuffer::AttributeType::FLOAT2, 0,
@@ -499,12 +422,12 @@ void ImguiFilamentBridge::CreateIndexBuffer(size_t buffer_index,
                                             size_t capacity) {
     SyncThreads();
 
-    auto& engine = visualization::EngineInstance::GetInstance();
+    auto& engine = visualization::rendering::EngineInstance::GetInstance();
 
     engine.destroy(impl_->index_buffers_[buffer_index]);
     impl_->index_buffers_[buffer_index] =
             IndexBuffer::Builder()
-                    .indexCount(capacity)
+                    .indexCount(std::uint32_t(capacity))
                     .bufferType(IndexBuffer::IndexType::USHORT)
                     .build(engine);
 }
@@ -533,7 +456,7 @@ void ImguiFilamentBridge::PopulateVertexData(size_t buffer_index,
                                              void* vb_imgui_data,
                                              size_t ib_size_in_bytes,
                                              void* ib_imgui_data) {
-    auto& engine = visualization::EngineInstance::GetInstance();
+    auto& engine = visualization::rendering::EngineInstance::GetInstance();
 
     // Create a new vertex buffer if the size isn't large enough, then copy the
     // ImGui data into a staging area since Filament's render thread might
@@ -577,7 +500,7 @@ void ImguiFilamentBridge::PopulateVertexData(size_t buffer_index,
 void ImguiFilamentBridge::SyncThreads() {
 #if UTILS_HAS_THREADING
     if (!impl_->has_synced_) {
-        auto& engine = visualization::EngineInstance::GetInstance();
+        auto& engine = visualization::rendering::EngineInstance::GetInstance();
 
         // This is called only when ImGui needs to grow a vertex buffer, which
         // occurs a few times after launching and rarely (if ever) after that.

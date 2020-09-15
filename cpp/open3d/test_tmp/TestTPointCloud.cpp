@@ -18,20 +18,14 @@ int main(int argc, char** argv) {
                      timer.GetDuration());
 
     for (int i = 0; i < 10; ++i) {
-        if (i % 3 == 0) {
-            MemoryManager::ReleaseCache(Device("CUDA:0"));
-        }
         timer.Start();
-        auto pcd_down = pcd.VoxelDownSample(0.01);
+        auto pcd_down = pcd.VoxelDownSample(0.05);
         timer.Stop();
         utility::LogInfo("[TestTPointCloud] VoxelDownSample: {}",
                          timer.GetDuration());
+
+        auto pcd_down_legacy = std::make_shared<geometry::PointCloud>(
+                pcd_down.ToLegacyPointCloud());
+        visualization::DrawGeometries({pcd_down_legacy});
     }
-
-    // auto pcd_down_legacy = std::make_shared<geometry::PointCloud>(
-    //         tgeometry::PointCloud::ToLegacyPointCloud(pcd_down));
-
-    // utility::LogInfo("pcd size {}", pcd_legacy->points_.size());
-    // utility::LogInfo("pcd down size {}", pcd_down_legacy->points_.size());
-    // visualization::DrawGeometries({pcd_down_legacy});
 }

@@ -28,6 +28,7 @@
 
 namespace open3d {
 namespace visualization {
+namespace rendering {
 
 MatrixInteractorLogic::~MatrixInteractorLogic() {}
 
@@ -82,7 +83,7 @@ void MatrixInteractorLogic::Rotate(int dx, int dy) {
     // camera's rotation matrix to get the correct world vector.
     dy = -dy;  // up is negative, but the calculations are easiest to
                // imagine up is positive.
-    Eigen::Vector3f axis(-dy, dx, 0);  // rotate by 90 deg in 2D
+    Eigen::Vector3f axis(float(-dy), float(dx), 0);  // rotate by 90 deg in 2D
     axis = axis.normalized();
     float theta = CalcRotateRadians(dx, dy);
 
@@ -101,7 +102,7 @@ void MatrixInteractorLogic::Rotate(int dx, int dy) {
     if (to_cor.dot(forward) < 0) {
         dist = -dist;
     }
-    visualization::Camera::Transform m;
+    Camera::Transform m;
     m.fromPositionOrientationScale(center_of_rotation_,
                                    rot_matrix * matrix.rotation(),
                                    Eigen::Vector3f(1, 1, 1));
@@ -123,12 +124,12 @@ void MatrixInteractorLogic::RotateWorld(int dx,
     float theta = CalcRotateRadians(dx, dy);
 
     axis = matrix.rotation() * axis;  // convert axis to world coords
-    auto rot_matrix = visualization::Camera::Transform::Identity() *
-                      Eigen::AngleAxisf(-theta, axis);
+    auto rot_matrix =
+            Camera::Transform::Identity() * Eigen::AngleAxisf(-theta, axis);
 
     auto pos = matrix * Eigen::Vector3f(0, 0, 0);
     auto dist = (center_of_rotation_ - pos).norm();
-    visualization::Camera::Transform m;
+    Camera::Transform m;
     m.fromPositionOrientationScale(center_of_rotation_,
                                    rot_matrix * matrix.rotation(),
                                    Eigen::Vector3f(1, 1, 1));
@@ -137,9 +138,9 @@ void MatrixInteractorLogic::RotateWorld(int dx,
     matrix_ = m;
 }
 
-double MatrixInteractorLogic::CalcRotateRadians(int dx, int dy) {
-    Eigen::Vector3f moved(dx, dy, 0);
-    return 0.5 * M_PI * moved.norm() / (0.5f * float(view_height_));
+float MatrixInteractorLogic::CalcRotateRadians(int dx, int dy) {
+    Eigen::Vector3f moved(float(dx), float(dy), 0);
+    return 0.5f * float(M_PI) * moved.norm() / (0.5f * float(view_height_));
 }
 
 void MatrixInteractorLogic::RotateZ(int dx, int dy) {
@@ -166,10 +167,10 @@ void MatrixInteractorLogic::RotateZWorld(int dx,
     matrix_ = matrix;
 }
 
-double MatrixInteractorLogic::CalcRotateZRadians(int dx, int dy) {
+float MatrixInteractorLogic::CalcRotateZRadians(int dx, int dy) {
     // Moving half the height should rotate 360 deg (= 2 * PI).
     // This makes it easy to rotate enough without rotating too much.
-    return 4.0 * M_PI * dy / view_height_;
+    return float(4.0 * M_PI * dy / view_height_);
 }
 
 void MatrixInteractorLogic::Dolly(int dy, DragType drag_type) {
@@ -203,19 +204,20 @@ float MatrixInteractorLogic::CalcDollyDist(int dy, DragType drag_type) {
         case DragType::MOUSE:
             // Zoom out is "push away" or up, is a negative value for
             // mousing
-            dist = float(dy) * 0.0025f * model_size_;
+            dist = float(dy) * 0.0025f * float(model_size_);
             break;
         case DragType::TWO_FINGER:
             // Zoom out is "push away" or up, is a positive value for
             // two-finger scrolling, so we need to invert dy.
-            dist = float(-dy) * 0.01f * model_size_;
+            dist = float(-dy) * 0.01f * float(model_size_);
             break;
         case DragType::WHEEL:  // actual mouse wheel, same as two-fingers
-            dist = float(-dy) * 0.1f * model_size_;
+            dist = float(-dy) * 0.1f * float(model_size_);
             break;
     }
     return dist;
 }
 
+}  // namespace rendering
 }  // namespace visualization
 }  // namespace open3d

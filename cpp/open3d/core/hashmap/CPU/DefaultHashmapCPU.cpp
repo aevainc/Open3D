@@ -24,19 +24,21 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include "HashmapCPU.hpp"
+#include "open3d/core/hashmap/CPU/TemplateHashmapCPU.hpp"
 
 namespace open3d {
 namespace core {
-namespace _factory {
-std::shared_ptr<DefaultHashmap> CreateDefaultCPUHashmap(size_t init_buckets,
-                                                        size_t init_capacity,
-                                                        size_t dsize_key,
-                                                        size_t dsize_value,
-                                                        Device device) {
+
+/// Non-templated factory
+std::shared_ptr<DefaultDeviceHashmap> CreateDefaultCPUHashmap(
+        size_t init_buckets,
+        size_t init_capacity,
+        size_t dsize_key,
+        size_t dsize_value,
+        const Device& device) {
     return std::make_shared<CPUHashmap<DefaultHash, DefaultKeyEq>>(
             init_buckets, init_capacity, dsize_key, dsize_value, device);
 }
-}  // namespace _factory
+
 }  // namespace core
 }  // namespace open3d

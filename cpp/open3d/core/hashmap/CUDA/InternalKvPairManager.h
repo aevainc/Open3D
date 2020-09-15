@@ -27,13 +27,13 @@
 #pragma once
 
 #include <assert.h>
+
 #include <memory>
 #include <vector>
 
 #include "open3d/core/CUDAUtils.h"
 #include "open3d/core/MemoryManager.h"
 #include "open3d/core/hashmap/Traits.h"
-#include "open3d/utility/Timer.h"
 
 namespace open3d {
 namespace core {
@@ -133,7 +133,7 @@ public:
     InternalKvPairManager(int max_capacity,
                           int dsize_key,
                           int dsize_value,
-                          Device device) {
+                          const Device &device) {
         device_ = device;
         max_capacity_ = max_capacity;
         dsize_key_ = dsize_key;
@@ -166,16 +166,10 @@ public:
     }
 
     ~InternalKvPairManager() {
-        utility::Timer timer;
-        timer.Start();
         MemoryManager::Free(gpu_context_.heap_counter_, device_);
         MemoryManager::Free(gpu_context_.heap_, device_);
         MemoryManager::Free(gpu_context_.keys_, device_);
         MemoryManager::Free(gpu_context_.values_, device_);
-        CudaSync();
-        timer.Stop();
-        utility::LogInfo("[InternalKvPairManager] destructor {}",
-                         timer.GetDuration());
     }
 
     std::vector<int> DownloadHeap() {

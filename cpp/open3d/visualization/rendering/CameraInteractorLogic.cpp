@@ -28,6 +28,7 @@
 
 namespace open3d {
 namespace visualization {
+namespace rendering {
 
 CameraInteractorLogic::CameraInteractorLogic(Camera* c, double min_far_plane)
     : RotationInteractorLogic(c, min_far_plane), fov_at_mouse_down_(60.0) {}
@@ -98,7 +99,7 @@ void CameraInteractorLogic::Zoom(int dy, DragType drag_type) {
     float d_fov = 0.0f;  // initialize to make GCC happy
     switch (drag_type) {
         case DragType::MOUSE:
-            d_fov = float(-dy) * 0.1;  // deg
+            d_fov = float(-dy) * 0.1f;  // deg
             break;
         case DragType::TWO_FINGER:
             d_fov = float(dy) * 0.2f;  // deg
@@ -107,18 +108,18 @@ void CameraInteractorLogic::Zoom(int dy, DragType drag_type) {
             d_fov = float(dy) * 2.0f;  // deg
             break;
     }
-    float old_fov = 0.0;
+    float old_fov = 0.0f;
     if (drag_type == DragType::MOUSE) {
-        old_fov = fov_at_mouse_down_;
+        old_fov = float(fov_at_mouse_down_);
     } else {
-        old_fov = camera_->GetFieldOfView();
+        old_fov = float(camera_->GetFieldOfView());
     }
     float new_fov = old_fov + d_fov;
     new_fov = std::max(5.0f, new_fov);
     new_fov = std::min(90.0f, new_fov);
 
-    float to_radians = M_PI / 180.0;
-    float near = camera_->GetNear();
+    float to_radians = float(M_PI / 180.0);
+    float near = float(camera_->GetNear());
     Eigen::Vector3f camera_pos, cor;
     if (drag_type == DragType::MOUSE) {
         camera_pos = matrix_at_mouse_down_.translation();
@@ -131,8 +132,8 @@ void CameraInteractorLogic::Zoom(int dy, DragType drag_type) {
     float old_dist_from_plane_to_cor = to_cor.norm() - near;
     float new_dist_from_plane_to_cor =
             (near + old_dist_from_plane_to_cor) *
-                    std::tan(old_fov / 2.0 * to_radians) /
-                    std::tan(new_fov / 2.0 * to_radians) -
+                    std::tan(old_fov / 2.0f * to_radians) /
+                    std::tan(new_fov / 2.0f * to_radians) -
             near;
     if (drag_type == DragType::MOUSE) {
         Dolly(-(new_dist_from_plane_to_cor - old_dist_from_plane_to_cor),
@@ -161,5 +162,6 @@ void CameraInteractorLogic::UpdateMouseDragUI() {}
 
 void CameraInteractorLogic::EndMouseDrag() {}
 
+}  // namespace rendering
 }  // namespace visualization
 }  // namespace open3d

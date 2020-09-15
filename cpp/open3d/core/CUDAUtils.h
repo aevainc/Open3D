@@ -114,6 +114,7 @@ inline int GetCUDACurrentDeviceTextureAlignment() {
 namespace cuda {
 int DeviceCount();
 bool IsAvailable();
+void ReleaseCache();
 
 }  // namespace cuda
 }  // namespace core

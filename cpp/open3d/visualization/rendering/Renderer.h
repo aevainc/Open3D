@@ -37,6 +37,7 @@ class Image;
 }
 
 namespace visualization {
+namespace rendering {
 
 class RenderToBuffer;
 class Scene;
@@ -69,6 +70,7 @@ public:
     virtual Scene* GetScene(const SceneHandle& id) const = 0;
     virtual void DestroyScene(const SceneHandle& id) = 0;
 
+    virtual void SetClearColor(const Eigen::Vector4f& color) = 0;
     virtual void UpdateSwapChain() = 0;
 
     virtual void BeginFrame() = 0;
@@ -78,16 +80,16 @@ public:
     virtual MaterialHandle AddMaterial(const ResourceLoadRequest& request) = 0;
     virtual MaterialInstanceHandle AddMaterialInstance(
             const MaterialHandle& material) = 0;
-    virtual MaterialInstanceHandle AddMaterialInstance(
-            const geometry::TriangleMesh::Material& material) = 0;
     virtual MaterialModifier& ModifyMaterial(const MaterialHandle& id) = 0;
     virtual MaterialModifier& ModifyMaterial(
             const MaterialInstanceHandle& id) = 0;
     virtual void RemoveMaterialInstance(const MaterialInstanceHandle& id) = 0;
 
-    virtual TextureHandle AddTexture(const ResourceLoadRequest& request) = 0;
+    virtual TextureHandle AddTexture(const ResourceLoadRequest& request,
+                                     bool srgb = false) = 0;
     virtual TextureHandle AddTexture(
-            const std::shared_ptr<geometry::Image>& image) = 0;
+            const std::shared_ptr<geometry::Image>& image,
+            bool srgb = false) = 0;
     virtual void RemoveTexture(const TextureHandle& id) = 0;
 
     virtual IndirectLightHandle AddIndirectLight(
@@ -107,5 +109,6 @@ public:
             std::function<void(std::shared_ptr<geometry::Image>)> cb);
 };
 
+}  // namespace rendering
 }  // namespace visualization
 }  // namespace open3d

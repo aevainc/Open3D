@@ -24,15 +24,14 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include "open3d/core/hashmap/HashmapBase.h"
-
 #include "open3d/core/hashmap/CUDA/InternalKvPairManager.h"
 #include "open3d/core/hashmap/CUDA/InternalNodeManager.h"
-#include "open3d/core/hashmap/HashmapBase.h"
+#include "open3d/core/hashmap/CUDA/Macros.h"
+#include "open3d/core/hashmap/DeviceHashmap.h"
 
 namespace open3d {
 namespace core {
-/// Kernel proxy struct
+
 template <typename Hash, typename KeyEq>
 class CUDAHashmapImplContext {
 public:
@@ -123,6 +122,14 @@ __global__ void InsertKernelPass2(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                                   size_t count);
 
 template <typename Hash, typename KeyEq>
+__global__ void ActivateKernelPass2(
+        CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
+        ptr_t* input_iterator_ptrs,
+        iterator_t* output_iterators,
+        bool* output_masks,
+        size_t count);
+
+template <typename Hash, typename KeyEq>
 __global__ void FindKernel(CUDAHashmapImplContext<Hash, KeyEq> hash_ctx,
                            const void* input_keys,
                            iterator_t* output_iterators,
@@ -165,5 +172,6 @@ __global__ void AssignIteratorsKernel(iterator_t* input_iterators,
                                       const void* input_values,
                                       size_t dsize_value,
                                       size_t iterator_count);
+
 }  // namespace core
 }  // namespace open3d

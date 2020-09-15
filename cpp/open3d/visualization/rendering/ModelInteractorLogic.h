@@ -32,17 +32,17 @@
 #include "open3d/visualization/rendering/RotationInteractorLogic.h"
 
 namespace open3d {
-
 namespace visualization {
+namespace rendering {
 
-class Scene;
+class Open3DScene;
 
 class ModelInteractorLogic : public RotationInteractorLogic {
     using Super = RotationInteractorLogic;
 
 public:
-    ModelInteractorLogic(visualization::Scene* scene,
-                         visualization::Camera* camera,
+    ModelInteractorLogic(Open3DScene* scene,
+                         Camera* camera,
                          double min_far_plane);
     virtual ~ModelInteractorLogic();
 
@@ -62,16 +62,15 @@ public:
     void EndMouseDrag() override;
 
 private:
-    Scene* scene_;
-    GeometryHandle axes_;
-    std::vector<GeometryHandle> model_;
+    Open3DScene* scene_;
     bool is_axes_visible_;
 
     geometry::AxisAlignedBoundingBox bounds_at_mouse_down_;
-    std::map<GeometryHandle, Camera::Transform> transforms_at_mouse_down_;
+    std::map<std::string, Camera::Transform> transforms_at_mouse_down_;
 
     void UpdateBoundingBox(const Camera::Transform& t);
 };
 
+}  // namespace rendering
 }  // namespace visualization
 }  // namespace open3d

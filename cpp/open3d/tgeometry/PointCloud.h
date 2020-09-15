@@ -33,105 +33,250 @@
 
 #include "open3d/core/Tensor.h"
 #include "open3d/core/TensorList.h"
-#include "open3d/tgeometry/Geometry3D.h"
+#include "open3d/geometry/PointCloud.h"
+#include "open3d/tgeometry/Geometry.h"
+#include "open3d/tgeometry/TensorListMap.h"
 
 namespace open3d {
-
-namespace geometry {
-class PointCloud;
-}
-
 namespace tgeometry {
 
-using namespace core;
-
 /// \class PointCloud
-/// \brief A PointCloud contains point coordinates, and optionally point colors
-/// and point normals.
-class PointCloud : public Geometry3D {
+/// \brief A pointcloud contains a set of 3D points.
+///
+/// The PointCloud class stores the attribute data in key-value pairs for
+/// flexibility, where the key is a string representing the attribute name and
+/// value is a TensorList containing the attribute data. In most cases, the
+/// length of an attribute should be equal to the length of the "points", the
+/// pointcloud class provides helper functions to check and facilitates this
+/// consistency.
+///
+/// Although the attributes are all stored in a key-value pair dictionary, the
+/// attributes have different levels:
+///
+/// - Level 0: Default attribute {"points"}.
+///     - Created by default, required for all pointclouds.
+///     - The tensorlist must be of shape N x {3,}.
+///     - Convenience functions:
+///         - PointCloud::GetPoints()
+///         - PointCloud::SetPoints(points_tensorlist)
+///         - PointCloud::HasPoints()
+///     - The device of "points" determines the device of the pointcloud.
+/// - Level 1: Commonly-used attributes {"normals", "colors"}.
+///     - Not created by default.
+///     - The tensorlist must be of shape N x {3,}.
+///     - Convenience functions:
+///         - PointCloud::GetPointNormals()
+///         - PointCloud::SetPointNormals(normals_tensorlist)
+///         - PointCloud::HasPointNormals()
+///         - PointCloud::GetPointColors()
+///         - PointCloud::SetPointColors(colors_tensorlist)
+///         - PointCloud::HasPointColors()
+///     - Device must be the same as the device of "points". Dtype can be
+///       different.
+/// - Level 2: Custom attributes, e.g. {"labels", "alphas", "intensities"}.
+///     - Not created by default. Created by users.
+///     - No convenience functions.
+///     - Use generalized helper functions. Examples:
+///         - PointCloud::GetPointAttr("labels")
+///         - PointCloud::SetPointAttr("labels", labels_tensorlist)
+///         - PointCloud::HasPointAttr("labels")
+///     - Device must be the same as the device of "points". Dtype can be
+///       different.
+///
+/// Note that the level 0 and level 1 convenience functions can also be achieved
+/// via the generalized helper functions:
+///     - PointCloud::GetPoints() is the same as
+///       PointCloud::GetPointAttr("points")
+///     - PointCloud::HasPointNormals() is the same as
+///       PointCloud::HasPointAttr("normals")
+class PointCloud : public Geometry {
 public:
-    PointCloud(Dtype dtype = Dtype::Float32, Device device = Device("CPU:0"))
-        : Geometry3D(Geometry::GeometryType::PointCloud),
-          dtype_(dtype),
-          device_(device) {
-        point_dict_["points"] = TensorList({3}, dtype_, device_);
+    /// Construct an empty pointcloud.
+    PointCloud(core::Dtype dtype = core::Dtype::Float32,
+               const core::Device &device = core::Device("CPU:0"));
+
+    /// Construct a pointcloud from points.
+    ///
+    /// \param points A tensorlist with element shape (3,).
+    /// - The resulting pointcloud will have the same dtype and device as the
+    /// tensorlist.
+    /// - If the tensorlist is created in-place from a pre-allocated buffer, the
+    /// tensorlist has a fixed size and thus the resulting pointcloud will have
+    /// a fixed size and calling to functions like `SynchronizedPushBack` will
+    /// raise an exception.
+    PointCloud(const core::TensorList &points);
+
+    /// Construct from points and other attributes of the points.
+    ///
+    /// \param map_keys_to_tensorlists A map of string to TensorList containing
+    /// points and their attributes. point_dict must contain at least the
+    /// "points" key.
+    PointCloud(const std::unordered_map<std::string, core::TensorList>
+                       &map_keys_to_tensorlists);
+
+    virtual ~PointCloud() override {}
+
+    /// Getter for point_attr_ TensorListMap. Used in Pybind.
+    const TensorListMap &GetPointAttrPybind() const { return point_attr_; }
+
+    /// Setter for point_attr_ TensorListMap. Used in Pybind.
+    void SetPointAttrPybind(const TensorListMap &point_attr) {
+        point_attr_ = point_attr;
+    };
+
+    /// Get attributes. Throws exception if the attribute does not exist.
+    ///
+    /// \param key Attribute name.
+    core::TensorList &GetPointAttr(const std::string &key) {
+        return point_attr_.at(key);
     }
 
-    /// Construct from default points
-    /// points_tensor: (N, 3)
-    PointCloud(const Tensor &points_tensor);
+    /// Get the value of the "points" attribute. Convenience function.
+    core::TensorList &GetPoints() { return GetPointAttr("points"); }
 
-    /// Construct from points and various other properties
-    PointCloud(const std::unordered_map<std::string, TensorList> &point_dict);
+    /// Get the value of the "colors" attribute. Convenience function.
+    core::TensorList &GetPointColors() { return GetPointAttr("colors"); }
 
-    ~PointCloud() override {}
+    /// Get the value of the "normals" attribute. Convenience function.
+    core::TensorList &GetPointNormals() { return GetPointAttr("normals"); }
 
-    TensorList &operator[](const std::string &key);
+    /// Get attributes. Throws exception if the attribute does not exist.
+    ///
+    /// \param key Attribute name.
+    const core::TensorList &GetPointAttr(const std::string &key) const {
+        return point_attr_.at(key);
+    }
 
-    void SyncPushBack(
-            const std::unordered_map<std::string, Tensor> &point_struct);
+    /// Get the value of the "points" attribute. Convenience function.
+    const core::TensorList &GetPoints() const { return GetPointAttr("points"); }
 
-    PointCloud &Clear() override;
+    /// Get the value of the "colors" attribute. Convenience function.
+    const core::TensorList &GetPointColors() const {
+        return GetPointAttr("colors");
+    }
 
-    bool IsEmpty() const override;
+    /// Get the value of the "normals" attribute. Convenience function.
+    const core::TensorList &GetPointNormals() const {
+        return GetPointAttr("normals");
+    }
 
-    Tensor GetMinBound() const override;
+    /// Set attributes. If the attribute key already exists, its value
+    /// will be overwritten, otherwise, the new key will be created.
+    ///
+    /// \param key Attribute name.
+    /// \param value A tensorlist.
+    void SetPointAttr(const std::string &key, const core::TensorList &value) {
+        value.AssertDevice(device_);
+        point_attr_[key] = value;
+    }
 
-    Tensor GetMaxBound() const override;
+    /// Set the value of the "points" attribute. Convenience function.
+    void SetPoints(const core::TensorList &value) {
+        value.AssertElementShape({3});
+        SetPointAttr("points", value);
+    }
 
-    Tensor GetCenter() const override;
+    /// Set the value of the "colors" attribute. Convenience function.
+    void SetPointColors(const core::TensorList &value) {
+        value.AssertElementShape({3});
+        SetPointAttr("colors", value);
+    }
 
-    PointCloud &Transform(const Tensor &transformation) override;
+    /// Set the value of the "normals" attribute. Convenience function.
+    void SetPointNormals(const core::TensorList &value) {
+        value.AssertElementShape({3});
+        SetPointAttr("normals", value);
+    }
 
-    PointCloud &Translate(const Tensor &translation,
-                          bool relative = true) override;
+    /// Returns true if all of the followings are true:
+    /// 1) attribute key exist
+    /// 2) attribute's length as points' length
+    /// 3) attribute's length > 0
+    bool HasPointAttr(const std::string &key) const {
+        return point_attr_.Contains(key) && GetPointAttr(key).GetSize() > 0 &&
+               GetPointAttr(key).GetSize() == GetPoints().GetSize();
+    }
 
-    PointCloud &Scale(double scale, const Tensor &center) override;
+    /// Check if the "points" attribute's value has length > 0.
+    /// This is a convenience function.
+    bool HasPoints() const { return HasPointAttr("points"); }
 
-    PointCloud &Rotate(const Tensor &R, const Tensor &center) override;
+    /// Returns true if all of the followings are true:
+    /// 1) attribute "colors" exist
+    /// 2) attribute "colors"'s length as points' length
+    /// 3) attribute "colors"'s length > 0
+    /// This is a convenience function.
+    bool HasPointColors() const { return HasPointAttr("colors"); }
+
+    /// Returns true if all of the followings are true:
+    /// 1) attribute "normals" exist
+    /// 2) attribute "normals"'s length as points' length
+    /// 3) attribute "normals"'s length > 0
+    /// This is a convenience function.
+    bool HasPointNormals() const { return HasPointAttr("normals"); }
+
+    /// Synchronized push back, data will be copied. Before push back, all
+    /// existing tensorlists must have the same length.
+    ///
+    /// \param map_keys_to_tensors The keys and values to be pushed back. It
+    /// must contain the same keys and each corresponding tensor must have the
+    /// same dtype and device.
+    void SynchronizedPushBack(
+            const std::unordered_map<std::string, core::Tensor>
+                    &map_keys_to_tensors) {
+        point_attr_.SynchronizedPushBack(map_keys_to_tensors);
+    }
+
+public:
+    /// Clear all data in the pointcloud.
+    PointCloud &Clear() override {
+        point_attr_.clear();
+        return *this;
+    }
+
+    /// Returns !HasPoints().
+    bool IsEmpty() const override { return !HasPoints(); }
+
+    /// Returns the min bound for point coordinates.
+    core::Tensor GetMinBound() const;
+
+    /// Returns the max bound for point coordinates.
+    core::Tensor GetMaxBound() const;
+
+    /// Returns the center for point coordinates.
+    core::Tensor GetCenter() const;
+
+    /// Transforms the points and normals (if exist).
+    PointCloud &Transform(const core::Tensor &transformation);
+
+    /// Translates points.
+    PointCloud &Translate(const core::Tensor &translation,
+                          bool relative = true);
+
+    /// Scale points.
+    PointCloud &Scale(double scale, const core::Tensor &center);
+
+    /// Rotate points and normals (if exist).
+    PointCloud &Rotate(const core::Tensor &R, const core::Tensor &center);
+
+    core::Device GetDevice() const { return device_; }
+
+    /// Create a PointCloud from a legacy Open3D PointCloud.
+    static tgeometry::PointCloud FromLegacyPointCloud(
+            const geometry::PointCloud &pcd_legacy,
+            core::Dtype dtype = core::Dtype::Float32,
+            const core::Device &device = core::Device("CPU:0"));
+
+    /// Convert to a legacy Open3D PointCloud.
+    geometry::PointCloud ToLegacyPointCloud() const;
 
     PointCloud VoxelDownSample(float voxel_size,
                                const std::unordered_set<std::string>
                                        &properties_to_skip = {}) const;
 
-public:
-    bool HasPoints() const {
-        return point_dict_.find("points") != point_dict_.end() &&
-               point_dict_.at("points").GetSize() > 0;
-    }
-
-    bool HasColors() const {
-        return point_dict_.find("colors") != point_dict_.end() &&
-               point_dict_.at("colors").GetSize() > 0;
-    }
-
-    bool HasNormals() const {
-        return point_dict_.find("normals") != point_dict_.end() &&
-               point_dict_.at("normals").GetSize() > 0;
-    }
-
-public:
-    std::unordered_map<std::string, TensorList> point_dict_;
-
-public:
-    // Usage:
-    // std::shared_ptr<geometry::PointCloud> pcd_legacy =
-    //         io::CreatePointCloudFromFile(filename);
-    // tgeometry::PointCloud pcd =
-    //         tgeometry::PointCloud::FromLegacyPointCloud(*pcd_legacy);
-    // geometry::PointCloud pcd_legacy_back =
-    //         tgeometry::PointCloud::ToLegacyPointCloud(pcd);
-    static tgeometry::PointCloud FromLegacyPointCloud(
-            const geometry::PointCloud &pcd_legacy,
-            Dtype dtype = Dtype::Float32,
-            Device device = Device("CPU:0"));
-
-    static geometry::PointCloud ToLegacyPointCloud(
-            const tgeometry::PointCloud &pcd);
-
 protected:
-    Dtype dtype_ = Dtype::Float32;
-    Device device_ = Device("CPU:0");
+    core::Device device_ = core::Device("CPU:0");
+    TensorListMap point_attr_;
 };
 
 }  // namespace tgeometry

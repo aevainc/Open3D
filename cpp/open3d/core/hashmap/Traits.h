@@ -39,53 +39,14 @@
 // and limitations under the License.
 
 #pragma once
+#include <cstdint>
+
 #include "open3d/core/CUDAUtils.h"
 
 namespace open3d {
-#include <cstdint>
+namespace core {
 
-#define MAX_KEY_BYTESIZE 32
-
-/** Built-in flags **/
-static constexpr uint32_t BASE_UNIT_SIZE = 32;
-static constexpr uint32_t EMPTY_SLAB_PTR = 0xFFFFFFFF;
-static constexpr uint32_t EMPTY_PAIR_PTR = 0xFFFFFFFF;
-static constexpr uint32_t HEAD_SLAB_PTR = 0xFFFFFFFE;
-
-/** Queries **/
-static constexpr uint32_t SEARCH_NOT_FOUND = 0xFFFFFFFF;
-
-/** Warp operations **/
-static constexpr uint32_t WARP_WIDTH = 32;
-static constexpr uint32_t BLOCKSIZE_ = 128;
-
-/* bits:   31 | 30 | ... | 3 | 2 | 1 | 0 */
-static constexpr uint32_t ACTIVE_LANES_MASK = 0xFFFFFFFF;
-static constexpr uint32_t PAIR_PTR_LANES_MASK = 0x7FFFFFFF;
-static constexpr uint32_t NEXT_SLAB_PTR_LANE = 31;
-
-static constexpr uint32_t NULL_ITERATOR = 0xFFFFFFFF;
-
-static constexpr uint32_t NUM_SUPER_BLOCKS_ = 32;
-
-static constexpr uint32_t LOG_NUM_MEM_BLOCKS_ = 2;
-static constexpr uint32_t NUM_MEM_BLOCKS_PER_SUPER_BLOCK_ = 4;
-static constexpr uint32_t NUM_MEM_UNITS_PER_BLOCK_ = 1024;
-
-static constexpr uint32_t NUM_BITMAP_PER_MEM_BLOCK_ = 32;
-static constexpr uint32_t BITMAP_SIZE_ = 32;
-static constexpr uint32_t WARP_SIZE = 32;
-static constexpr uint32_t MEM_UNIT_SIZE_ = 32;
-static constexpr uint32_t SUPER_BLOCK_BIT_OFFSET_ALLOC_ = 27;
-static constexpr uint32_t MEM_BLOCK_BIT_OFFSET_ALLOC_ = 10;
-static constexpr uint32_t MEM_UNIT_BIT_OFFSET_ALLOC_ = 5;
-
-static constexpr uint32_t MEM_BLOCK_SIZE_ =
-        NUM_MEM_UNITS_PER_BLOCK_ * MEM_UNIT_SIZE_;
-static constexpr uint32_t SUPER_BLOCK_SIZE_ =
-        ((BITMAP_SIZE_ + MEM_BLOCK_SIZE_) * NUM_MEM_BLOCKS_PER_SUPER_BLOCK_);
-static constexpr uint32_t MEM_BLOCK_OFFSET_ =
-        (BITMAP_SIZE_ * NUM_MEM_BLOCKS_PER_SUPER_BLOCK_);
+static constexpr uint32_t MAX_KEY_BYTESIZE = 32;
 
 typedef uint32_t ptr_t;
 struct iterator_t {
@@ -126,4 +87,5 @@ OPEN3D_HOST_DEVICE Pair<Key, Value> make_pair(const Key& key,
     return Pair<Key, Value>(key, value);
 }
 
+}  // namespace core
 }  // namespace open3d

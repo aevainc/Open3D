@@ -30,109 +30,114 @@
 #include <vector>
 
 #include "open3d/core/Tensor.h"
-#include "open3d/tgeometry/Geometry2D.h"
-#include "open3d/utility/Console.h"
+#include "open3d/geometry/Image.h"
+#include "open3d/tgeometry/Geometry.h"
 
 namespace open3d {
-// Legacy class
-namespace geometry {
-class Image;
-}
-
 namespace tgeometry {
 
 /// \class Image
 ///
-/// \brief The Image class stores image with customizable width, height, num of
-/// channels and bytes per channel.
-class Image : public Geometry2D {
+/// \brief The Image class stores image with customizable rols, cols, channels,
+/// dtype and device.
+class Image : public Geometry {
 public:
-    /// \enum ColorToIntensityConversionType
+    /// \brief Constructor for image.
     ///
-    /// \brief Specifies whether R, G, B channels have the same weight when
-    /// converting to intensity. Only used for Image with 3 channels.
+    /// Row-major storage is used, similar to OpenCV. Use (row, col, channel)
+    /// indexing order for image creation and accessing. In general, (r, c, ch)
+    /// are the preferred variable names for consistency, and avoid using width,
+    /// height, u, v, x, y for coordinates.
     ///
-    /// When `Weighted` is used R, G, B channels are weighted according to the
-    /// Digital ITU BT.601 standard: I = 0.299 * R + 0.587 * G + 0.114 * B.
-    enum class ColorToIntensityConversionType {
-        /// R, G, B channels have equal weights.
-        Equal,
-        /// Weighted R, G, B channels: I = 0.299 * R + 0.587 * G + 0.114 * B.
-        Weighted,
-    };
+    /// \param rows Number of rows of the image, i.e. image height. \p rows must
+    /// be non-negative.
+    /// \param cols Number of columns of the image, i.e. image width. \p cols
+    /// must be non-negative.
+    /// \param channels Number of channels of the image. E.g. for RGB image,
+    /// channels == 3; for grayscale image, channels == 1. \p channels must be
+    /// greater than 0.
+    /// \param dtype Data type of the image.
+    /// \param device Device where the image is stored.
+    Image(int64_t rows = 0,
+          int64_t cols = 0,
+          int64_t channels = 1,
+          core::Dtype dtype = core::Dtype::Float32,
+          const core::Device &device = core::Device("CPU:0"));
 
-    /// \enum FilterType
+    /// \brief Construct from a tensor. The tensor won't be copied and memory
+    /// will be shared.
     ///
-    /// \brief Specifies the Image filter type.
-    enum class FilterType {
-        /// Gaussian filter of size 3 x 3.
-        Gaussian3,
-        /// Gaussian filter of size 5 x 5.
-        Gaussian5,
-        /// Gaussian filter of size 7 x 7.
-        Gaussian7,
-        /// Sobel filter along X-axis.
-        Sobel3Dx,
-        /// Sobel filter along Y-axis.
-        Sobel3Dy
-    };
+    /// \param tensor: Tensor of the image. The tensor must be contiguous. The
+    /// tensor must be 2D (rows, cols) or 3D (rows, cols, channels).
+    Image(const core::Tensor &tensor);
+
+    virtual ~Image() override {}
 
 public:
-    /// \brief Default Constructor.
-    Image() : Geometry2D(Geometry::GeometryType::Image) {}
-    ~Image() override {}
-
-public:
-    Image &Clear() override;
-    bool IsEmpty() const override;
-    core::Tensor GetMinBound() const override;
-    core::Tensor GetMaxBound() const override;
-
-public:
-    /// Returns `true` if the Image has valid data.
-    virtual bool HasData() const { return data_.GetBlob() != nullptr; }
-
-    /// \brief Prepare Image properties and allocate Image buffer.
-    Image &Prepare(int width,
-                   int height,
-                   int num_of_channels,
-                   core::Dtype dtype = core::Dtype::Float32,
-                   core::Device device = core::Device("CPU:0")) {
-        width_ = width;
-        height_ = height;
-        num_of_channels_ = num_of_channels;
-        dtype_ = dtype;
-        device_ = device;
-
-        data_ = core::Tensor(core::SizeVector({height, width, num_of_channels}),
-                             dtype, device);
+    /// Clear image contents by resetting the rows and cols to 0, while
+    /// keeping channels, dtype and device unchanged.
+    Image &Clear() override {
+        data_ = core::Tensor({0, 0, GetChannels()}, GetDtype(), GetDevice());
         return *this;
     }
 
-    core::Tensor AsTensor() { return data_; }
+    /// Returns true if rows * cols * channels == 0.
+    bool IsEmpty() const override {
+        return GetRows() * GetCols() * GetChannels() == 0;
+    }
+
+public:
+    /// Get the number of rows of the image.
+    int64_t GetRows() const { return data_.GetShape()[0]; }
+
+    /// Get the number of columns of the image.
+    int64_t GetCols() const { return data_.GetShape()[1]; }
+
+    /// Get the number of channels of the image.
+    int64_t GetChannels() const { return data_.GetShape()[2]; }
+
+    /// Get dtype of the image.
+    core::Dtype GetDtype() const { return data_.GetDtype(); }
+
+    /// Get device of the image.
+    core::Device GetDevice() const { return data_.GetDevice(); }
+
+    /// Get pixel(s) in the image. If channels == 1, returns a tensor with shape
+    /// {}, otherwise returns a tensor with shape {channels,}. The returned
+    /// tensor is a slice of the image's tensor, so when modifying the slice,
+    /// the original tensor will also be modified.
+    core::Tensor At(int64_t r, int64_t c) const {
+        if (GetChannels() == 1) {
+            return data_[r][c][0];
+        } else {
+            return data_[r][c];
+        }
+    }
+
+    /// Get pixel(s) in the image. Returns a tensor with shape {}.
+    core::Tensor At(int64_t r, int64_t c, int64_t ch) const {
+        return data_[r][c][ch];
+    }
+
+    /// Get raw buffer of the Image data.
+    void *GetDataPtr() { return data_.GetDataPtr(); }
+
+    /// Get raw buffer of the Image data.
+    const void *GetDataPtr() const { return data_.GetDataPtr(); }
+
+    /// Retuns the underlying Tensor of the Image.
+    core::Tensor AsTensor() const { return data_; }
 
     core::Tensor Unproject(const core::Tensor &intrinsic);
 
-    // Usage:
-    // std::shared_ptr<geometry::PointCloud> pcd_legacy =
-    //         io::CreatePointCloudFromFile(filename);
-    // tgeometry::PointCloud pcd =
-    //         tgeometry::PointCloud::FromLegacyPointCloud(*pcd_legacy);
-    // geometry::PointCloud pcd_legacy_back =
-    //         tgeometry::PointCloud::ToLegacyPointCloud(pcd);
-    static tgeometry::Image FromLegacyImage(
-            const geometry::Image &image_legacy,
-            core::Device device = core::Device("CPU:0"));
-
-    static geometry::Image ToLegacyImage(const tgeometry::Image &image);
-
 public:
-    int width_ = -1;
-    int height_ = -1;
-    int num_of_channels_ = -1;
-    core::Dtype dtype_;
-    core::Device device_;
+    static tgeometry::Image FromLegacyImage(const geometry::Image &image_legacy,
+                                            const core::Device &device);
+    geometry::Image ToLegacyImage();
 
+protected:
+    /// Internal data of the Image, represented as a 3D tensor of shape {rols,
+    /// cols, channels}. Image properties can be obtained from the tensor.
     core::Tensor data_;
 };
 

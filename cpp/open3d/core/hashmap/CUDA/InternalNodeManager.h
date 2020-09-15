@@ -41,15 +41,15 @@
 #pragma once
 
 #include <thrust/device_vector.h>
-#include <thrust/pair.h>
+
 #include <cassert>
 #include <memory>
 #include <random>
 
 #include "open3d/core/CUDAUtils.h"
 #include "open3d/core/MemoryManager.h"
+#include "open3d/core/hashmap/CUDA/Macros.h"
 #include "open3d/core/hashmap/Traits.h"
-#include "open3d/utility/Timer.h"
 
 namespace open3d {
 namespace core {
@@ -262,7 +262,7 @@ public:
     Device device_;
 
 public:
-    InternalNodeManager(Device device)
+    InternalNodeManager(const Device& device)
         : super_blocks_(nullptr), hash_coef_(0), device_(device) {
         // random coefficients for allocator's hash function
         std::mt19937 rng(time(0));
@@ -280,7 +280,7 @@ public:
         // printf("TOTAL ITERATORS: %ld\n", SUPER_BLOCK_SIZE_ *
         // NUM_SUPER_BLOCKS_);
 
-        for (int i = 0; i < NUM_SUPER_BLOCKS_; i++) {
+        for (uint32_t i = 0; i < NUM_SUPER_BLOCKS_; i++) {
             // setting bitmaps into zeros:
             OPEN3D_CUDA_CHECK(
                     cudaMemset(super_blocks_ + i * SUPER_BLOCK_SIZE_, 0x00,
@@ -292,15 +292,7 @@ public:
         gpu_context_.Setup(super_blocks_, hash_coef_);
     }
 
-    ~InternalNodeManager() {
-        utility::Timer timer;
-        timer.Start();
-        MemoryManager::Free(super_blocks_, device_);
-        CudaSync();
-        timer.Stop();
-        utility::LogInfo("[InternalNodeManager] destructor takes {}",
-                         timer.GetDuration());
-    }
+    ~InternalNodeManager() { MemoryManager::Free(super_blocks_, device_); }
 
     std::vector<int> CountSlabsPerSuperblock() {
         const uint32_t num_super_blocks = NUM_SUPER_BLOCKS_;
@@ -339,7 +331,7 @@ __global__ void CountSlabsPerSuperblockKernel(
         return;
     }
 
-    for (int i = 0; i < NUM_SUPER_BLOCKS_; i++) {
+    for (uint32_t i = 0; i < NUM_SUPER_BLOCKS_; i++) {
         uint32_t read_bitmap = *(context.get_ptr_for_bitmap(i, tid));
         atomicAdd(&slabs_per_superblock[i], __popc(read_bitmap));
     }

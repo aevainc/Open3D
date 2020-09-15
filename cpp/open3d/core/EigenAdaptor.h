@@ -33,7 +33,7 @@ namespace open3d {
 namespace core {
 template <class T, int M, int N, int A>
 Tensor FromEigen(const Eigen::Matrix<T, M, N, A>& matrix) {
-    Dtype dtype = DtypeUtil::FromType<T>();
+    Dtype dtype = Dtype::FromType<T>();
     Eigen::Matrix<T, M, N, Eigen::RowMajor> matrix_row_major = matrix;
     return Tensor(matrix_row_major.data(), {matrix.rows(), matrix.cols()},
                   dtype);
@@ -43,7 +43,7 @@ Tensor FromEigen(const Eigen::Matrix<T, M, N, A>& matrix) {
 template <typename T>
 Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> ToEigen(
         const Tensor& tensor, Eigen::StorageOptions align = Eigen::ColMajor) {
-    Dtype dtype = DtypeUtil::FromType<T>();
+    Dtype dtype = Dtype::FromType<T>();
     if (dtype != tensor.GetDtype()) {
         utility::LogError("Eigen and tensor dtype mismatch.");
     }
@@ -52,7 +52,7 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> ToEigen(
         utility::LogError("A tensor must be 2D to be converted to a matrix.");
     }
 
-    size_t num_bytes = DtypeUtil::ByteSize(dtype) * tensor.NumElements();
+    size_t num_bytes = dtype.ByteSize() * tensor.NumElements();
     Device device = tensor.GetDevice();
     if (align == Eigen::ColMajor) {
         Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>
