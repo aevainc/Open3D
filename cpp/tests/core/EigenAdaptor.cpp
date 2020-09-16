@@ -25,7 +25,9 @@
 // ----------------------------------------------------------------------------
 
 #include "open3d/core/EigenAdaptor.h"
+
 #include <random>
+
 #include "TestUtility/UnitTest.h"
 
 namespace open3d {

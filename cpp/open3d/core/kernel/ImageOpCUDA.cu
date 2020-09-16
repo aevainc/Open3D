@@ -76,7 +76,9 @@ void ImageUnaryEWCUDA(const Tensor& src,
             });
             break;
         }
-        default: { utility::LogError("Unsupported image op"); }
+        default: {
+            utility::LogError("Unsupported image op");
+        }
     }
 }
 }  // namespace kernel

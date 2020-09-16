@@ -2,12 +2,14 @@
 #include <thrust/device_vector.h>
 #include <time.h>
 #include <unistd.h>
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <random>
 #include <unordered_map>
 #include <vector>
+
 #include "Hashmap.h"
 #include "Open3D/Utility/Timer.h"
 
@@ -112,7 +114,6 @@ void TEST_SIMPLE() {
                 reinterpret_cast<int*>(iterator.second)));
         std::cout << key << " " << val << "\n";
     }
-
 
     /// Hashmap search
     hashmap->Find(query_keys_ptr_cuda, query_iterators_ptr_cuda,
