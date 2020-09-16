@@ -69,7 +69,7 @@ Image::Image(const core::Tensor &tensor)
     }
 }
 
-core::Tensor Image::Unproject(const core::Tensor &intrinsic) {
+core::Tensor Image::Unproject(const core::Tensor &intrinsic) const {
     core::Tensor vertex_map({3, 1, GetRows(), GetCols()}, core::Dtype::Float32,
                             GetDevice());
     core::kernel::ImageUnaryEW(data_.Permute({2, 0, 1}).Contiguous(),

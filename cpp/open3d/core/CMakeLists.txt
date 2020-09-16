@@ -12,6 +12,8 @@ set(KERNEL_SRC
     kernel/ImageOp.cpp
     kernel/ImageOpCPU.cpp
     kernel/Kernel.cpp
+    kernel/SpecialOp.cpp
+    kernel/SpecialOpCPU.cpp
 )
 
 set(KERNEL_CUDA_SRC
@@ -22,6 +24,7 @@ set(KERNEL_CUDA_SRC
     kernel/ReductionCUDA.cu
     kernel/ImageOpCUDA.cu
     kernel/ImageOpCUDA.cu
+    kernel/SpecialOpCUDA.cu
 )
 
 set(LINALG_SRC
@@ -48,6 +51,7 @@ set(LINALG_CUDA_SRC
 
 set(CORE_SRC
     AdvancedIndexing.cpp
+    SparseIndexer.cpp
     ShapeUtil.cpp
     CUDAUtils.cpp
     Dtype.cpp

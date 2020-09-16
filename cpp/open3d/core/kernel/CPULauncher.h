@@ -31,6 +31,7 @@
 
 #include "open3d/core/AdvancedIndexing.h"
 #include "open3d/core/Indexer.h"
+#include "open3d/core/SparseIndexer.h"
 #include "open3d/core/Tensor.h"
 #include "open3d/core/kernel/ParallelUtil.h"
 #include "open3d/utility/Console.h"
@@ -199,6 +200,16 @@ public:
             element_kernel(x, y, ptr, indexer.GetOutputPtr(0, workload_idx),
                            indexer.GetOutputPtr(1, workload_idx),
                            indexer.GetOutputPtr(2, workload_idx));
+        }
+    }
+
+    template <typename func_t>
+    static void LaunchGeneralKernel(int64_t n, func_t element_kernel) {
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+        for (int64_t workload_idx = 0; workload_idx < n; ++workload_idx) {
+            element_kernel(workload_idx);
         }
     }
 };

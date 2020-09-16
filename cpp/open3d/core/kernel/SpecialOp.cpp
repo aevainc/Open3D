@@ -24,31 +24,33 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#pragma once
-
-#include <Eigen/Core>
-
-#include "open3d/core/Device.h"
-#include "open3d/core/Dtype.h"
-#include "open3d/core/Tensor.h"
-#include "open3d/core/TensorList.h"
+#include "open3d/core/kernel/SpecialOp.h"
 
 namespace open3d {
 namespace core {
-namespace eigen_converter {
+namespace kernel {
 
-Eigen::Vector3d TensorToEigenVector3d(const core::Tensor &tensor);
-Eigen::Vector3i TensorToEigenVector3i(const core::Tensor &tensor);
+void SpecialOpEW(const std::vector<Tensor>& input_tensors,
+                 const std::vector<SparseTensorList>& input_sparse_tls,
+                 Tensor& output_tensor,
+                 SparseTensorList& output_sparse_tl,
+                 SpecialOpCode op_code) {
+    if (output_sparse_tl.device_.GetType() == Device::DeviceType::CPU) {
+        SpecialOpEWCPU(input_tensors, input_sparse_tls, output_tensor,
+                       output_sparse_tl, op_code);
+    } else if (output_sparse_tl.device_.GetType() == Device::DeviceType::CUDA) {
+        SpecialOpEWCUDA(input_tensors, input_sparse_tls, output_tensor,
+                        output_sparse_tl, op_code);
+    } else {
+        utility::LogError("Unsupported device");
+    }
+}
 
-core::Tensor EigenVector3dToTensor(const Eigen::Vector3d &value,
-                                   core::Dtype dtype,
-                                   const core::Device &device);
+// void SpecialOpEW(const std::vector<Tensor>& input_tensors,
+//                  const std::vector<SparseTensorList>& input_sparse_tls,
+//                  Tensor& output_tensor,
+//                  SpecialOpCode op_code) {}
 
-core::TensorList EigenVector3dVectorToTensorList(
-        const std::vector<Eigen::Vector3d> &values,
-        core::Dtype dtype,
-        const core::Device &device);
-
-}  // namespace eigen_converter
+}  // namespace kernel
 }  // namespace core
 }  // namespace open3d

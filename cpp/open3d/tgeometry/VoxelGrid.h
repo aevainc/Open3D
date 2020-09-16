@@ -26,40 +26,78 @@
 
 #pragma once
 
-#include <Eigen/Core>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 
+#include "open3d/core/SparseTensorList.h"
 #include "open3d/core/Tensor.h"
 #include "open3d/core/TensorList.h"
-#include "open3d/geometry/PointCloud.h"
+#include "open3d/core/hashmap/Hashmap.h"
 #include "open3d/tgeometry/Geometry3D.h"
+#include "open3d/tgeometry/Image.h"
+#include "open3d/tgeometry/PointCloud.h"
 
 namespace open3d {
 namespace tgeometry {
+using namespace core;
 
 class VoxelGrid : public Geometry3D {
 public:
     /// \brief Default Constructor.
-    VoxelGrid() : Geometry3D(Geometry::GeometryType::VoxelGrid) {}
+    VoxelGrid(float voxel_size = 0.01,
+              float sdf_trunc = 0.03,
+              int64_t resolution = 16,
+              int64_t capacity = 1000,
+              const Device &device = Device("CPU:0"));
 
     ~VoxelGrid() override{};
 
-    std::unordered_map<std::string, TensorList> GetVoxels(
-            const Tensor coords &);
+    VoxelGrid &Clear() override { return *this; };
+
+    bool IsEmpty() const override { return false; };
+
+    Tensor GetMinBound() const override { return Tensor(); };
+
+    Tensor GetMaxBound() const override { return Tensor(); };
+
+    Tensor GetCenter() const override { return Tensor(); };
+
+    VoxelGrid &Transform(const Tensor &transformation) override {
+        return *this;
+    };
+
+    VoxelGrid &Translate(const Tensor &translation,
+                         bool relative = true) override {
+        return *this;
+    };
+
+    VoxelGrid &Scale(double scale, const Tensor &center) override {
+        return *this;
+    };
+
+    VoxelGrid &Rotate(const Tensor &R, const Tensor &center) override {
+        return *this;
+    };
+
+    void Integrate(const tgeometry::Image &depth,
+                   const Tensor &intrinsic,
+                   const Tensor &extrinsic);
+
+    std::pair<SparseTensorList, Tensor> ExtractNearestNeighbors();
+    tgeometry::PointCloud ExtractSurfacePoints();
+
+    tgeometry::PointCloud MarchingCubes();
 
 protected:
-    // Map from 3D coords to Int64 indices
-    // Usage:
-    // Tensor indices = coord_map_.Query(coords);
-    // Tensor values_get =
-    //         voxel_dict_["desired_property"].AsTensor().IndexGet({indices});
-    // voxel_dict_["desired_property"].AsTensor().IndexSet({indices},
-    // values_set);
+    float voxel_size_;
+    float sdf_trunc_;
 
-    TensorHash coord_map_;
-    std::unordered_map<std::string, TensorList> voxel_dict_;
-}
+    int64_t resolution_;
+    int64_t capacity_;
+    Device device_;
+
+    std::shared_ptr<Hashmap> hashmap_;
+};
 }  // namespace tgeometry
 }  // namespace open3d

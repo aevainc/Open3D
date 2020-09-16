@@ -24,31 +24,41 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#pragma once
+#include "open3d/core/SparseIndexer.h"
 
-#include <Eigen/Core>
-
-#include "open3d/core/Device.h"
-#include "open3d/core/Dtype.h"
-#include "open3d/core/Tensor.h"
-#include "open3d/core/TensorList.h"
+#include <bits/stdint-intn.h>
 
 namespace open3d {
 namespace core {
-namespace eigen_converter {
+SparseIndexer::SparseIndexer(const SparseTensorList& sparse_tl,
+                             int64_t workload_per_entry) {
+    ptrs_ = sparse_tl.ptrs_;
+    size_ = sparse_tl.size_;
 
-Eigen::Vector3d TensorToEigenVector3d(const core::Tensor &tensor);
-Eigen::Vector3i TensorToEigenVector3i(const core::Tensor &tensor);
+    // interleaved_: factor_ = 2, value's offset_ = 1
+    // non-interleaved_: factor_ = 1, value's offset_ = size_
+    if (sparse_tl.interleaved_) {
+        factor_ = 2;
+        offset_ = 1;
+    } else {
+        factor_ = 1;
+        offset_ = size_;
+    }
 
-core::Tensor EigenVector3dToTensor(const Eigen::Vector3d &value,
-                                   core::Dtype dtype,
-                                   const core::Device &device);
+    workload_per_entry_ = workload_per_entry;
+    num_tensors_ = static_cast<int64_t>(sparse_tl.shapes_.size());
 
-core::TensorList EigenVector3dVectorToTensorList(
-        const std::vector<Eigen::Vector3d> &values,
-        core::Dtype dtype,
-        const core::Device &device);
+    for (int64_t i = 0; i < num_tensors_; ++i) {
+        dtype_byte_sizes_[i] = sparse_tl.dtypes_[i].ByteSize();
+    }
 
-}  // namespace eigen_converter
+    byte_offsets_[0] = 0;
+    for (size_t i = 1; i < sparse_tl.shapes_.size(); ++i) {
+        byte_offsets_[i] =
+                byte_offsets_[i - 1] + sparse_tl.shapes_[i - 1].NumElements() *
+                                               dtype_byte_sizes_[i - 1];
+    }
+}
+
 }  // namespace core
 }  // namespace open3d

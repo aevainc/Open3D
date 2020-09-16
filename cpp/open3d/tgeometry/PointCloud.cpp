@@ -159,10 +159,49 @@ geometry::PointCloud PointCloud::ToLegacyPointCloud() const {
     return pcd_legacy;
 }
 
+geometry::TriangleMesh PointCloud::ToLegacyTriangleMesh() const {
+    utility::LogInfo("mesh");
+    geometry::TriangleMesh mesh_legacy;
+
+    if (HasPoints()) {
+        const core::TensorList &points = GetPoints();
+        utility::LogInfo("points = {}", points.AsTensor().GetShape());
+        for (int64_t i = 0; i < points.GetSize(); i++) {
+            mesh_legacy.vertices_.push_back(
+                    core::eigen_converter::TensorToEigenVector3d(points[i]));
+        }
+    }
+    if (HasPointColors()) {
+        const core::TensorList &colors = GetPointColors();
+        utility::LogInfo("colors = {}", colors.AsTensor().GetShape());
+        for (int64_t i = 0; i < colors.GetSize(); i++) {
+            mesh_legacy.vertex_colors_.push_back(
+                    core::eigen_converter::TensorToEigenVector3d(colors[i]));
+        }
+    }
+    if (HasPointNormals()) {
+        const core::TensorList &normals = GetPointNormals();
+        utility::LogInfo("normals = {}", normals.AsTensor().GetShape());
+        for (int64_t i = 0; i < normals.GetSize(); i++) {
+            mesh_legacy.vertex_normals_.push_back(
+                    core::eigen_converter::TensorToEigenVector3d(normals[i]));
+        }
+    }
+
+    const core::TensorList &triangles = GetPointAttr("triangles");
+    for (int64_t i = 0; i < triangles.GetSize(); i++) {
+        mesh_legacy.triangles_.push_back(
+                core::eigen_converter::TensorToEigenVector3i(triangles[i]));
+    }
+
+    return mesh_legacy;
+}
+
 PointCloud PointCloud::VoxelDownSample(
         float voxel_size,
         const std::unordered_set<std::string> &properties_to_skip) const {
     auto tensor_quantized =
+
             point_attr_.find("points")->second.AsTensor() / voxel_size;
 
     auto tensor_quantized_int64 = tensor_quantized.To(core::Dtype::Int64);

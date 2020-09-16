@@ -33,6 +33,7 @@
 #include "open3d/core/CUDAUtils.h"
 #include "open3d/core/Indexer.h"
 #include "open3d/core/SizeVector.h"
+#include "open3d/core/SparseIndexer.h"
 #include "open3d/core/Tensor.h"
 
 // CUDA kernel launcher's goal is to separate scheduling (looping through each
@@ -134,7 +135,7 @@ public:
 
     template <typename func_t>
     static void LaunchImageUnaryKernel(const Indexer& indexer,
-                                        func_t element_kernel) {
+                                       func_t element_kernel) {
         OPEN3D_ASSERT_HOST_DEVICE_LAMBDA(func_t);
 
         int64_t n = indexer.NumWorkloads();
@@ -157,6 +158,22 @@ public:
                 <<<grid_size, default_block_size, 0>>>(n, f);
         cudaDeviceSynchronize();
         OPEN3D_GET_LAST_CUDA_ERROR("LaunchUnaryEWKernel failed.");
+    }
+
+    template <typename func_t>
+    static void LaunchGeneralKernel(int64_t n, func_t element_kernel) {
+        // OPEN3D_ASSERT_HOST_DEVICE_LAMBDA(func_t);
+
+        if (n == 0) {
+            return;
+        }
+        int64_t items_per_block = default_block_size * default_thread_size;
+        int64_t grid_size = (n + items_per_block - 1) / items_per_block;
+
+        ElementWiseKernel<default_block_size, default_thread_size>
+                <<<grid_size, default_block_size, 0>>>(n, element_kernel);
+        cudaDeviceSynchronize();
+        OPEN3D_GET_LAST_CUDA_ERROR("LaunchIntegrateKernel failed.");
     }
 };
 }  // namespace kernel

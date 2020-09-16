@@ -70,10 +70,16 @@ void CompareFind(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
 
         // Not found in gt => not found in ours
         if (iterator_gt == hashmap_gt.end()) {
-            assert(output_masks_host[i] == 0);
+            if (output_masks_host[i] != 0) {
+                utility::LogError("Output mask mismatch for {}", i);
+            }
         } else {  /// Found in gt => same key and value
-            assert(output_keys_host[i] == iterator_gt->first);
-            assert(output_vals_host[i] == iterator_gt->second);
+            if (output_keys_host[i] != iterator_gt->first) {
+                utility::LogError("Output keys mismatch for {}", i);
+            }
+            if (output_vals_host[i] != iterator_gt->second) {
+                utility::LogError("Output vals mismatch for {}", i);
+            }
 
             // iterator_t iterator = output_iterators_device[i];
             // Key key = *(thrust::device_ptr<Key>(
@@ -90,12 +96,14 @@ template <typename Key, typename Value, typename Hash, typename Eq>
 void CompareAllIterators(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
                          std::unordered_map<Key, Value> &hashmap_gt) {
     // Grab all iterators
-    thrust::device_vector<iterator_t> all_iterators_device(
-            hashmap->bucket_count_ * 64);
+    thrust::device_vector<iterator_t> all_iterators_device(hashmap->capacity_);
     size_t total_count = hashmap->GetIterators(reinterpret_cast<iterator_t *>(
             thrust::raw_pointer_cast(all_iterators_device.data())));
-    std::cout << total_count << " " << hashmap_gt.size() << "\n";
-    assert(total_count == hashmap_gt.size());
+    utility::LogInfo("{} {}", total_count, hashmap_gt.size());
+    if (total_count != hashmap_gt.size()) {
+        utility::LogError("Total count mismatch for {} and {}", total_count,
+                          hashmap_gt.size());
+    }
 
     thrust::device_vector<Key> output_keys_device(total_count);
     thrust::device_vector<Value> output_vals_device(total_count);
@@ -119,9 +127,15 @@ void CompareAllIterators(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
 
         auto iterator_gt = hashmap_gt.find(key);
 
-        assert(iterator_gt != hashmap_gt.end());
-        assert(iterator_gt->first == key);
-        assert(iterator_gt->second == val);
+        if (iterator_gt == hashmap_gt.end()) {
+            utility::LogError("Iterator_gt not found!");
+        }
+        if (iterator_gt->first != key) {
+            utility::LogError("Iterator_gt key not found!");
+        }
+        if (iterator_gt->second != val) {
+            utility::LogError("Iterator_gt val not found!");
+        }
     }
 }
 
@@ -155,6 +169,48 @@ void CompareInsert(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
                                          thrust::plus<size_t>());
     utility::LogInfo("Successful insert_count = {}", insert_count);
 
+    CompareAllIterators(hashmap, hashmap_gt);
+}
+
+template <typename Key, typename Value, typename Hash, typename Eq>
+void CompareActivate(std::shared_ptr<Hashmap<Hash, Eq>> &hashmap,
+                     std::unordered_map<Key, Value> &hashmap_gt,
+                     const std::vector<Key> &keys,
+                     const std::vector<Value> &vals) {
+    // Prepare groundtruth
+    for (int i = 0; i < keys.size(); ++i) {
+        hashmap_gt.insert(std::make_pair(keys[i], vals[i]));
+    }
+
+    // Prepare GPU memory
+    thrust::device_vector<Key> input_keys_device = keys;
+    thrust::device_vector<Value> input_vals_device = vals;
+    thrust::device_vector<iterator_t> output_iterators_device(keys.size());
+    thrust::device_vector<bool> output_masks_device(keys.size());
+
+    // Parallel activate
+    hashmap->Activate(
+            reinterpret_cast<void *>(
+                    thrust::raw_pointer_cast(input_keys_device.data())),
+            reinterpret_cast<iterator_t *>(
+                    thrust::raw_pointer_cast(output_iterators_device.data())),
+            reinterpret_cast<bool *>(
+                    thrust::raw_pointer_cast(output_masks_device.data())),
+            keys.size());
+
+    // Naive manual in-place modification
+    for (size_t i = 0; i < keys.size(); ++i) {
+        iterator_t iterator = output_iterators_device[i];
+        if (iterator.second != nullptr) {
+            *(thrust::device_ptr<Value>(
+                    reinterpret_cast<Value *>(iterator.second))) = vals[i];
+        }
+    }
+
+    size_t activate_count = thrust::reduce(output_masks_device.begin(),
+                                           output_masks_device.end(), (size_t)0,
+                                           thrust::plus<size_t>());
+    utility::LogInfo("Successful activate_count = {}", activate_count);
     CompareAllIterators(hashmap, hashmap_gt);
 }
 
@@ -221,6 +277,9 @@ int main() {
 
         CompareInsert(hashmap, hashmap_gt, keys, vals);
         utility::LogInfo("TestInsert passed");
+
+        // CompareActivate(hashmap, hashmap_gt, keys, vals);
+        // utility::LogInfo("TestActivate passed");
 
         CompareFind(hashmap, hashmap_gt, keys);
         utility::LogInfo("TestFind passed");

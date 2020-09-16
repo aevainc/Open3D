@@ -34,6 +34,7 @@
 #include "open3d/core/Tensor.h"
 #include "open3d/core/TensorList.h"
 #include "open3d/geometry/PointCloud.h"
+#include "open3d/geometry/TriangleMesh.h"
 #include "open3d/tgeometry/Geometry.h"
 #include "open3d/tgeometry/TensorListMap.h"
 
@@ -215,7 +216,7 @@ public:
     /// This is a convenience function.
     bool HasPointNormals() const { return HasPointAttr("normals"); }
 
-    /// Synchronized push back, data will be copied. Before push back, all
+    /// pSynchronized push back, data will be copied. Before push back, all
     /// existing tensorlists must have the same length.
     ///
     /// \param map_keys_to_tensors The keys and values to be pushed back. It
@@ -269,6 +270,7 @@ public:
 
     /// Convert to a legacy Open3D PointCloud.
     geometry::PointCloud ToLegacyPointCloud() const;
+    geometry::TriangleMesh ToLegacyTriangleMesh() const;
 
     PointCloud VoxelDownSample(float voxel_size,
                                const std::unordered_set<std::string>

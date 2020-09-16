@@ -44,6 +44,18 @@ Eigen::Vector3d TensorToEigenVector3d(const core::Tensor &tensor) {
                            dtensor[2].Item<double>());
 }
 
+Eigen::Vector3i TensorToEigenVector3i(const core::Tensor &tensor) {
+    // TODO: Tensor::To(dtype, device).
+    if (tensor.GetShape() != SizeVector{3}) {
+        utility::LogError("Tensor shape must be {3}, but got {}.",
+                          tensor.GetShape().ToString());
+    }
+    core::Tensor dtensor =
+            tensor.To(core::Dtype::Int32).Copy(core::Device("CPU:0"));
+    return Eigen::Vector3i(dtensor[0].Item<int>(), dtensor[1].Item<int>(),
+                           dtensor[2].Item<int>());
+}
+
 core::Tensor EigenVector3dToTensor(const Eigen::Vector3d &value,
                                    core::Dtype dtype,
                                    const core::Device &device) {

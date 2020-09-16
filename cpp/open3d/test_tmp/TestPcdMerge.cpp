@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
             fmt::format("{}/trajectory.log", root_path));
 
     std::vector<Device> devices{Device("CUDA:0"), Device("CPU:0")};
+
     tgeometry::PointCloud pcd_global(Dtype::Float32, Device("CUDA:0"));
 
     for (int i = 0; i < 3000; ++i) {

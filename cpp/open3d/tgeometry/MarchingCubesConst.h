@@ -26,10 +26,10 @@
 
 #pragma once
 
-#include <Eigen/Core>
+#include "open3d/core/CUDAUtils.h"
 
 namespace {
-
+OPEN3D_DEVICE
 const int edge_table[256] = {
         0x0,   0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c, 0x80c, 0x905,
         0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00, 0x190, 0x99,  0x393, 0x29a,
@@ -58,6 +58,7 @@ const int edge_table[256] = {
         0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c, 0x70c, 0x605,
         0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0};
 
+OPEN3D_DEVICE
 const int tri_table[256][16] = {
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -316,7 +317,7 @@ const int tri_table[256][16] = {
         {0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
 
-const int tri_count[256] = {
+OPEN3D_DEVICE const int tri_count[256] = {
         0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 2, 1, 2, 2, 3, 2, 3, 3, 4,
         2, 3, 3, 4, 3, 4, 4, 3, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 3,
         2, 3, 3, 2, 3, 4, 4, 3, 3, 4, 4, 3, 4, 5, 5, 2, 1, 2, 2, 3, 2, 3, 3, 4,
@@ -330,38 +331,14 @@ const int tri_count[256] = {
         2, 3, 3, 2, 3, 4, 2, 1, 3, 2, 4, 1, 2, 1, 1, 0,
 };
 
-const Eigen::Vector3i shift[8] = {
-        Eigen::Vector3i(0, 0, 0), Eigen::Vector3i(1, 0, 0),
-        Eigen::Vector3i(1, 1, 0), Eigen::Vector3i(0, 1, 0),
-        Eigen::Vector3i(0, 0, 1), Eigen::Vector3i(1, 0, 1),
-        Eigen::Vector3i(1, 1, 1), Eigen::Vector3i(0, 1, 1),
-};
-
-const int vtx_shifts[8][3] = {
+OPEN3D_DEVICE const int vtx_shifts[8][3] = {
         {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0},
         {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 1, 1},
 };
 
 // First 3 elements: edge start vertex coordinate (assume origin at (0, 0, 0))
 // The last element: edge direction {0: x, 1: y, 2: z}
-const Eigen::Vector4i edge_shift[12] = {
-        Eigen::Vector4i(0, 0, 0, 0),  // Edge  0: {0, 1}
-        Eigen::Vector4i(1, 0, 0, 1),  // Edge  1: {1, 2}
-        Eigen::Vector4i(0, 1, 0, 0),  // Edge  2: {3, 2}
-        Eigen::Vector4i(0, 0, 0, 1),  // Edge  3: {0, 3}
-        Eigen::Vector4i(0, 0, 1, 0),  // Edge  4: {4, 5}
-        Eigen::Vector4i(1, 0, 1, 1),  // Edge  5: {5, 6}
-        Eigen::Vector4i(0, 1, 1, 0),  // Edge  6: {7, 6}
-        Eigen::Vector4i(0, 0, 1, 1),  // Edge  7: {4, 7}
-        Eigen::Vector4i(0, 0, 0, 2),  // Edge  8: {0, 4}
-        Eigen::Vector4i(1, 0, 0, 2),  // Edge  9: {1, 5}
-        Eigen::Vector4i(1, 1, 0, 2),  // Edge 10: {2, 6}
-        Eigen::Vector4i(0, 1, 0, 2),  // Edge 11: {3, 7}
-};
-
-// First 3 elements: edge start vertex coordinate (assume origin at (0, 0, 0))
-// The last element: edge direction {0: x, 1: y, 2: z}
-const int edge_shifts[12][4] = {
+OPEN3D_DEVICE const int edge_shifts[12][4] = {
         {0, 0, 0, 0},  // Edge  0: {0, 1}
         {1, 0, 0, 1},  // Edge  1: {1, 2}
         {0, 1, 0, 0},  // Edge  2: {3, 2}
@@ -376,7 +353,7 @@ const int edge_shifts[12][4] = {
         {0, 1, 0, 2},  // Edge 11: {3, 7}
 };
 
-const int edge_to_vert[12][2] = {
+OPEN3D_DEVICE const int edge_to_vert[12][2] = {
         {0, 1}, {1, 2}, {3, 2}, {0, 3}, {4, 5}, {5, 6},
         {7, 6}, {4, 7}, {0, 4}, {1, 5}, {2, 6}, {3, 7},
 };

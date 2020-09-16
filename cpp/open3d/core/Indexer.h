@@ -32,6 +32,7 @@
 #include "open3d/core/Dtype.h"
 #include "open3d/core/ShapeUtil.h"
 #include "open3d/core/SizeVector.h"
+#include "open3d/core/SparseTensorList.h"
 #include "open3d/core/Tensor.h"
 #include "open3d/utility/Console.h"
 
@@ -559,6 +560,157 @@ public:
 
 private:
     const Indexer& indexer_;
+};
+
+/// Helper class for converting coordinates/indices between 3D/3D, 3D/2D, 2D/3D.
+class Projector {
+public:
+    /// intrinsic: pinhole camera matrix, stored in fx, fy, cx, cy
+    /// extrinsic: world to camera transform, stored in a 3x4 matrix
+    Projector(const Tensor& intrinsic,
+              const Tensor& extrinsic,
+              float scale = 1.0f);
+
+    /// Transform a 3D coordinate in camera coordinate to world coordinate
+    OPEN3D_HOST_DEVICE void Transform(float x_in,
+                                      float y_in,
+                                      float z_in,
+                                      float* x_out,
+                                      float* y_out,
+                                      float* z_out) const {
+        x_in *= scale_;
+        y_in *= scale_;
+        z_in *= scale_;
+
+        *x_out = x_in * extrinsic_[0][0] + y_in * extrinsic_[0][1] +
+                 z_in * extrinsic_[0][2] + extrinsic_[0][3];
+        *y_out = x_in * extrinsic_[1][0] + y_in * extrinsic_[1][1] +
+                 z_in * extrinsic_[1][2] + extrinsic_[1][3];
+        *z_out = x_in * extrinsic_[2][0] + y_in * extrinsic_[2][1] +
+                 z_in * extrinsic_[2][2] + extrinsic_[2][3];
+    }
+
+    /// Project a 3D coordinate in camera coordinate to a 2D uv coordinate
+    OPEN3D_HOST_DEVICE void Project(float x_in,
+                                    float y_in,
+                                    float z_in,
+                                    float* u_out,
+                                    float* v_out) const {
+        float inv_z = 1.0f / z_in;
+        *u_out = fx_ * x_in * inv_z + cx_;
+        *v_out = fy_ * y_in * inv_z + cy_;
+    }
+
+    /// Unproject a 2D uv coordinate with depth to 3D in camera coordinate
+    OPEN3D_HOST_DEVICE void Unproject(float u_in,
+                                      float v_in,
+                                      float d_in,
+                                      float* x_out,
+                                      float* y_out,
+                                      float* z_out) const {
+        *x_out = (u_in - cx_) * d_in / fx_;
+        *y_out = (v_in - cy_) * d_in / fy_;
+        *z_out = d_in;
+    }
+
+private:
+    float extrinsic_[3][4];
+    float cx_;
+    float cy_;
+    float fx_;
+    float fy_;
+
+    float scale_;
+};
+
+/// Convert between ND coordinates and their corresponding linear offsets
+/// Internal conversions:
+/// 2D: height (y), weight (x)
+/// 3D: z, y, x
+/// 4D: time, z, y, x
+const int64_t MAX_RESOLUTION_DIMS = 4;
+class NDArrayIndexer {
+public:
+    NDArrayIndexer(const SizeVector& shape,
+                   int64_t element_byte_size,
+                   const void* ptr = nullptr);
+
+    OPEN3D_HOST_DEVICE void Convert2DToOffset(int64_t x_in,
+                                              int64_t y_in,
+                                              int64_t* ind_out) const {
+        *ind_out = y_in * shape_[1] + x_in;
+    }
+    OPEN3D_HOST_DEVICE void Convert3DToOffset(int64_t x_in,
+                                              int64_t y_in,
+                                              int64_t z_in,
+                                              int64_t* ind_out) const {
+        *ind_out = (z_in * shape_[1] + y_in) * shape_[2] + x_in;
+    }
+    OPEN3D_HOST_DEVICE void Convert4DToOffset(int64_t x_in,
+                                              int64_t y_in,
+                                              int64_t z_in,
+                                              int64_t t_in,
+                                              int64_t* ind_out) const {
+        *ind_out = ((t_in * shape_[1] + z_in) * shape_[2] + y_in) * shape_[3] +
+                   x_in;
+    }
+
+    OPEN3D_HOST_DEVICE void ConvertOffsetTo2D(int64_t ind_in,
+                                              int64_t* x_out,
+                                              int64_t* y_out) const {
+        *x_out = ind_in % shape_[1];
+        *y_out = ind_in / shape_[1];
+    }
+    OPEN3D_HOST_DEVICE void ConvertOffsetTo3D(int64_t ind_in,
+                                              int64_t* x_out,
+                                              int64_t* y_out,
+                                              int64_t* z_out) const {
+        *x_out = ind_in % shape_[2];
+        ind_in = (ind_in - *x_out) / shape_[2];
+        *y_out = ind_in % shape_[1];
+        *z_out = ind_in / shape_[1];
+    }
+    OPEN3D_HOST_DEVICE void ConvertOffsetTo4D(int64_t ind_in,
+                                              int64_t* x_out,
+                                              int64_t* y_out,
+                                              int64_t* z_out,
+                                              int64_t* t_out) const {
+        *x_out = ind_in % shape_[3];
+        ind_in = (ind_in - *x_out) / shape_[3];
+        *y_out = ind_in % shape_[2];
+        ind_in = (ind_in - *y_out) / shape_[2];
+        *z_out = ind_in % shape_[1];
+        *t_out = ind_in / shape_[1];
+    }
+
+    OPEN3D_HOST_DEVICE bool InBoundary2D(float x, float y) const {
+        return y >= 0 && x >= 0 && y <= shape_[0] - 1.0f &&
+               x <= shape_[1] - 1.0f;
+    }
+    OPEN3D_HOST_DEVICE bool InBoundary3D(float x, float y, float z) const {
+        return z >= 0 && y >= 0 && x >= 0 && z <= shape_[0] - 1.0f &&
+               y <= shape_[1] - 1.0f && x <= shape_[2] - 1.0f;
+    }
+    OPEN3D_HOST_DEVICE bool InBoundary4D(float x,
+                                         float y,
+                                         float z,
+                                         float t) const {
+        return t >= 0 && z >= 0 && y >= 0 && x >= 0 && t <= shape_[0] - 1.0f &&
+               z <= shape_[1] - 1.0f && y <= shape_[2] - 1.0f &&
+               x <= shape_[3] - 1.0f;
+    }
+
+    OPEN3D_HOST_DEVICE int64_t GetShape(int i) const { return shape_[i]; }
+
+    OPEN3D_HOST_DEVICE void* GetPtrFromOffset(int64_t offset) const {
+        return static_cast<void*>(static_cast<uint8_t*>(ptr_) +
+                                  offset * element_byte_size_);
+    }
+
+private:
+    void* ptr_;
+    int64_t shape_[MAX_RESOLUTION_DIMS];
+    int64_t element_byte_size_;
 };
 
 }  // namespace core

@@ -5,6 +5,7 @@ set(ALL_SOURCE_FILES
     ImageFactory.cpp
     TensorListMap.cpp
     TriangleMesh.cpp
+    VoxelGrid.cpp
 )
 
 add_library(tgeometry OBJECT ${ALL_SOURCE_FILES})
