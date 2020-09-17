@@ -34,7 +34,7 @@
 #include "open3d/core/ShapeUtil.h"
 #include "open3d/core/Tensor.h"
 #include "open3d/core/TensorList.h"
-#include "open3d/core/hashmap/TensorHash.h"
+#include "open3d/core/hashmap/TensorHashmap.h"
 #include "open3d/core/linalg/Matmul.h"
 
 namespace open3d {
@@ -206,7 +206,7 @@ PointCloud PointCloud::VoxelDownSample(
 
     auto tensor_quantized_int64 = tensor_quantized.To(core::Dtype::Int64);
 
-    auto result = core::TensorHash::Unique(tensor_quantized_int64);
+    auto result = core::TensorHashmap::Unique(tensor_quantized_int64);
 
     core::Tensor coords = result.first;
     core::Tensor masks = result.second;
