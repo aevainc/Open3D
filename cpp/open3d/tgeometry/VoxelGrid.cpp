@@ -28,7 +28,6 @@
 
 #include <Eigen/Dense>
 
-#include "open3d/core/EigenAdaptor.h"
 #include "open3d/core/SparseTensorList.h"
 #include "open3d/core/TensorList.h"
 #include "open3d/core/kernel/SpecialOp.h"
@@ -64,8 +63,7 @@ void VoxelGrid::Integrate(const tgeometry::Image &depth,
     Tensor pcd_map = vertex_map.View({3, 480 * 640});
 
     /// Inverse is currently not available...
-    Eigen::Matrix4f pose_ = ToEigen<float>(extrinsic).inverse();
-    Tensor pose = FromEigen(pose_).Copy(device_);
+    Tensor pose = extrinsic.Inverse();
     tgeometry::PointCloud pcd(TensorList::FromTensor(pcd_map.T()));
     pcd.Transform(pose);
 
