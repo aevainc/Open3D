@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <random>
 #include <unordered_map>
 #include <vector>
+
 #include "Hashmap.h"
 #include "Open3D/Utility/Timer.h"
 

@@ -25,7 +25,9 @@
 // ----------------------------------------------------------------------------
 
 #include <thrust/device_vector.h>
+
 #include <random>
+
 #include "open3d/core/hashmap/TemplateHashmap.h"
 
 using namespace open3d;

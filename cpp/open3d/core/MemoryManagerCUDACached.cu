@@ -24,7 +24,6 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-
 #include <cuda.h>
 #include <cuda_runtime.h>
 
@@ -401,7 +400,6 @@ bool CUDACachedMemoryManager::IsCUDAPointer(const void* ptr) {
     }
     return false;
 }
-
 
 void CUDACachedMemoryManager::ReleaseCache() {
     std::shared_ptr<CUDACacher> instance = CUDACacher::GetInstance();

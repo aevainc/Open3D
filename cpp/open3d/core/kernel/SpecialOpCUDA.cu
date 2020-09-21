@@ -48,8 +48,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
 
             SparseIndexer sparse_indexer(output_sparse_tl,
                                          grid_shape.NumElements());
-            NDArrayIndexer indexer3d(grid_shape,
-                                     Dtype::Float32.ByteSize());
+            NDArrayIndexer indexer3d(grid_shape, Dtype::Float32.ByteSize());
             SizeVector chw = input_tensors[0].GetShape();
             NDArrayIndexer indexer2d({chw[1], chw[2]},
                                      Dtype::Float32.ByteSize(),
@@ -125,8 +124,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
 
             // res x res x res
             utility::LogInfo("Indexer");
-            NDArrayIndexer indexer3d(grid_shape,
-                                     Dtype::Int32.ByteSize());
+            NDArrayIndexer indexer3d(grid_shape, Dtype::Int32.ByteSize());
             // 27 x n
             SizeVector nshape = input_tensors[1].GetShape();
             NDArrayIndexer indexer2d(input_tensors[1].GetShape(),
@@ -264,8 +262,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
             SizeVector grid_shape = output_sparse_tl.shapes_[0];
 
             // res x res x res
-            NDArrayIndexer indexer3d(grid_shape,
-                                     Dtype::Int32.ByteSize());
+            NDArrayIndexer indexer3d(grid_shape, Dtype::Int32.ByteSize());
             // 27 x n
             NDArrayIndexer indexer2d(input_tensors[1].GetShape(),
                                      Dtype::Bool.ByteSize(),
@@ -398,8 +395,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
             // return;
 
             // res x res x res
-            NDArrayIndexer indexer3d(grid_shape,
-                                     Dtype::Int32.ByteSize());
+            NDArrayIndexer indexer3d(grid_shape, Dtype::Int32.ByteSize());
             // 27 x n
             NDArrayIndexer indexer2d(input_tensors[2].GetShape(),
                                      Dtype::Bool.ByteSize(),
@@ -683,8 +679,7 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
             int triangle_count = input_tensors[1][0].Item<int>();
 
             // res x res x res
-            NDArrayIndexer indexer3d(grid_shape,
-                                     Dtype::Int32.ByteSize());
+            NDArrayIndexer indexer3d(grid_shape, Dtype::Int32.ByteSize());
             // 27 x n
             NDArrayIndexer indexer2d(input_tensors[2].GetShape(),
                                      Dtype::Bool.ByteSize(),
@@ -801,7 +796,9 @@ void SpecialOpEWCUDA(const std::vector<Tensor>& input_tensors,
             break;
         };
 
-        default: { utility::LogError("Unsupported special op"); }
+        default: {
+            utility::LogError("Unsupported special op");
+        }
     }
 }  // namespace kernel
 }  // namespace kernel

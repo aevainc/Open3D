@@ -1,7 +1,6 @@
 #include <fmt/format.h>
 
 #include "open3d/Open3D.h"
-#include "open3d/core/EigenAdaptor.h"
 #include "open3d/tgeometry/Image.h"
 #include "open3d/tgeometry/PointCloud.h"
 #include "open3d/tgeometry/VoxelGrid.h"
@@ -9,6 +8,14 @@
 
 using namespace open3d;
 using namespace open3d::core;
+
+template <class T, int M, int N, int A>
+Tensor FromEigen(const Eigen::Matrix<T, M, N, A>& matrix) {
+    Dtype dtype = Dtype::FromType<T>();
+    Eigen::Matrix<T, M, N, Eigen::RowMajor> matrix_row_major = matrix;
+    return Tensor(matrix_row_major.data(), {matrix.rows(), matrix.cols()},
+                  dtype);
+}
 
 int main(int argc, char** argv) {
     std::string root_path = argv[1];
