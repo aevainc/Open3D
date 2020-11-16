@@ -37,6 +37,8 @@ set(TORCH_OPS_SOURCES
     "misc/RaggedToDenseOpKernel.cpp"
     "misc/VoxelizeOps.cpp"
     "misc/VoxelizeOpKernel.cpp"
+    "misc/NmsOps.cpp"
+    "../impl/misc/Nms.cpp"
 )
 
 set(TORCH_OPS_CUDA_SOURCES
@@ -51,6 +53,7 @@ set(TORCH_OPS_CUDA_SOURCES
     "../impl/continuous_conv/ContinuousConvCUDAKernels.cu"
     "misc/RaggedToDenseOpKernel.cu"
     "misc/VoxelizeOpKernel.cu"
+    "../impl/misc/Nms.cu"
 )
 
 if(BUILD_CUDA_MODULE)
