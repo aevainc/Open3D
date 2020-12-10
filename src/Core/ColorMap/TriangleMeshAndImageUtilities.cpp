@@ -31,6 +31,10 @@
 #include <Core/Geometry/Image.h>
 #include <Core/Geometry/RGBDImage.h>
 #include <Core/Geometry/TriangleMesh.h>
+#include <iostream>
+#include <numeric>
+#include <algorithm>
+#include <cmath>
 
 namespace open3d {
 
@@ -50,51 +54,157 @@ inline std::tuple<float, float, float> Project3DPointAndGetUVDepth(
     return std::make_tuple(u, v, z);
 }
 
+template <typename T>
+std::vector<size_t> sort_indexes(const std::vector<T>& v, bool ascend = true) {
+    // https://stackoverflow.com/a/12399290/1255535
+    // Initialize original index locations
+    std::vector<size_t> idx(v.size());
+    std::iota(idx.begin(), idx.end(), 0);
+
+    // Sort indexes based on comparing values in v
+    if (ascend) {
+        std::sort(idx.begin(), idx.end(),
+                  [&v](size_t i1, size_t i2) { return v[i1] < v[i2]; });
+    } else {
+        std::sort(idx.begin(), idx.end(),
+                  [&v](size_t i1, size_t i2) { return v[i1] > v[i2]; });
+    }
+    return idx;
+}
+
+template <typename T>
+std::vector<size_t> argmax_k(const std::vector<T>& v, size_t k) {
+    k = std::min(k, v.size());
+    std::vector<size_t> max_indices = sort_indexes(v, false);
+    std::vector<size_t> k_max_indices(max_indices.begin(),
+                                      max_indices.begin() + k);
+    return k_max_indices;
+}
+
 std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>
 CreateVertexAndImageVisibility(
         const TriangleMesh& mesh,
-        const std::vector<std::shared_ptr<Image>>& images_depth,
+        const std::vector<std::shared_ptr<RGBDImage>>& images_rgbd,
         const std::vector<std::shared_ptr<Image>>& images_mask,
         const PinholeCameraTrajectory& camera,
         double maximum_allowable_depth,
-        double depth_threshold_for_visiblity_check) {
+        double depth_threshold_for_visiblity_check,
+        int max_visible_cameras,
+        int min_visible_cameras) {
     auto n_camera = camera.parameters_.size();
     auto n_vertex = mesh.vertices_.size();
     std::vector<std::vector<int>> visiblity_vertex_to_image;
     std::vector<std::vector<int>> visiblity_image_to_vertex;
     visiblity_vertex_to_image.resize(n_vertex);
     visiblity_image_to_vertex.resize(n_camera);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static)
-#endif
+    // #ifdef _OPENMP
+    // #pragma omp parallel for schedule(static)
+    // #endif
     for (int c = 0; c < n_camera; c++) {
         int viscnt = 0;
+        size_t reject_image_boundary = 0;
+        size_t reject_allowable_depth = 0;
+        size_t reject_images_mask = 0;
+        size_t reject_depth_threshold = 0;
         for (int vertex_id = 0; vertex_id < n_vertex; vertex_id++) {
             Eigen::Vector3d X = mesh.vertices_[vertex_id];
             float u, v, d;
             std::tie(u, v, d) = Project3DPointAndGetUVDepth(X, camera, c);
             int u_d = int(round(u)), v_d = int(round(v));
-            if (d < 0.0 || !images_depth[c]->TestImageBoundary(u_d, v_d))
+            if (d < 0.0 ||
+                !images_rgbd[c]->depth_.TestImageBoundary(u_d, v_d)) {
+                reject_image_boundary++;
                 continue;
-            float d_sensor = *PointerAt<float>(*images_depth[c], u_d, v_d);
-            if (d_sensor > maximum_allowable_depth) continue;
-            if (*PointerAt<unsigned char>(*images_mask[c], u_d, v_d) == 255)
-                continue;
-            if (std::fabs(d - d_sensor) < depth_threshold_for_visiblity_check) {
-#ifdef _OPENMP
-#pragma omp critical
-#endif
-                {
-                    visiblity_vertex_to_image[vertex_id].push_back(c);
-                    visiblity_image_to_vertex[c].push_back(vertex_id);
-                    viscnt++;
+            }
+            float d_sensor =
+                    *PointerAt<float>(images_rgbd[c]->depth_, u_d, v_d);
+            if (d_sensor > maximum_allowable_depth) {
+                if (reject_allowable_depth < 10) {
+                    std::cout << "d_sensor " << d_sensor
+                              << " maximum_allowable_depth "
+                              << maximum_allowable_depth << std::endl;
                 }
+                reject_allowable_depth++;
+                continue;
+            }
+            if (std::fabs(d - d_sensor) >=
+                depth_threshold_for_visiblity_check) {
+                reject_depth_threshold++;
+                continue;
+            }
+            if (*PointerAt<unsigned char>(*images_mask[c], u_d, v_d) == 255) {
+                reject_images_mask++;
+                continue;
+            }
+
+            // #ifdef _OPENMP
+            // #pragma omp critical
+            // #endif
+            {
+                visiblity_vertex_to_image[vertex_id].push_back(c);
+                visiblity_image_to_vertex[c].push_back(vertex_id);
+                viscnt++;
             }
         }
-        PrintDebug("[cam %d] %.5f percents are visible\n", c,
-                   double(viscnt) / n_vertex * 100);
+        PrintDebug(
+                "[cam %d] Total %d, rj_image_boundary %d, rj_allowable_depth "
+                "%d, rj_images_mask %d, rj_depth_threshold %d \n",
+                c, n_vertex, reject_image_boundary, reject_allowable_depth,
+                reject_images_mask, reject_depth_threshold);
+        PrintDebug("[cam %d] %.5f percents, %d vertices are visible\n", c,
+                   double(viscnt) / n_vertex * 100, viscnt);
         fflush(stdout);
     }
+
+    // Select according to min_visible_cameras and max_visible_cameras
+    std::vector<std::vector<int>> selected_visiblity_vertex_to_image;
+    std::vector<std::vector<int>> selected_visiblity_image_to_vertex;
+    selected_visiblity_vertex_to_image.resize(n_vertex);
+    selected_visiblity_image_to_vertex.resize(n_camera);
+
+    // Cache camera centers
+    std::vector<Eigen::Vector3d> camera_centers;
+    for (const PinholeCameraParameters& camera_param : camera.parameters_) {
+        camera_centers.push_back(camera_param.GetCameraCenter());
+    }
+
+    for (int v = 0; v < visiblity_vertex_to_image.size(); ++v) {
+        // Skip if number of visible cameras < min_camera_number
+        if (min_visible_cameras != 0 &&
+            visiblity_vertex_to_image[v].size() < min_visible_cameras) {
+            continue;
+        }
+        std::vector<double> cosines;
+        Eigen::Vector3d vertex = mesh.vertices_[v];
+        Eigen::Vector3d vertex_normal = mesh.vertex_normals_[v];
+        for (int c : visiblity_vertex_to_image[v]) {
+            Eigen::Vector3d vec_v_to_c = camera_centers[c] - vertex;
+            double cosine = vertex_normal.dot(vec_v_to_c) /
+                            vertex_normal.norm() / vec_v_to_c.norm();
+            cosines.push_back(cosine);
+        }
+        std::vector<size_t> best_c_indices;
+
+        // Select <= max_visible_cameras cameras
+        if (max_visible_cameras != 0) {
+            best_c_indices = argmax_k(cosines, max_visible_cameras);
+        } else {
+            best_c_indices = argmax_k(cosines, cosines.size());  // select all
+        }
+        for (size_t best_c_index : best_c_indices) {
+            int best_c = visiblity_vertex_to_image[v][best_c_index];
+            selected_visiblity_vertex_to_image[v].push_back(best_c);
+            selected_visiblity_image_to_vertex[best_c].push_back(v);
+        }
+    }
+
+    visiblity_vertex_to_image = selected_visiblity_vertex_to_image;
+    visiblity_image_to_vertex = selected_visiblity_image_to_vertex;
+    for (int c = 0; c < n_camera; c++) {
+        PrintDebug("[cam %d] After selection %d\n", c,
+                   visiblity_image_to_vertex[c].size());
+    }
+
     return std::move(std::make_tuple(visiblity_vertex_to_image,
                                      visiblity_image_to_vertex));
 }
@@ -223,7 +333,7 @@ void SetProxyIntensityForVertex(
 
 void SetGeometryColorAverage(
         TriangleMesh& mesh,
-        const std::vector<std::shared_ptr<Image>>& images_color,
+        const std::vector<std::shared_ptr<RGBDImage>>& images_rgbd,
         const PinholeCameraTrajectory& camera,
         const std::vector<std::vector<int>>& visiblity_vertex_to_image,
         int image_boundary_margin /*= 10*/) {
@@ -242,13 +352,13 @@ void SetGeometryColorAverage(
             unsigned char r_temp, g_temp, b_temp;
             bool valid = false;
             std::tie(valid, r_temp) = QueryImageIntensity<unsigned char>(
-                    *images_color[j], mesh.vertices_[i], camera, j, 0,
+                    images_rgbd[j]->color_, mesh.vertices_[i], camera, j, 0,
                     image_boundary_margin);
             std::tie(valid, g_temp) = QueryImageIntensity<unsigned char>(
-                    *images_color[j], mesh.vertices_[i], camera, j, 1,
+                    images_rgbd[j]->color_, mesh.vertices_[i], camera, j, 1,
                     image_boundary_margin);
             std::tie(valid, b_temp) = QueryImageIntensity<unsigned char>(
-                    *images_color[j], mesh.vertices_[i], camera, j, 2,
+                    images_rgbd[j]->color_, mesh.vertices_[i], camera, j, 2,
                     image_boundary_margin);
             float r = (float)r_temp / 255.0f;
             float g = (float)g_temp / 255.0f;
@@ -264,9 +374,23 @@ void SetGeometryColorAverage(
     }
 }
 
+double get_median(std::vector<double> scores) {
+    size_t size = scores.size();
+    if (size == 0) {
+        return 0;  // Undefined, really.
+    } else {
+        sort(scores.begin(), scores.end());
+        if (size % 2 == 0) {
+            return (scores[size / 2 - 1] + scores[size / 2]) / 2;
+        } else {
+            return scores[size / 2];
+        }
+    }
+}
+
 void SetGeometryColorAverage(
         TriangleMesh& mesh,
-        const std::vector<std::shared_ptr<Image>>& images_color,
+        const std::vector<std::shared_ptr<RGBDImage>>& images_rgbd,
         const std::vector<ImageWarpingField>& warping_fields,
         const PinholeCameraTrajectory& camera,
         const std::vector<std::vector<int>>& visiblity_vertex_to_image,
@@ -280,30 +404,37 @@ void SetGeometryColorAverage(
     for (int i = 0; i < n_vertex; i++) {
         mesh.vertex_colors_[i] = Eigen::Vector3d::Zero();
         double sum = 0.0;
+        std::vector<double> rs;
+        std::vector<double> gs;
+        std::vector<double> bs;
         for (auto iter = 0; iter < visiblity_vertex_to_image[i].size();
              iter++) {
             int j = visiblity_vertex_to_image[i][iter];
             unsigned char r_temp, g_temp, b_temp;
             bool valid = false;
             std::tie(valid, r_temp) = QueryImageIntensity<unsigned char>(
-                    *images_color[j], warping_fields[j], mesh.vertices_[i],
-                    camera, j, 0, image_boundary_margin);
+                    images_rgbd[j]->color_, warping_fields[j],
+                    mesh.vertices_[i], camera, j, 0, image_boundary_margin);
             std::tie(valid, g_temp) = QueryImageIntensity<unsigned char>(
-                    *images_color[j], warping_fields[j], mesh.vertices_[i],
-                    camera, j, 1, image_boundary_margin);
+                    images_rgbd[j]->color_, warping_fields[j],
+                    mesh.vertices_[i], camera, j, 1, image_boundary_margin);
             std::tie(valid, b_temp) = QueryImageIntensity<unsigned char>(
-                    *images_color[j], warping_fields[j], mesh.vertices_[i],
-                    camera, j, 2, image_boundary_margin);
+                    images_rgbd[j]->color_, warping_fields[j],
+                    mesh.vertices_[i], camera, j, 2, image_boundary_margin);
             float r = (float)r_temp / 255.0f;
             float g = (float)g_temp / 255.0f;
             float b = (float)b_temp / 255.0f;
             if (valid) {
                 mesh.vertex_colors_[i] += Eigen::Vector3d(r, g, b);
+                rs.push_back(r);
+                gs.push_back(g);
+                bs.push_back(b);
                 sum += 1.0;
             }
         }
         if (sum > 0.0) {
-            mesh.vertex_colors_[i] /= sum;
+            mesh.vertex_colors_[i] = Eigen::Vector3d(
+                    get_median(rs), get_median(gs), get_median(bs));
         }
     }
 }
