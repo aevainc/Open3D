@@ -26,8 +26,13 @@
 
 #include "open3d/core/TensorBench.h"
 
+#include "open3d/Open3D.h"
 #include "open3d/core/Device.h"
 #include "open3d/core/Tensor.h"
+#include "open3d/t/geometry/Image.h"
+#include "open3d/t/geometry/PointCloud.h"
+#include "open3d/t/geometry/TSDFVoxelGrid.h"
+#include "open3d/t/geometry/TriangleMesh.h"
 #include "open3d/utility/Console.h"
 #include "open3d/utility/Timer.h"
 
@@ -38,19 +43,19 @@
 namespace open3d {
 namespace core {
 
-static std::vector<Device> PermuteDevices() {
-#ifdef BUILD_CUDA_MODULE
-    std::shared_ptr<core::CUDAState> cuda_state =
-            core::CUDAState::GetInstance();
-    if (cuda_state->GetNumDevices() >= 1) {
-        return {core::Device("CPU:0"), core::Device("CUDA:0")};
-    } else {
-        return {core::Device("CPU:0")};
-    }
-#else
-    return {core::Device("CPU:0")};
-#endif
-}
+// static std::vector<Device> PermuteDevices() {
+// #ifdef BUILD_CUDA_MODULE
+//     std::shared_ptr<core::CUDAState> cuda_state =
+//             core::CUDAState::GetInstance();
+//     if (cuda_state->GetNumDevices() >= 1) {
+//         return {core::Device("CPU:0"), core::Device("CUDA:0")};
+//     } else {
+//         return {core::Device("CPU:0")};
+//     }
+// #else
+//     return {core::Device("CPU:0")};
+// #endif
+// }
 
 template <typename func_t>
 static void RunBenchmark(func_t benchmark_func,
@@ -72,24 +77,92 @@ static void RunBenchmark(func_t benchmark_func,
                      avg_time, repeats);
 }
 
+template <class T, int M, int N, int A>
+static Tensor FromEigen(const Eigen::Matrix<T, M, N, A>& matrix) {
+    Dtype dtype = Dtype::FromType<T>();
+    Eigen::Matrix<T, M, N, Eigen::RowMajor> matrix_row_major = matrix;
+    return Tensor(matrix_row_major.data(), {matrix.rows(), matrix.cols()},
+                  dtype);
+}
+
 void RunTensorBench() {
-    // Reduction.
-    for (const auto& device : PermuteDevices()) {
-        utility::LogInfo("Device: {}", device.ToString());
-        SizeVector shape{2, 10000000};
-        Tensor src(shape, Dtype::Int64, device);
-        RunBenchmark([&]() { Tensor dst = src.Sum({1}); },
-                     "reduction_" + device.ToString(), 10);
+    // Hard-coded paths
+    std::string color_folder =
+            "/home/yixing/data/stanford/lounge/lounge_png/color";
+    std::string depth_folder =
+            "/home/yixing/data/stanford/lounge/lounge_png/depth";
+    std::string trajectory_path =
+            "/home/yixing/data/stanford/lounge/trajectory.log";
+    std::string device_code = "CPU:0";
+
+    // Color and depth
+    std::vector<std::string> color_filenames;
+    utility::filesystem::ListFilesInDirectory(color_folder, color_filenames);
+    std::sort(color_filenames.begin(), color_filenames.end());
+
+    std::vector<std::string> depth_filenames;
+    utility::filesystem::ListFilesInDirectory(depth_folder, depth_filenames);
+    std::sort(depth_filenames.begin(), depth_filenames.end());
+
+    if (color_filenames.size() != depth_filenames.size()) {
+        utility::LogError(
+                "[TIntegrateRGBD] numbers of color and depth files mismatch. "
+                "Please provide folders with same number of images.");
     }
 
-    // Add.
-    for (const auto& device : PermuteDevices()) {
-        utility::LogInfo("Device: {}", device.ToString());
-        SizeVector shape{2, 10000000};
-        Tensor lhs = Tensor::Ones(shape, Dtype::Int64, device);
-        Tensor rhs = Tensor::Ones(shape, Dtype::Int64, device);
-        RunBenchmark([&]() { Tensor dst = lhs + rhs; },
-                     "add_" + device.ToString(), 10);
+    // Trajectory
+    auto trajectory =
+            io::CreatePinholeCameraTrajectoryFromFile(trajectory_path);
+
+    // Intrinsics
+    std::string intrinsic_path = "";
+    camera::PinholeCameraIntrinsic intrinsic;
+    if (intrinsic_path.empty() ||
+        !io::ReadIJsonConvertible(intrinsic_path, intrinsic)) {
+        utility::LogWarning("Using default value for Primesense camera.");
+        intrinsic = camera::PinholeCameraIntrinsic(
+                camera::PinholeCameraIntrinsicParameters::PrimeSenseDefault);
+    }
+
+    auto focal_length = intrinsic.GetFocalLength();
+    auto principal_point = intrinsic.GetPrincipalPoint();
+    Tensor intrinsic_t = Tensor(
+            std::vector<float>({static_cast<float>(focal_length.first), 0,
+                                static_cast<float>(principal_point.first), 0,
+                                static_cast<float>(focal_length.second),
+                                static_cast<float>(principal_point.second), 0,
+                                0, 1}),
+            {3, 3}, Dtype::Float32);
+
+    core::Device device(device_code);
+    utility::LogInfo("Using device: {}", device.ToString());
+
+    t::geometry::TSDFVoxelGrid voxel_grid({{"tsdf", core::Dtype::Float32},
+                                           {"weight", core::Dtype::UInt16},
+                                           {"color", core::Dtype::UInt16}},
+                                          3.0f / 512.f, 0.04f, 16, 100, device);
+
+    for (size_t i = 0; i < 10; ++i) {
+        // Load image
+        std::shared_ptr<geometry::Image> depth_legacy =
+                io::CreateImageFromFile(depth_filenames[i]);
+        std::shared_ptr<geometry::Image> color_legacy =
+                io::CreateImageFromFile(color_filenames[i]);
+
+        t::geometry::Image depth =
+                t::geometry::Image::FromLegacyImage(*depth_legacy, device);
+        t::geometry::Image color =
+                t::geometry::Image::FromLegacyImage(*color_legacy, device);
+
+        Eigen::Matrix4f extrinsic =
+                trajectory->parameters_[i].extrinsic_.cast<float>();
+        Tensor extrinsic_t = FromEigen(extrinsic).Copy(device);
+
+        utility::Timer timer;
+        timer.Start();
+        voxel_grid.Integrate(depth, color, intrinsic_t, extrinsic_t);
+        timer.Stop();
+        utility::LogInfo("{}: Integration takes {}", i, timer.GetDuration());
     }
 }
 
