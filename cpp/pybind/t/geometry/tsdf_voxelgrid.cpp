@@ -28,6 +28,7 @@
 #include <unordered_map>
 
 #include "open3d/t/geometry/TSDFVoxelGrid.h"
+#include "open3d/utility/Timer.h"
 #include "pybind/t/geometry/geometry.h"
 
 namespace open3d {
@@ -57,11 +58,19 @@ void pybind_tsdf_voxelgrid(py::module& m) {
                        py::overload_cast<const Image&, const core::Tensor&,
                                          const core::Tensor&, double, double>(
                                &TSDFVoxelGrid::Integrate));
-    tsdf_voxelgrid.def(
-            "integrate",
-            py::overload_cast<const Image&, const Image&, const core::Tensor&,
-                              const core::Tensor&, double, double>(
-                    &TSDFVoxelGrid::Integrate));
+
+    tsdf_voxelgrid.def("integrate", [&](TSDFVoxelGrid& tvg, const Image& depth,
+                                        const Image& color,
+                                        const core::Tensor& intrinsics,
+                                        const core::Tensor& extrinsics,
+                                        double depth_scale, double depth_max) {
+        utility::Timer timer;
+        timer.Start();
+        tvg.Integrate(depth, color, intrinsics, extrinsics, depth_scale,
+                      depth_max);
+        timer.Stop();
+        utility::LogInfo("Integration takes in c++ {}", timer.GetDuration());
+    });
 
     tsdf_voxelgrid.def("extract_surface_points",
                        &TSDFVoxelGrid::ExtractSurfacePoints);
