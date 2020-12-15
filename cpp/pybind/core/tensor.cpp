@@ -34,6 +34,7 @@
 #include "open3d/core/Dispatch.h"
 #include "open3d/core/Dtype.h"
 #include "open3d/core/SizeVector.h"
+#include "open3d/core/TensorBench.h"
 #include "open3d/core/TensorKey.h"
 #include "pybind/core/core.h"
 #include "pybind/docstring.h"
@@ -297,6 +298,9 @@ void pybind_core_tensor(py::module& m) {
     tensor.def("_item_uint8_t",
                [](const Tensor& t) { return t.Item<uint8_t>(); });
     tensor.def("_item_bool", [](const Tensor& t) { return t.Item<bool>(); });
+
+    // Bind TensorBench
+    m.def("run_tensor_bench", &RunTensorBench);
 }
 
 }  // namespace core

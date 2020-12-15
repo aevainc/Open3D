@@ -54,6 +54,7 @@ set(CORE_SRC
     Tensor.cpp
     TensorKey.cpp
     TensorList.cpp
+    TensorBench.cpp
 )
 
 set(CORE_CUDA_SRC
