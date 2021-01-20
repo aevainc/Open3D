@@ -49,6 +49,9 @@
 #include "open3d/visualization/rendering/Scene.h"
 #include "open3d/visualization/rendering/View.h"
 
+#include <iostream> // debugging; remove
+#include "open3d/io/ImageIO.h"
+
 // Once render target is available, please remove the #ifdefs
 #define NO_RENDER_TARGET 1
 
@@ -436,6 +439,7 @@ public:
                     scene_->GetRenderer().RenderToDepthImage(
                             scene_->GetView(), scene_->GetScene(),
                             [x, y, this](std::shared_ptr<geometry::Image> img) {
+                                io::WriteImage("/tmp/debug.png", *img);
                                 ChangeCenterOfRotation(img, x, y);
                             });
                 } else {
@@ -472,22 +476,27 @@ private:
     void ChangeCenterOfRotation(std::shared_ptr<geometry::Image> depth_img,
                                 int x,
                                 int y) {
+        std::cout << "[o3d] CenterOfRotation(): depth_img: " << depth_img->width_ << " x " << depth_img->height_ << std::endl;
         const int radius_px = 2;  // should be even;  total size is 2*r+1
         float far_z = 0.999999f;  // 1.0 - epsilon
         float win_z = GetWinZFromPixel(depth_img, x, y);
+        std::cout << "[o3d]   (" << x << ", " << y << "): win_z: " << win_z << ", far_z: " << far_z << ", (win_z >= far_z): " << (win_z >= far_z ? "true" : "false") << std::endl;
         if (win_z >= far_z) {
             for (int v = y - radius_px; v < y + radius_px; ++v) {
                 for (int u = x - radius_px; u < x + radius_px; ++u) {
                     float z = GetWinZFromPixel(depth_img, u, v);
+                    std::cout << "[o3d]   (" << u << ", " << v << "): z: " << z << std::endl;
                     win_z = std::min(win_z, z);
                 }
             }
         }
+        std::cout << "[o3d]   win_z: " << win_z << ", far_z: " << far_z << std::endl;
         if (win_z < far_z) {
             auto vp = scene_->GetView()->GetViewport();
             auto point = scene_->GetCamera()->Unproject(
                     float(x), float(vp[3] - y), win_z, float(vp[2]),
                     float(vp[3]));
+            std::cout << "[o3d]   new center of rotation: (" << point.x() << ", " << point.y() << ", " << point.z() << ")" << std::endl;
             SetCenterOfRotation(point);
             interactor_->Rotate(0, 0);  // update now
         }
@@ -497,6 +506,12 @@ private:
                            int x,
                            int y) {
         auto* rgba = depth_img->PointerAt<uint8_t>(x, y, 0);
+        const char kHex[] = "0123456789abcdef";
+        std::cout << "[o3d]   GetWinZFromPixel(" << x << ", " << y << "): ";
+        for (int i = 0; i < 3; ++i) {
+            std::cout << kHex[(rgba[i] & 0xf0) >> 4] << kHex[rgba[i] & 0x0f] << " ";
+        }
+        std::cout << std::endl;
         uint32_t depth32 = ((rgba[0] << 16) | (rgba[1] << 8) | rgba[2]);
         float win_z = float(depth32) / 16777215.0f;
         return win_z;

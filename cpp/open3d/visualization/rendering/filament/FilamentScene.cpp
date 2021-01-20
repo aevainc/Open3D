@@ -215,6 +215,7 @@ Scene* FilamentScene::Copy() {
         if (result == filament::RenderableManager::Builder::Success) {
             if (geom.visible) {
                 copy->scene_->addEntity(new_entity);
+                std::cout << "[o3d]   added entity " << new_entity.getId() << std::endl;
             }
             geom.filament_entity = new_entity;
             geom.mat.mat_instance = material_instance;
@@ -229,6 +230,17 @@ Scene* FilamentScene::Copy() {
                     "Failed to copy Filament resources for geometry {}", name);
         }
     }
+
+    std::cout << "[o3d] Copy()" << std::endl;
+    std::cout << "[o3d]    old geometries_:" << std::endl;
+    for (auto& name_geom : geometries_) {
+        std::cout << "[o3d]        " << name_geom.first << ", entity: " << name_geom.second.filament_entity.getId() << std::endl;
+    }
+    std::cout << "[o3d]    new geometries_:" << std::endl;
+    for (auto& name_geom : copy->geometries_) {
+        std::cout << "[o3d]        " << name_geom.first << ", entity: " << name_geom.second.filament_entity.getId() << std::endl;
+    }
+
     return copy;
 }
 
@@ -869,6 +881,10 @@ void FilamentScene::UpdateNormalShader(GeometryMaterialInstance& geom_mi) {
 }
 
 void FilamentScene::UpdateDepthShader(GeometryMaterialInstance& geom_mi) {
+    if (views_.empty()) {
+        return;
+    }
+
     auto* camera = views_.begin()->second.view->GetCamera();
     const float f = float(camera->GetFar());
     const float n = float(camera->GetNear());
@@ -1096,10 +1112,12 @@ void FilamentScene::UpdateMaterialProperties(RenderableGeometry& geom) {
 void FilamentScene::OverrideMaterialInternal(RenderableGeometry* geom,
                                              const Material& material,
                                              bool shader_only) {
+    std::cout << "[o3d] OverrideMaterial(" << geom->name << ", " << material.shader << ", " << (shader_only ? "true" : "false") <<  ")" << std::endl;
     // Has the shader changed?
     if (geom->mat.properties.shader != material.shader) {
         // TODO: put this in a method
         auto shader = defaults_mapping::shader_mappings[material.shader];
+        if (!shader) std::cout << "[o3d]   could not get shader!" << std::endl;
         if (!shader) shader = defaults_mapping::kColorOnlyMesh;
         auto old_mi = geom->mat.mat_instance;
         auto new_mi = resource_mgr_.CreateMaterialInstance(shader);
@@ -1606,6 +1624,7 @@ void FilamentScene::SetBackground(
         m.albedo_img = nullptr;
         m.aspect_ratio = 0.0;
     }
+    std::cout << "[o3d] SetBackground(): " << m.base_color[0] << ", " << m.base_color[1] << ", " << m.base_color[2] << ", " << m.base_color[3] << std::endl;
     OverrideMaterial(kBackgroundName, m);
 }
 

@@ -33,6 +33,10 @@
 #include "open3d/visualization/rendering/Scene.h"
 #include "open3d/visualization/rendering/View.h"
 
+#include <iostream> // debugging; remove
+#include "open3d/visualization/rendering/filament/FilamentScene.h"
+#include <filament/Scene.h>
+
 namespace open3d {
 namespace visualization {
 namespace rendering {
@@ -121,6 +125,8 @@ void Renderer::RenderToDepthImage(
 
     view_copy->ConfigureForColorPicking();
     view_copy->GetCamera()->CopyFrom(view->GetCamera());
+
+    std::cout << "[o3d] RenderToDepthImage(): " << ((FilamentScene*)scene_copy)->GetNativeScene()->getRenderableCount() << " renderable(s) in scene" << std::endl;
 
     auto render = CreateBufferRenderer();
     render->Configure(view_copy, scene_copy, vp[2], vp[3], 4,
