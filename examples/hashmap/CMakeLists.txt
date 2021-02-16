@@ -23,3 +23,6 @@ endfunction()
 
 add_executable(demo_stdgpu demo_stdgpu.cu)
 link_everything(demo_stdgpu)
+
+add_executable(TestHashmap TestHashmap.cu)
+link_everything(TestHashmap)
