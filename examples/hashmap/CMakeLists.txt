@@ -21,5 +21,5 @@ function(link_everything target)
     )
 endfunction()
 
-add_executable(StdGPUDemo StdGPUDemo.cu)
-link_everything(StdGPUDemo)
+add_executable(demo_stdgpu demo_stdgpu.cu)
+link_everything(demo_stdgpu)
