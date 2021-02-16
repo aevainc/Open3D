@@ -31,7 +31,7 @@ int main() {
     //
     using namespace open3d;
 
-    stdgpu::index_t n = 10000000;
+    stdgpu::index_t n = 1000000;
     int counts = 100;
 
     // Ours
@@ -54,6 +54,9 @@ int main() {
         cudaDeviceSynchronize();
         timer.Stop();
         total_time += timer.GetDuration();
+        if (hashmap.Size() != n) {
+            utility::LogError("ours: incorrect insertion");
+        }
     }
     utility::LogInfo("ours takes {} on average", total_time / counts);
 
@@ -79,6 +82,10 @@ int main() {
         cudaDeviceSynchronize();
         timer.Stop();
         total_time += timer.GetDuration();
+
+        if (map.size() != n) {
+            utility::LogError("stdgpu: incorrect insertion");
+        }
 
         stdgpu::unordered_map<int, int>::destroyDeviceObject(map);
     }
