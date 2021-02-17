@@ -108,8 +108,17 @@ void Hashmap::Insert(const Tensor& input_keys,
     }
 
     int64_t count = shape[0];
-    output_addrs = Tensor({count}, Dtype::Int32, GetDevice());
-    output_masks = Tensor({count}, Dtype::Bool, GetDevice());
+    if (output_addrs.GetLength() != count ||
+        output_addrs.GetDtype() != Dtype::Int32 ||
+        output_addrs.GetDevice() != GetDevice()) {
+        output_addrs = Tensor({count}, Dtype::Int32, GetDevice());
+    }
+
+    if (output_masks.GetLength() != count ||
+        output_masks.GetDtype() != Dtype::Bool ||
+        output_masks.GetDevice() != GetDevice()) {
+        output_masks = Tensor({count}, Dtype::Bool, GetDevice());
+    }
 
     device_hashmap_->Insert(input_keys.GetDataPtr(), input_values.GetDataPtr(),
                             static_cast<addr_t*>(output_addrs.GetDataPtr()),
@@ -134,9 +143,17 @@ void Hashmap::Activate(const Tensor& input_keys,
     }
 
     int64_t count = shape[0];
+    if (output_addrs.GetLength() != count ||
+        output_addrs.GetDtype() != Dtype::Int32 ||
+        output_addrs.GetDevice() != GetDevice()) {
+        output_addrs = Tensor({count}, Dtype::Int32, GetDevice());
+    }
 
-    output_addrs = Tensor({count}, Dtype::Int32, GetDevice());
-    output_masks = Tensor({count}, Dtype::Bool, GetDevice());
+    if (output_masks.GetLength() != count ||
+        output_masks.GetDtype() != Dtype::Bool ||
+        output_masks.GetDevice() != GetDevice()) {
+        output_masks = Tensor({count}, Dtype::Bool, GetDevice());
+    }
 
     device_hashmap_->Activate(input_keys.GetDataPtr(),
                               static_cast<addr_t*>(output_addrs.GetDataPtr()),
@@ -161,9 +178,17 @@ void Hashmap::Find(const Tensor& input_keys,
     }
 
     int64_t count = shape[0];
+    if (output_addrs.GetLength() != count ||
+        output_addrs.GetDtype() != Dtype::Int32 ||
+        output_addrs.GetDevice() != GetDevice()) {
+        output_addrs = Tensor({count}, Dtype::Int32, GetDevice());
+    }
 
-    output_masks = Tensor({count}, Dtype::Bool, GetDevice());
-    output_addrs = Tensor({count}, Dtype::Int32, GetDevice());
+    if (output_masks.GetLength() != count ||
+        output_masks.GetDtype() != Dtype::Bool ||
+        output_masks.GetDevice() != GetDevice()) {
+        output_masks = Tensor({count}, Dtype::Bool, GetDevice());
+    }
 
     device_hashmap_->Find(input_keys.GetDataPtr(),
                           static_cast<addr_t*>(output_addrs.GetDataPtr()),
