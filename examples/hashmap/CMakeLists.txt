@@ -21,8 +21,11 @@ function(link_everything target)
     )
 endfunction()
 
-add_executable(demo_stdgpu demo_stdgpu.cu)
-link_everything(demo_stdgpu)
+add_executable(DemoStdgpu DemoStdgpu.cu)
+link_everything(DemoStdgpu)
+
+add_executable(DemoSlabhash DemoSlabhash.cu)
+link_everything(DemoSlabhash)
 
 add_executable(TestHashmap TestHashmap.cu)
 link_everything(TestHashmap)

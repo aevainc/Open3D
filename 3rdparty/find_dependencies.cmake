@@ -1168,3 +1168,12 @@ import_3rdparty_library(3rdparty_stdgpu
 set(STDGPU_TARGET "3rdparty_stdgpu")
 add_dependencies(3rdparty_stdgpu ext_stdgpu)
 list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS "${STDGPU_TARGET}")
+
+# Slabhash
+include(${Open3D_3RDPARTY_DIR}/slabhash/slabhash.cmake)
+import_3rdparty_library(3rdparty_slabhash
+    INCLUDE_DIRS ${SLABHASH_INCLUDE_DIRS}
+)
+set(SLABHASH_TARGET "3rdparty_slabhash")
+add_dependencies(3rdparty_slabhash ext_slabhash)
+list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS "${SLABHASH_TARGET}")
