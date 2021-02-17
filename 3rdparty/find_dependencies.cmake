@@ -1177,3 +1177,14 @@ import_3rdparty_library(3rdparty_slabhash
 set(SLABHASH_TARGET "3rdparty_slabhash")
 add_dependencies(3rdparty_slabhash ext_slabhash)
 list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS "${SLABHASH_TARGET}")
+
+# CUDPP
+include(${Open3D_3RDPARTY_DIR}/cudpp/cudpp.cmake)
+import_3rdparty_library(3rdparty_cudpp
+    INCLUDE_DIRS ${CUDPP_INCLUDE_DIRS}
+    LIB_DIR      ${CUDPP_LIB_DIR}
+    LIBRARIES    ${CUDPP_LIBRARIES}
+)
+set(CUDPP_TARGET "3rdparty_cudpp")
+add_dependencies(3rdparty_cudpp ext_cudpp)
+list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS "${CUDPP_TARGET}")

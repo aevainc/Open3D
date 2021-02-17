@@ -21,11 +21,19 @@ function(link_everything target)
     )
 endfunction()
 
+add_executable(DemoSlabhash DemoSlabhash.cu)
+link_everything(DemoSlabhash)
+
 add_executable(DemoStdgpu DemoStdgpu.cu)
 link_everything(DemoStdgpu)
 
-add_executable(DemoSlabhash DemoSlabhash.cu)
-link_everything(DemoSlabhash)
+add_executable(DemoCudpp
+    DemoCudpp/DemoCudpp.cu
+    DemoCudpp/mt19937ar.cpp
+    DemoCudpp/random_numbers.cpp
+)
+link_everything(DemoCudpp)
+target_include_directories(DemoCudpp SYSTEM PRIVATE DemoCudpp)
 
 add_executable(TestHashmap TestHashmap.cu)
 link_everything(TestHashmap)

@@ -1,14 +1,14 @@
-# Exports: ${SLABHASH_INCLUDE_DIRS}
-# Exports: ${SLABHASH_LIB_DIR}
-# Exports: ${SLABHASH_LIBRARIES}
+# Exports: ${CUDPP_INCLUDE_DIRS}
+# Exports: ${CUDPP_LIB_DIR}
+# Exports: ${CUDPP_LIBRARIES}
 
 include(ExternalProject)
 
 ExternalProject_Add(
-    ext_slabhash
-    PREFIX slabhash
-    GIT_REPOSITORY https://github.com/yxlao/SlabHash.git
-    GIT_TAG cmake-refactor
+    ext_cudpp
+    PREFIX cudpp
+    GIT_REPOSITORY https://github.com/yxlao/cudpp.git
+    GIT_TAG cmake-fix
     GIT_SHALLOW ON  # Do not download the history.
     UPDATE_COMMAND ""
     CMAKE_ARGS
@@ -20,11 +20,9 @@ ExternalProject_Add(
         -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}
         -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}
         -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CUDA_COMPILER_LAUNCHER}
-        -DBUILD_BENCHMARKS=OFF
-        -DBUILD_TESTS=OFF
 )
 
-ExternalProject_Get_Property(ext_slabhash INSTALL_DIR)
-set(SLABHASH_INCLUDE_DIRS ${INSTALL_DIR}/include/) # "/" is critical.
-# set(SLABHASH_LIB_DIR "")   # Header-only
-# set(SLABHASH_LIBRARIES "") # Header-only
+ExternalProject_Get_Property(ext_cudpp INSTALL_DIR)
+set(CUDPP_INCLUDE_DIRS ${INSTALL_DIR}/include/) # "/" is critical.
+set(CUDPP_LIB_DIR ${INSTALL_DIR}/lib)
+set(CUDPP_LIBRARIES cudpp_hash cudpp) # The order is important.
