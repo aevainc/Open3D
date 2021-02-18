@@ -64,7 +64,9 @@ Hashmap::Hashmap(int64_t init_capacity,
     }
 
     device_hashmap_ = CreateDefaultDeviceHashmap(
-            std::max(init_capacity / kDefaultElemsPerBucket, int64_t(1)),
+            std::max(static_cast<int64_t>(init_capacity /
+                                          kDefaultElemsPerBucket),
+                     int64_t(1)),
             init_capacity,
             dtype_key.ByteSize() * element_shape_key_.NumElements(),
             dtype_value.ByteSize() * element_shape_value_.NumElements(),

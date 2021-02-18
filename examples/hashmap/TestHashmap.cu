@@ -34,6 +34,16 @@ __global__ void find_numbers(const int* d_keys,
     d_values[i] = map.find(d_keys[i])->second;
 }
 
+std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(int n,
+                                                               int cycle) {
+    std::vector<int> k(n), v(n);
+    for (int i = 0; i < n; ++i) {
+        v[i] = (i % cycle);
+        k[i] = v[i] * 100;
+    }
+    return std::make_pair(k, v);
+}
+
 int main(int argc, char** argv) {
     //
     // EXAMPLE DESCRIPTION
@@ -45,13 +55,16 @@ int main(int argc, char** argv) {
 
     stdgpu::index_t n =
             utility::GetProgramOptionAsInt(argc, argv, "--n", 10000);
+    int cycle = utility::GetProgramOptionAsInt(argc, argv, "--cycle", n / 2);
     int runs = utility::GetProgramOptionAsInt(argc, argv, "--runs", 1000);
 
+    auto kv = GenerateKVVector(n, cycle);
+
     // Ours
-    core::Tensor t_keys = core::Tensor::Arange(0, n, 1, core::Dtype::Int32,
-                                               core::Device("CUDA:0"));
-    core::Tensor t_values = core::Tensor::Arange(0, n, 1, core::Dtype::Int32,
-                                                 core::Device("CUDA:0"));
+    core::Tensor t_keys = core::Tensor(kv.first, {n}, core::Dtype::Int32,
+                                       core::Device("CUDA:0"));
+    core::Tensor t_values = core::Tensor(kv.second, {n}, core::Dtype::Int32,
+                                         core::Device("CUDA:0"));
 
     // Warm up
     core::Device device("CUDA:0");
@@ -88,7 +101,7 @@ int main(int argc, char** argv) {
         timer.Stop();
         find_time += timer.GetDuration();
 
-        if (hashmap.Size() != n) {
+        if (hashmap.Size() != cycle) {
             utility::LogError("ours: incorrect insertion");
         }
     }
@@ -98,11 +111,11 @@ int main(int argc, char** argv) {
 
     // stdgpu
     int* d_keys = createDeviceArray<int>(n);
-    thrust::sequence(stdgpu::device_begin(d_keys), stdgpu::device_end(d_keys),
-                     0);
+    copyHost2DeviceArray<int>(kv.first.data(), n, d_keys, MemoryCopy::NO_CHECK);
     int* d_values = createDeviceArray<int>(n);
-    thrust::sequence(stdgpu::device_begin(d_values),
-                     stdgpu::device_end(d_values), 0);
+    copyHost2DeviceArray<int>(kv.second.data(), n, d_values,
+                              MemoryCopy::NO_CHECK);
+
     insert_time = 0;
     find_time = 0;
     for (int i = 0; i < runs; ++i) {
@@ -127,7 +140,7 @@ int main(int argc, char** argv) {
         timer.Stop();
         find_time += timer.GetDuration();
 
-        if (map.size() != n) {
+        if (map.size() != cycle) {
             utility::LogError("stdgpu: incorrect insertion");
         }
 

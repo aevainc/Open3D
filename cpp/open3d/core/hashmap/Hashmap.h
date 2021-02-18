@@ -42,7 +42,7 @@ typedef DeviceHashmap<DefaultHash, DefaultKeyEq> DefaultDeviceHashmap;
 
 class Hashmap {
 public:
-    static constexpr int64_t kDefaultElemsPerBucket = 4;
+    static constexpr float kDefaultElemsPerBucket = 2;
 
     /// Constructor for primitive and custom types, supporting element shapes.
     /// Example 1:
