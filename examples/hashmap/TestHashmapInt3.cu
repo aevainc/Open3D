@@ -6,6 +6,7 @@
 #include <thrust/sequence.h>
 
 #include <iostream>
+#include <random>
 #include <stdgpu/unordered_map.cuh>  // stdgpu::unordered_map
 
 #include "open3d/core/hashmap/Hashmap.h"
@@ -28,6 +29,7 @@ STDGPU_HOST_DEVICE bool operator==(const int3& a, const int3& b) {
 }
 
 __global__ void insert_int3(const int* d_keys,
+                            const int* d_values,
                             const stdgpu::index_t n,
                             stdgpu::unordered_map<int3, int, hash_int3> map) {
     stdgpu::index_t i =
@@ -36,7 +38,37 @@ __global__ void insert_int3(const int* d_keys,
     if (i >= n) return;
     map.emplace(
             make_int3(d_keys[3 * i + 0], d_keys[3 * i + 1], d_keys[3 * i + 2]),
-            1);
+            d_values[i]);
+}
+
+__global__ void find_int3(const int* d_keys,
+                          int* d_values,
+                          const stdgpu::index_t n,
+                          stdgpu::unordered_map<int3, int, hash_int3> map) {
+    stdgpu::index_t i =
+            static_cast<stdgpu::index_t>(blockIdx.x * blockDim.x + threadIdx.x);
+
+    if (i >= n) return;
+    d_values[i] = map.find(make_int3(d_keys[3 * i + 0], d_keys[3 * i + 1],
+                                     d_keys[3 * i + 2]))
+                          ->second;
+}
+
+std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(int n) {
+    std::vector<int> k(n * 3), v(n);
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dis(-100, 100);
+
+    for (int i = 0; i < n; ++i) {
+        k[i * 3 + 1] = dis(gen);
+        k[i * 3 + 2] = dis(gen);
+        k[i * 3 + 3] = dis(gen);
+
+        v[i] = i;
+    }
+    return std::make_pair(k, v);
 }
 
 int main(int argc, char** argv) {
@@ -48,30 +80,68 @@ int main(int argc, char** argv) {
     //
     using namespace open3d;
 
-    core::Device device("CUDA:0");
-    std::string filename =
-            utility::GetProgramOptionAsString(argc, argv, "--npy", "");
-    double voxel_size =
-            utility::GetProgramOptionAsDouble(argc, argv, "--voxel_size", 0.05);
-    core::Tensor pcd = core::Tensor::Load(filename).To(device);
+    stdgpu::index_t n =
+            utility::GetProgramOptionAsInt(argc, argv, "--n", 10000);
+    int runs = utility::GetProgramOptionAsInt(argc, argv, "--runs", 1000);
 
-    core::Tensor pcd_int3 = (pcd / voxel_size).Floor().To(core::Dtype::Int32);
+    auto kv = GenerateKVVector(n);
+
+    utility::LogInfo("n = {}", n);
+
+    // Ours
+    core::Tensor t_keys = core::Tensor(kv.first, {n, 3}, core::Dtype::Int32,
+                                       core::Device("CUDA:0"));
+    core::Tensor t_values = core::Tensor(kv.second, {n}, core::Dtype::Int32,
+                                         core::Device("CUDA:0"));
+
+    // Warm up
+    core::Device device("CUDA:0");
+    {
+        core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
+                              core::SizeVector{3, 1}, core::SizeVector{1},
+                              device);
+        core::Tensor t_addrs({n}, core::Dtype::Int32, device);
+        core::Tensor t_masks({n}, core::Dtype::Bool, device);
+
+        hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
+        hashmap.Find(t_keys, t_addrs, t_masks);
+        cudaDeviceSynchronize();
+    }
 
     utility::Timer timer;
-    stdgpu::index_t n = pcd_int3.GetLength();
-    for (int i = 0; i < 1000; ++i) {
-        utility::LogInfo("i = {}", i);
+
+    double insert_time = 0;
+    double find_time = 0;
+    for (int i = 0; i < runs; ++i) {
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
-                              core::SizeVector{3}, core::SizeVector{1}, device);
+                              core::SizeVector{3, 1}, core::SizeVector{1},
+                              device);
         core::Tensor t_addrs({n}, core::Dtype::Int32, device);
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
 
         timer.Start();
-        hashmap.Activate(pcd_int3, t_addrs, t_masks);
+        hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
         cudaDeviceSynchronize();
         timer.Stop();
-        utility::LogInfo("slabhash takes {}", timer.GetDuration());
+        insert_time += timer.GetDuration();
 
+        timer.Start();
+        hashmap.Find(t_keys, t_addrs, t_masks);
+        cudaDeviceSynchronize();
+        timer.Stop();
+        find_time += timer.GetDuration();
+    }
+
+    utility::LogInfo("slabhash insertion rate: {}",
+                     float(n) / (insert_time / runs));
+    utility::LogInfo("slabhash query rate: {}", float(n) / (find_time / runs));
+
+    // stdgpu
+    insert_time = 0;
+    find_time = 0;
+    int* d_keys = static_cast<int*>(t_keys.GetDataPtr());
+    int* d_values = static_cast<int*>(t_values.GetDataPtr());
+    for (int i = 0; i < runs; ++i) {
         stdgpu::unordered_map<int3, int, hash_int3> map =
                 stdgpu::unordered_map<int3, int, hash_int3>::createDeviceObject(
                         n);
@@ -80,91 +150,23 @@ int main(int argc, char** argv) {
 
         timer.Start();
         insert_int3<<<static_cast<unsigned int>(blocks),
-                      static_cast<unsigned int>(threads)>>>(
-                static_cast<const int*>(pcd_int3.GetDataPtr()), n, map);
+                      static_cast<unsigned int>(threads)>>>(d_keys, d_values, n,
+                                                            map);
         cudaDeviceSynchronize();
         timer.Stop();
-        utility::LogInfo("stdgpu takes {}", timer.GetDuration());
+        insert_time += timer.GetDuration();
 
-        if (map.size() != hashmap.Size()) {
-            utility::LogError("Failed at iteration {}, {} vs {}", i, map.size(),
-                              hashmap.Size());
-        }
+        timer.Start();
+        find_int3<<<static_cast<unsigned int>(blocks),
+                    static_cast<unsigned int>(threads)>>>(d_keys, d_values, n,
+                                                          map);
+        cudaDeviceSynchronize();
+        timer.Stop();
+        find_time += timer.GetDuration();
 
         stdgpu::unordered_map<int3, int, hash_int3>::destroyDeviceObject(map);
     }
-
-    // // Warm up
-    // {
-
-    //     hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
-    //     hashmap.Find(t_keys, t_addrs, t_masks);
-    //     cudaDeviceSynchronize();
-    // }
-
-    // utility::Timer timer;
-
-    // double insert_time = 0;
-    // double find_time = 0;
-    // for (int i = 0; i < runs; ++i) {
-    //     core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
-    //                           core::SizeVector{1}, core::SizeVector{1},
-    //                           device);
-    //     core::Tensor t_addrs({n}, core::Dtype::Int32, device);
-    //     core::Tensor t_masks({n}, core::Dtype::Bool, device);
-
-    //     timer.Start();
-    //     hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
-    //     cudaDeviceSynchronize();
-    //     timer.Stop();
-    //     insert_time += timer.GetDuration();
-
-    //     timer.Start();
-    //     hashmap.Find(t_keys, t_addrs, t_masks);
-    //     cudaDeviceSynchronize();
-    //     timer.Stop();
-    //     find_time += timer.GetDuration();
-
-    //     if (hashmap.Size() != cycle) {
-    //         utility::LogError("ours: incorrect insertion");
-    //     }
-    // }
-    // utility::LogInfo("ours takes {} on average for insertion",
-    //                  insert_time / runs);
-    // utility::LogInfo("ours takes {} on average for query", find_time / runs);
-
-    // // stdgpu
-    // int* d_keys = createDeviceArray<int>(n);
-    // copyHost2DeviceArray<int>(kv.first.data(), n, d_keys,
-    // MemoryCopy::NO_CHECK); int* d_values = createDeviceArray<int>(n);
-    // copyHost2DeviceArray<int>(kv.second.data(), n, d_values,
-    //                           MemoryCopy::NO_CHECK);
-
-    // insert_time = 0;
-    // find_time = 0;
-    // for (int i = 0; i < runs; ++i) {
-    //     stdgpu::unordered_map<int, int> map =
-    //             stdgpu::unordered_map<int, int>::createDeviceObject(n);
-    //     timer.Stop();
-    //     insert_time += timer.GetDuration();
-
-    //     timer.Start();
-    //     find_numbers<<<static_cast<unsigned int>(blocks),
-    //                    static_cast<unsigned int>(threads)>>>(d_keys,
-    //                    d_values,
-    //                                                          n, map);
-    //     cudaDeviceSynchronize();
-    //     timer.Stop();
-    //     find_time += timer.GetDuration();
-
-    //     if (map.size() != cycle) {
-    //         utility::LogError("stdgpu: incorrect insertion");
-    //     }
-
-    //     stdgpu::unordered_map<int, int>::destroyDeviceObject(map);
-    // }
-    // utility::LogInfo("stdgpu takes {} on average for insertion",
-    //                  insert_time / runs);
-    // utility::LogInfo("stdgpu takes {} on average for query", find_time /
-    // runs);
+    utility::LogInfo("stdgpu insertion rate: {}",
+                     float(n) / (insert_time / runs));
+    utility::LogInfo("stdgpu query rate: {}", float(n) / (find_time / runs));
 }

@@ -38,5 +38,8 @@ target_include_directories(DemoCudpp SYSTEM PRIVATE DemoCudpp)
 add_executable(TestHashmap TestHashmap.cu)
 link_everything(TestHashmap)
 
+add_executable(TestHashmapVoxelDownsample TestHashmapVoxelDownsample.cu)
+link_everything(TestHashmapVoxelDownsample)
+
 add_executable(TestHashmapInt3 TestHashmapInt3.cu)
 link_everything(TestHashmapInt3)

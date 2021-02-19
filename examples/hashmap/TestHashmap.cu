@@ -31,7 +31,7 @@ __global__ void find_numbers(const int* d_keys,
             static_cast<stdgpu::index_t>(blockIdx.x * blockDim.x + threadIdx.x);
 
     if (i >= n) return;
-    d_values[i] = map.find(d_keys[i])->second;
+    map.find(d_keys[i])->second;
 }
 
 std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(int n,
@@ -59,6 +59,8 @@ int main(int argc, char** argv) {
     int runs = utility::GetProgramOptionAsInt(argc, argv, "--runs", 1000);
 
     auto kv = GenerateKVVector(n, cycle);
+
+    utility::LogInfo("n = {}, cycle = {}", n, cycle);
 
     // Ours
     core::Tensor t_keys = core::Tensor(kv.first, {n}, core::Dtype::Int32,
@@ -105,19 +107,16 @@ int main(int argc, char** argv) {
             utility::LogError("ours: incorrect insertion");
         }
     }
-    utility::LogInfo("ours takes {} on average for insertion",
-                     insert_time / runs);
-    utility::LogInfo("ours takes {} on average for query", find_time / runs);
+
+    utility::LogInfo("slabhash insertion rate: {}",
+                     float(n) / (insert_time / runs));
+    utility::LogInfo("slabhash query rate: {}", float(n) / (find_time / runs));
 
     // stdgpu
-    int* d_keys = createDeviceArray<int>(n);
-    copyHost2DeviceArray<int>(kv.first.data(), n, d_keys, MemoryCopy::NO_CHECK);
-    int* d_values = createDeviceArray<int>(n);
-    copyHost2DeviceArray<int>(kv.second.data(), n, d_values,
-                              MemoryCopy::NO_CHECK);
-
     insert_time = 0;
     find_time = 0;
+    int* d_keys = static_cast<int*>(t_keys.GetDataPtr());
+    int* d_values = static_cast<int*>(t_values.GetDataPtr());
     for (int i = 0; i < runs; ++i) {
         stdgpu::unordered_map<int, int> map =
                 stdgpu::unordered_map<int, int>::createDeviceObject(n);
@@ -146,9 +145,7 @@ int main(int argc, char** argv) {
 
         stdgpu::unordered_map<int, int>::destroyDeviceObject(map);
     }
-    utility::LogInfo("stdgpu takes {} on average for insertion",
-                     insert_time / runs);
-    utility::LogInfo("stdgpu takes {} on average for query", find_time / runs);
-    destroyDeviceArray<int>(d_keys);
-    destroyDeviceArray<int>(d_values);
+    utility::LogInfo("stdgpu insertion rate: {}",
+                     float(n) / (insert_time / runs));
+    utility::LogInfo("stdgpu query rate: {}", float(n) / (find_time / runs));
 }
