@@ -792,9 +792,15 @@ void pybind_gui_classes(py::module &m) {
                           "The color of the text (gui.Color)");
 
     // ---- Label3D ----
-    py::class_<Label3D> label3d(m, "Label3D", "Displays text in a 3D scene");
-    label3d.def_property("text", &Label3D::GetText, &Label3D::SetText,
-                         "The text to display with this label.")
+    py::class_<Label3D, UnownedPointer<Label3D>> label3d(
+            m, "Label3D", "Displays text in a 3D scene");
+    label3d.def(py::init([](const char *text = "",
+                            const Eigen::Vector3f &pos = {0.f, 0.f, 0.f}) {
+                    return new Label3D(pos, text);
+                }),
+                "Create a 3D Label with given text and position")
+            .def_property("text", &Label3D::GetText, &Label3D::SetText,
+                          "The text to display with this label.")
             .def_property("position", &Label3D::GetPosition,
                           &Label3D::SetPosition,
                           "The position of the text in 3D coordinates")
