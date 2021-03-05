@@ -70,7 +70,7 @@ class DefaultKeyEq {
     // be undefined.
 public:
     DefaultKeyEq() {}
-    DefaultKeyEq(int64_t key_size) : key_size_in_int_(key_size / sizeof(int)) {
+    DefaultKeyEq(int key_size) : key_size_in_int_(key_size / sizeof(int)) {
         if (key_size % 4 != 0 || key_size_in_int_ == 0) {
             utility::LogError(
                     "[DefaultKeyEq] Only support keys whose byte size is "
@@ -87,13 +87,14 @@ public:
         auto rhs_key_ptr = static_cast<const int*>(rhs);
 
         bool is_eq = true;
-        for (int64_t i = 0; i < key_size_in_int_; ++i) {
+#pragma unroll
+        for (int i = 0; i < key_size_in_int_; ++i) {
             is_eq = is_eq && (lhs_key_ptr[i] == rhs_key_ptr[i]);
         }
         return is_eq;
     }
 
-    int64_t key_size_in_int_;
+    int key_size_in_int_;
 };
 
 /// Base class: shared interface
