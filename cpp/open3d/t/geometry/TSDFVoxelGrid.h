@@ -84,7 +84,7 @@ public:
                    float depth_scale = 1000.0f,
                    float depth_max = 3.0f);
 
-    /// Use volumetric ray casting to obtain vertex and color maps, mainly for
+    /// Use volumetric ray casting to obtain depth and color maps, mainly for
     /// dense visual odometry.
     /// intrinsics and extrinsics defines the camera properties for image
     /// generation. width and height defines the image size.

@@ -123,11 +123,13 @@ int main(int argc, char** argv) {
                                           voxel_size, sdf_trunc, 16,
                                           block_count, device);
 
-    // size_t n = color_filenames.size();
+    size_t n = color_filenames.size();
+    size_t iterations = static_cast<size_t>(
+            utility::GetProgramOptionAsInt(argc, argv, "--iterations", n));
 
     Tensor T_curr_to_model =
             Tensor::Eye(4, core::Dtype::Float32, core::Device("CPU:0"));
-    for (size_t i = 0; i < 50; ++i) {
+    for (size_t i = 0; i < iterations; ++i) {
         // Load image
         std::shared_ptr<geometry::Image> depth_legacy =
                 io::CreateImageFromFile(depth_filenames[i]);
@@ -145,37 +147,53 @@ int main(int argc, char** argv) {
         timer.Start();
         if (i > 0) {
             utility::LogInfo("Raycasting");
-            core::Tensor vertex_map_model, color_map_model;
-            std::tie(vertex_map_model, color_map_model) = voxel_grid.RayCast(
+            core::Tensor depth_map_model, color_map_model;
+            std::tie(depth_map_model, color_map_model) = voxel_grid.RayCast(
                     intrinsic_t, T_curr_to_model.Inverse(), depth.GetCols(),
                     depth.GetRows(), 50, 0.1, 3.0, std::min(i * 1.0f, 3.0f));
-
-            // Debug
-            // t::geometry::Image vertex_im(vertex_map_model);
-            // visualization::DrawGeometries(
-            //         {std::make_shared<open3d::geometry::Image>(
-            //                 vertex_im.ToLegacyImage())});
-
-            utility::LogInfo("Vertex map");
-            Tensor vertex_map_curr = t::pipelines::odometry::CreateVertexMap(
-                    depthf, intrinsic_t, depth_scale, max_depth);
-
-            utility::LogInfo("Normal map");
-            Tensor normal_map_curr =
-                    t::pipelines::odometry::CreateNormalMap(vertex_map_curr);
 
             // Odometry
             // src: current frame
             // dst: model (current)
-            for (int k = 0; k < 20; ++k) {
-                utility::LogInfo("k = {}", k);
-                core::Tensor delta_curr_to_model =
-                        t::pipelines::odometry::ComputePosePointToPlane(
-                                vertex_map_curr, vertex_map_model,
-                                normal_map_curr, intrinsic_t, T_curr_to_model,
-                                0.07);
-                T_curr_to_model = delta_curr_to_model.Matmul(T_curr_to_model);
-            }
+            t::geometry::RGBDImage src, dst;
+            src.depth_ = depthf;
+            dst.depth_ = t::geometry::Image(depth_map_model);
+
+            // Before odometry
+            core::Tensor trans = core::Tensor::Eye(4, core::Dtype::Float32,
+                                                   core::Device("CPU:0"));
+            auto source_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                    t::geometry::PointCloud::CreateFromDepthImage(
+                            src.depth_, intrinsic_t, trans, depth_scale)
+                            .ToLegacyPointCloud());
+            source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
+            auto target_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                    t::geometry::PointCloud::CreateFromDepthImage(
+                            dst.depth_, intrinsic_t, trans, depth_scale)
+                            .ToLegacyPointCloud());
+            target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
+            // visualization::DrawGeometries({source_pcd, target_pcd});
+
+            Tensor delta_curr_to_model =
+                    t::pipelines::odometry::RGBDOdometryMultiScale(
+                            src, dst, intrinsic_t, trans, depth_scale, 0.2,
+                            {20, 5, 3});
+            T_curr_to_model = T_curr_to_model.Matmul(delta_curr_to_model);
+
+            source_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                    t::geometry::PointCloud::CreateFromDepthImage(
+                            src.depth_, intrinsic_t,
+                            delta_curr_to_model.Inverse(), depth_scale)
+                            .ToLegacyPointCloud());
+            source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
+            target_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                    t::geometry::PointCloud::CreateFromDepthImage(
+                            dst.depth_, intrinsic_t,
+                            core::Tensor::Eye(4, core::Dtype::Float32, device),
+                            depth_scale)
+                            .ToLegacyPointCloud());
+            target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
+            // visualization::DrawGeometries({source_pcd, target_pcd});
         }
 
         voxel_grid.Integrate(depth, color, intrinsic_t,
@@ -186,18 +204,21 @@ int main(int argc, char** argv) {
     }
 
     if (utility::ProgramOptionExists(argc, argv, "--mesh")) {
+        std::string filename = utility::GetProgramOptionAsString(
+                argc, argv, "--mesh", "mesh_" + device.ToString() + ".ply");
         auto mesh = voxel_grid.ExtractSurfaceMesh();
         auto mesh_legacy = std::make_shared<geometry::TriangleMesh>(
                 mesh.ToLegacyTriangleMesh());
-        open3d::io::WriteTriangleMesh("mesh_" + device.ToString() + ".ply",
-                                      *mesh_legacy);
+        open3d::io::WriteTriangleMesh(filename, *mesh_legacy);
     }
 
     if (utility::ProgramOptionExists(argc, argv, "--pointcloud")) {
+        std::string filename = utility::GetProgramOptionAsString(
+                argc, argv, "--pointcloud",
+                "pcd_" + device.ToString() + ".ply");
         auto pcd = voxel_grid.ExtractSurfacePoints();
         auto pcd_legacy = std::make_shared<open3d::geometry::PointCloud>(
                 pcd.ToLegacyPointCloud());
-        open3d::io::WritePointCloud("pcd_" + device.ToString() + ".ply",
-                                    *pcd_legacy);
+        open3d::io::WritePointCloud(filename, *pcd_legacy);
     }
 }

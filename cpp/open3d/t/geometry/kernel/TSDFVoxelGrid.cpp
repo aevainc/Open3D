@@ -110,7 +110,7 @@ void Integrate(const core::Tensor& depth,
 
 void RayCast(std::shared_ptr<core::DefaultDeviceHashmap>& hashmap,
              core::Tensor& block_values,
-             core::Tensor& vertex_map,
+             core::Tensor& depth_map,
              core::Tensor& color_map,
              const core::Tensor& intrinsics,
              const core::Tensor& pose,
@@ -122,7 +122,7 @@ void RayCast(std::shared_ptr<core::DefaultDeviceHashmap>& hashmap,
              float depth_max,
              float weight_threshold) {
     core::Device device = hashmap->GetDevice();
-    if (vertex_map.GetDevice() != device) {
+    if (depth_map.GetDevice() != device) {
         utility::LogError("Vertex map\'s device mismatches with hashmap");
     }
     if (color_map.GetDevice() != device) {
@@ -133,12 +133,12 @@ void RayCast(std::shared_ptr<core::DefaultDeviceHashmap>& hashmap,
 
     core::Device::DeviceType device_type = device.GetType();
     if (device_type == core::Device::DeviceType::CPU) {
-        RayCastCPU(hashmap, block_values, vertex_map, color_map, intrinsicsf32,
+        RayCastCPU(hashmap, block_values, depth_map, color_map, intrinsicsf32,
                    posef32, block_resolution, voxel_size, sdf_trunc, max_steps,
                    depth_min, depth_max, weight_threshold);
     } else if (device_type == core::Device::DeviceType::CUDA) {
 #ifdef BUILD_CUDA_MODULE
-        RayCastCUDA(hashmap, block_values, vertex_map, color_map, intrinsicsf32,
+        RayCastCUDA(hashmap, block_values, depth_map, color_map, intrinsicsf32,
                     posef32, block_resolution, voxel_size, sdf_trunc, max_steps,
                     depth_min, depth_max, weight_threshold);
 #else

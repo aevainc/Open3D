@@ -128,7 +128,7 @@ void TouchCPU(const core::Tensor& points,
 
 void RayCastCPU(std::shared_ptr<core::DefaultDeviceHashmap>& hashmap,
                 core::Tensor& block_values,
-                core::Tensor& vertex_map,
+                core::Tensor& depth_map,
                 core::Tensor& color_map,
                 const core::Tensor& intrinsics,
                 const core::Tensor& pose,
@@ -144,13 +144,13 @@ void RayCastCPU(std::shared_ptr<core::DefaultDeviceHashmap>& hashmap,
     auto hashmap_ctx = cpu_hashmap->GetContext();
 
     NDArrayIndexer voxel_block_buffer_indexer(block_values, 4);
-    NDArrayIndexer vertex_map_indexer(vertex_map, 2);
+    NDArrayIndexer depth_map_indexer(depth_map, 2);
     NDArrayIndexer color_map_indexer(color_map, 2);
 
     TransformIndexer transform_indexer(intrinsics, pose, 1);
 
-    int64_t rows = vertex_map_indexer.GetShape(0);
-    int64_t cols = vertex_map_indexer.GetShape(1);
+    int64_t rows = depth_map_indexer.GetShape(0);
+    int64_t cols = depth_map_indexer.GetShape(1);
 
     float block_size = voxel_size * block_resolution;
     DISPATCH_BYTESIZE_TO_VOXEL(
@@ -235,17 +235,15 @@ void RayCastCPU(std::shared_ptr<core::DefaultDeviceHashmap>& hashmap,
                                             (t * tsdf_prev - t_prev * tsdf) /
                                             (tsdf_prev - tsdf);
 
-                                    x_g = x_o + t_intersect * x_d;
-                                    y_g = y_o + t_intersect * y_d;
-                                    z_g = z_o + t_intersect * z_d;
+                                    // x_g = x_o + t_intersect * x_d;
+                                    // y_g = y_o + t_intersect * y_d;
+                                    // z_g = z_o + t_intersect * z_d;
 
-                                    float* vertex =
-                                            vertex_map_indexer
+                                    float* depth =
+                                            depth_map_indexer
                                                     .GetDataPtrFromCoord<float>(
                                                             x, y);
-                                    vertex[0] = x_g;
-                                    vertex[1] = y_g;
-                                    vertex[2] = z_g;
+                                    *depth = t_intersect * 1000.0;
 
                                     float* color =
                                             color_map_indexer
