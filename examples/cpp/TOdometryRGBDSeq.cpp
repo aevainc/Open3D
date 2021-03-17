@@ -97,13 +97,13 @@ int main(int argc, char** argv) {
 
     auto focal_length = intrinsic.GetFocalLength();
     auto principal_point = intrinsic.GetPrincipalPoint();
-    Tensor intrinsic_t = Tensor(
-            std::vector<float>({static_cast<float>(focal_length.first), 0,
-                                static_cast<float>(principal_point.first), 0,
-                                static_cast<float>(focal_length.second),
-                                static_cast<float>(principal_point.second), 0,
-                                0, 1}),
-            {3, 3}, Dtype::Float32, device);
+    Tensor intrinsic_t =
+            Tensor::Init<float>({{static_cast<float>(focal_length.first), 0,
+                                  static_cast<float>(principal_point.first)},
+                                 {0, static_cast<float>(focal_length.second),
+                                  static_cast<float>(principal_point.second)},
+                                 {0, 0, 1}},
+                                device);
 
     int block_count =
             utility::GetProgramOptionAsInt(argc, argv, "--block_count", 1000);
@@ -112,8 +112,8 @@ int main(int argc, char** argv) {
             argc, argv, "--voxel_size", 3.f / 512.f));
     float depth_scale = static_cast<float>(utility::GetProgramOptionAsDouble(
             argc, argv, "--depth_scale", 1000.f));
-    float max_depth = static_cast<float>(
-            utility::GetProgramOptionAsDouble(argc, argv, "--max_depth", 3.f));
+    float depth_diff = static_cast<float>(utility::GetProgramOptionAsDouble(
+            argc, argv, "--depth_diff", 0.07));
     float sdf_trunc = static_cast<float>(utility::GetProgramOptionAsDouble(
             argc, argv, "--sdf_trunc", 0.04f));
 
@@ -123,103 +123,61 @@ int main(int argc, char** argv) {
                                           voxel_size, sdf_trunc, 16,
                                           block_count, device);
 
-    size_t keyframes = 10;
     size_t n = color_filenames.size();
     size_t iterations = static_cast<size_t>(
             utility::GetProgramOptionAsInt(argc, argv, "--iterations", n));
 
     Tensor T_curr_to_model =
-            Tensor::Eye(4, core::Dtype::Float64, core::Device("CPU:0"));
-    for (size_t i = 0; i < iterations; ++i) {
+            Tensor::Eye(4, core::Dtype::Float32, core::Device("CPU:0"));
+
+    for (size_t i = 0; i < iterations - 1; ++i) {
+        if (i < 83) continue;
+
+        utility::LogInfo("i = {}", i);
+
         // Load image
         t::geometry::Image src_depth =
                 *t::io::CreateImageFromFile(depth_filenames[i]);
-        t::geometry::Image src_color =
-                *t::io::CreateImageFromFile(color_filenames[i]);
 
-        if (i > 0) {
-            t::geometry::RGBDImage src, dst;
-            src.depth_ =
-                    src_depth.To(device).To(core::Dtype::Float32, false, 1.0);
+        t::geometry::Image dst_depth =
+                *t::io::CreateImageFromFile(depth_filenames[i + 1]);
 
-            if (i % keyframes == 0) {
-                utility::LogInfo("Frame-to-model for the key frame {}", i);
+        t::geometry::RGBDImage src, dst;
+        src.depth_ = src_depth.To(device).To(core::Dtype::Float32, false, 1.0);
+        dst.depth_ = dst_depth.To(device).To(core::Dtype::Float32, false, 1.0);
 
-                core::Tensor model_depth, model_color;
-                std::tie(model_depth, model_color) = voxel_grid.RayCast(
-                        intrinsic_t, T_curr_to_model.Inverse(),
-                        src_depth.GetCols(), src_depth.GetRows(), 50, 0.1, 3.0,
-                        std::min(i * 1.0f, 3.0f));
-                dst.depth_ = t::geometry::Image(model_depth);
-            } else {
-                utility::LogInfo("Frame-to-frame for the standard frame {}", i);
+        core::Tensor trans = core::Tensor::Eye(4, core::Dtype::Float64, device);
 
-                t::geometry::Image dst_depth =
-                        *t::io::CreateImageFromFile(depth_filenames[i - 1]);
-                dst.depth_ = dst_depth.To(device).To(core::Dtype::Float32,
-                                                     false, 1.0);
-            }
+        // Visualize before odometry
+        auto source_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                t::geometry::PointCloud::CreateFromDepthImage(
+                        src.depth_, intrinsic_t, trans, depth_scale)
+                        .ToLegacyPointCloud());
+        source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
+        auto target_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                t::geometry::PointCloud::CreateFromDepthImage(
+                        dst.depth_, intrinsic_t, trans, depth_scale)
+                        .ToLegacyPointCloud());
+        target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
+        visualization::DrawGeometries({source_pcd, target_pcd});
 
-            // Debug: before odometry
-            core::Tensor trans = core::Tensor::Eye(4, core::Dtype::Float64,
-                                                   core::Device("CPU:0"));
-            auto source_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                    t::geometry::PointCloud::CreateFromDepthImage(
-                            src.depth_, intrinsic_t, trans, depth_scale)
-                            .ToLegacyPointCloud());
-            source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
-            auto target_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                    t::geometry::PointCloud::CreateFromDepthImage(
-                            dst.depth_, intrinsic_t, trans, depth_scale)
-                            .ToLegacyPointCloud());
-            target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
-            // visualization::DrawGeometries({source_pcd, target_pcd});
+        trans = t::pipelines::odometry::RGBDOdometryMultiScale(
+                src, dst, intrinsic_t, trans, depth_scale, depth_diff,
+                {10, 5, 3});
 
-            // Odometry
-            Tensor delta_curr_to_model =
-                    t::pipelines::odometry::RGBDOdometryMultiScale(
-                            src, dst, intrinsic_t, trans, depth_scale, 0.07,
-                            {10, 5, 3});
-            T_curr_to_model = T_curr_to_model.Matmul(delta_curr_to_model);
-
-            // Debug: after odometry
-            source_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                    t::geometry::PointCloud::CreateFromDepthImage(
-                            src.depth_, intrinsic_t,
-                            delta_curr_to_model.Inverse(), depth_scale)
-                            .ToLegacyPointCloud());
-            source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
-            target_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                    t::geometry::PointCloud::CreateFromDepthImage(
-                            dst.depth_, intrinsic_t,
-                            core::Tensor::Eye(4, core::Dtype::Float32, device),
-                            depth_scale)
-                            .ToLegacyPointCloud());
-            target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
-            // visualization::DrawGeometries({source_pcd, target_pcd});
-        }
-
-        voxel_grid.Integrate(src_depth.To(device), src_color.To(device),
-                             intrinsic_t, T_curr_to_model.Inverse(),
-                             depth_scale, max_depth);
-    }
-
-    if (utility::ProgramOptionExists(argc, argv, "--mesh")) {
-        std::string filename = utility::GetProgramOptionAsString(
-                argc, argv, "--mesh", "mesh_" + device.ToString() + ".ply");
-        auto mesh = voxel_grid.ExtractSurfaceMesh();
-        auto mesh_legacy = std::make_shared<geometry::TriangleMesh>(
-                mesh.ToLegacyTriangleMesh());
-        open3d::io::WriteTriangleMesh(filename, *mesh_legacy);
-    }
-
-    if (utility::ProgramOptionExists(argc, argv, "--pointcloud")) {
-        std::string filename = utility::GetProgramOptionAsString(
-                argc, argv, "--pointcloud",
-                "pcd_" + device.ToString() + ".ply");
-        auto pcd = voxel_grid.ExtractSurfacePoints();
-        auto pcd_legacy = std::make_shared<open3d::geometry::PointCloud>(
-                pcd.ToLegacyPointCloud());
-        open3d::io::WritePointCloud(filename, *pcd_legacy);
+        // Visualize after odometry
+        source_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                t::geometry::PointCloud::CreateFromDepthImage(
+                        src.depth_, intrinsic_t, trans.Inverse(), depth_scale)
+                        .ToLegacyPointCloud());
+        source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
+        target_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                t::geometry::PointCloud::CreateFromDepthImage(
+                        dst.depth_, intrinsic_t,
+                        core::Tensor::Eye(4, core::Dtype::Float32, device),
+                        depth_scale)
+                        .ToLegacyPointCloud());
+        target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
+        visualization::DrawGeometries({source_pcd, target_pcd});
     }
 }
