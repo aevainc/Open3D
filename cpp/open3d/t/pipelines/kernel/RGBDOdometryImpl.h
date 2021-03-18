@@ -35,6 +35,84 @@ namespace kernel {
 namespace odometry {
 
 #if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
+void PyrDownDepthCUDA
+#else
+void PyrDownDepthCPU
+#endif
+        (const core::Tensor& depth,
+         core::Tensor& depth_down,
+         float depth_scale,
+         float depth_diff,
+         float depth_max) {
+
+    t::geometry::kernel::NDArrayIndexer depth_indexer(depth, 2);
+    int rows = depth_indexer.GetShape(0);
+    int cols = depth_indexer.GetShape(1);
+
+    int rows_down = rows / 2;
+    int cols_down = cols / 2;
+    depth_down = core::Tensor::Zeros({rows_down, cols_down},
+                                     core::Dtype::Float32, depth.GetDevice());
+
+    t::geometry::kernel::NDArrayIndexer depth_down_indexer(depth_down, 2);
+
+    int n = rows_down * cols_down;
+
+    const int D = 5;
+    const float weights[3] = {0.375f, 0.25f, 0.0625f};
+
+    // Reference:
+    // https://github.com/mp3guy/ICPCUDA/blob/master/Cuda/pyrdown.cu#L41
+#if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
+    core::kernel::CUDALauncher::LaunchGeneralKernel(
+            n, [=] OPEN3D_DEVICE(int64_t workload_idx) {
+#else
+    core::kernel::CPULauncher::LaunchGeneralKernel(
+            n, [&](int64_t workload_idx) {
+#endif
+                int y = workload_idx / cols_down;
+                int x = workload_idx % cols_down;
+
+                float center = *depth_indexer.GetDataPtrFromCoord<float>(
+                                       2 * x, 2 * y) /
+                               depth_scale;
+
+#if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
+#define __MAX max
+#define __MIN min
+#else
+#define __MAX std::max<int>
+#define __MIN std::min<int>
+#endif
+                int x_mi = __MAX(0, 2 * x - D / 2) - 2 * x;
+                int y_mi = __MAX(0, 2 * y - D / 2) - 2 * y;
+
+                int x_ma = __MIN(cols, 2 * x - D / 2 + D) - 2 * x;
+                int y_ma = __MIN(rows, 2 * y - D / 2 + D) - 2 * y;
+#undef __MIN
+#undef __MAX
+
+                float sum = 0;
+                float wall = 0;
+                for (int yi = y_mi; yi < y_ma; ++yi) {
+                    for (int xi = x_mi; xi < x_ma; ++xi) {
+                        float val = *depth_indexer.GetDataPtrFromCoord<float>(
+                                            2 * x + xi, 2 * y + yi) /
+                                    depth_scale;
+
+                        if (abs(val - center) < depth_diff) {
+                            sum += val * weights[abs(xi)] * weights[abs(yi)];
+                            wall += weights[abs(xi)] * weights[abs(yi)];
+                        }
+                    }
+                }
+
+                *depth_down_indexer.GetDataPtrFromCoord<float>(x, y) =
+                        depth_scale * (sum / wall);
+            });
+}
+
+#if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
 void CreateVertexMapCUDA
 #else
 void CreateVertexMapCPU
@@ -44,7 +122,6 @@ void CreateVertexMapCPU
          core::Tensor& vertex_map,
          float depth_scale,
          float depth_max) {
-
     t::geometry::kernel::NDArrayIndexer depth_indexer(depth_map, 2);
     t::geometry::kernel::TransformIndexer ti(intrinsics);
 
@@ -71,12 +148,24 @@ void CreateVertexMapCPU
                           depth_scale;
 
                 float* vertex = vertex_indexer.GetDataPtrFromCoord<float>(x, y);
-                if (d > 0 && d < depth_max) {
+                if (d > 0.1 && d < depth_max) {
                     ti.Unproject(static_cast<float>(x), static_cast<float>(y),
                                  d, vertex + 0, vertex + 1, vertex + 2);
                 } else {
                     vertex[0] = INFINITY;
                 }
+
+                // #if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
+                // #define __ISINF isinf
+                // #else
+                // #define __ISINF std::isinf
+                // #endif
+                //                 if (!__ISINF(vertex[0]) && vertex[2] < 0.8) {
+                //                     printf("%ld %ld: %f-> %f %f %f\n", x, y,
+                //                     d, vertex[0],
+                //                            vertex[1], vertex[2]);
+                //                 }
+                // #undef __ISINF
             });
 }
 
@@ -86,7 +175,6 @@ void CreateNormalMapCUDA
 void CreateNormalMapCPU
 #endif
         (const core::Tensor& vertex_map, core::Tensor& normal_map) {
-
     t::geometry::kernel::NDArrayIndexer vertex_indexer(vertex_map, 2);
 
     // Output
@@ -160,7 +248,6 @@ void ComputePosePointToPlaneCPU
          core::Tensor& delta,
          core::Tensor& residual,
          float depth_diff) {
-
     t::geometry::kernel::NDArrayIndexer source_vertex_indexer(source_vertex_map,
                                                               2);
     t::geometry::kernel::NDArrayIndexer target_vertex_indexer(target_vertex_map,

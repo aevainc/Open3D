@@ -56,8 +56,15 @@ core::Tensor RGBDOdometryMultiScale(
                 4, core::Dtype::Float64, core::Device("CPU:0")),
         float depth_factor = 1000.0f,
         float depth_diff = 0.07f,
+        float depth_max = 3.0,
         const std::vector<int>& iterations = {10, 5, 3},
         const LossType method = LossType::PointToPlane);
+
+/// PyrDown specifically for depth images that filters faraway neighbors.
+t::geometry::Image PyrDownDepth(const t::geometry::Image& depth,
+                                float depth_scale = 1000.0,
+                                float depth_diff = 0.25,
+                                float depth_max = 3.0);
 
 /// Create a vertex map (image) from a depth image. Useful for point-to-plane
 /// odometry and point-to-point.

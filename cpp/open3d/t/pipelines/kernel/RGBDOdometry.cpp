@@ -32,6 +32,30 @@ namespace pipelines {
 namespace kernel {
 namespace odometry {
 
+void PyrDownDepth(const core::Tensor &depth,
+                  core::Tensor &depth_down,
+                  float depth_scale,
+                  float depth_diff,
+                  float depth_max) {
+    core::Device device = depth.GetDevice();
+    if (depth.GetDtype() != core::Dtype::Float32) {
+        utility::LogError("[PyrDownDepth] Expected Float32, but got {}.",
+                          depth.GetDtype().ToString());
+    }
+
+    if (device.GetType() == core::Device::DeviceType::CPU) {
+        PyrDownDepthCPU(depth, depth_down, depth_scale, depth_diff, depth_max);
+    } else if (device.GetType() == core::Device::DeviceType::CUDA) {
+#ifdef BUILD_CUDA_MODULE
+        PyrDownDepthCUDA(depth, depth_down, depth_scale, depth_diff, depth_max);
+#else
+        utility::LogError("Not compiled with CUDA, but CUDA device is used.");
+#endif
+    } else {
+        utility::LogError("Unimplemented device.");
+    }
+}
+
 void CreateVertexMap(const core::Tensor &depth_map,
                      const core::Tensor &intrinsics,
                      core::Tensor &vertex_map,
@@ -42,6 +66,11 @@ void CreateVertexMap(const core::Tensor &depth_map,
         utility::LogError(
                 "Inconsistent device between depth_map ({}) vs intrinsics ({})",
                 device.ToString(), intrinsics.GetDevice().ToString());
+    }
+
+    if (depth_map.GetDtype() != core::Dtype::Float32) {
+        utility::LogError("[CreateVertexMap] Expected Float32, but got {}.",
+                          depth_map.GetDtype().ToString());
     }
 
     if (device.GetType() == core::Device::DeviceType::CPU) {
@@ -61,6 +90,10 @@ void CreateVertexMap(const core::Tensor &depth_map,
 
 void CreateNormalMap(const core::Tensor &vertex_map, core::Tensor &normal_map) {
     core::Device device = vertex_map.GetDevice();
+    if (vertex_map.GetDtype() != core::Dtype::Float32) {
+        utility::LogError("[CreateNormalMap] Expected Float32, but got {}.",
+                          vertex_map.GetDtype().ToString());
+    }
 
     if (device.GetType() == core::Device::DeviceType::CPU) {
         CreateNormalMapCPU(vertex_map, normal_map);

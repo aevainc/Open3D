@@ -34,14 +34,12 @@ void PrintHelp() {
     PrintOpen3DVersion();
     // clang-format off
     utility::LogInfo("Usage:");
-    utility::LogInfo(">    VoxelHashing [color_folder] [depth_folder] [options]");
-    utility::LogInfo("     Given RGBD images, reconstruct mesh or point cloud from color and depth images");
+    utility::LogInfo(">    TOdometryRGBDSeq [depth_folder] [options]");
+    utility::LogInfo("     Given depth images, evaluate point-to-plane icp performance");
     utility::LogInfo("     [options]");
-    utility::LogInfo("     --voxel_size [=0.0058 (m)]");
     utility::LogInfo("     --intrinsic_path [camera_intrinsic]");
     utility::LogInfo("     --depth_scale [=1000.0]");
     utility::LogInfo("     --max_depth [=3.0]");
-    utility::LogInfo("     --sdf_trunc [=0.04]");
     utility::LogInfo("     --device [CPU:0]");
     utility::LogInfo("     --mesh");
     utility::LogInfo("     --pointcloud");
@@ -131,8 +129,6 @@ int main(int argc, char** argv) {
             Tensor::Eye(4, core::Dtype::Float32, core::Device("CPU:0"));
 
     for (size_t i = 0; i < iterations - 1; ++i) {
-        if (i < 83) continue;
-
         utility::LogInfo("i = {}", i);
 
         // Load image
@@ -162,7 +158,7 @@ int main(int argc, char** argv) {
         visualization::DrawGeometries({source_pcd, target_pcd});
 
         trans = t::pipelines::odometry::RGBDOdometryMultiScale(
-                src, dst, intrinsic_t, trans, depth_scale, depth_diff,
+                src, dst, intrinsic_t, trans, depth_scale, depth_diff, 3.0,
                 {10, 5, 3});
 
         // Visualize after odometry

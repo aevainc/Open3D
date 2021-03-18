@@ -34,6 +34,12 @@ namespace pipelines {
 namespace kernel {
 namespace odometry {
 
+void PyrDownDepth(const core::Tensor &depth,
+                  core::Tensor &depth_down,
+                  float depth_scale,
+                  float depth_diff,
+                  float depth_max);
+
 void CreateVertexMap(const core::Tensor &depth_map,
                      const core::Tensor &intrinsics,
                      core::Tensor &vertex_map,
@@ -50,6 +56,12 @@ void ComputePosePointToPlane(const core::Tensor &source_vertex_map,
                              core::Tensor &delta,
                              core::Tensor &residual,
                              float depth_diff);
+
+void PyrDownDepthCPU(const core::Tensor &depth,
+                     core::Tensor &depth_down,
+                     float depth_scale,
+                     float depth_diff,
+                     float depth_max);
 
 void CreateVertexMapCPU(const core::Tensor &depth_map,
                         const core::Tensor &intrinsics,
@@ -70,6 +82,12 @@ void ComputePosePointToPlaneCPU(const core::Tensor &source_vertex_map,
                                 float depth_diff);
 
 #ifdef BUILD_CUDA_MODULE
+void PyrDownDepthCUDA(const core::Tensor &depth,
+                      core::Tensor &depth_down,
+                      float depth_scale,
+                      float depth_diff,
+                      float depth_max);
+
 void CreateVertexMapCUDA(const core::Tensor &depth_map,
                          const core::Tensor &intrinsics,
                          core::Tensor &vertex_map,
