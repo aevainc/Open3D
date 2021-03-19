@@ -23,6 +23,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
+#include <math.h>
+
 #include "open3d/Open3D.h"
 
 using namespace open3d;
@@ -34,15 +36,16 @@ void PrintHelp() {
     PrintOpen3DVersion();
     // clang-format off
     utility::LogInfo("Usage:");
-    utility::LogInfo(">    TOdometryRGBDSeq [depth_folder] [options]");
+    utility::LogInfo(">    TOdometryRGBDSeq [depth_folder] [gt log] [options]");
     utility::LogInfo("     Given depth images, evaluate point-to-plane icp performance");
     utility::LogInfo("     [options]");
     utility::LogInfo("     --intrinsic_path [camera_intrinsic]");
+    utility::LogInfo("     --iterations [=10 (5, 3)]");
     utility::LogInfo("     --depth_scale [=1000.0]");
+    utility::LogInfo("     --depth_diff [=0.07]");
     utility::LogInfo("     --max_depth [=3.0]");
-    utility::LogInfo("     --device [CPU:0]");
-    utility::LogInfo("     --mesh");
-    utility::LogInfo("     --pointcloud");
+    utility::LogInfo("     --device [=CPU:0]");
+    utility::LogInfo("     --output [=output.npy]");
     // clang-format on
     utility::LogInfo("");
 }
@@ -56,23 +59,17 @@ int main(int argc, char** argv) {
 
     utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
 
-    // Color and depth
-    std::string color_folder = std::string(argv[1]);
-    std::string depth_folder = std::string(argv[2]);
-
-    std::vector<std::string> color_filenames;
-    utility::filesystem::ListFilesInDirectory(color_folder, color_filenames);
-    std::sort(color_filenames.begin(), color_filenames.end());
+    // Depth
+    std::string depth_folder = std::string(argv[1]);
 
     std::vector<std::string> depth_filenames;
     utility::filesystem::ListFilesInDirectory(depth_folder, depth_filenames);
     std::sort(depth_filenames.begin(), depth_filenames.end());
 
-    if (color_filenames.size() != depth_filenames.size()) {
-        utility::LogError(
-                "[VoxelHashing] numbers of color and depth files mismatch. "
-                "Please provide folders with same number of images.");
-    }
+    // Trajectory
+    std::string gt_trajectory_path = std::string(argv[2]);
+    auto gt_trajectory =
+            io::CreatePinholeCameraTrajectoryFromFile(gt_trajectory_path);
 
     // Intrinsics
     std::string intrinsic_path = utility::GetProgramOptionAsString(
@@ -93,6 +90,7 @@ int main(int argc, char** argv) {
     core::Device device(device_code);
     utility::LogInfo("Using device: {}", device.ToString());
 
+    // Intrinsics
     auto focal_length = intrinsic.GetFocalLength();
     auto principal_point = intrinsic.GetPrincipalPoint();
     Tensor intrinsic_t =
@@ -103,40 +101,42 @@ int main(int argc, char** argv) {
                                  {0, 0, 1}},
                                 device);
 
-    int block_count =
-            utility::GetProgramOptionAsInt(argc, argv, "--block_count", 1000);
-
-    float voxel_size = static_cast<float>(utility::GetProgramOptionAsDouble(
-            argc, argv, "--voxel_size", 3.f / 512.f));
     float depth_scale = static_cast<float>(utility::GetProgramOptionAsDouble(
             argc, argv, "--depth_scale", 1000.f));
     float depth_diff = static_cast<float>(utility::GetProgramOptionAsDouble(
             argc, argv, "--depth_diff", 0.07));
-    float sdf_trunc = static_cast<float>(utility::GetProgramOptionAsDouble(
-            argc, argv, "--sdf_trunc", 0.04f));
+    float depth_max = static_cast<float>(
+            utility::GetProgramOptionAsDouble(argc, argv, "--max_depth", 3.0));
+    bool debug = utility::ProgramOptionExists(argc, argv, "--debug");
 
-    t::geometry::TSDFVoxelGrid voxel_grid({{"tsdf", core::Dtype::Float32},
-                                           {"weight", core::Dtype::UInt16},
-                                           {"color", core::Dtype::UInt16}},
-                                          voxel_size, sdf_trunc, 16,
-                                          block_count, device);
+    int iterations =
+            utility::GetProgramOptionAsInt(argc, argv, "--iterations", 10);
 
-    size_t n = color_filenames.size();
-    size_t iterations = static_cast<size_t>(
-            utility::GetProgramOptionAsInt(argc, argv, "--iterations", n));
+    int begin = utility::GetProgramOptionAsInt(argc, argv, "--begin", 0);
+    int end = utility::GetProgramOptionAsInt(argc, argv, "--end",
+                                             depth_filenames.size() - 1);
+    end = std::min(end, static_cast<int>(depth_filenames.size() - 1));
 
-    Tensor T_curr_to_model =
-            Tensor::Eye(4, core::Dtype::Float32, core::Device("CPU:0"));
-
-    for (size_t i = 0; i < iterations - 1; ++i) {
+    core::Tensor diffs = core::Tensor::Empty(
+            {end - begin, 2}, core::Dtype::Float64, core::Device("CPU:0"));
+    for (int i = begin; i < end; ++i) {
         utility::LogInfo("i = {}", i);
 
         // Load image
         t::geometry::Image src_depth =
                 *t::io::CreateImageFromFile(depth_filenames[i]);
-
         t::geometry::Image dst_depth =
                 *t::io::CreateImageFromFile(depth_filenames[i + 1]);
+
+        Eigen::Matrix4d src_pose_gt_eigen =
+                gt_trajectory->parameters_[i].extrinsic_.inverse().eval();
+        Tensor src_pose_gt =
+                core::eigen_converter::EigenMatrixToTensor(src_pose_gt_eigen);
+        Eigen::Matrix4d dst_pose_gt_eigen =
+                gt_trajectory->parameters_[i + 1].extrinsic_.inverse().eval();
+        Tensor dst_pose_gt =
+                core::eigen_converter::EigenMatrixToTensor(dst_pose_gt_eigen);
+        Tensor trans_gt = dst_pose_gt.Inverse().Matmul(src_pose_gt);
 
         t::geometry::RGBDImage src, dst;
         src.depth_ = src_depth.To(device).To(core::Dtype::Float32, false, 1.0);
@@ -145,35 +145,68 @@ int main(int argc, char** argv) {
         core::Tensor trans = core::Tensor::Eye(4, core::Dtype::Float64, device);
 
         // Visualize before odometry
-        auto source_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                t::geometry::PointCloud::CreateFromDepthImage(
-                        src.depth_, intrinsic_t, trans, depth_scale)
-                        .ToLegacyPointCloud());
-        source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
-        auto target_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                t::geometry::PointCloud::CreateFromDepthImage(
-                        dst.depth_, intrinsic_t, trans, depth_scale)
-                        .ToLegacyPointCloud());
-        target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
-        visualization::DrawGeometries({source_pcd, target_pcd});
+        if (debug) {
+            auto source_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                    t::geometry::PointCloud::CreateFromDepthImage(
+                            src.depth_, intrinsic_t, trans, depth_scale)
+                            .ToLegacyPointCloud());
+            source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
+            auto target_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                    t::geometry::PointCloud::CreateFromDepthImage(
+                            dst.depth_, intrinsic_t, trans, depth_scale)
+                            .ToLegacyPointCloud());
+            target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
+            visualization::DrawGeometries({source_pcd, target_pcd});
+        }
 
+        utility::Timer timer;
+        timer.Start();
         trans = t::pipelines::odometry::RGBDOdometryMultiScale(
-                src, dst, intrinsic_t, trans, depth_scale, depth_diff, 3.0,
-                {10, 5, 3});
+                src, dst, intrinsic_t, trans, depth_scale, depth_diff,
+                depth_max, {iterations, 0, 0});
+        // {iterations, static_cast<int>(std::ceil(iterations * 0.5)),
+        // static_cast<int>(std::ceil(iterations * 0.25))});
+        timer.Stop();
+        utility::LogInfo("est: {}", trans.ToString());
+        utility::LogInfo("gt: {}", trans_gt.ToString());
+
+        Tensor diff = trans_gt.Inverse().Matmul(trans);
+
+        double rot_err = std::acos(0.5 * (diff[0][0].Item<double>() +
+                                          diff[1][1].Item<double>() +
+                                          diff[2][2].Item<double>() - 1));
+        double trans_err = std::sqrt(
+                diff[0][3].Item<double>() * diff[0][3].Item<double>() +
+                diff[1][3].Item<double>() * diff[1][3].Item<double>() +
+                diff[2][3].Item<double>() * diff[2][3].Item<double>());
+        diffs[i - begin][0] = rot_err;
+        diffs[i - begin][1] = trans_err;
+        utility::LogInfo("T_diff = {}", diff.ToString());
+        utility::LogInfo("rot_err = {}, trans_err = {}", rot_err, trans_err);
 
         // Visualize after odometry
-        source_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                t::geometry::PointCloud::CreateFromDepthImage(
-                        src.depth_, intrinsic_t, trans.Inverse(), depth_scale)
-                        .ToLegacyPointCloud());
-        source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
-        target_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                t::geometry::PointCloud::CreateFromDepthImage(
-                        dst.depth_, intrinsic_t,
-                        core::Tensor::Eye(4, core::Dtype::Float32, device),
-                        depth_scale)
-                        .ToLegacyPointCloud());
-        target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
-        visualization::DrawGeometries({source_pcd, target_pcd});
+        if (debug) {
+            auto source_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                    t::geometry::PointCloud::CreateFromDepthImage(
+                            src.depth_, intrinsic_t, trans.Inverse(),
+                            depth_scale)
+                            .ToLegacyPointCloud());
+            source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
+            auto target_pcd = std::make_shared<open3d::geometry::PointCloud>(
+                    t::geometry::PointCloud::CreateFromDepthImage(
+                            dst.depth_, intrinsic_t,
+                            core::Tensor::Eye(4, core::Dtype::Float32, device),
+                            depth_scale)
+                            .ToLegacyPointCloud());
+            target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
+            visualization::DrawGeometries({source_pcd, target_pcd});
+        }
     }
+
+    std::string diffs_name = utility::GetProgramOptionAsString(
+            argc, argv, "--output",
+            fmt::format("it_{}_diff_{}.npy", iterations, depth_diff));
+    diffs.Save(diffs_name);
+
+    return 0;
 }

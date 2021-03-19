@@ -123,14 +123,14 @@ int main(int argc, char** argv) {
                                           voxel_size, sdf_trunc, 16,
                                           block_count, device);
 
-    size_t keyframes = 10;
+    size_t keyframes = 5;
     size_t n = color_filenames.size();
     size_t iterations = static_cast<size_t>(
             utility::GetProgramOptionAsInt(argc, argv, "--iterations", n));
 
     Tensor T_curr_to_model =
             Tensor::Eye(4, core::Dtype::Float64, core::Device("CPU:0"));
-    for (size_t i = 0; i < iterations; ++i) {
+    for (size_t i = 0; i < std::min(iterations, n); ++i) {
         // Load image
         t::geometry::Image src_depth =
                 *t::io::CreateImageFromFile(depth_filenames[i]);
@@ -179,7 +179,7 @@ int main(int argc, char** argv) {
             Tensor delta_curr_to_model =
                     t::pipelines::odometry::RGBDOdometryMultiScale(
                             src, dst, intrinsic_t, trans, depth_scale, 0.07,
-                            3.0, {10, 5, 3});
+                            3.0, {20, 0, 0});
             T_curr_to_model = T_curr_to_model.Matmul(delta_curr_to_model);
 
             // Debug: after odometry

@@ -30,6 +30,7 @@
 #include "open3d/t/geometry/RGBDImage.h"
 #include "open3d/t/pipelines/kernel/RGBDOdometry.h"
 #include "open3d/t/pipelines/kernel/TransformationConverter.h"
+#include "open3d/utility/Timer.h"
 #include "open3d/visualization/utility/DrawGeometry.h"
 
 namespace open3d {
@@ -70,6 +71,8 @@ core::Tensor RGBDOdometryMultiScale(const t::geometry::RGBDImage& source,
         t::geometry::Image dst_depth = target.depth_;
 
         // Create image pyramid
+        utility::Timer timer;
+        timer.Start();
         for (int64_t i = 0; i < n; ++i) {
             core::Tensor src_vertex_map =
                     CreateVertexMap(src_depth, intrinsics_d, depth_scale);
@@ -108,9 +111,12 @@ core::Tensor RGBDOdometryMultiScale(const t::geometry::RGBDImage& source,
                 intrinsics_d[-1][-1] = 1;
             }
         }
+        timer.Stop();
+        utility::LogInfo("Preparation {}", timer.GetDuration());
 
         // Odometry
         for (int64_t i = 0; i < n; ++i) {
+            timer.Start();
             for (int iter = 0; iter < iterations[i]; ++iter) {
                 core::Tensor delta_src_to_dst = ComputePosePointToPlane(
                         src_vertex_maps[i], dst_vertex_maps[i],
@@ -118,6 +124,9 @@ core::Tensor RGBDOdometryMultiScale(const t::geometry::RGBDImage& source,
                         depth_diff);
                 trans_d = delta_src_to_dst.Matmul(trans_d);
             }
+            timer.Stop();
+            utility::LogInfo("Level {}: {} per iter", i,
+                             timer.GetDuration() / iterations[i]);
         }
     } else {
         utility::LogError("Odometry method not implemented.");
