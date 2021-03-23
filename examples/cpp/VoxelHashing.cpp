@@ -70,6 +70,11 @@ int main(int argc, char** argv) {
     utility::filesystem::ListFilesInDirectory(depth_folder, depth_filenames);
     std::sort(depth_filenames.begin(), depth_filenames.end());
 
+    // Trajectory
+    std::string gt_trajectory_path = std::string(argv[3]);
+    auto gt_trajectory =
+            io::CreatePinholeCameraTrajectoryFromFile(gt_trajectory_path);
+
     if (color_filenames.size() != depth_filenames.size()) {
         utility::LogError(
                 "[VoxelHashing] numbers of color and depth files mismatch. "
@@ -116,6 +121,8 @@ int main(int argc, char** argv) {
             utility::GetProgramOptionAsDouble(argc, argv, "--max_depth", 3.f));
     float sdf_trunc = static_cast<float>(utility::GetProgramOptionAsDouble(
             argc, argv, "--sdf_trunc", 0.04f));
+    int keyframes =
+            utility::GetProgramOptionAsInt(argc, argv, "--keyframes", 1);
 
     t::geometry::TSDFVoxelGrid voxel_grid({{"tsdf", core::Dtype::Float32},
                                            {"weight", core::Dtype::UInt16},
@@ -123,19 +130,35 @@ int main(int argc, char** argv) {
                                           voxel_size, sdf_trunc, 16,
                                           block_count, device);
 
-    size_t keyframes = 5;
     size_t n = color_filenames.size();
     size_t iterations = static_cast<size_t>(
             utility::GetProgramOptionAsInt(argc, argv, "--iterations", n));
+    iterations = std::min(n, iterations);
 
-    Tensor T_curr_to_model =
-            Tensor::Eye(4, core::Dtype::Float64, core::Device("CPU:0"));
-    for (size_t i = 0; i < std::min(iterations, n); ++i) {
+    Eigen::Matrix4d src_pose_gt_eigen =
+            gt_trajectory->parameters_[0].extrinsic_.inverse().eval();
+    Tensor src_pose_gt =
+            core::eigen_converter::EigenMatrixToTensor(src_pose_gt_eigen);
+    Tensor T_curr_to_model = src_pose_gt;
+
+    core::Tensor diffs =
+            core::Tensor::Empty({int64_t(iterations), 2}, core::Dtype::Float64,
+                                core::Device("CPU:0"));
+
+    size_t debug_idx = static_cast<size_t>(
+            utility::GetProgramOptionAsInt(argc, argv, "--debug_idx", n));
+
+    for (size_t i = 0; i < iterations; ++i) {
         // Load image
         t::geometry::Image src_depth =
                 *t::io::CreateImageFromFile(depth_filenames[i]);
         t::geometry::Image src_color =
                 *t::io::CreateImageFromFile(color_filenames[i]);
+
+        Eigen::Matrix4d curr_pose_gt_eigen =
+                gt_trajectory->parameters_[i].extrinsic_.inverse().eval();
+        Tensor curr_pose_gt =
+                core::eigen_converter::EigenMatrixToTensor(curr_pose_gt_eigen);
 
         if (i > 0) {
             t::geometry::RGBDImage src, dst;
@@ -148,7 +171,7 @@ int main(int argc, char** argv) {
                 core::Tensor model_depth, model_color;
                 std::tie(model_depth, model_color) = voxel_grid.RayCast(
                         intrinsic_t, T_curr_to_model.Inverse(),
-                        src_depth.GetCols(), src_depth.GetRows(), 50, 0.1, 3.0,
+                        src_depth.GetCols(), src_depth.GetRows(), 100, 0.1, 5.0,
                         std::min(i * 1.0f, 3.0f));
                 dst.depth_ = t::geometry::Image(model_depth);
             } else {
@@ -163,46 +186,76 @@ int main(int argc, char** argv) {
             // Debug: before odometry
             core::Tensor trans = core::Tensor::Eye(4, core::Dtype::Float64,
                                                    core::Device("CPU:0"));
-            auto source_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                    t::geometry::PointCloud::CreateFromDepthImage(
-                            src.depth_, intrinsic_t, trans, depth_scale)
-                            .ToLegacyPointCloud());
-            source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
-            auto target_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                    t::geometry::PointCloud::CreateFromDepthImage(
-                            dst.depth_, intrinsic_t, trans, depth_scale)
-                            .ToLegacyPointCloud());
-            target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
-            // visualization::DrawGeometries({source_pcd, target_pcd});
+            if (i > debug_idx) {
+                auto source_pcd =
+                        std::make_shared<open3d::geometry::PointCloud>(
+                                t::geometry::PointCloud::CreateFromDepthImage(
+                                        src.depth_, intrinsic_t, trans,
+                                        depth_scale)
+                                        .ToLegacyPointCloud());
+                source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
+                auto target_pcd =
+                        std::make_shared<open3d::geometry::PointCloud>(
+                                t::geometry::PointCloud::CreateFromDepthImage(
+                                        dst.depth_, intrinsic_t, trans,
+                                        depth_scale)
+                                        .ToLegacyPointCloud());
+                target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
+                visualization::DrawGeometries({source_pcd, target_pcd});
+            }
 
             // Odometry
             Tensor delta_curr_to_model =
                     t::pipelines::odometry::RGBDOdometryMultiScale(
                             src, dst, intrinsic_t, trans, depth_scale, 0.07,
-                            3.0, {20, 0, 0});
+                            5.0, {20, 0, 0});
             T_curr_to_model = T_curr_to_model.Matmul(delta_curr_to_model);
 
             // Debug: after odometry
-            source_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                    t::geometry::PointCloud::CreateFromDepthImage(
-                            src.depth_, intrinsic_t,
-                            delta_curr_to_model.Inverse(), depth_scale)
-                            .ToLegacyPointCloud());
-            source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
-            target_pcd = std::make_shared<open3d::geometry::PointCloud>(
-                    t::geometry::PointCloud::CreateFromDepthImage(
-                            dst.depth_, intrinsic_t,
-                            core::Tensor::Eye(4, core::Dtype::Float32, device),
-                            depth_scale)
-                            .ToLegacyPointCloud());
-            target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
-            // visualization::DrawGeometries({source_pcd, target_pcd});
+            if (i > debug_idx) {
+                auto source_pcd =
+                        std::make_shared<open3d::geometry::PointCloud>(
+                                t::geometry::PointCloud::CreateFromDepthImage(
+                                        src.depth_, intrinsic_t,
+                                        delta_curr_to_model.Inverse(),
+                                        depth_scale)
+                                        .ToLegacyPointCloud());
+                source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
+                auto target_pcd =
+                        std::make_shared<open3d::geometry::PointCloud>(
+                                t::geometry::PointCloud::CreateFromDepthImage(
+                                        dst.depth_, intrinsic_t,
+                                        core::Tensor::Eye(4,
+                                                          core::Dtype::Float32,
+                                                          device),
+                                        depth_scale)
+                                        .ToLegacyPointCloud());
+                target_pcd->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
+                visualization::DrawGeometries({source_pcd, target_pcd});
+            }
         }
+
+        Tensor diff = curr_pose_gt.Inverse().Matmul(T_curr_to_model);
+        double rot_err = std::acos(0.5 * (diff[0][0].Item<double>() +
+                                          diff[1][1].Item<double>() +
+                                          diff[2][2].Item<double>() - 1));
+        double trans_err = std::sqrt(
+                diff[0][3].Item<double>() * diff[0][3].Item<double>() +
+                diff[1][3].Item<double>() * diff[1][3].Item<double>() +
+                diff[2][3].Item<double>() * diff[2][3].Item<double>());
+        diffs[i][0] = rot_err;
+        diffs[i][1] = trans_err;
+        utility::LogInfo("T_diff = {}", diff.ToString());
+        utility::LogInfo("rot_err = {}, trans_err = {}", rot_err, trans_err);
 
         voxel_grid.Integrate(src_depth.To(device), src_color.To(device),
                              intrinsic_t, T_curr_to_model.Inverse(),
                              depth_scale, max_depth);
     }
+
+    std::string diffs_name =
+            utility::GetProgramOptionAsString(argc, argv, "--output", "vh.npy");
+    diffs.Save(diffs_name);
 
     if (utility::ProgramOptionExists(argc, argv, "--mesh")) {
         std::string filename = utility::GetProgramOptionAsString(

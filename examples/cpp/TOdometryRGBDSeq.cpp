@@ -163,7 +163,8 @@ int main(int argc, char** argv) {
         timer.Start();
         trans = t::pipelines::odometry::RGBDOdometryMultiScale(
                 src, dst, intrinsic_t, trans, depth_scale, depth_diff,
-                depth_max, {iterations, 0, 0});
+                depth_max, {iterations, iterations, iterations},
+                {0.07, 0.07, 0.07});
         // {iterations, static_cast<int>(std::ceil(iterations * 0.5)),
         // static_cast<int>(std::ceil(iterations * 0.25))});
         timer.Stop();

@@ -58,6 +58,7 @@ core::Tensor RGBDOdometryMultiScale(
         float depth_diff = 0.07f,
         float depth_max = 3.0,
         const std::vector<int>& iterations = {10, 5, 3},
+        const std::vector<float>& dist_thrs = {0.07, 0.05, 0.02},
         const LossType method = LossType::PointToPlane);
 
 /// PyrDown specifically for depth images that filters faraway neighbors.
