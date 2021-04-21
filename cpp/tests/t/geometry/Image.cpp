@@ -31,6 +31,9 @@
 #include "core/CoreTest.h"
 #include "open3d/core/TensorList.h"
 #include "open3d/io/ImageIO.h"
+#include "open3d/io/PinholeCameraTrajectoryIO.h"
+#include "open3d/t/io/ImageIO.h"
+#include "open3d/visualization/utility/DrawGeometry.h"
 #include "tests/UnitTest.h"
 
 namespace open3d {
@@ -808,5 +811,96 @@ TEST_P(ImagePermuteDevices, ToLegacyImage) {
                           *leg_im_3ch.PointerAt<uint16_t>(c, r, ch));
 }
 
+TEST_P(ImagePermuteDevices, ClipTransform) {
+    core::Device device = GetParam();
+
+    t::geometry::Image depth =
+            t::io::CreateImageFromFile(fmt::format("{}/RGBD/depth/{:05d}.png",
+                                                   std::string(TEST_DATA_DIR),
+                                                   1))
+                    ->To(device);
+
+    float invalid_fill = 0.0f;
+    auto depth_clipped = depth.ClipTransform(1000.0, 0.0, 3.0, invalid_fill);
+    visualization::DrawGeometries({std::make_shared<open3d::geometry::Image>(
+            depth_clipped.ToLegacyImage())});
+
+    camera::PinholeCameraIntrinsic intrinsic = camera::PinholeCameraIntrinsic(
+            camera::PinholeCameraIntrinsicParameters::PrimeSenseDefault);
+    auto focal_length = intrinsic.GetFocalLength();
+    auto principal_point = intrinsic.GetPrincipalPoint();
+    core::Tensor intrinsic_t = core::Tensor(
+            std::vector<double>(
+                    {(focal_length.first), 0, (principal_point.first), 0,
+                     (focal_length.second), (principal_point.second), 0, 0, 1}),
+            {3, 3}, core::Dtype::Float64);
+
+    auto vertex_map = depth_clipped.CreateVertexMap(intrinsic_t, invalid_fill);
+    visualization::DrawGeometries({std::make_shared<open3d::geometry::Image>(
+            vertex_map.ToLegacyImage())});
+
+    auto depth_bilateral = depth_clipped.FilterBilateral(5, 5.0, 10.0);
+    auto vertex_map_for_normal =
+            depth_bilateral.CreateVertexMap(intrinsic_t, invalid_fill);
+    visualization::DrawGeometries({std::make_shared<open3d::geometry::Image>(
+            vertex_map_for_normal.ToLegacyImage())});
+
+    auto normal_map = vertex_map_for_normal.CreateNormalMap(invalid_fill);
+    normal_map.AsTensor() = normal_map.AsTensor().Abs();
+    visualization::DrawGeometries({std::make_shared<open3d::geometry::Image>(
+            normal_map.ToLegacyImage())});
+}
+
+TEST_P(ImagePermuteDevices, PyrDownDepth) {
+    core::Device device = GetParam();
+
+    t::geometry::Image depth =
+            t::io::CreateImageFromFile(fmt::format("{}/RGBD/depth/{:05d}.png",
+                                                   std::string(TEST_DATA_DIR),
+                                                   1))
+                    ->To(device);
+
+    float invalid_fill = 0.0f;
+    auto depth_clipped = depth.ClipTransform(1000.0, 0.0, 3.0, invalid_fill);
+    auto depth_down = depth_clipped.PyrDownDepth(0.25, invalid_fill);
+
+    camera::PinholeCameraIntrinsic intrinsic = camera::PinholeCameraIntrinsic(
+            camera::PinholeCameraIntrinsicParameters::PrimeSenseDefault);
+    auto focal_length = intrinsic.GetFocalLength();
+    auto principal_point = intrinsic.GetPrincipalPoint();
+    core::Tensor intrinsic_t = core::Tensor(
+            std::vector<double>({(focal_length.first / 2), 0,
+                                 (principal_point.first / 2), 0,
+                                 (focal_length.second / 2),
+                                 (principal_point.second / 2), 0, 0, 1}),
+            {3, 3}, core::Dtype::Float64);
+
+    auto vertex_map = depth_down.CreateVertexMap(intrinsic_t, invalid_fill);
+    visualization::DrawGeometries({std::make_shared<open3d::geometry::Image>(
+            vertex_map.ToLegacyImage())});
+    auto normal_map = vertex_map.CreateNormalMap(invalid_fill);
+    normal_map.AsTensor() = normal_map.AsTensor().Abs();
+    visualization::DrawGeometries({std::make_shared<open3d::geometry::Image>(
+            normal_map.ToLegacyImage())});
+}
+
+TEST_P(ImagePermuteDevices, ColorizeDepth) {
+    core::Device device = GetParam();
+
+    t::geometry::Image depth =
+            t::io::CreateImageFromFile(fmt::format("{}/RGBD/depth/{:05d}.png",
+                                                   std::string(TEST_DATA_DIR),
+                                                   1))
+                    ->To(device);
+
+    auto color_depth = depth.ColorizeDepth(1000.0, 0.0, 3.0);
+    visualization::DrawGeometries({std::make_shared<open3d::geometry::Image>(
+            color_depth.ToLegacyImage())});
+
+    auto depth_clipped = depth.ClipTransform(1000.0, 0.0, 3.0, 0.0);
+    auto color_depth_clipped = depth_clipped.ColorizeDepth(1.0, 0.0, 3.0);
+    visualization::DrawGeometries({std::make_shared<open3d::geometry::Image>(
+            color_depth_clipped.ToLegacyImage())});
+}
 }  // namespace tests
 }  // namespace open3d

@@ -94,6 +94,22 @@ void CreateNormalMap(const core::Tensor &src,
         utility::LogError("Unimplemented device");
     }
 }
+
+void ColorizeDepth(const core::Tensor &src,
+                   core::Tensor &dst,
+                   float scale,
+                   float min_value,
+                   float max_value) {
+    core::Device device = src.GetDevice();
+    if (device.GetType() == core::Device::DeviceType::CPU) {
+        ColorizeDepthCPU(src, dst, scale, min_value, max_value);
+    } else if (device.GetType() == core::Device::DeviceType::CUDA) {
+        CUDA_CALL(ColorizeDepthCUDA, src, dst, scale, min_value, max_value);
+    } else {
+        utility::LogError("Unimplemented device");
+    }
+}
+
 }  // namespace image
 }  // namespace kernel
 }  // namespace geometry

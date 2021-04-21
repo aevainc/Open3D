@@ -253,6 +253,51 @@ void CreateNormalMapCPU
     });
 }
 
+#ifdef __CUDACC__
+void ColorizeDepthCUDA
+#else
+void ColorizeDepthCPU
+#endif
+        (const core::Tensor& src,
+         core::Tensor& dst,
+         float scale,
+         float min_value,
+         float max_value) {
+    NDArrayIndexer src_indexer(src, 2);
+    NDArrayIndexer dst_indexer(dst, 2);
+
+    int64_t rows = src.GetShape(0);
+    int64_t cols = dst.GetShape(1);
+    int64_t n = rows * cols;
+
+#if defined(__CUDACC__)
+    core::kernel::CUDALauncher launcher;
+#else
+    core::kernel::CPULauncher launcher;
+#endif
+
+    float inv_interval = 255.0f / (max_value - min_value);
+    DISPATCH_DTYPE_TO_TEMPLATE(src.GetDtype(), [&]() {
+        launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(
+                                                int64_t workload_idx) {
+            int64_t y = workload_idx / cols;
+            int64_t x = workload_idx % cols;
+
+            float in = static_cast<float>(
+                    *src_indexer.GetDataPtrFromCoord<scalar_t>(x, y));
+            float out = in / scale;
+            out = out <= min_value ? min_value : out;
+            out = out >= max_value ? max_value : out;
+
+            int idx = static_cast<int>(inv_interval * (out - min_value));
+            uint8_t* out_ptr = dst_indexer.GetDataPtrFromCoord<uint8_t>(x, y);
+            out_ptr[0] = turbo_srgb_bytes[idx][0];
+            out_ptr[1] = turbo_srgb_bytes[idx][1];
+            out_ptr[2] = turbo_srgb_bytes[idx][2];
+        });
+    });
+}
+
 }  // namespace image
 }  // namespace kernel
 }  // namespace geometry

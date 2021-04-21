@@ -55,6 +55,12 @@ void CreateNormalMap(const core::Tensor &src,
                      core::Tensor &dst,
                      float invalid_fill);
 
+void ColorizeDepth(const core::Tensor &src,
+                   core::Tensor &dst,
+                   float scale,
+                   float min_value,
+                   float max_value);
+
 void ClipTransformCPU(const core::Tensor &src,
                       core::Tensor &dst,
                       float scale,
@@ -75,6 +81,12 @@ void CreateVertexMapCPU(const core::Tensor &src,
 void CreateNormalMapCPU(const core::Tensor &src,
                         core::Tensor &dst,
                         float invalid_fill);
+
+void ColorizeDepthCPU(const core::Tensor &src,
+                      core::Tensor &dst,
+                      float scale,
+                      float min_value,
+                      float max_value);
 
 #ifdef BUILD_CUDA_MODULE
 void ClipTransformCUDA(const core::Tensor &src,
@@ -97,6 +109,13 @@ void CreateVertexMapCUDA(const core::Tensor &src,
 void CreateNormalMapCUDA(const core::Tensor &src,
                          core::Tensor &dst,
                          float invalid_fill);
+
+void ColorizeDepthCUDA(const core::Tensor &src,
+                       core::Tensor &dst,
+                       float scale,
+                       float min_value,
+                       float max_value);
+
 #endif
 }  // namespace image
 }  // namespace kernel

@@ -256,7 +256,6 @@ public:
     /// neighbor pixels whose value is invalid, or value difference to the
     /// center pixel is larger than the diff_threshold will not be counted. This
     /// specific operation reduces noise at edges.
-
     /// \param diff_threshold Threshold used in the modified Gaussian kernel.
     /// \param invalid_fill Value to check invalid depths. Must be
     /// consistent with \p clip_fill in ClipTransform.
@@ -278,6 +277,10 @@ public:
     /// vertexmap, and to fill-in if no valid neighbor is found. Must be
     /// consistent with CreateVertexMap.
     Image CreateNormalMap(float invalid_fill);
+
+    /// Colorize an input depth image with the Turbo colormap, rescaled within
+    /// (min_range, max_range)
+    Image ColorizeDepth(float scale, float min_range, float max_range);
 
     /// Compute min 2D coordinates for the data (always {0, 0}).
     core::Tensor GetMinBound() const {

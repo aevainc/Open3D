@@ -471,7 +471,7 @@ Image Image::ClipTransform(float scale,
                 "{})",
                 GetRows(), GetCols(), GetChannels());
     }
-    if (GetDtype() != core::Dtype::UInt16 ||
+    if (GetDtype() != core::Dtype::UInt16 &&
         GetDtype() != core::Dtype::Float32) {
         utility::LogError("Expected a UInt16 or Float32 image, but got {}",
                           GetDtype().ToString());
@@ -489,7 +489,8 @@ Image Image::ClipTransform(float scale,
     }
 
     Image dst_im;
-    dst_im.data_ = core::Tensor::EmptyLike(data_);
+    dst_im.data_ = core::Tensor::Empty({GetRows(), GetCols(), 1},
+                                       core::Dtype::Float32, data_.GetDevice());
     kernel::image::ClipTransform(data_, dst_im.data_, scale, min_value,
                                  max_value, clip_fill);
     return dst_im;
@@ -552,6 +553,33 @@ Image Image::CreateNormalMap(float invalid_fill) {
     dst_im.data_ = core::Tensor::Empty({GetRows(), GetCols(), 3}, GetDtype(),
                                        GetDevice());
     kernel::image::CreateNormalMap(data_, dst_im.data_, invalid_fill);
+    return dst_im;
+}
+
+Image Image::ColorizeDepth(float scale, float min_value, float max_value) {
+    if (GetRows() <= 0 || GetCols() <= 0 || GetChannels() != 1) {
+        utility::LogError(
+                "Invalid shape, expected a 1 channel image, but got ({}, {}, "
+                "{})",
+                GetRows(), GetCols(), GetChannels());
+    }
+    if (GetDtype() != core::Dtype::UInt16 &&
+        GetDtype() != core::Dtype::Float32) {
+        utility::LogError("Expected a UInt16 or Float32 image, but got {}",
+                          GetDtype().ToString());
+    }
+    if (scale < 0 || min_value < 0 || max_value < 0 || min_value >= max_value) {
+        utility::LogError(
+                "Expected positive scale, min_value, and max_value, but got "
+                "{}, {}, and {}",
+                scale, min_value, max_value);
+    }
+
+    Image dst_im;
+    dst_im.data_ = core::Tensor::Empty({GetRows(), GetCols(), 3},
+                                       core::Dtype::UInt8, data_.GetDevice());
+    kernel::image::ColorizeDepth(data_, dst_im.data_, scale, min_value,
+                                 max_value);
     return dst_im;
 }
 
