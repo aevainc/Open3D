@@ -575,6 +575,7 @@ void Window::Show(bool vis /*= true*/) {
 }
 
 void Window::Close() {
+    utility::LogInfo("Window::Close() called");
     if (impl_->on_close_) {
         bool shouldContinue = impl_->on_close_();
         if (!shouldContinue) {
@@ -589,6 +590,7 @@ void Window::Close() {
 void Window::SetNeedsLayout() { impl_->needs_layout_ = true; }
 
 void Window::PostRedraw() {
+    utility::LogInfo("Window::PostRedraw() called");
     // Windows cannot actually post an expose event, and the actual mechanism
     // requires that PostNativeExposeEvent() not be called while drawing
     // (see the implementation for details).
@@ -722,6 +724,7 @@ void Window::OnMenuItemSelected(Menu::ItemId item_id) {
     auto callback = impl_->menu_callbacks_.find(item_id);
     if (callback != impl_->menu_callbacks_.end()) {
         callback->second();
+        utility::LogInfo("Window::OnMenuItemSelected to call PostRedraw()");
         PostRedraw();  // might not be in a draw if from native menu
     }
 }
@@ -976,6 +979,7 @@ void Window::OnDraw() {
         // Can't just draw here, because Filament sometimes fences within
         // a draw, and then you can get two draws happening at the same
         // time, which ends up with a crash.
+        utility::LogInfo("Window::OnDraw to call PostRedraw()");
         PostRedraw();
     }
 }

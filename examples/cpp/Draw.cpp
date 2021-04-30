@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
     }
 
     SingleObject();
-    MultiObjects();
-    Actions();
-    Selections();
+    // MultiObjects();
+    // Actions();
+    // Selections();
 }
