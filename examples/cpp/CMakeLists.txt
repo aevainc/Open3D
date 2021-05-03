@@ -90,3 +90,5 @@ add_custom_target(build-examples-iteratively
     -DNPROC="${NPROC}"
     -P ${CMAKE_CURRENT_SOURCE_DIR}/iterative_build_examples.cmake
 )
+
+EXAMPLE_CPP(Resize                   ${CMAKE_PROJECT_NAME} Threads::Threads)
