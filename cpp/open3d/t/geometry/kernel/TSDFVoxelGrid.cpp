@@ -150,6 +150,7 @@ void EstimateRange(const core::Tensor& block_keys,
 }
 
 void RayCast(std::shared_ptr<core::DeviceHashmap>& hashmap,
+             const core::Tensor& point_values,
              const core::Tensor& block_values,
              const core::Tensor& range_map,
              core::Tensor& vertex_map,
@@ -176,16 +177,16 @@ void RayCast(std::shared_ptr<core::DeviceHashmap>& hashmap,
     core::Device device = hashmap->GetDevice();
     core::Device::DeviceType device_type = device.GetType();
     if (device_type == core::Device::DeviceType::CPU) {
-        RayCastCPU(hashmap, block_values, range_map, vertex_map, depth_map,
-                   color_map, normal_map, intrinsics_d, extrinsics_d, h, w,
-                   block_resolution, voxel_size, sdf_trunc, depth_scale,
+        RayCastCPU(hashmap, point_values, block_values, range_map, vertex_map,
+                   depth_map, color_map, normal_map, intrinsics_d, extrinsics_d,
+                   h, w, block_resolution, voxel_size, sdf_trunc, depth_scale,
                    depth_min, depth_max, weight_threshold);
     } else if (device_type == core::Device::DeviceType::CUDA) {
 #ifdef BUILD_CUDA_MODULE
-        RayCastCUDA(hashmap, block_values, range_map, vertex_map, depth_map,
-                    color_map, normal_map, intrinsics_d, extrinsics_d, h, w,
-                    block_resolution, voxel_size, sdf_trunc, depth_scale,
-                    depth_min, depth_max, weight_threshold);
+        RayCastCUDA(hashmap, point_values, block_values, range_map, vertex_map,
+                    depth_map, color_map, normal_map, intrinsics_d,
+                    extrinsics_d, h, w, block_resolution, voxel_size, sdf_trunc,
+                    depth_scale, depth_min, depth_max, weight_threshold);
 #else
         utility::LogError("Not compiled with CUDA, but CUDA device is used.");
 #endif

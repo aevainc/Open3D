@@ -1159,6 +1159,7 @@ void RayCastCUDA
 void RayCastCPU
 #endif
         (std::shared_ptr<core::DeviceHashmap>& hashmap,
+         const core::Tensor& point_values,
          const core::Tensor& block_values,
          const core::Tensor& range_map,
          core::Tensor& vertex_map,
@@ -1193,6 +1194,7 @@ void RayCastCPU
     auto hashmap_impl = *cpu_hashmap->GetImpl();
 #endif
 
+    const int* point_addrs = point_values.GetDataPtr<int>();
     NDArrayIndexer voxel_block_buffer_indexer(block_values, 4);
     NDArrayIndexer range_map_indexer(range_map, 2);
 
@@ -1269,7 +1271,8 @@ void RayCastCPU
                             if (block_addr < 0) {
                                 auto iter = hashmap_impl.find(key);
                                 if (iter == hashmap_impl.end()) return nullptr;
-                                block_addr = iter->second;
+                                block_addr = point_addrs[iter->second];
+                                // printf("block_addr = %d\n", block_addr);
                                 cache.Update(key(0), key(1), key(2),
                                              block_addr);
                             }
@@ -1303,7 +1306,8 @@ void RayCastCPU
                         if (block_addr < 0) {
                             auto iter = hashmap_impl.find(key);
                             if (iter == hashmap_impl.end()) return nullptr;
-                            block_addr = iter->second;
+                            block_addr = point_addrs[iter->second];
+                            // printf("block_addr = %d\n", block_addr);
                             cache.Update(x_b, y_b, z_b, block_addr);
                         }
 
@@ -1449,7 +1453,7 @@ void RayCastCPU
                             if (block_addr < 0) {
                                 auto iter = hashmap_impl.find(key);
                                 if (iter == hashmap_impl.end()) return;
-                                block_addr = iter->second;
+                                block_addr = point_addrs[iter->second];
                                 cache.Update(x_b, y_b, z_b, block_addr);
                             }
 

@@ -140,7 +140,7 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
 
     if (point_hashmap_ == nullptr) {
         point_hashmap_ = std::make_shared<core::Hashmap>(
-                capacity, core::Dtype::Int32, core::Dtype::UInt8,
+                capacity, core::Dtype::Int32, core::Dtype::Int32,
                 core::SizeVector{3}, core::SizeVector{1}, device_,
                 core::HashmapBackend::Default);
     } else {
@@ -175,6 +175,11 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     // hashmap for raycasting
     block_hashmap_->Find(block_coords, addrs, masks);
 
+    core::Tensor tmp_addrs, tmp_masks;
+    point_hashmap_->Find(block_coords, tmp_addrs, tmp_masks);
+    point_hashmap_->GetValueTensor().View({-1}).IndexSet(
+            {tmp_addrs.To(core::Dtype::Int64)}, addrs);
+
     // TODO(wei): directly reuse it without intermediate variables.
     // Reserved for raycasting
     active_block_coords_ = block_coords;
@@ -204,11 +209,10 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     core::Tensor dst = block_hashmap_->GetValueTensor();
 
     // TODO(wei): use a fixed buffer.
-    kernel::tsdf::Integrate(depth_tensor, color_tensor,
-                            addrs.To(core::Dtype::Int64).IndexGet({masks}),
-                            block_hashmap_->GetKeyTensor(), dst, intrinsics,
-                            extrinsics, block_resolution_, voxel_size_,
-                            sdf_trunc_, depth_scale, depth_max);
+    kernel::tsdf::Integrate(
+            depth_tensor, color_tensor, addrs.To(core::Dtype::Int64),
+            block_hashmap_->GetKeyTensor(), dst, intrinsics, extrinsics,
+            block_resolution_, voxel_size_, sdf_trunc_, depth_scale, depth_max);
 }
 
 std::unordered_map<TSDFVoxelGrid::SurfaceMaskCode, core::Tensor>
@@ -248,10 +252,11 @@ TSDFVoxelGrid::RayCast(const core::Tensor &intrinsics,
                                 depth_min, depth_max);
 
     core::Tensor block_values = block_hashmap_->GetValueTensor();
-    auto device_hashmap = block_hashmap_->GetDeviceHashmap();
-    kernel::tsdf::RayCast(device_hashmap, block_values, range_minmax_map,
-                          vertex_map, depth_map, color_map, normal_map,
-                          intrinsics, extrinsics, height, width,
+    core::Tensor point_values = point_hashmap_->GetValueTensor();
+    auto device_hashmap = point_hashmap_->GetDeviceHashmap();
+    kernel::tsdf::RayCast(device_hashmap, point_values, block_values,
+                          range_minmax_map, vertex_map, depth_map, color_map,
+                          normal_map, intrinsics, extrinsics, height, width,
                           block_resolution_, voxel_size_, sdf_trunc_,
                           depth_scale, depth_min, depth_max, weight_threshold);
 
