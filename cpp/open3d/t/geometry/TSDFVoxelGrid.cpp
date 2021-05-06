@@ -144,19 +144,20 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
         point_hashmap_->Clear();
     }
 
-    // Version #1
-    PointCloud pcd = PointCloud::CreateFromDepthImage(
-            depth, intrinsics, extrinsics, depth_scale, depth_max, down_factor);
     core::Tensor block_coords;
-    kernel::tsdf::Touch(point_hashmap_, pcd.GetPoints().Contiguous(),
-                        block_coords, block_resolution_, voxel_size_,
-                        sdf_trunc_);
+
+    // Version #1
+    // PointCloud pcd = PointCloud::CreateFromDepthImage(
+    //         depth, intrinsics, extrinsics, depth_scale, depth_max,
+    //         down_factor);
+    // kernel::tsdf::Touch(point_hashmap_, pcd.GetPoints().Contiguous(),
+    //                     block_coords, block_resolution_, voxel_size_,
+    //                     sdf_trunc_);
     // Version #2
-    // core::Tensor block_coords;
-    // kernel::tsdf::Touch(point_hashmap_, depth.AsTensor(), intrinsics,
-    //                     extrinsics, block_coords, block_resolution_,
-    //                     voxel_size_, sdf_trunc_, depth_scale, depth_max,
-    //                     stride);
+    kernel::tsdf::Touch(point_hashmap_, depth.AsTensor(), intrinsics,
+                        extrinsics, block_coords, block_resolution_,
+                        voxel_size_, sdf_trunc_, depth_scale, depth_max,
+                        down_factor);
 
     // Active voxel blocks in the block hashmap.
     core::Tensor addrs, masks;
