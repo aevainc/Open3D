@@ -44,6 +44,18 @@ void Touch(std::shared_ptr<core::Hashmap>& hashmap,
            float voxel_size,
            float sdf_trunc);
 
+void Touch(std::shared_ptr<core::Hashmap>& hashmap,
+           const core::Tensor& depth,
+           const core::Tensor& intrinsics,
+           const core::Tensor& extrinsics,
+           core::Tensor& voxel_block_coords,
+           int64_t voxel_grid_resolution,
+           float voxel_size,
+           float sdf_trunc,
+           float depth_scale,
+           float depth_max,
+           int stride);
+
 void Integrate(const core::Tensor& depth,
                const core::Tensor& color,
                const core::Tensor& block_indices,
@@ -123,6 +135,18 @@ void TouchCPU(std::shared_ptr<core::Hashmap>& hashmap,
               int64_t voxel_grid_resolution,
               float voxel_size,
               float sdf_trunc);
+
+void TouchCPU(std::shared_ptr<core::Hashmap>& hashmap,
+              const core::Tensor& depth,
+              const core::Tensor& intrinsics,
+              const core::Tensor& extrinsics,
+              core::Tensor& voxel_block_coords,
+              int64_t voxel_grid_resolution,
+              float voxel_size,
+              float sdf_trunc,
+              float depth_scale,
+              float depth_max,
+              int stride);
 
 void IntegrateCPU(const core::Tensor& depth,
                   const core::Tensor& color,
@@ -204,6 +228,18 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
                int64_t voxel_grid_resolution,
                float voxel_size,
                float sdf_trunc);
+
+void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
+               const core::Tensor& depth,
+               const core::Tensor& intrinsics,
+               const core::Tensor& extrinsics,
+               core::Tensor& voxel_block_coords,
+               int64_t voxel_grid_resolution,
+               float voxel_size,
+               float sdf_trunc,
+               float depth_scale,
+               float depth_max,
+               int stride);
 
 void IntegrateCUDA(const core::Tensor& depth,
                    const core::Tensor& color,

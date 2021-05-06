@@ -119,6 +119,18 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
     voxel_block_coords = block_coordi.IndexGet({block_masks});
 }
 
+void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
+               const core::Tensor& depth,
+               const core::Tensor& intrinsics,
+               const core::Tensor& extrinsics,
+               core::Tensor& voxel_block_coords,
+               int64_t voxel_grid_resolution,
+               float voxel_size,
+               float sdf_trunc,
+               float depth_scale,
+               float depth_max,
+               int stride) {}
+
 }  // namespace tsdf
 }  // namespace kernel
 }  // namespace geometry
