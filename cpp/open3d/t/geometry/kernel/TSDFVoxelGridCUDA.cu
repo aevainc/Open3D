@@ -145,7 +145,7 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
     int* count_ptr = count.GetDataPtr<int>();
 
     int64_t n = rows_strided * cols_strided;
-    core::Tensor block_coordi({27 * n, 3}, core::Dtype::Int32, device);
+    core::Tensor block_coordi({8 * n, 3}, core::Dtype::Int32, device);
     int* block_coordi_ptr = static_cast<int*>(block_coordi.GetDataPtr());
 
     int64_t resolution = voxel_grid_resolution;
