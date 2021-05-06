@@ -162,34 +162,42 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
                       depth_scale;
             if (d > 0 && d < depth_max) {
                 float x_c = 0, y_c = 0, z_c = 0;
-                ti.Unproject(static_cast<float>(x), static_cast<float>(y), d,
+                ti.Unproject(static_cast<float>(x), static_cast<float>(y), 1.0,
                              &x_c, &y_c, &z_c);
-
                 float x_g = 0, y_g = 0, z_g = 0;
                 ti.RigidTransform(x_c, y_c, z_c, &x_g, &y_g, &z_g);
 
-                int xb_lo = static_cast<int>(
-                        floorf((x_g - sdf_trunc) / block_size));
-                int xb_hi = static_cast<int>(
-                        floorf((x_g + sdf_trunc) / block_size));
-                int yb_lo = static_cast<int>(
-                        floorf((y_g - sdf_trunc) / block_size));
-                int yb_hi = static_cast<int>(
-                        floorf((y_g + sdf_trunc) / block_size));
-                int zb_lo = static_cast<int>(
-                        floorf((z_g - sdf_trunc) / block_size));
-                int zb_hi = static_cast<int>(
-                        floorf((z_g + sdf_trunc) / block_size));
+                // Origin
+                float x_o = 0, y_o = 0, z_o = 0;
+                ti.RigidTransform(0, 0, 0, &x_o, &y_o, &z_o);
 
-                for (int xb = xb_lo; xb <= xb_hi; ++xb) {
-                    for (int yb = yb_lo; yb <= yb_hi; ++yb) {
-                        for (int zb = zb_lo; zb <= zb_hi; ++zb) {
-                            int idx = atomicAdd(count_ptr, 1);
-                            block_coordi_ptr[3 * idx + 0] = xb;
-                            block_coordi_ptr[3 * idx + 1] = yb;
-                            block_coordi_ptr[3 * idx + 2] = zb;
-                        }
-                    }
+                // Direction
+                float x_d = x_g - x_o;
+                float y_d = y_g - y_o;
+                float z_d = z_g - z_o;
+
+                const int step_size = 4;
+                const float t_min = max(d - sdf_trunc, 0.0);
+                const float t_max = min(d + sdf_trunc, depth_max);
+                const float t_step = (t_max - t_min) / step_size;
+
+                float t = t_min;
+                int idx = atomicAdd(count_ptr, step_size);
+                for (int step = 0; step <= step_size; ++step) {
+                    int offset = (step + idx) * 3;
+
+                    int xb = static_cast<int>(
+                            floorf((x_o + t * x_d) / block_size));
+                    int yb = static_cast<int>(
+                            floorf((y_o + t * y_d) / block_size));
+                    int zb = static_cast<int>(
+                            floorf((z_o + t * z_d) / block_size));
+
+                    block_coordi_ptr[offset + 0] = xb;
+                    block_coordi_ptr[offset + 1] = yb;
+                    block_coordi_ptr[offset + 2] = zb;
+
+                    t += t_step;
                 }
             }
         });
