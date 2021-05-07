@@ -234,7 +234,7 @@ public:
                             float voxel_size = prop_values_.voxel_size;
                             this->model_ = std::make_shared<
                                     t::pipelines::voxelhashing::Model>(
-                                    voxel_size, voxel_size * 6, 16,
+                                    voxel_size, 0.04, 8,
                                     prop_values_.bucket_count,
                                     core::Tensor::Eye(4, core::Dtype::Float64,
                                                       core::Device("CPU:0")),

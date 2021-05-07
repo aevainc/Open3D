@@ -91,15 +91,6 @@ TSDFVoxelGrid::TSDFVoxelGrid(
         total_bytes += dtype.ByteSize() * 3;
     }
     // Users can add other key/dtype checkers here for potential extensions.
-
-    // SDF trunc check, critical for TSDF touch operation that allocates TSDF
-    // volumes.
-    if (sdf_trunc > block_resolution_ * voxel_size_ * 0.499) {
-        utility::LogError(
-                "SDF trunc is too large. Please make sure sdf trunc is smaller "
-                "than half block size (i.e., block_resolution * voxel_size * "
-                "0.5)");
-    }
     block_hashmap_ = std::make_shared<core::Hashmap>(
             block_count_, core::Dtype::Int32, core::Dtype::UInt8,
             core::SizeVector{3},
@@ -132,9 +123,9 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     // Create a point cloud from a low-resolution depth input to roughly
     // estimate surfaces.
     // TODO(wei): merge CreateFromDepth and Touch in one kernel.
-    int down_factor = 4;
-    int64_t capacity = (depth.GetCols() / down_factor) *
-                       (depth.GetRows() / down_factor) * 8;
+    int down_factor = 2;
+    int64_t capacity =
+            (depth.GetCols() / down_factor) * (depth.GetRows() / down_factor);
     if (point_hashmap_ == nullptr) {
         point_hashmap_ = std::make_shared<core::Hashmap>(
                 capacity, core::Dtype::Int32, core::Dtype::Int32,

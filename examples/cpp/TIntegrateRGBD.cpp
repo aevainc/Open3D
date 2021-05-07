@@ -124,8 +124,8 @@ int main(int argc, char** argv) {
     t::geometry::TSDFVoxelGrid voxel_grid({{"tsdf", core::Dtype::Float32},
                                            {"weight", core::Dtype::UInt16},
                                            {"color", core::Dtype::UInt16}},
-                                          voxel_size, sdf_trunc, 16,
-                                          block_count, device);
+                                          voxel_size, sdf_trunc, 8, block_count,
+                                          device);
 
     double time_total = 0;
     double time_int = 0;
