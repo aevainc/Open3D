@@ -173,10 +173,10 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     // hashmap for raycasting
     block_hashmap_->Find(block_coords, addrs, masks);
 
-    core::Tensor tmp_addrs, tmp_masks;
-    point_hashmap_->Find(block_coords, tmp_addrs, tmp_masks);
-    point_hashmap_->GetValueTensor().View({-1}).IndexSet(
-            {tmp_addrs.To(core::Dtype::Int64)}, addrs);
+    // core::Tensor tmp_addrs, tmp_masks;
+    // point_hashmap_->Find(block_coords, tmp_addrs, tmp_masks);
+    // point_hashmap_->GetValueTensor().View({-1}).IndexSet(
+    //         {tmp_addrs.To(core::Dtype::Int64)}, addrs);
 
     // TODO(wei): directly reuse it without intermediate variables.
     // Reserved for raycasting
@@ -250,11 +250,21 @@ TSDFVoxelGrid::RayCast(const core::Tensor &intrinsics,
                                 depth_min, depth_max);
 
     core::Tensor block_values = block_hashmap_->GetValueTensor();
-    core::Tensor point_values = point_hashmap_->GetValueTensor();
-    auto device_hashmap = point_hashmap_->GetDeviceHashmap();
-    kernel::tsdf::RayCast(device_hashmap, point_values, block_values,
-                          range_minmax_map, vertex_map, depth_map, color_map,
-                          normal_map, intrinsics, extrinsics, height, width,
+    /// Version #1
+    // core::Tensor point_values = point_hashmap_->GetValueTensor();
+    // auto device_hashmap = point_hashmap_->GetDeviceHashmap();
+    // kernel::tsdf::RayCast(device_hashmap, point_values, block_values,
+    //                       range_minmax_map, vertex_map, depth_map, color_map,
+    //                       normal_map, intrinsics, extrinsics, height, width,
+    //                       block_resolution_, voxel_size_, sdf_trunc_,
+    //                       depth_scale, depth_min, depth_max,
+    //                       weight_threshold);
+
+    /// Version #2
+    auto device_hashmap = block_hashmap_->GetDeviceHashmap();
+    kernel::tsdf::RayCast(device_hashmap, block_values, range_minmax_map,
+                          vertex_map, depth_map, color_map, normal_map,
+                          intrinsics, extrinsics, height, width,
                           block_resolution_, voxel_size_, sdf_trunc_,
                           depth_scale, depth_min, depth_max, weight_threshold);
 
