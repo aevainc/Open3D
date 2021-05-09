@@ -30,6 +30,7 @@
 #include "open3d/t/geometry/PointCloud.h"
 #include "open3d/t/geometry/kernel/TSDFVoxelGrid.h"
 #include "open3d/utility/Console.h"
+#include "open3d/utility/Timer.h"
 
 namespace open3d {
 namespace t {
@@ -173,10 +174,10 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     // hashmap for raycasting
     block_hashmap_->Find(block_coords, addrs, masks);
 
-    // core::Tensor tmp_addrs, tmp_masks;
-    // point_hashmap_->Find(block_coords, tmp_addrs, tmp_masks);
-    // point_hashmap_->GetValueTensor().View({-1}).IndexSet(
-    //         {tmp_addrs.To(core::Dtype::Int64)}, addrs);
+    core::Tensor tmp_addrs, tmp_masks;
+    point_hashmap_->Find(block_coords, tmp_addrs, tmp_masks);
+    point_hashmap_->GetValueTensor().View({-1}).IndexSet(
+            {tmp_addrs.To(core::Dtype::Int64)}, addrs);
 
     // TODO(wei): directly reuse it without intermediate variables.
     // Reserved for raycasting
@@ -207,10 +208,14 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     core::Tensor dst = block_hashmap_->GetValueTensor();
 
     // TODO(wei): use a fixed buffer.
+    utility::Timer timer;
+    timer.Start();
     kernel::tsdf::Integrate(
             depth_tensor, color_tensor, addrs.To(core::Dtype::Int64),
             block_hashmap_->GetKeyTensor(), dst, intrinsics, extrinsics,
             block_resolution_, voxel_size_, sdf_trunc_, depth_scale, depth_max);
+    timer.Stop();
+    utility::LogInfo("integration kernel takes {}", timer.GetDuration());
 }
 
 std::unordered_map<TSDFVoxelGrid::SurfaceMaskCode, core::Tensor>
@@ -250,23 +255,28 @@ TSDFVoxelGrid::RayCast(const core::Tensor &intrinsics,
                                 depth_min, depth_max);
 
     core::Tensor block_values = block_hashmap_->GetValueTensor();
+    utility::Timer timer;
+    timer.Start();
+
     /// Version #1
-    // core::Tensor point_values = point_hashmap_->GetValueTensor();
-    // auto device_hashmap = point_hashmap_->GetDeviceHashmap();
-    // kernel::tsdf::RayCast(device_hashmap, point_values, block_values,
-    //                       range_minmax_map, vertex_map, depth_map, color_map,
-    //                       normal_map, intrinsics, extrinsics, height, width,
+    core::Tensor point_values = point_hashmap_->GetValueTensor();
+    auto device_hashmap = point_hashmap_->GetDeviceHashmap();
+    kernel::tsdf::RayCast(device_hashmap, point_values, block_values,
+                          range_minmax_map, vertex_map, depth_map, color_map,
+                          normal_map, intrinsics, extrinsics, height, width,
+                          block_resolution_, voxel_size_, sdf_trunc_,
+                          depth_scale, depth_min, depth_max, weight_threshold);
+
+    /// Version #2
+    // auto device_hashmap = block_hashmap_->GetDeviceHashmap();
+    // kernel::tsdf::RayCast(device_hashmap, block_values, range_minmax_map,
+    //                       vertex_map, depth_map, color_map, normal_map,
+    //                       intrinsics, extrinsics, height, width,
     //                       block_resolution_, voxel_size_, sdf_trunc_,
     //                       depth_scale, depth_min, depth_max,
     //                       weight_threshold);
-
-    /// Version #2
-    auto device_hashmap = block_hashmap_->GetDeviceHashmap();
-    kernel::tsdf::RayCast(device_hashmap, block_values, range_minmax_map,
-                          vertex_map, depth_map, color_map, normal_map,
-                          intrinsics, extrinsics, height, width,
-                          block_resolution_, voxel_size_, sdf_trunc_,
-                          depth_scale, depth_min, depth_max, weight_threshold);
+    timer.Stop();
+    utility::LogInfo("raycast kernel takes {}", timer.GetDuration());
 
     std::unordered_map<TSDFVoxelGrid::SurfaceMaskCode, core::Tensor> results;
     if (ray_cast_mask & TSDFVoxelGrid::SurfaceMaskCode::VertexMap) {
