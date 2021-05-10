@@ -329,7 +329,8 @@ PointCloud TSDFVoxelGrid::ExtractSurfacePoints(int estimated_number,
             block_resolution_, voxel_size_, weight_threshold, estimated_number);
 
     auto pcd = PointCloud(points.Slice(0, 0, estimated_number));
-    if (surface_mask & SurfaceMaskCode::ColorMap) {
+    if ((surface_mask & SurfaceMaskCode::ColorMap) &&
+        colors.GetLength() == points.GetLength()) {
         pcd.SetPointColors(colors.Slice(0, 0, estimated_number));
     }
     if (surface_mask & SurfaceMaskCode::NormalMap) {

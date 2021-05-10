@@ -121,11 +121,9 @@ int main(int argc, char** argv) {
     }
     core::Device device(device_code);
     utility::LogInfo("Using device: {}", device.ToString());
-    t::geometry::TSDFVoxelGrid voxel_grid({{"tsdf", core::Dtype::Float32},
-                                           {"weight", core::Dtype::UInt16},
-                                           {"color", core::Dtype::UInt16}},
-                                          voxel_size, sdf_trunc, 8, block_count,
-                                          device);
+    t::geometry::TSDFVoxelGrid voxel_grid(
+            {{"tsdf", core::Dtype::Float32}, {"weight", core::Dtype::Float32}},
+            voxel_size, sdf_trunc, 8, block_count, device);
 
     double time_total = 0;
     double time_int = 0;
@@ -177,7 +175,7 @@ int main(int argc, char** argv) {
                              ray_timer.GetDuration());
             time_raycasting += ray_timer.GetDuration();
 
-            if (i % 100 == 0) {
+            if (i % 1000 == 0) {
                 core::Tensor range_map = result[MaskCode::RangeMap];
                 t::geometry::Image im_near(
                         range_map.Slice(2, 0, 1).Contiguous() / depth_max);
