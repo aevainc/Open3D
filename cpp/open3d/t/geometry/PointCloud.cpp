@@ -213,7 +213,7 @@ static PointCloud CreatePointCloudWithNormals(
         utility::LogError("Depth and color images have different sizes.");
     }
     auto depth =
-            depth_in.ClipTransform(depth_scale, 0.0f, depth_max, invalid_fill);
+            depth_in.ClipTransform(depth_scale, 0.01f, depth_max, invalid_fill);
     auto color = color_in;
     auto intrinsics = intrinsics_in / stride;
     intrinsics[-1][-1] = 1.f;
@@ -320,6 +320,43 @@ PointCloud PointCloud::CreateFromRGBDImage(const RGBDImage &rgbd_image,
                 intrinsics, extrinsics, depth_scale, depth_max, stride);
         return PointCloud({{"points", points}, {"colors", colors}});
     }
+}
+
+geometry::Image PointCloud::ProjectToDepthImage(int width,
+                                                int height,
+                                                const core::Tensor &intrinsics,
+                                                const core::Tensor &extrinsics,
+                                                float depth_scale,
+                                                float depth_max) {
+    core::Tensor depth = core::Tensor::Zeros({height, width, 1},
+                                             core::Dtype::Float32, device_);
+    kernel::pointcloud::Project(depth, utility::nullopt, GetPoints(),
+                                utility::nullopt, intrinsics, extrinsics,
+                                depth_scale, depth_max);
+    return geometry::Image(depth);
+}
+
+geometry::RGBDImage PointCloud::ProjectToRGBDImage(
+        int width,
+        int height,
+        const core::Tensor &intrinsics,
+        const core::Tensor &extrinsics,
+        float depth_scale,
+        float depth_max) {
+    if (!HasPointColors()) {
+        utility::LogError(
+                "Unable to project to RGBD without the Color attribute in the "
+                "point cloud.");
+    }
+
+    core::Tensor depth = core::Tensor::Zeros({height, width, 1},
+                                             core::Dtype::Float32, device_);
+    core::Tensor color = core::Tensor::Zeros({height, width, 3},
+                                             core::Dtype::UInt8, device_);
+    kernel::pointcloud::Project(depth, color, GetPoints(), GetPointColors(),
+                                intrinsics, extrinsics, depth_scale, depth_max);
+
+    return geometry::RGBDImage(color, depth);
 }
 
 PointCloud PointCloud::FromLegacyPointCloud(
