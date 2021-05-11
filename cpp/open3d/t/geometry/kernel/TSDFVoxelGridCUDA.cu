@@ -163,7 +163,7 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
     int* count_ptr = count.GetDataPtr<int>();
 
     int64_t n = rows_strided * cols_strided;
-    core::Tensor block_coordi({8 * n, 3}, core::Dtype::Int32, device);
+    core::Tensor block_coordi({4 * n, 3}, core::Dtype::Int32, device);
     int* block_coordi_ptr = static_cast<int*>(block_coordi.GetDataPtr());
 
     int64_t resolution = voxel_grid_resolution;
@@ -242,8 +242,31 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
     timer.Stop();
     utility::LogInfo("kernel.touch.activate {}", timer.GetDuration());
 
+    // Customized IndexGet (generic version too slow)
     timer.Start();
-    voxel_block_coords = block_coordi.IndexGet({block_masks});
+    voxel_block_coords = core::Tensor::EmptyLike(block_coordi);
+    int* voxel_block_coord_ptr = voxel_block_coords.GetDataPtr<int>();
+    bool* block_masks_ptr = block_masks.GetDataPtr<bool>();
+    block_coordi_ptr = block_coordi.GetDataPtr<int>();
+    count = core::Tensor(std::vector<int>{0}, {}, core::Dtype::Int32, device);
+    count_ptr = count.GetDataPtr<int>();
+    launcher.LaunchGeneralKernel(
+            total_block_count, [=] OPEN3D_DEVICE(int64_t workload_idx) {
+                if (block_masks_ptr[workload_idx]) {
+                    int idx = OPEN3D_ATOMIC_ADD(count_ptr, 1);
+                    int offset_lhs = 3 * idx;
+                    int offset_rhs = 3 * workload_idx;
+                    voxel_block_coord_ptr[offset_lhs + 0] =
+                            block_coordi_ptr[offset_rhs + 0];
+                    voxel_block_coord_ptr[offset_lhs + 1] =
+                            block_coordi_ptr[offset_rhs + 1];
+                    voxel_block_coord_ptr[offset_lhs + 2] =
+                            block_coordi_ptr[offset_rhs + 2];
+                }
+            });
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    total_block_count = count.Item<int>();
+    voxel_block_coords = voxel_block_coords.Slice(0, 0, total_block_count);
     timer.Stop();
     utility::LogInfo("kernel.touch.indexget {}", timer.GetDuration());
 }

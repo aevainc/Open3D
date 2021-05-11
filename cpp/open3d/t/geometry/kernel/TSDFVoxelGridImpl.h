@@ -86,8 +86,7 @@ void IntegrateCPU
     }
 
     // Plain arrays that does not require indexers
-    const int64_t* indices_ptr =
-            static_cast<const int64_t*>(indices.GetDataPtr());
+    const int* indices_ptr = static_cast<const int*>(indices.GetDataPtr());
 
     int64_t n = indices.GetLength() * resolution3;
 
@@ -110,9 +109,9 @@ void IntegrateCPU
                     int* block_key_ptr =
                             block_keys_indexer.GetDataPtrFromCoord<int>(
                                     block_idx);
-                    int64_t xb = static_cast<int64_t>(block_key_ptr[0]);
-                    int64_t yb = static_cast<int64_t>(block_key_ptr[1]);
-                    int64_t zb = static_cast<int64_t>(block_key_ptr[2]);
+                    int xb = block_key_ptr[0];
+                    int yb = block_key_ptr[1];
+                    int zb = block_key_ptr[2];
 
                     // voxel_idx -> (x_voxel, y_voxel, z_voxel)
                     int64_t xv, yv, zv;

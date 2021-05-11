@@ -225,10 +225,10 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
 
     // TODO(wei): use a fixed buffer.
     timer.Start();
-    kernel::tsdf::Integrate(
-            depth_tensor, color_tensor, addrs.To(core::Dtype::Int64),
-            block_hashmap_->GetKeyTensor(), dst, intrinsics, extrinsics,
-            block_resolution_, voxel_size_, sdf_trunc_, depth_scale, depth_max);
+    kernel::tsdf::Integrate(depth_tensor, color_tensor, addrs,
+                            block_hashmap_->GetKeyTensor(), dst, intrinsics,
+                            extrinsics, block_resolution_, voxel_size_,
+                            sdf_trunc_, depth_scale, depth_max);
     timer.Stop();
     utility::LogInfo("integration.fusion {}", timer.GetDuration());
 }
