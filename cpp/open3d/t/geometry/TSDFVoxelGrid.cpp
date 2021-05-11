@@ -124,7 +124,9 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     // Create a point cloud from a low-resolution depth input to roughly
     // estimate surfaces.
     // TODO(wei): merge CreateFromDepth and Touch in one kernel.
-    int down_factor = 2;
+    utility::Timer timer;
+    timer.Start();
+    int down_factor = 4;
     int64_t capacity =
             (depth.GetCols() / down_factor) * (depth.GetRows() / down_factor);
     if (point_hashmap_ == nullptr) {
@@ -135,7 +137,10 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     } else {
         point_hashmap_->Clear();
     }
+    timer.Stop();
+    utility::LogInfo("integration.clear {}", timer.GetDuration());
 
+    timer.Start();
     core::Tensor block_coords;
 
     // Version #1
@@ -150,8 +155,11 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
                         extrinsics, block_coords, block_resolution_,
                         voxel_size_, sdf_trunc_, depth_scale, depth_max,
                         down_factor);
+    timer.Stop();
+    utility::LogInfo("integration.touch {}", timer.GetDuration());
 
     // Active voxel blocks in the block hashmap.
+    timer.Start();
     core::Tensor addrs, masks;
     int64_t n = block_hashmap_->Size();
     try {
@@ -165,6 +173,8 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
                 "(currently {})",
                 n, voxel_size_);
     }
+    timer.Stop();
+    utility::LogInfo("integration.activate {}", timer.GetDuration());
 
     // Collect voxel blocks in the viewing frustum. Note we cannot directly
     // reuse addrs from Activate, since some blocks might have been activated in
@@ -172,12 +182,18 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     // TODO(wei): support one-pass operation ActivateAndFind.
     // TODO(wei): set point_hashmap_[block_coords] = addrs and use the small
     // hashmap for raycasting
+    timer.Start();
     block_hashmap_->Find(block_coords, addrs, masks);
+    timer.Stop();
+    utility::LogInfo("integration.find {}", timer.GetDuration());
 
+    timer.Start();
     core::Tensor tmp_addrs, tmp_masks;
     point_hashmap_->Find(block_coords, tmp_addrs, tmp_masks);
     point_hashmap_->GetValueTensor().View({-1}).IndexSet(
             {tmp_addrs.To(core::Dtype::Int64)}, addrs);
+    timer.Stop();
+    utility::LogInfo("integration.assign {}", timer.GetDuration());
 
     // TODO(wei): directly reuse it without intermediate variables.
     // Reserved for raycasting
@@ -195,7 +211,7 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
             color_tensor =
                     color.AsTensor().To(core::Dtype::Float32).Contiguous();
         } else {
-            utility::LogWarning(
+            utility::LogDebug(
                     "[TSDFIntegrate] color image is ignored since voxels do "
                     "not contain colors.");
         }
@@ -208,14 +224,13 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     core::Tensor dst = block_hashmap_->GetValueTensor();
 
     // TODO(wei): use a fixed buffer.
-    utility::Timer timer;
     timer.Start();
     kernel::tsdf::Integrate(
             depth_tensor, color_tensor, addrs.To(core::Dtype::Int64),
             block_hashmap_->GetKeyTensor(), dst, intrinsics, extrinsics,
             block_resolution_, voxel_size_, sdf_trunc_, depth_scale, depth_max);
     timer.Stop();
-    utility::LogInfo("integration kernel takes {}", timer.GetDuration());
+    utility::LogInfo("integration.fusion {}", timer.GetDuration());
 }
 
 std::unordered_map<TSDFVoxelGrid::SurfaceMaskCode, core::Tensor>
@@ -276,7 +291,7 @@ TSDFVoxelGrid::RayCast(const core::Tensor &intrinsics,
     //                       depth_scale, depth_min, depth_max,
     //                       weight_threshold);
     timer.Stop();
-    utility::LogInfo("raycast kernel takes {}", timer.GetDuration());
+    utility::LogInfo("raycast.kernel {}", timer.GetDuration());
 
     std::unordered_map<TSDFVoxelGrid::SurfaceMaskCode, core::Tensor> results;
     if (ray_cast_mask & TSDFVoxelGrid::SurfaceMaskCode::VertexMap) {

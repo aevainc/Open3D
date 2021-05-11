@@ -39,6 +39,7 @@
 #include "open3d/t/geometry/kernel/TSDFVoxelGrid.h"
 #include "open3d/t/geometry/kernel/TSDFVoxelGridImpl.h"
 #include "open3d/utility/Console.h"
+#include "open3d/utility/Timer.h"
 
 namespace open3d {
 namespace t {
@@ -62,18 +63,23 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
                int64_t voxel_grid_resolution,
                float voxel_size,
                float sdf_trunc) {
+    utility::Timer timer;
     int64_t resolution = voxel_grid_resolution;
     float block_size = voxel_size * resolution;
 
     int64_t n = points.GetLength();
     const float* pcd_ptr = static_cast<const float*>(points.GetDataPtr());
 
+    timer.Start();
     core::Device device = points.GetDevice();
     core::Tensor block_coordi({8 * n, 3}, core::Dtype::Int32, device);
     int* block_coordi_ptr = static_cast<int*>(block_coordi.GetDataPtr());
     core::Tensor count(std::vector<int>{0}, {}, core::Dtype::Int32, device);
     int* count_ptr = static_cast<int*>(count.GetDataPtr());
+    timer.Stop();
+    utility::LogInfo("kernel.touch.preparation {}", timer.GetDuration());
 
+    timer.Start();
     core::kernel::CUDALauncher::LaunchGeneralKernel(
             n, [=] OPEN3D_DEVICE(int64_t workload_idx) {
                 float x = pcd_ptr[3 * workload_idx + 0];
@@ -104,6 +110,9 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
                     }
                 }
             });
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    timer.Stop();
+    utility::LogInfo("kernel.touch.run {}", timer.GetDuration());
 
     int total_block_count = count.Item<int>();
     if (total_block_count == 0) {
@@ -112,11 +121,19 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
                 "abort integration. Please check specified parameters, "
                 "especially depth_scale and voxel_size");
     }
+
+    timer.Start();
     block_coordi = block_coordi.Slice(0, 0, total_block_count);
     core::Tensor block_addrs, block_masks;
     hashmap->Activate(block_coordi.Slice(0, 0, count.Item<int>()), block_addrs,
                       block_masks);
+    timer.Stop();
+    utility::LogInfo("kernel.touch.activate {}", timer.GetDuration());
+
+    timer.Start();
     voxel_block_coords = block_coordi.IndexGet({block_masks});
+    timer.Stop();
+    utility::LogInfo("kernel.touch.indexget {}", timer.GetDuration());
 }
 
 void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
@@ -130,6 +147,8 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
                float depth_scale,
                float depth_max,
                int stride) {
+    utility::Timer timer;
+    timer.Start();
     core::Device device = depth.GetDevice();
     NDArrayIndexer depth_indexer(depth, 2);
     core::Tensor pose = t::geometry::InverseTransformation(extrinsics);
@@ -150,6 +169,10 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
     int64_t resolution = voxel_grid_resolution;
     float block_size = voxel_size * resolution;
 
+    timer.Stop();
+    utility::LogInfo("kernel.touch.preparation {}", timer.GetDuration());
+
+    timer.Start();
     core::kernel::CUDALauncher launcher;
     DISPATCH_DTYPE_TO_TEMPLATE(depth.GetDtype(), [&]() {
         launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(
@@ -175,7 +198,7 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
                 float y_d = y_g - y_o;
                 float z_d = z_g - z_o;
 
-                const int step_size = 4;
+                const int step_size = 3;
                 const float t_min = max(d - sdf_trunc, 0.0);
                 const float t_max = min(d + sdf_trunc, depth_max);
                 const float t_step = (t_max - t_min) / step_size;
@@ -201,7 +224,11 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
             }
         });
     });
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    timer.Stop();
+    utility::LogInfo("kernel.touch.run {}", timer.GetDuration());
 
+    timer.Start();
     int total_block_count = count.Item<int>();
     if (total_block_count == 0) {
         utility::LogError(
@@ -211,9 +238,14 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
     }
     block_coordi = block_coordi.Slice(0, 0, total_block_count);
     core::Tensor block_addrs, block_masks;
-    hashmap->Activate(block_coordi.Slice(0, 0, count.Item<int>()), block_addrs,
-                      block_masks);
+    hashmap->Activate(block_coordi, block_addrs, block_masks);
+    timer.Stop();
+    utility::LogInfo("kernel.touch.activate {}", timer.GetDuration());
+
+    timer.Start();
     voxel_block_coords = block_coordi.IndexGet({block_masks});
+    timer.Stop();
+    utility::LogInfo("kernel.touch.indexget {}", timer.GetDuration());
 }
 
 }  // namespace tsdf

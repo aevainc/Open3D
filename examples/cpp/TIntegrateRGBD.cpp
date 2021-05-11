@@ -140,13 +140,13 @@ int main(int argc, char** argv) {
         t::geometry::Image color =
                 (*t::io::CreateImageFromFile(color_filenames[i]));
         timer_io.Stop();
-        utility::LogInfo("IO takes {}", timer_io.GetDuration());
+        // utility::LogInfo("IO takes {}", timer_io.GetDuration());
 
         timer_io.Start();
         depth = depth.To(device);
         color = color.To(device);
         timer_io.Stop();
-        utility::LogInfo("Conversion takes {}", timer_io.GetDuration());
+        // utility::LogInfo("Conversion takes {}", timer_io.GetDuration());
 
         Eigen::Matrix4d extrinsic = trajectory->parameters_[i].extrinsic_;
         Tensor extrinsic_t =
@@ -157,8 +157,7 @@ int main(int argc, char** argv) {
         voxel_grid.Integrate(depth, color, intrinsic_t, extrinsic_t,
                              depth_scale, depth_max);
         int_timer.Stop();
-        utility::LogInfo("{}: Integration takes {}", i,
-                         int_timer.GetDuration());
+        utility::LogInfo("main.integration {}", int_timer.GetDuration());
         time_int += int_timer.GetDuration();
 
         if (enable_raycast) {
@@ -171,11 +170,10 @@ int main(int argc, char** argv) {
                     MaskCode::DepthMap);
             ray_timer.Stop();
 
-            utility::LogInfo("{}: Raycast takes {}", i,
-                             ray_timer.GetDuration());
+            utility::LogInfo("main.raycast {}", ray_timer.GetDuration());
             time_raycasting += ray_timer.GetDuration();
 
-            if (i % 1000 == 0) {
+            if (false) {
                 core::Tensor range_map = result[MaskCode::RangeMap];
                 t::geometry::Image im_near(
                         range_map.Slice(2, 0, 1).Contiguous() / depth_max);
@@ -208,7 +206,8 @@ int main(int argc, char** argv) {
         }
 
         timer.Stop();
-        utility::LogInfo("{}: Per iteration takes {}", i, timer.GetDuration());
+        // utility::LogInfo("{}: Per iteration takes {}", i,
+        // timer.GetDuration());
         time_total += timer.GetDuration();
     }
 
