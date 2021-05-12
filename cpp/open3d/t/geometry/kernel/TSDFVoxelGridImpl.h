@@ -141,7 +141,7 @@ void IntegrateCPU
                                   depth_scale;
 
                     float sdf = (depth - zc);
-                    if (depth <= 0 || depth > depth_max || zc <= 0 ||
+                    if (zc <= 0 || depth <= 0 || depth > depth_max ||
                         sdf < -sdf_trunc) {
                         return;
                     }
@@ -964,9 +964,12 @@ void EstimateRangeCPU
     const int frag_buffer_size = 65535;
 
     // TODO(wei): explicit buffer
-    core::Tensor fragment_buffer =
-            core::Tensor({frag_buffer_size, 6}, core::Dtype::Float32,
-                         block_keys.GetDevice());
+    static core::Tensor fragment_buffer;
+    if (fragment_buffer.GetLength() == 0) {
+        fragment_buffer =
+                core::Tensor({frag_buffer_size, 6}, core::Dtype::Float32,
+                             block_keys.GetDevice());
+    }
 
     NDArrayIndexer frag_buffer_indexer(fragment_buffer, 1);
     NDArrayIndexer block_keys_indexer(block_keys, 1);
@@ -988,6 +991,7 @@ void EstimateRangeCPU
 #endif
 
     // Pass 0: iterate over blocks, fill-in an rendering fragment array
+    float block_size = block_resolution * voxel_size;
     launcher.LaunchGeneralKernel(
             block_keys.GetLength(), [=] OPEN3D_DEVICE(int64_t workload_idx) {
                 int* key = block_keys_indexer.GetDataPtrFromCoord<int>(
@@ -1001,12 +1005,9 @@ void EstimateRangeCPU
 
                 // Project 8 corners to low-res image and form a rectangle
                 for (int i = 0; i < 8; ++i) {
-                    float xw = (key[0] + ((i & 1) > 0)) * block_resolution *
-                               voxel_size;
-                    float yw = (key[1] + ((i & 2) > 0)) * block_resolution *
-                               voxel_size;
-                    float zw = (key[2] + ((i & 4) > 0)) * block_resolution *
-                               voxel_size;
+                    float xw = (key[0] + ((i & 1) > 0)) * block_size;
+                    float yw = (key[1] + ((i & 2) > 0)) * block_size;
+                    float zw = (key[2] + ((i & 4) > 0)) * block_size;
 
                     w2c_transform_indexer.RigidTransform(xw, yw, zw, &xc, &yc,
                                                          &zc);
@@ -1089,11 +1090,12 @@ void EstimateRangeCPU
             });
 
     // Pass 1: iterate over rendering fragment array, fill-in range
+    int square_fragment_size = fragment_size * fragment_size;
     launcher.LaunchGeneralKernel(
             frag_count * fragment_size * fragment_size,
             [=] OPEN3D_DEVICE(int64_t workload_idx) {
-                int frag_idx = workload_idx / (fragment_size * fragment_size);
-                int local_idx = workload_idx % (fragment_size * fragment_size);
+                int frag_idx = workload_idx / (square_fragment_size);
+                int local_idx = workload_idx % (square_fragment_size);
                 int dv = local_idx / fragment_size;
                 int du = local_idx % fragment_size;
 

@@ -117,7 +117,8 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
                               const core::Tensor &extrinsics,
                               float depth_scale,
                               float depth_max) {
-    utility::Timer timer;
+    utility::Timer timer, total_timer;
+    total_timer.Start();
     timer.Start();
     if (depth.IsEmpty()) {
         utility::LogError(
@@ -178,8 +179,6 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
                 "(currently {})",
                 n, voxel_size_);
     }
-    timer.Stop();
-    utility::LogInfo("integration.activate {}", timer.GetDuration());
 
     // Collect voxel blocks in the viewing frustum. Note we cannot directly
     // reuse addrs from Activate, since some blocks might have been activated in
@@ -192,15 +191,11 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     // timer.Stop();
     // utility::LogInfo("integration.find {}", timer.GetDuration());
 
-    timer.Start();
     core::Tensor tmp_addrs, tmp_masks;
     point_hashmap_->Assign(active_block_coords, addrs, tmp_addrs, tmp_masks);
-    timer.Stop();
-    utility::LogInfo("integration.assign {}", timer.GetDuration());
 
     // TODO(wei): directly reuse it without intermediate variables.
     // Reserved for raycasting
-    timer.Start();
 
     core::Tensor depth_tensor = depth.AsTensor();
     core::Tensor color_tensor;
@@ -226,7 +221,7 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
 
     core::Tensor dst = block_hashmap_->GetValueTensor();
     timer.Stop();
-    utility::LogInfo("integration.condition {}", timer.GetDuration());
+    utility::LogInfo("integration.local_hashmap {}", timer.GetDuration());
 
     // TODO(wei): use a fixed buffer.
     timer.Start();
@@ -236,6 +231,9 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
                             depth_scale, depth_max);
     timer.Stop();
     utility::LogInfo("integration.fusion {}", timer.GetDuration());
+
+    total_timer.Stop();
+    utility::LogInfo("integration {}", total_timer.GetDuration());
 }
 
 std::unordered_map<TSDFVoxelGrid::SurfaceMaskCode, core::Tensor>
