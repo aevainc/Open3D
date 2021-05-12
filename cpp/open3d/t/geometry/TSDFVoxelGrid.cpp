@@ -191,12 +191,6 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     timer.Start();
     core::Tensor tmp_addrs, tmp_masks;
     point_hashmap_->Assign(block_coords, addrs, tmp_addrs, tmp_masks);
-    // point_hashmap_->Find(block_coords, tmp_addrs, tmp_masks);
-    // point_hashmap_->GetValueTensor().View({-1}).IndexSet(
-    //         {tmp_addrs.To(core::Dtype::Int64)}, addrs);
-#ifdef BUILD_CUDA_MODULE
-    cudaDeviceSynchronize();
-#endif
     timer.Stop();
     utility::LogInfo("integration.assign {}", timer.GetDuration());
 
