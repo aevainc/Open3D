@@ -109,8 +109,8 @@ int main(int argc, char** argv) {
             argc, argv, "--voxel_size", 3.f / 512.f));
     float sdf_trunc = static_cast<float>(utility::GetProgramOptionAsDouble(
             argc, argv, "--sdf_trunc", 0.04f));
-    int block_resolution = utility::GetProgramOptionAsInt(
-            argc, argv, "--block_resolution", 16);
+    int block_resolution =
+            utility::GetProgramOptionAsInt(argc, argv, "--block_resolution", 8);
     int block_count =
             utility::GetProgramOptionAsInt(argc, argv, "--block_count", 10000);
 
@@ -136,8 +136,13 @@ int main(int argc, char** argv) {
             ref_depth.GetRows(), ref_depth.GetCols(), intrinsic_t, device);
     t::pipelines::voxelhashing::Frame raycast_frame(
             ref_depth.GetRows(), ref_depth.GetCols(), intrinsic_t, device);
+    raycast_frame.SetData(
+            "color",
+            core::Tensor::Zeros({ref_depth.GetRows(), ref_depth.GetCols(), 3},
+                                core::Dtype::UInt8, core::Device("CUDA:0")));
 
     // Iterate over frames
+    utility::Timer timer;
     for (size_t i = 0; i < iterations; ++i) {
         utility::LogInfo("Processing {}/{}...", i, iterations);
         // Load image into frame
@@ -176,9 +181,16 @@ int main(int argc, char** argv) {
         // Integrate
         model.UpdateFramePose(i, T_frame_to_model);
         if (tracking_success) {
+            timer.Start();
             model.Integrate(input_frame, depth_scale, depth_max);
+            timer.Stop();
+            utility::LogInfo("main.integrate {}", timer.GetDuration());
         }
-        model.SynthesizeModelFrame(raycast_frame, depth_scale, 0.1, depth_max);
+        timer.Start();
+        model.SynthesizeModelFrame(raycast_frame, depth_scale, 0.2, depth_max,
+                                   false);
+        timer.Stop();
+        utility::LogInfo("main.raycast {}", timer.GetDuration());
     }
 
     if (utility::ProgramOptionExists(argc, argv, "--pointcloud")) {

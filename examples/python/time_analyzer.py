@@ -16,11 +16,14 @@ if __name__ == '__main__':
     for line in content:
         token = line.strip().split(' ')
         key = token[2]
-        value = float(token[3])
-        if key not in time_dict:
-            time_dict[key] = [value]
-        else:
-            time_dict[key].append(value)
+        try:
+            value = float(token[3])
+            if key not in time_dict:
+                time_dict[key] = [value]
+            else:
+                time_dict[key].append(value)
+        except:
+            pass
 
     for k, v in time_dict.items():
         print(k, np.array(v).mean())

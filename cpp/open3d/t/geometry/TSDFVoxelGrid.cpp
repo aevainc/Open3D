@@ -27,6 +27,7 @@
 #include "open3d/t/geometry/TSDFVoxelGrid.h"
 
 #include "open3d/Open3D.h"
+#include "open3d/core/CUDAUtils.h"
 #include "open3d/t/geometry/PointCloud.h"
 #include "open3d/t/geometry/kernel/TSDFVoxelGrid.h"
 #include "open3d/utility/Console.h"
@@ -116,6 +117,8 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
                               const core::Tensor &extrinsics,
                               float depth_scale,
                               float depth_max) {
+    utility::Timer timer;
+    timer.Start();
     if (depth.IsEmpty()) {
         utility::LogError(
                 "[TSDFVoxelGrid] input depth is empty for integration.");
@@ -124,8 +127,6 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     // Create a point cloud from a low-resolution depth input to roughly
     // estimate surfaces.
     // TODO(wei): merge CreateFromDepth and Touch in one kernel.
-    utility::Timer timer;
-    timer.Start();
     int down_factor = 4;
     int64_t capacity = (depth.GetCols() / down_factor) *
                        (depth.GetRows() / down_factor) / 4;
@@ -192,11 +193,15 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     point_hashmap_->Find(block_coords, tmp_addrs, tmp_masks);
     point_hashmap_->GetValueTensor().View({-1}).IndexSet(
             {tmp_addrs.To(core::Dtype::Int64)}, addrs);
+#ifdef BUILD_CUDA_MODULE
+    cudaDeviceSynchronize();
+#endif
     timer.Stop();
     utility::LogInfo("integration.assign {}", timer.GetDuration());
 
     // TODO(wei): directly reuse it without intermediate variables.
     // Reserved for raycasting
+    timer.Start();
     active_block_coords_ = block_coords;
 
     core::Tensor depth_tensor = depth.AsTensor().Contiguous();
@@ -222,6 +227,11 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     }
 
     core::Tensor dst = block_hashmap_->GetValueTensor();
+#ifdef BUILD_CUDA_MODULE
+    cudaDeviceSynchronize();
+#endif
+    timer.Stop();
+    utility::LogInfo("integration.condition {}", timer.GetDuration());
 
     // TODO(wei): use a fixed buffer.
     timer.Start();
