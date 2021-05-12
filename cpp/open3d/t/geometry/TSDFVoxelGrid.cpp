@@ -127,8 +127,8 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     utility::Timer timer;
     timer.Start();
     int down_factor = 4;
-    int64_t capacity =
-            (depth.GetCols() / down_factor) * (depth.GetRows() / down_factor);
+    int64_t capacity = (depth.GetCols() / down_factor) *
+                       (depth.GetRows() / down_factor) / 4;
     if (point_hashmap_ == nullptr) {
         point_hashmap_ = std::make_shared<core::Hashmap>(
                 capacity, core::Dtype::Int32, core::Dtype::Int32,
