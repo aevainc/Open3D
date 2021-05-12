@@ -164,7 +164,7 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     core::Tensor addrs, masks;
     int64_t n = block_hashmap_->Size();
     try {
-        block_hashmap_->Activate(block_coords, addrs, masks);
+        block_hashmap_->ActivateOrFind(block_coords, addrs, masks);
     } catch (const std::runtime_error &) {
         utility::LogError(
                 "[TSDFIntegrate] Unable to allocate volume during rehashing. "
@@ -183,10 +183,10 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     // TODO(wei): support one-pass operation ActivateAndFind.
     // TODO(wei): set point_hashmap_[block_coords] = addrs and use the small
     // hashmap for raycasting
-    timer.Start();
-    block_hashmap_->Find(block_coords, addrs, masks);
-    timer.Stop();
-    utility::LogInfo("integration.find {}", timer.GetDuration());
+    // timer.Start();
+    // block_hashmap_->Find(block_coords, addrs, masks);
+    // timer.Stop();
+    // utility::LogInfo("integration.find {}", timer.GetDuration());
 
     timer.Start();
     core::Tensor tmp_addrs, tmp_masks;

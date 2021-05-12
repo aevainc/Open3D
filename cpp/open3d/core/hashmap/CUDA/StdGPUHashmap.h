@@ -59,10 +59,21 @@ public:
                 bool* output_masks,
                 int64_t count) override;
 
+    void InsertOrFind(const void* input_keys,
+                      const void* input_values,
+                      addr_t* output_addrs,
+                      bool* output_masks,
+                      int64_t count) override;
+
     void Activate(const void* input_keys,
                   addr_t* output_addrs,
                   bool* output_masks,
                   int64_t count) override;
+
+    void ActivateOrFind(const void* input_keys,
+                        addr_t* output_addrs,
+                        bool* output_masks,
+                        int64_t count) override;
 
     void Find(const void* input_keys,
               addr_t* output_addrs,
@@ -103,6 +114,12 @@ protected:
                     addr_t* output_addrs,
                     bool* output_masks,
                     int64_t count);
+
+    void InsertOrFindImpl(const void* input_keys,
+                          const void* input_values,
+                          addr_t* output_addrs,
+                          bool* output_masks,
+                          int64_t count);
 
     void Allocate(int64_t capacity);
     void Free();
@@ -147,11 +164,39 @@ void StdGPUHashmap<Key, Hash>::Insert(const void* input_keys,
 }
 
 template <typename Key, typename Hash>
+void StdGPUHashmap<Key, Hash>::InsertOrFind(const void* input_keys,
+                                            const void* input_values,
+                                            addr_t* output_addrs,
+                                            bool* output_masks,
+                                            int64_t count) {
+    int64_t new_size = Size() + count;
+    if (new_size > this->capacity_) {
+        int64_t bucket_count = GetBucketCount();
+        float avg_capacity_per_bucket =
+                float(this->capacity_) / float(bucket_count);
+        int64_t expected_buckets = std::max(
+                bucket_count * 2,
+                int64_t(std::ceil(new_size / avg_capacity_per_bucket)));
+        Rehash(expected_buckets);
+    }
+    InsertOrFindImpl(input_keys, input_values, output_addrs, output_masks,
+                     count);
+}
+
+template <typename Key, typename Hash>
 void StdGPUHashmap<Key, Hash>::Activate(const void* input_keys,
                                         addr_t* output_addrs,
                                         bool* output_masks,
                                         int64_t count) {
     Insert(input_keys, nullptr, output_addrs, output_masks, count);
+}
+
+template <typename Key, typename Hash>
+void StdGPUHashmap<Key, Hash>::ActivateOrFind(const void* input_keys,
+                                              addr_t* output_addrs,
+                                              bool* output_masks,
+                                              int64_t count) {
+    InsertOrFind(input_keys, nullptr, output_addrs, output_masks, count);
 }
 
 // Need an explicit kernel for non-const access to map
@@ -409,6 +454,76 @@ void StdGPUHashmap<Key, Hash>::InsertImpl(const void* input_keys,
                                             static_cast<const Key*>(input_keys),
                                             input_values, this->dsize_value_,
                                             output_addrs, output_masks, count);
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+}
+
+template <typename Key, typename Hash>
+__global__ void STDGPUInsertOrFindKernel(
+        stdgpu::unordered_map<Key, addr_t, Hash> map,
+        CUDAHashmapBufferAccessor buffer_accessor,
+        const Key* input_keys,
+        const void* input_values,
+        int64_t dsize_value,
+        addr_t* output_addrs,
+        bool* output_masks,
+        int64_t count) {
+    uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
+    if (tid >= count) return;
+
+    Key key = input_keys[tid];
+    output_addrs[tid] = 0;
+    output_masks[tid] = false;
+
+    auto iter = map.find(key);
+    bool flag = (iter != map.end());
+    if (flag) {  // found
+        output_addrs[tid] = iter->second;
+        output_masks[tid] = true;
+        return;
+    }
+
+    auto insert_res = map.emplace(key, 0);
+    if (insert_res.second) {
+        addr_t dst_kv_addr = buffer_accessor.DeviceAllocate();
+        auto dst_kv_iter = buffer_accessor.ExtractIterator(dst_kv_addr);
+
+        // Copy templated key to buffer (duplicate)
+        // TODO: hack stdgpu inside and take out the buffer directly
+        *static_cast<Key*>(dst_kv_iter.first) = key;
+
+        // Copy/reset non-templated value in buffer
+        uint8_t* dst_value = static_cast<uint8_t*>(dst_kv_iter.second);
+        if (input_values != nullptr) {
+            const uint8_t* src_value =
+                    static_cast<const uint8_t*>(input_values) +
+                    dsize_value * tid;
+            for (int byte = 0; byte < dsize_value; ++byte) {
+                dst_value[byte] = src_value[byte];
+            }
+        }
+
+        // Update from the dummy index
+        insert_res.first->second = dst_kv_addr;
+
+        // Write to return variables
+        output_addrs[tid] = dst_kv_addr;
+        output_masks[tid] = true;
+    }
+}
+
+template <typename Key, typename Hash>
+void StdGPUHashmap<Key, Hash>::InsertOrFindImpl(const void* input_keys,
+                                                const void* input_values,
+                                                addr_t* output_addrs,
+                                                bool* output_masks,
+                                                int64_t count) {
+    uint32_t threads = 128;
+    uint32_t blocks = (count + threads - 1) / threads;
+
+    STDGPUInsertOrFindKernel<<<blocks, threads>>>(
+            impl_, buffer_accessor_, static_cast<const Key*>(input_keys),
+            input_values, this->dsize_value_, output_addrs, output_masks,
+            count);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
 }
 

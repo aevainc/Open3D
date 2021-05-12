@@ -63,6 +63,11 @@ public:
                         addr_t* output_iterators,
                         bool* output_masks,
                         int64_t count) = 0;
+    virtual void InsertOrFind(const void* input_keys,
+                              const void* input_values,
+                              addr_t* output_iterators,
+                              bool* output_masks,
+                              int64_t count) = 0;
 
     /// Parallel activate contiguous arrays of keys without copying values.
     /// Specifically useful for large value elements (e.g., a tensor), where we
@@ -71,6 +76,11 @@ public:
                           addr_t* output_iterators,
                           bool* output_masks,
                           int64_t count) = 0;
+
+    virtual void ActivateOrFind(const void* input_keys,
+                                addr_t* output_iterators,
+                                bool* output_masks,
+                                int64_t count) = 0;
 
     /// Parallel find a contiguous array of keys.
     virtual void Find(const void* input_keys,

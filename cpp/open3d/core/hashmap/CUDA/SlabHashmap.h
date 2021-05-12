@@ -52,11 +52,20 @@ public:
                 addr_t* output_addrs,
                 bool* output_masks,
                 int64_t count) override;
+    void InsertOrFind(const void* input_keys,
+                      const void* input_values,
+                      addr_t* output_addrs,
+                      bool* output_masks,
+                      int64_t count) override;
 
     void Activate(const void* input_keys,
                   addr_t* output_addrs,
                   bool* output_masks,
                   int64_t count) override;
+    void ActivateOrFind(const void* input_keys,
+                        addr_t* output_addrs,
+                        bool* output_masks,
+                        int64_t count) override;
 
     void Find(const void* input_keys,
               addr_t* output_addrs,
@@ -98,6 +107,11 @@ protected:
                     addr_t* output_addrs,
                     bool* output_masks,
                     int64_t count);
+    void InsertOrFindImpl(const void* input_keys,
+                          const void* input_values,
+                          addr_t* output_addrs,
+                          bool* output_masks,
+                          int64_t count);
 
     void Allocate(int64_t bucket_count, int64_t capacity);
     void Free();
@@ -179,11 +193,39 @@ void SlabHashmap<Key, Hash>::Insert(const void* input_keys,
 }
 
 template <typename Key, typename Hash>
+void SlabHashmap<Key, Hash>::InsertOrFind(const void* input_keys,
+                                          const void* input_values,
+                                          addr_t* output_addrs,
+                                          bool* output_masks,
+                                          int64_t count) {
+    int64_t new_size = Size() + count;
+    if (new_size > this->capacity_) {
+        float avg_capacity_per_bucket =
+                float(this->capacity_) / float(this->bucket_count_);
+        int64_t expected_buckets = std::max(
+                int64_t(this->bucket_count_ * 2),
+                int64_t(std::ceil(new_size / avg_capacity_per_bucket)));
+        Rehash(expected_buckets);
+    }
+
+    InsertOrFindImpl(input_keys, input_values, output_addrs, output_masks,
+                     count);
+}
+
+template <typename Key, typename Hash>
 void SlabHashmap<Key, Hash>::Activate(const void* input_keys,
                                       addr_t* output_addrs,
                                       bool* output_masks,
                                       int64_t count) {
     Insert(input_keys, nullptr, output_addrs, output_masks, count);
+}
+
+template <typename Key, typename Hash>
+void SlabHashmap<Key, Hash>::ActivateOrFind(const void* input_keys,
+                                            addr_t* output_addrs,
+                                            bool* output_masks,
+                                            int64_t count) {
+    InsertOrFind(input_keys, nullptr, output_addrs, output_masks, count);
 }
 
 template <typename Key, typename Hash>
@@ -345,6 +387,33 @@ void SlabHashmap<Key, Hash>::InsertImpl(const void* input_keys,
             impl_, input_values, output_addrs, output_masks, count);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
+}
+
+template <typename Key, typename Hash>
+void SlabHashmap<Key, Hash>::InsertOrFindImpl(const void* input_keys,
+                                              const void* input_values,
+                                              addr_t* output_addrs,
+                                              bool* output_masks,
+                                              int64_t count) {
+    if (count == 0) return;
+
+    /// Increase heap_counter to pre-allocate potential memory increment and
+    /// avoid atomicAdd in kernel.
+    int prev_heap_counter = buffer_accessor_.HeapCounter(this->device_);
+    *thrust::device_ptr<int>(impl_.buffer_accessor_.heap_counter_) =
+            prev_heap_counter + count;
+
+    // const int64_t num_blocks =
+    //         (count + kThreadsPerBlock - 1) / kThreadsPerBlock;
+    utility::LogError("Unimplemented");
+    // InsertOrFindKernelPass0<<<num_blocks, kThreadsPerBlock>>>(
+    //         impl_, input_keys, output_addrs, prev_heap_counter, count);
+    // InsertOrFindKernelPass1<<<num_blocks, kThreadsPerBlock>>>(
+    //         impl_, input_keys, output_addrs, output_masks, count);
+    // InsertOrFindKernelPass2<<<num_blocks, kThreadsPerBlock>>>(
+    //         impl_, input_values, output_addrs, output_masks, count);
+    // OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    // OPEN3D_CUDA_CHECK(cudaGetLastError());
 }
 
 template <typename Key, typename Hash>

@@ -52,11 +52,20 @@ public:
                 addr_t* output_addrs,
                 bool* output_masks,
                 int64_t count) override;
+    void InsertOrFind(const void* input_keys,
+                      const void* input_values,
+                      addr_t* output_addrs,
+                      bool* output_masks,
+                      int64_t count) override;
 
     void Activate(const void* input_keys,
                   addr_t* output_addrs,
                   bool* output_masks,
                   int64_t count) override;
+    void ActivateOrFind(const void* input_keys,
+                        addr_t* output_addrs,
+                        bool* output_masks,
+                        int64_t count) override;
 
     void Find(const void* input_keys,
               addr_t* output_addrs,
@@ -97,6 +106,11 @@ protected:
                     addr_t* output_addrs,
                     bool* output_masks,
                     int64_t count);
+    void InsertOrFindImpl(const void* input_keys,
+                          const void* input_values,
+                          addr_t* output_addrs,
+                          bool* output_masks,
+                          int64_t count);
 
     void Allocate(int64_t capacity);
 };
@@ -140,11 +154,41 @@ void TBBHashmap<Key, Hash>::Insert(const void* input_keys,
 }
 
 template <typename Key, typename Hash>
+void TBBHashmap<Key, Hash>::InsertOrFind(const void* input_keys,
+                                         const void* input_values,
+                                         addr_t* output_addrs,
+                                         bool* output_masks,
+                                         int64_t count) {
+    int64_t new_size = Size() + count;
+    if (new_size > this->capacity_) {
+        int64_t bucket_count = GetBucketCount();
+        float avg_capacity_per_bucket =
+                float(this->capacity_) / float(bucket_count);
+
+        int64_t expected_buckets = std::max(
+                bucket_count * 2,
+                int64_t(std::ceil(new_size / avg_capacity_per_bucket)));
+
+        Rehash(expected_buckets);
+    }
+    InsertOrFindImpl(input_keys, input_values, output_addrs, output_masks,
+                     count);
+}
+
+template <typename Key, typename Hash>
 void TBBHashmap<Key, Hash>::Activate(const void* input_keys,
                                      addr_t* output_addrs,
                                      bool* output_masks,
                                      int64_t count) {
     Insert(input_keys, nullptr, output_addrs, output_masks, count);
+}
+
+template <typename Key, typename Hash>
+void TBBHashmap<Key, Hash>::ActivateOrFind(const void* input_keys,
+                                           addr_t* output_addrs,
+                                           bool* output_masks,
+                                           int64_t count) {
+    InsertOrFind(input_keys, nullptr, output_addrs, output_masks, count);
 }
 
 template <typename Key, typename Hash>
@@ -308,6 +352,59 @@ void TBBHashmap<Key, Hash>::InsertImpl(const void* input_keys,
         // Try to insert a dummy address.
         auto res = impl_->insert({key, 0});
 
+        // Lazy copy key value pair to buffer only if succeeded
+        if (res.second) {
+            addr_t dst_kv_addr = buffer_ctx_->DeviceAllocate();
+            auto dst_kv_iter = buffer_ctx_->ExtractIterator(dst_kv_addr);
+
+            // Copy templated key to buffer
+            *static_cast<Key*>(dst_kv_iter.first) = key;
+
+            // Copy/reset non-templated value in buffer
+            uint8_t* dst_value = static_cast<uint8_t*>(dst_kv_iter.second);
+            if (input_values != nullptr) {
+                const uint8_t* src_value =
+                        static_cast<const uint8_t*>(input_values) +
+                        this->dsize_value_ * i;
+                std::memcpy(dst_value, src_value, this->dsize_value_);
+            } else {
+                std::memset(dst_value, 0, this->dsize_value_);
+            }
+
+            // Update from dummy 0
+            res.first->second = dst_kv_addr;
+
+            // Write to return variables
+            output_addrs[i] = dst_kv_addr;
+            output_masks[i] = true;
+        }
+    }
+}
+
+template <typename Key, typename Hash>
+void TBBHashmap<Key, Hash>::InsertOrFindImpl(const void* input_keys,
+                                             const void* input_values,
+                                             addr_t* output_addrs,
+                                             bool* output_masks,
+                                             int64_t count) {
+    const Key* input_keys_templated = static_cast<const Key*>(input_keys);
+
+#pragma omp parallel for
+    for (int64_t i = 0; i < count; ++i) {
+        output_addrs[i] = 0;
+        output_masks[i] = false;
+
+        const Key& key = input_keys_templated[i];
+
+        // Try to insert a dummy address.
+        auto iter = impl_->find(key);
+        bool flag = (iter != impl_->end());
+        if (flag) {
+            output_addrs[i] = iter->second;
+            output_masks[i] = true;
+        }
+
+        auto res = impl_->insert({key, 0});
         // Lazy copy key value pair to buffer only if succeeded
         if (res.second) {
             addr_t dst_kv_addr = buffer_ctx_->DeviceAllocate();

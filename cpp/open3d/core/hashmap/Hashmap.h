@@ -82,6 +82,17 @@ public:
                   Tensor& output_addrs,
                   Tensor& output_masks);
 
+    /// Activate an entry if not existing, or find it if existing.
+    void InsertOrFind(const Tensor& input_keys,
+                      const Tensor& input_values,
+                      Tensor& output_addrs,
+                      Tensor& output_masks);
+
+    /// Activate an entry if not existing, or find it if existing.
+    void ActivateOrFind(const Tensor& input_keys,
+                        Tensor& output_addrs,
+                        Tensor& output_masks);
+
     /// Parallel find an array of keys in Tensor.
     /// Return addrs: internal indices that can be directly used for advanced
     /// indexing in Tensor key/value buffers.

@@ -108,6 +108,48 @@ void Hashmap::Insert(const Tensor& input_keys,
                             output_masks.GetDataPtr<bool>(), count);
 }
 
+void Hashmap::InsertOrFind(const Tensor& input_keys,
+                           const Tensor& input_values,
+                           Tensor& output_addrs,
+                           Tensor& output_masks) {
+    SizeVector input_key_elem_shape(input_keys.GetShape());
+    input_key_elem_shape.erase(input_key_elem_shape.begin());
+    AssertKeyDtype(input_keys.GetDtype(), input_key_elem_shape);
+
+    SizeVector input_value_elem_shape(input_values.GetShape());
+    input_value_elem_shape.erase(input_value_elem_shape.begin());
+    AssertValueDtype(input_values.GetDtype(), input_value_elem_shape);
+
+    SizeVector shape = input_keys.GetShape();
+    if (shape.size() == 0 || shape[0] == 0) {
+        utility::LogError("[Hashmap]: Invalid key tensor shape");
+    }
+    if (input_keys.GetDevice() != GetDevice()) {
+        utility::LogError(
+                "[Hashmap]: Incompatible key device, expected {}, but got {}",
+                GetDevice().ToString(), input_keys.GetDevice().ToString());
+    }
+
+    SizeVector value_shape = input_values.GetShape();
+    if (value_shape.size() == 0 || value_shape[0] != shape[0]) {
+        utility::LogError("[Hashmap]: Invalid value tensor shape");
+    }
+    if (input_values.GetDevice() != GetDevice()) {
+        utility::LogError(
+                "[Hashmap]: Incompatible value device, expected {}, but got {}",
+                GetDevice().ToString(), input_values.GetDevice().ToString());
+    }
+
+    int64_t count = shape[0];
+    output_addrs = Tensor({count}, Dtype::Int32, GetDevice());
+    output_masks = Tensor({count}, Dtype::Bool, GetDevice());
+
+    device_hashmap_->InsertOrFind(
+            input_keys.GetDataPtr(), input_values.GetDataPtr(),
+            static_cast<addr_t*>(output_addrs.GetDataPtr()),
+            output_masks.GetDataPtr<bool>(), count);
+}
+
 void Hashmap::Activate(const Tensor& input_keys,
                        Tensor& output_addrs,
                        Tensor& output_masks) {
@@ -133,6 +175,34 @@ void Hashmap::Activate(const Tensor& input_keys,
     device_hashmap_->Activate(input_keys.GetDataPtr(),
                               static_cast<addr_t*>(output_addrs.GetDataPtr()),
                               output_masks.GetDataPtr<bool>(), count);
+}
+
+void Hashmap::ActivateOrFind(const Tensor& input_keys,
+                             Tensor& output_addrs,
+                             Tensor& output_masks) {
+    SizeVector input_key_elem_shape(input_keys.GetShape());
+    input_key_elem_shape.erase(input_key_elem_shape.begin());
+    AssertKeyDtype(input_keys.GetDtype(), input_key_elem_shape);
+
+    SizeVector shape = input_keys.GetShape();
+    if (shape.size() == 0 || shape[0] == 0) {
+        utility::LogError("[Hashmap]: Invalid key tensor shape");
+    }
+    if (input_keys.GetDevice() != GetDevice()) {
+        utility::LogError(
+                "[Hashmap]: Incompatible device, expected {}, but got {}",
+                GetDevice().ToString(), input_keys.GetDevice().ToString());
+    }
+
+    int64_t count = shape[0];
+
+    output_addrs = Tensor({count}, Dtype::Int32, GetDevice());
+    output_masks = Tensor({count}, Dtype::Bool, GetDevice());
+
+    device_hashmap_->ActivateOrFind(
+            input_keys.GetDataPtr(),
+            static_cast<addr_t*>(output_addrs.GetDataPtr()),
+            output_masks.GetDataPtr<bool>(), count);
 }
 
 void Hashmap::Find(const Tensor& input_keys,

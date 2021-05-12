@@ -141,6 +141,27 @@ __global__ void InsertKernelPass2(SlabHashmapImpl<Key, Hash> impl,
                                   int64_t count);
 
 template <typename Key, typename Hash>
+__global__ void InsertOrFindKernelPass0(SlabHashmapImpl<Key, Hash> impl,
+                                        const void* input_keys,
+                                        addr_t* output_addrs,
+                                        int heap_counter_prev,
+                                        int64_t count);
+
+template <typename Key, typename Hash>
+__global__ void InsertOrFindKernelPass1(SlabHashmapImpl<Key, Hash> impl,
+                                        const void* input_keys,
+                                        addr_t* output_addrs,
+                                        bool* output_masks,
+                                        int64_t count);
+
+template <typename Key, typename Hash>
+__global__ void InsertOrFindKernelPass2(SlabHashmapImpl<Key, Hash> impl,
+                                        const void* input_values,
+                                        addr_t* output_addrs,
+                                        bool* output_masks,
+                                        int64_t count);
+
+template <typename Key, typename Hash>
 __global__ void FindKernel(SlabHashmapImpl<Key, Hash> impl,
                            const void* input_keys,
                            addr_t* output_addrs,
