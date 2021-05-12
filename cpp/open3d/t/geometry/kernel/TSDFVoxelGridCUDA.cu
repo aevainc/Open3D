@@ -191,7 +191,7 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
 
                 // Origin
                 float x_o = 0, y_o = 0, z_o = 0;
-                ti.RigidTransform(0, 0, 0, &x_o, &y_o, &z_o);
+                ti.GetCameraPosition(&x_o, &y_o, &z_o);
 
                 // Direction
                 float x_d = x_g - x_o;

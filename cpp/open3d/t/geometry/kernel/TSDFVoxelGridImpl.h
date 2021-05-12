@@ -1373,8 +1373,7 @@ void RayCastCPU
                     float w = 0.0;
 
                     // Camera origin
-                    c2w_transform_indexer.RigidTransform(0, 0, 0, &x_o, &y_o,
-                                                         &z_o);
+                    c2w_transform_indexer.GetCameraPosition(&x_o, &y_o, &z_o);
 
                     // Direction
                     c2w_transform_indexer.Unproject(static_cast<float>(x),
