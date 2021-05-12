@@ -67,6 +67,7 @@ void Touch(std::shared_ptr<core::Hashmap>& hashmap,
            const core::Tensor& intrinsics,
            const core::Tensor& extrinsics,
            core::Tensor& voxel_block_coords,
+           int& voxel_block_count,
            int64_t voxel_grid_resolution,
            float voxel_size,
            float sdf_trunc,
@@ -78,12 +79,12 @@ void Touch(std::shared_ptr<core::Hashmap>& hashmap,
     core::Device::DeviceType device_type = device.GetType();
     if (device_type == core::Device::DeviceType::CPU) {
         TouchCPU(hashmap, depth, intrinsics, extrinsics, voxel_block_coords,
-                 voxel_grid_resolution, voxel_size, sdf_trunc, depth_scale,
-                 depth_max, stride);
+                 voxel_block_count, voxel_grid_resolution, voxel_size,
+                 sdf_trunc, depth_scale, depth_max, stride);
     } else if (device_type == core::Device::DeviceType::CUDA) {
         CUDA_CALL(TouchCUDA, hashmap, depth, intrinsics, extrinsics,
-                  voxel_block_coords, voxel_grid_resolution, voxel_size,
-                  sdf_trunc, depth_scale, depth_max, stride);
+                  voxel_block_coords, voxel_block_count, voxel_grid_resolution,
+                  voxel_size, sdf_trunc, depth_scale, depth_max, stride);
     } else {
         utility::LogError("Unimplemented device");
     }

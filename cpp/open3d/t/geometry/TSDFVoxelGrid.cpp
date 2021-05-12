@@ -135,6 +135,8 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
                 capacity, core::Dtype::Int32, core::Dtype::Int32,
                 core::SizeVector{3}, core::SizeVector{1}, device_,
                 core::HashmapBackend::Default);
+        block_coords_buffer_ = core::Tensor({capacity * 4 * 4, 3},
+                                            core::Dtype::Int32, device_);
     } else {
         point_hashmap_->Clear();
     }
@@ -142,7 +144,6 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     utility::LogInfo("integration.clear {}", timer.GetDuration());
 
     timer.Start();
-    core::Tensor block_coords;
 
     // Version #1
     // PointCloud pcd = PointCloud::CreateFromDepthImage(
@@ -153,18 +154,21 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     //                     sdf_trunc_);
     // Version #2
     kernel::tsdf::Touch(point_hashmap_, depth.AsTensor(), intrinsics,
-                        extrinsics, block_coords, block_resolution_,
-                        voxel_size_, sdf_trunc_, depth_scale, depth_max,
-                        down_factor);
+                        extrinsics, block_coords_buffer_, active_block_count_,
+                        block_resolution_, voxel_size_, sdf_trunc_, depth_scale,
+                        depth_max, down_factor);
     timer.Stop();
     utility::LogInfo("integration.touch {}", timer.GetDuration());
+
+    core::Tensor active_block_coords =
+            block_coords_buffer_.Slice(0, 0, active_block_count_);
 
     // Active voxel blocks in the block hashmap.
     timer.Start();
     core::Tensor addrs, masks;
     int64_t n = block_hashmap_->Size();
     try {
-        block_hashmap_->ActivateOrFind(block_coords, addrs, masks);
+        block_hashmap_->ActivateOrFind(active_block_coords, addrs, masks);
     } catch (const std::runtime_error &) {
         utility::LogError(
                 "[TSDFIntegrate] Unable to allocate volume during rehashing. "
@@ -190,16 +194,15 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
 
     timer.Start();
     core::Tensor tmp_addrs, tmp_masks;
-    point_hashmap_->Assign(block_coords, addrs, tmp_addrs, tmp_masks);
+    point_hashmap_->Assign(active_block_coords, addrs, tmp_addrs, tmp_masks);
     timer.Stop();
     utility::LogInfo("integration.assign {}", timer.GetDuration());
 
     // TODO(wei): directly reuse it without intermediate variables.
     // Reserved for raycasting
     timer.Start();
-    active_block_coords_ = block_coords;
 
-    core::Tensor depth_tensor = depth.AsTensor().Contiguous();
+    core::Tensor depth_tensor = depth.AsTensor();
     core::Tensor color_tensor;
     if (color.IsEmpty()) {
         utility::LogDebug(
@@ -227,9 +230,10 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
 
     // TODO(wei): use a fixed buffer.
     timer.Start();
-    kernel::tsdf::Integrate(depth_tensor, color_tensor, addrs, block_coords,
-                            dst, intrinsics, extrinsics, block_resolution_,
-                            voxel_size_, sdf_trunc_, depth_scale, depth_max);
+    kernel::tsdf::Integrate(depth_tensor, color_tensor, addrs,
+                            active_block_coords, dst, intrinsics, extrinsics,
+                            block_resolution_, voxel_size_, sdf_trunc_,
+                            depth_scale, depth_max);
     timer.Stop();
     utility::LogInfo("integration.fusion {}", timer.GetDuration());
 }
@@ -263,9 +267,11 @@ TSDFVoxelGrid::RayCast(const core::Tensor &intrinsics,
                 core::Tensor({height, width, 3}, core::Dtype::Float32, device_);
     }
 
+    core::Tensor active_block_coords =
+            block_coords_buffer_.Slice(0, 0, active_block_count_);
     core::Tensor range_minmax_map;
     int down_factor = 8;
-    kernel::tsdf::EstimateRange(active_block_coords_, range_minmax_map,
+    kernel::tsdf::EstimateRange(active_block_coords, range_minmax_map,
                                 intrinsics, extrinsics, height, width,
                                 down_factor, block_resolution_, voxel_size_,
                                 depth_min, depth_max);

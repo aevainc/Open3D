@@ -141,6 +141,7 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
                const core::Tensor& intrinsics,
                const core::Tensor& extrinsics,
                core::Tensor& voxel_block_coords,
+               int& voxel_block_count,
                int64_t voxel_grid_resolution,
                float voxel_size,
                float sdf_trunc,
@@ -244,7 +245,6 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
 
     // Customized IndexGet (generic version too slow)
     timer.Start();
-    voxel_block_coords = core::Tensor::EmptyLike(block_coordi);
     int* voxel_block_coord_ptr = voxel_block_coords.GetDataPtr<int>();
     bool* block_masks_ptr = block_masks.GetDataPtr<bool>();
     block_coordi_ptr = block_coordi.GetDataPtr<int>();
@@ -265,8 +265,7 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
                 }
             });
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    total_block_count = count.Item<int>();
-    voxel_block_coords = voxel_block_coords.Slice(0, 0, total_block_count);
+    voxel_block_count = count.Item<int>();
     timer.Stop();
     utility::LogInfo("kernel.touch.indexget {}", timer.GetDuration());
 }

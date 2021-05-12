@@ -181,7 +181,9 @@ protected:
 
     // Local hashmap for the `unique` operation of input points
     std::shared_ptr<core::Hashmap> point_hashmap_;
-    core::Tensor active_block_coords_;
+
+    core::Tensor block_coords_buffer_;
+    int active_block_count_;
 
     std::unordered_map<std::string, core::Dtype> attr_dtype_map_;
 };
