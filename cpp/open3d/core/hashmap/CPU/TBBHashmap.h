@@ -63,6 +63,12 @@ public:
               bool* output_masks,
               int64_t count) override;
 
+    void Assign(const void* input_keys,
+                const void* input_values,
+                addr_t* output_addrs,
+                bool* output_masks,
+                int64_t count) override;
+
     void Erase(const void* input_keys,
                bool* output_masks,
                int64_t count) override;
@@ -156,6 +162,40 @@ void TBBHashmap<Key, Hash>::Find(const void* input_keys,
         bool flag = (iter != impl_->end());
         output_masks[i] = flag;
         output_addrs[i] = flag ? iter->second : 0;
+    }
+}
+
+template <typename Key, typename Hash>
+void TBBHashmap<Key, Hash>::Assign(const void* input_keys,
+                                   const void* input_values,
+                                   addr_t* output_addrs,
+                                   bool* output_masks,
+                                   int64_t count) {
+    const Key* input_keys_templated = static_cast<const Key*>(input_keys);
+
+#pragma omp parallel for
+    for (int64_t i = 0; i < count; ++i) {
+        const Key& key = input_keys_templated[i];
+
+        auto iter = impl_->find(key);
+        bool flag = (iter != impl_->end());
+        output_masks[i] = flag;
+        output_addrs[i] = flag ? iter->second : 0;
+
+        if (flag) {
+            auto dst_kv_iter = buffer_ctx_->ExtractIterator(iter->second);
+
+            // Copy/reset non-templated value in buffer
+            uint8_t* dst_value = static_cast<uint8_t*>(dst_kv_iter.second);
+            if (input_values != nullptr) {
+                const uint8_t* src_value =
+                        static_cast<const uint8_t*>(input_values) +
+                        this->dsize_value_ * i;
+                std::memcpy(dst_value, src_value, this->dsize_value_);
+            } else {
+                std::memset(dst_value, 0, this->dsize_value_);
+            }
+        }
     }
 }
 

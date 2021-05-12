@@ -625,6 +625,58 @@ __global__ void FindKernel(SlabHashmapImpl<Key, Hash> impl,
 }
 
 template <typename Key, typename Hash>
+__global__ void AssignKernel(SlabHashmapImpl<Key, Hash> impl,
+                             const void* input_keys,
+                             const void* input_values,
+                             addr_t* output_addrs,
+                             bool* output_masks,
+                             int64_t count) {
+    const Key* input_keys_templated = static_cast<const Key*>(input_keys);
+    uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
+    uint32_t lane_id = threadIdx.x & 0x1F;
+
+    // This warp is idle.
+    if ((tid - lane_id) >= count) {
+        return;
+    }
+
+    // Initialize the memory allocator on each warp.
+    impl.node_mgr_impl_.Init(tid, lane_id);
+
+    bool lane_active = false;
+    uint32_t bucket_id = 0;
+
+    // Dummy for warp sync
+    Key key;
+    Pair<addr_t, bool> result;
+
+    if (tid < count) {
+        lane_active = true;
+        key = input_keys_templated[tid];
+        bucket_id = impl.ComputeBucket(key);
+    }
+
+    result = impl.Find(lane_active, lane_id, bucket_id, key);
+
+    if (tid < count) {
+        output_addrs[tid] = result.first;
+        output_masks[tid] = result.second;
+
+        // If found, assign values
+        if (result.second) {
+            iterator_t iterator =
+                    impl.buffer_accessor_.ExtractIterator(result.first);
+            if (input_values != nullptr) {
+                MEMCPY_AS_INTS(iterator.second,
+                               static_cast<const uint8_t*>(input_values) +
+                                       tid * impl.dsize_value_,
+                               impl.dsize_value_);
+            }
+        }
+    }
+}
+
+template <typename Key, typename Hash>
 __global__ void EraseKernelPass0(SlabHashmapImpl<Key, Hash> impl,
                                  const void* input_keys,
                                  addr_t* output_addrs,

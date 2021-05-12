@@ -219,9 +219,9 @@ public:
                                     core::Tensor({max_points, 3},
                                                  core::Dtype::Float32,
                                                  core::Device("CPU:0")));
-                            pcd_placeholder.SetPointColors(core::Tensor(
-                                    {max_points, 3}, core::Dtype::Float32,
-                                    core::Device("CPU:0")));
+                            // pcd_placeholder.SetPointColors(core::Tensor(
+                            //         {max_points, 3}, core::Dtype::Float32,
+                            //         core::Device("CPU:0")));
 
                             auto mat = rendering::Material();
                             mat.shader = "defaultUnlit";
@@ -740,15 +740,17 @@ protected:
                         if (is_scene_updated_) {
                             using namespace rendering;
                             std::lock_guard<std::mutex> locker(surface_.lock);
-                            if (surface_.pcd.HasPoints() &&
-                                surface_.pcd.HasPointColors()) {
+                            if (surface_.pcd.HasPoints()
+                                // && surface_.pcd.HasPointColors()
+                            ) {
                                 auto* scene =
                                         this->widget3d_->GetScene()->GetScene();
 
                                 scene->UpdateGeometry(
                                         "points", surface_.pcd,
-                                        Scene::kUpdatePointsFlag |
-                                                Scene::kUpdateColorsFlag);
+                                        Scene::kUpdatePointsFlag
+                                        //| Scene::kUpdateColorsFlag
+                                );
                             }
                             is_scene_updated_ = false;
                         }

@@ -63,6 +63,12 @@ public:
               bool* output_masks,
               int64_t count) override;
 
+    void Assign(const void* input_keys,
+                const void* input_values,
+                addr_t* output_addrs,
+                bool* output_masks,
+                int64_t count) override;
+
     void Erase(const void* input_keys,
                bool* output_masks,
                int64_t count) override;
@@ -195,6 +201,26 @@ void SlabHashmap<Key, Hash>::Find(const void* input_keys,
             (count + kThreadsPerBlock - 1) / kThreadsPerBlock;
     FindKernel<<<num_blocks, kThreadsPerBlock>>>(
             impl_, input_keys, output_addrs, output_masks, count);
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    OPEN3D_CUDA_CHECK(cudaGetLastError());
+}
+
+template <typename Key, typename Hash>
+void SlabHashmap<Key, Hash>::Assign(const void* input_keys,
+                                    const void* input_values,
+                                    addr_t* output_addrs,
+                                    bool* output_masks,
+                                    int64_t count) {
+    if (count == 0) return;
+
+    OPEN3D_CUDA_CHECK(cudaMemset(output_masks, 0, sizeof(bool) * count));
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    OPEN3D_CUDA_CHECK(cudaGetLastError());
+
+    const int64_t num_blocks =
+            (count + kThreadsPerBlock - 1) / kThreadsPerBlock;
+    AssignKernel<<<num_blocks, kThreadsPerBlock>>>(
+            impl_, input_keys, input_values, output_addrs, output_masks, count);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 }

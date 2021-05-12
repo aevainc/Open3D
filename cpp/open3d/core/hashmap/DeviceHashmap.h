@@ -78,6 +78,12 @@ public:
                       bool* output_masks,
                       int64_t count) = 0;
 
+    virtual void Assign(const void* input_keys,
+                        const void* input_values,
+                        addr_t* output_iterators,
+                        bool* output_masks,
+                        int64_t count) = 0;
+
     /// Parallel erase a contiguous array of keys.
     virtual void Erase(const void* input_keys,
                        bool* output_masks,

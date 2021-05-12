@@ -69,6 +69,12 @@ public:
               bool* output_masks,
               int64_t count) override;
 
+    void Assign(const void* input_keys,
+                const void* input_values,
+                addr_t* output_addrs,
+                bool* output_masks,
+                int64_t count) override;
+
     void Erase(const void* input_keys,
                bool* output_masks,
                int64_t count) override;
@@ -177,6 +183,52 @@ void StdGPUHashmap<Key, Hash>::Find(const void* input_keys,
     STDGPUFindKernel<<<blocks, threads>>>(impl_, buffer_accessor_,
                                           static_cast<const Key*>(input_keys),
                                           output_addrs, output_masks, count);
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+}
+
+template <typename Key, typename Hash>
+__global__ void STDGPUAssignKernel(stdgpu::unordered_map<Key, addr_t, Hash> map,
+                                   CUDAHashmapBufferAccessor buffer_accessor,
+                                   const Key* input_keys,
+                                   const void* input_values,
+                                   int64_t dsize_value,
+                                   addr_t* output_addrs,
+                                   bool* output_masks,
+                                   int64_t count) {
+    uint32_t tid = threadIdx.x + blockIdx.x * blockDim.x;
+    if (tid >= count) return;
+
+    Key key = input_keys[tid];
+    auto iter = map.find(key);
+    bool flag = (iter != map.end());
+    output_masks[tid] = flag;
+    output_addrs[tid] = flag ? iter->second : 0;
+
+    if (flag) {
+        auto dst_kv_iter = buffer_accessor.ExtractIterator(iter->second);
+
+        // Copy/reset non-templated value in buffer
+        uint8_t* dst_value = static_cast<uint8_t*>(dst_kv_iter.second);
+        const uint8_t* src_value =
+                static_cast<const uint8_t*>(input_values) + dsize_value * tid;
+        for (int byte = 0; byte < dsize_value; ++byte) {
+            dst_value[byte] = src_value[byte];
+        }
+    }
+}
+
+template <typename Key, typename Hash>
+void StdGPUHashmap<Key, Hash>::Assign(const void* input_keys,
+                                      const void* input_values,
+                                      addr_t* output_addrs,
+                                      bool* output_masks,
+                                      int64_t count) {
+    uint32_t threads = 128;
+    uint32_t blocks = (count + threads - 1) / threads;
+
+    STDGPUAssignKernel<<<blocks, threads>>>(
+            impl_, buffer_accessor_, static_cast<const Key*>(input_keys),
+            input_values, dsize_value_, output_addrs, output_masks, count);
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
 }
 

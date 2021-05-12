@@ -91,6 +91,19 @@ public:
               Tensor& output_addrs,
               Tensor& output_masks);
 
+    /// One variation of Find. If key is found, assign with \p
+    /// input_values; otherwise return false.
+    /// WARNING: the behavior can be undeterministic if there are duplicate
+    /// keys with inconsistent values.
+    /// Return addrs: internal indices that can be directly used for
+    /// advanced indexing in Tensor key/value buffers.
+    /// masks: success assigned, must be combined with addrs in advanced
+    /// indexing.
+    void Assign(const Tensor& input_keys,
+                const Tensor& input_values,
+                Tensor& output_addrs,
+                Tensor& output_masks);
+
     /// Parallel erase an array of keys in Tensor.
     /// Output masks is a bool Tensor.
     /// Return masks: success insertions, must be combined with addrs in
