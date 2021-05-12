@@ -160,12 +160,16 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
     int64_t cols_strided = depth_indexer.GetShape(1) / stride;
 
     // Counter
-    core::Tensor count(std::vector<int>{0}, {}, core::Dtype::Int32, device);
+    core::Tensor count(std::vector<int>{0}, {1}, core::Dtype::Int32, device);
     int* count_ptr = count.GetDataPtr<int>();
 
     int64_t n = rows_strided * cols_strided;
-    core::Tensor block_coordi({4 * n, 3}, core::Dtype::Int32, device);
-    int* block_coordi_ptr = static_cast<int*>(block_coordi.GetDataPtr());
+    static core::Tensor block_coordi;
+    if (block_coordi.GetLength() != 4 * n) {
+        block_coordi = core::Tensor({4 * n, 3}, core::Dtype::Int32, device);
+    }
+
+    int* block_coordi_ptr = block_coordi.GetDataPtr<int>();
 
     int64_t resolution = voxel_grid_resolution;
     float block_size = voxel_size * resolution;
@@ -230,7 +234,7 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
     utility::LogInfo("kernel.touch.run {}", timer.GetDuration());
 
     timer.Start();
-    int total_block_count = count.Item<int>();
+    int total_block_count = count[0].Item<int>();
     if (total_block_count == 0) {
         utility::LogError(
                 "[CUDATSDFTouchKernel] No block is touched in TSDF volume, "
@@ -247,9 +251,7 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
     timer.Start();
     int* voxel_block_coord_ptr = voxel_block_coords.GetDataPtr<int>();
     bool* block_masks_ptr = block_masks.GetDataPtr<bool>();
-    block_coordi_ptr = block_coordi.GetDataPtr<int>();
-    count = core::Tensor(std::vector<int>{0}, {}, core::Dtype::Int32, device);
-    count_ptr = count.GetDataPtr<int>();
+    count[0] = 0;
     launcher.LaunchGeneralKernel(
             total_block_count, [=] OPEN3D_DEVICE(int64_t workload_idx) {
                 if (block_masks_ptr[workload_idx]) {

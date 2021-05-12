@@ -1370,7 +1370,6 @@ void RayCastCPU
 
                     float tsdf_prev = -1.0f;
                     float tsdf = 1.0;
-                    float w = 0.0;
 
                     // Camera origin
                     c2w_transform_indexer.GetCameraPosition(&x_o, &y_o, &z_o);
@@ -1397,9 +1396,7 @@ void RayCastCPU
                         } else {
                             tsdf_prev = tsdf;
                             tsdf = voxel_ptr->GetTSDF();
-                            w = voxel_ptr->GetWeight();
-                            if (tsdf_prev > 0 && w >= weight_threshold &&
-                                tsdf <= 0) {
+                            if (tsdf_prev > 0 && tsdf < 0) {
                                 surface_found = true;
                                 break;
                             }
