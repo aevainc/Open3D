@@ -54,7 +54,7 @@ void IntegrateCPU
         (const core::Tensor& depth,
          const core::Tensor& color,
          const core::Tensor& indices,
-         const core::Tensor& block_keys,
+         const core::Tensor& block_coords,
          core::Tensor& block_values,
          // Transforms
          const core::Tensor& intrinsics,
@@ -74,7 +74,7 @@ void IntegrateCPU
 
     // Real data indexer
     NDArrayIndexer depth_indexer(depth, 2);
-    NDArrayIndexer block_keys_indexer(block_keys, 1);
+    NDArrayIndexer block_keys_indexer(block_coords, 1);
     NDArrayIndexer voxel_block_buffer_indexer(block_values, 4);
 
     // Optional color integration
@@ -101,14 +101,14 @@ void IntegrateCPU
                 launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(
                                                         int64_t workload_idx) {
                     // Natural index (0, N) -> (block_idx, voxel_idx)
-                    int64_t block_idx = indices_ptr[workload_idx / resolution3];
+                    int i = workload_idx / resolution3;
+                    int64_t block_idx = indices_ptr[i];
                     int64_t voxel_idx = workload_idx % resolution3;
 
                     /// Coordinate transform
                     // block_idx -> (x_block, y_block, z_block)
                     int* block_key_ptr =
-                            block_keys_indexer.GetDataPtrFromCoord<int>(
-                                    block_idx);
+                            block_keys_indexer.GetDataPtrFromCoord<int>(i);
                     int xb = block_key_ptr[0];
                     int yb = block_key_ptr[1];
                     int zb = block_key_ptr[2];
