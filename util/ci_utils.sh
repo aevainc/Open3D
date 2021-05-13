@@ -448,7 +448,7 @@ install_docs_dependencies() {
     echo Install Python dependencies for building docs
     command -v python
     python -V
-    python -m pip install -U -q \
+    python -m pip install -U \
         "wheel==$WHEEL_VER" \
         "pip==$PIP_VER" \
         "matplotlib==$MATPLOTLIB_VER" \
@@ -456,7 +456,7 @@ install_docs_dependencies() {
         "sphinx-rtd-theme==$SPHINX_RTD_VER" \
         "nbsphinx==$NBSPHINX_VER" \
         "m2r2==$M2R2_VER"
-    python -m pip install -U -q "yapf==$YAPF_VER"
+    python -m pip install -U "yapf==$YAPF_VER"
     echo
     if [[ -d "$1" ]]; then
         OPEN3D_ML_ROOT="$1"
