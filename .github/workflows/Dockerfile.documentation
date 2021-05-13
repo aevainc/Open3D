@@ -14,12 +14,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
 
 # Python
-ARG CONDA_BUILD_VER=3.20.0
 ARG PIP_VER=21.1.1
 ARG WHEEL_VER=0.35.1
-ARG STOOLS_VER=50.3.2
-ARG PYTEST_VER=6.0.1
-ARG SCIPY_VER=1.5.4
 ARG YAPF_VER=0.30.0
 ARG SPHINX_VER=3.5.4
 ARG SPHINX_RTD_VER=0.5.1
@@ -99,35 +95,56 @@ RUN pip install -U \
 # Checkout Open3D-ML master branch.
 # We may add support for local Open3D-ML repo in the future.
 ENV OPEN3D_ML_ROOT=/root/Open3D-ML
-RUN git clone --recursive https://github.com/intel-isl/Open3D-ML.git ${OPEN3D_ML_ROOT}
-RUN pip install -r "${OPEN3D_ML_ROOT}/requirements.txt"
-RUN pip install -r "${OPEN3D_ML_ROOT}/requirements-torch.txt"
-RUN pip install -r "${OPEN3D_ML_ROOT}/requirements-tensorflow.txt"
+RUN git clone --recursive https://github.com/intel-isl/Open3D-ML.git ${OPEN3D_ML_ROOT} \
+ && pip install -r "${OPEN3D_ML_ROOT}/requirements.txt" \
+ && pip install -r "${OPEN3D_ML_ROOT}/requirements-torch.txt" \
+ && pip install -r "${OPEN3D_ML_ROOT}/requirements-tensorflow.txt"
 
 # Copy Open3D repo
 # `docker build` should be executed from the Open3D root dir.
 COPY . /root/Open3D
+WORKDIR /root/Open3D
+RUN mkdir build
 
+# Common CMake options
 RUN if [ "$DEVELOPER_BUILD" != "OFF" ]; \
     then export DOC_ARGS=""; \
     else export DOC_ARGS="--is_release"; \
     fi
-
-WORKDIR /root/Open3D
-RUN mkdir build
-WORKDIR /root/Open3D/build
-
 ENV cmake_options="-DDEVELOPER_BUILD=${DEVELOPER_BUILD} \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DBUILD_JUPYTER_EXTENSION=ON \
-        -DWITH_OPENMP=ON \
-        -DBUILD_AZURE_KINECT=ON \
-        -DBUILD_LIBREALSENSE=ON \
-        -DBUILD_TENSORFLOW_OPS=ON \
-        -DBUILD_PYTORCH_OPS=ON \
-        -DBUILD_RPC_INTERFACE=ON \
-        -DBUNDLE_OPEN3D_ML=ON"
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_JUPYTER_EXTENSION=ON \
+    -DWITH_OPENMP=ON \
+    -DBUILD_AZURE_KINECT=ON \
+    -DBUILD_LIBREALSENSE=ON \
+    -DBUILD_TENSORFLOW_OPS=ON \
+    -DBUILD_PYTORCH_OPS=ON \
+    -DBUILD_RPC_INTERFACE=ON \
+    -DBUNDLE_OPEN3D_ML=ON"
+
+# Build Open3D with GUI truned off
+WORKDIR /root/Open3D/build
 RUN cmake "${cmake_options}" \
-        -DENABLE_HEADLESS_RENDERING=ON \
-        -DBUILD_GUI=OFF \
-        ..
+    -DENABLE_HEADLESS_RENDERING=ON \
+    -DBUILD_GUI=OFF \
+    .. \
+ && make -j$(nproc) \
+ && make install-pip-package -j$(nproc) \
+ && bin/GLInfo \
+ && python -c "from open3d import *; import open3d; print(open3d)" \
+ && cd ../docs \
+ && python make_docs.py $DOC_ARGS --clean_notebooks --execute_notebooks=always --pyapi_rst=never \
+ && python -m pip uninstall --yes open3d
+
+# Build Open3D with GUI truned on
+WORKDIR /root/Open3D/build
+RUN cmake "${cmake_options}" \
+    -DENABLE_HEADLESS_RENDERING=OFF \
+    -DBUILD_GUI=ON \
+    .. \
+ && make -j$(nproc) \
+ && make install-pip-package -j$(nproc) \
+ && bin/GLInfo || echo "Expect failure since HEADLESS_RENDERING=OFF" \
+ && python -c "from open3d import *; import open3d; print(open3d)" \
+ && cd ../docs \
+ && python make_docs.py $DOC_ARGS --pyapi_rst=always --execute_notebooks=never --sphinx --doxygen
