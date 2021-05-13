@@ -1,17 +1,8 @@
-# The following arguments are required for docker build
-# - BASE_IMAGE
-# - CMAKE_VER
-# - CCACHE_TAR_NAME
+# Example usage
 #
-# For example, you can run docker build with the following arguments
-# - OpenBLAS X86_64
-#   docker build --build-arg BASE_IMAGE=ubuntu:20.04 \
-#                --build-arg CMAKE_VER=cmake-3.19.7-Linux-x86_64 \
-#                --build-arg CCACHE_TAR_NAME=open3d-x86_64-ci-ccache
-# - OpenBLAS ARM64
-#   docker build --build-arg BASE_IMAGE=arm64v8/ubuntu:20.04 \
-#                --build-arg CMAKE_VER=cmake-3.19.7-Linux-aarch64 \
-#                --build-arg CCACHE_TAR_NAME=open3d-arm64-ci-ccache
+# docker build --build-arg DEVELOPER_BUILD=ON \
+#        -t open3d-documentation-ci:latest \
+#        -f .github/workflows/Dockerfile.documentation .
 
 FROM ubuntu:20.04
 
