@@ -434,16 +434,16 @@ install_docs_dependencies() {
     echo
     echo Install ubuntu dependencies
     echo Update cmake needed in Ubuntu 18.04
-    sudo apt-key adv --fetch-keys https://apt.kitware.com/keys/kitware-archive-latest.asc
-    sudo apt-add-repository --yes 'deb https://apt.kitware.com/ubuntu/ bionic main'
+    $SUDO apt-key adv --fetch-keys https://apt.kitware.com/keys/kitware-archive-latest.asc
+    $SUDO apt-add-repository --yes 'deb https://apt.kitware.com/ubuntu/ bionic main'
     ./util/install_deps_ubuntu.sh assume-yes
-    sudo apt-get install --yes cmake
-    sudo apt-get install --yes doxygen
-    sudo apt-get install --yes texlive
-    sudo apt-get install --yes texlive-latex-extra
-    sudo apt-get install --yes ghostscript
-    sudo apt-get install --yes pandoc
-    sudo apt-get install --yes ccache
+    $SUDO apt-get install --yes cmake
+    $SUDO apt-get install --yes doxygen
+    $SUDO apt-get install --yes texlive
+    $SUDO apt-get install --yes texlive-latex-extra
+    $SUDO apt-get install --yes ghostscript
+    $SUDO apt-get install --yes pandoc
+    $SUDO apt-get install --yes ccache
     echo
     echo Install Python dependencies for building docs
     command -v python
