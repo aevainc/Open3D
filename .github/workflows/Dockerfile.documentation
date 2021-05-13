@@ -6,10 +6,12 @@
 
 FROM ubuntu:20.04
 
-SHELL ["/bin/bash", "-c"]
-
-ARG DEBIAN_FRONTEND=noninteractive
+# Set to ON for regular builds, OFF for release builds.
 ARG DEVELOPER_BUILD=ON
+# Using bash as default shell since most of our CI scripts are in bash.
+SHELL ["/bin/bash", "-c"]
+# Prevent interactive inputs when installing packages.
+ARG DEBIAN_FRONTEND=noninteractive
 
 # Basic dependencies
 RUN apt-get update && apt-get install -y \
