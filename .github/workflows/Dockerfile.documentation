@@ -30,6 +30,7 @@ ARG CMAKE_VER=cmake-3.19.7-Linux-x86_64
 
 # Basic dependencies
 RUN apt-get update && apt-get install -y \
+    build-essential \
     git \
     wget \
  && rm -rf /var/lib/apt/lists/*
