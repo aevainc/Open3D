@@ -6,7 +6,8 @@
 
 FROM ubuntu:20.04
 
-# Non-interactive dpkg
+SHELL ["/bin/bash", "-c"]
+
 ARG DEBIAN_FRONTEND=noninteractive
 ARG DEVELOPER_BUILD=ON
 
@@ -28,7 +29,9 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 RUN ln -s /usr/bin/python3 /usr/local/bin/python \
  && ln -s /usr/bin/python3-config /usr/local/bin/python-config \
- && ln -s /usr/bin/pip3 /usr/local/bin/pip
+ && ln -s /usr/bin/pip3 /usr/local/bin/pip \
+ && which python \
+ && python --version
 
 # `docker build` should be executed from the Open3D root dir.
 COPY . /root/Open3D
