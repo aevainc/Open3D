@@ -187,7 +187,7 @@ void ExtractSurfacePointsCPU
          int64_t resolution,
          float voxel_size,
          float weight_threshold,
-         int& valid_size) {
+         int& point_count) {
     // Parameters
     int64_t resolution3 = resolution * resolution * resolution;
 
@@ -222,7 +222,7 @@ void ExtractSurfacePointsCPU
 #else
     core::kernel::CPULauncher launcher;
 #endif
-    if (valid_size < 0) {
+    if (point_count < 0) {
         utility::LogWarning(
                 "No estimated max point cloud size provided, using a 2-pass "
                 "estimation. Surface extraction could be slow.");
@@ -287,15 +287,15 @@ void ExtractSurfacePointsCPU
                 });
 
 #if defined(__CUDACC__)
-        valid_size = count[0].Item<int>();
+        point_count = count[0].Item<int>();
         count[0] = 0;
 #else
-        valid_size = (*count_ptr).load();
+        point_count = (*count_ptr).load();
         (*count_ptr) = 0;
 #endif
     }
 
-    int max_count = valid_size;
+    int max_count = point_count;
     if (points.GetLength() == 0) {
         points = core::Tensor({max_count, 3}, core::Dtype::Float32,
                               block_values.GetDevice());
@@ -408,7 +408,7 @@ void ExtractSurfacePointsCPU
                             float ratio = (0 - tsdf_o) / (tsdf_i - tsdf_o);
 
                             int idx = OPEN3D_ATOMIC_ADD(count_ptr, 1);
-                            if (idx >= valid_size) {
+                            if (idx >= point_count) {
                                 printf("Point cloud size larger than "
                                        "estimated, please increase the "
                                        "estimation!\n");
@@ -483,7 +483,7 @@ void ExtractSurfacePointsCPU
 #endif
 
     utility::LogDebug("{} vertices extracted", total_count);
-    valid_size = total_count;
+    point_count = total_count;
 
 #if defined(BUILD_CUDA_MODULE) && defined(__CUDACC__)
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
@@ -503,11 +503,12 @@ void ExtractSurfaceMeshCPU
          const core::Tensor& block_values,
          core::Tensor& vertices,
          core::Tensor& triangles,
-         core::Tensor& normals,
-         core::Tensor& colors,
+         utility::optional<std::reference_wrapper<core::Tensor>> normals,
+         utility::optional<std::reference_wrapper<core::Tensor>> colors,
          int64_t resolution,
          float voxel_size,
-         float weight_threshold) {
+         float weight_threshold,
+         int& vertex_count) {
 
     int64_t resolution3 = resolution * resolution * resolution;
 
@@ -520,6 +521,8 @@ void ExtractSurfaceMeshCPU
 #endif
 
     int n_blocks = static_cast<int>(indices.GetLength());
+
+    // TODO(wei): profile performance by replacing the table to a hashmap.
     // Voxel-wise mesh info. 4 channels correspond to:
     // 3 edges' corresponding vertex index + 1 table index.
     core::Tensor mesh_structure;
@@ -556,8 +559,8 @@ void ExtractSurfaceMeshCPU
     core::kernel::CPULauncher launcher;
 #endif
 
-    // Pass 0: analyze mesh structure, set up one-on-one correspondences from
-    // edges to vertices.
+    // Pass 0: analyze mesh structure, set up one-on-one correspondences
+    // from edges to vertices.
     DISPATCH_BYTESIZE_TO_VOXEL(
             voxel_block_buffer_indexer.ElementByteSize(), [&]() {
                 launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(
@@ -581,7 +584,8 @@ void ExtractSurfaceMeshCPU
                     int64_t xv, yv, zv;
                     voxel_indexer.WorkloadToCoord(voxel_idx, &xv, &yv, &zv);
 
-                    // Check per-vertex sign in the cube to determine cube type
+                    // Check per-vertex sign in the cube to determine cube
+                    // type
                     int table_idx = 0;
                     for (int i = 0; i < 8; ++i) {
                         voxel_t* voxel_ptr_i = GetVoxelAt(
@@ -605,7 +609,8 @@ void ExtractSurfaceMeshCPU
 
                     if (table_idx == 0 || table_idx == 255) return;
 
-                    // Check per-edge sign in the cube to determine cube type
+                    // Check per-edge sign in the cube to determine cube
+                    // type
                     int edges_with_vertices = edge_table[table_idx];
                     for (int i = 0; i < 12; ++i) {
                         if (edges_with_vertices & (1 << i)) {
@@ -640,84 +645,103 @@ void ExtractSurfaceMeshCPU
                 });
             });
 
-    // Pass 1: determine valid number of vertices.
+    // Pass 1: determine valid number of vertices (if not preset)
 #if defined(__CUDACC__)
-    core::Tensor vtx_count(std::vector<int>{0}, {}, core::Dtype::Int32,
-                           block_values.GetDevice());
-    int* vtx_count_ptr = vtx_count.GetDataPtr<int>();
+    core::Tensor count(std::vector<int>{0}, {}, core::Dtype::Int32,
+                       block_values.GetDevice());
+    int* count_ptr = count.GetDataPtr<int>();
 #else
-    std::atomic<int> vtx_count_atomic(0);
-    std::atomic<int>* vtx_count_ptr = &vtx_count_atomic;
+    std::atomic<int> count_atomic(0);
+    std::atomic<int>* count_ptr = &count_atomic;
 #endif
 
+    if (vertex_count < 0) {
 #if defined(__CUDACC__)
-    core::kernel::CUDALauncher::LaunchGeneralKernel(
-            n, [=] OPEN3D_DEVICE(int64_t workload_idx) {
+        core::kernel::CUDALauncher::LaunchGeneralKernel(
+                n, [=] OPEN3D_DEVICE(int64_t workload_idx) {
 #else
-    core::kernel::CPULauncher::LaunchGeneralKernel(
-            n, [&](int64_t workload_idx) {
+        core::kernel::CPULauncher::LaunchGeneralKernel(
+                n, [&](int64_t workload_idx) {
 #endif
-                // Natural index (0, N) -> (block_idx, voxel_idx)
-                int64_t workload_block_idx = workload_idx / resolution3;
-                int64_t voxel_idx = workload_idx % resolution3;
+                    // Natural index (0, N) -> (block_idx, voxel_idx)
+                    int64_t workload_block_idx = workload_idx / resolution3;
+                    int64_t voxel_idx = workload_idx % resolution3;
 
-                // voxel_idx -> (x_voxel, y_voxel, z_voxel)
-                int64_t xv, yv, zv;
-                voxel_indexer.WorkloadToCoord(voxel_idx, &xv, &yv, &zv);
+                    // voxel_idx -> (x_voxel, y_voxel, z_voxel)
+                    int64_t xv, yv, zv;
+                    voxel_indexer.WorkloadToCoord(voxel_idx, &xv, &yv, &zv);
 
-                // Obtain voxel's mesh struct ptr
-                int* mesh_struct_ptr =
-                        mesh_structure_indexer.GetDataPtrFromCoord<int>(
-                                xv, yv, zv, workload_block_idx);
+                    // Obtain voxel's mesh struct ptr
+                    int* mesh_struct_ptr =
+                            mesh_structure_indexer.GetDataPtrFromCoord<int>(
+                                    xv, yv, zv, workload_block_idx);
 
-                // Early quit -- no allocated vertex to compute
-                if (mesh_struct_ptr[0] != -1 && mesh_struct_ptr[1] != -1 &&
-                    mesh_struct_ptr[2] != -1) {
-                    return;
-                }
+                    // Early quit -- no allocated vertex to compute
+                    if (mesh_struct_ptr[0] != -1 && mesh_struct_ptr[1] != -1 &&
+                        mesh_struct_ptr[2] != -1) {
+                        return;
+                    }
 
-                // Enumerate 3 edges in the voxel
-                for (int e = 0; e < 3; ++e) {
-                    int vertex_idx = mesh_struct_ptr[e];
-                    if (vertex_idx != -1) continue;
+                    // Enumerate 3 edges in the voxel
+                    for (int e = 0; e < 3; ++e) {
+                        int vertex_idx = mesh_struct_ptr[e];
+                        if (vertex_idx != -1) continue;
 
-                    OPEN3D_ATOMIC_ADD(vtx_count_ptr, 1);
-                }
-            });
+                        OPEN3D_ATOMIC_ADD(count_ptr, 1);
+                    }
+                });
 
-    // Reset count_ptr
 #if defined(__CUDACC__)
-    int total_vtx_count = vtx_count.Item<int>();
-    vtx_count = core::Tensor(std::vector<int>{0}, {}, core::Dtype::Int32,
-                             block_values.GetDevice());
-    vtx_count_ptr = vtx_count.GetDataPtr<int>();
+        vertex_count = count.Item<int>();
 #else
-    int total_vtx_count = (*vtx_count_ptr).load();
-    (*vtx_count_ptr) = 0;
+        vertex_count = (*count_ptr).load();
 #endif
+    }
 
-    utility::LogDebug("Total vertex count = {}", total_vtx_count);
-    vertices = core::Tensor({total_vtx_count, 3}, core::Dtype::Float32,
+    utility::LogInfo("Total vertex count = {}", vertex_count);
+    vertices = core::Tensor({vertex_count, 3}, core::Dtype::Float32,
                             block_values.GetDevice());
-    normals = core::Tensor({total_vtx_count, 3}, core::Dtype::Float32,
-                           block_values.GetDevice());
+
+    // Normals
+    utility::LogInfo("setup normals");
+    bool extract_normal = false;
+    NDArrayIndexer normal_indexer;
+    if (normals.has_value()) {
+        extract_normal = true;
+        normals.value().get() =
+                core::Tensor({vertex_count, 3}, core::Dtype::Float32,
+                             block_values.GetDevice());
+        normal_indexer = NDArrayIndexer(normals.value().get(), 1);
+        utility::LogInfo("normals set");
+    }
 
     NDArrayIndexer block_keys_indexer(block_keys, 1);
     NDArrayIndexer vertex_indexer(vertices, 1);
-    NDArrayIndexer normal_indexer(normals, 1);
+
+#if defined(__CUDACC__)
+    count = core::Tensor(std::vector<int>{0}, {}, core::Dtype::Int32,
+                         block_values.GetDevice());
+    count_ptr = count.GetDataPtr<int>();
+#else
+    (*count_ptr) = 0;
+#endif
 
     // Pass 2: extract vertices.
     DISPATCH_BYTESIZE_TO_VOXEL(
+
             voxel_block_buffer_indexer.ElementByteSize(), [&]() {
+                utility::LogInfo("setup colors");
                 bool extract_color = false;
                 NDArrayIndexer color_indexer;
-                if (voxel_t::HasColor()) {
+                if (voxel_t::HasColor() && colors.has_value()) {
                     extract_color = true;
-                    colors = core::Tensor({total_vtx_count, 3},
-                                          core::Dtype::Float32,
-                                          block_values.GetDevice());
-                    color_indexer = NDArrayIndexer(colors, 1);
+                    colors.value().get() = core::Tensor(
+                            {vertex_count, 3}, core::Dtype::Float32,
+                            block_values.GetDevice());
+                    color_indexer = NDArrayIndexer(colors.value().get(), 1);
+                    utility::LogInfo("colors set");
                 }
+                utility::LogInfo("launch");
                 launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(
                                                         int64_t workload_idx) {
                     auto GetVoxelAt = [&] OPEN3D_DEVICE(
@@ -781,9 +805,12 @@ void ExtractSurfaceMeshCPU
                                                          xv, yv, zv, block_idx);
                     float tsdf_o = voxel_ptr->GetTSDF();
                     float no[3] = {0}, ne[3] = {0};
-                    GetNormalAt(static_cast<int>(xv), static_cast<int>(yv),
-                                static_cast<int>(zv),
-                                static_cast<int>(workload_block_idx), no);
+
+                    if (extract_normal) {
+                        GetNormalAt(static_cast<int>(xv), static_cast<int>(yv),
+                                    static_cast<int>(zv),
+                                    static_cast<int>(workload_block_idx), no);
+                    }
 
                     // Enumerate 3 edges in the voxel
                     for (int e = 0; e < 3; ++e) {
@@ -798,7 +825,7 @@ void ExtractSurfaceMeshCPU
                         float tsdf_e = voxel_ptr_e->GetTSDF();
                         float ratio = (0 - tsdf_o) / (tsdf_e - tsdf_o);
 
-                        int idx = OPEN3D_ATOMIC_ADD(vtx_count_ptr, 1);
+                        int idx = OPEN3D_ATOMIC_ADD(count_ptr, 1);
                         mesh_struct_ptr[e] = idx;
 
                         float ratio_x = ratio * int(e == 0);
@@ -811,20 +838,24 @@ void ExtractSurfaceMeshCPU
                         vertex_ptr[1] = voxel_size * (y + ratio_y);
                         vertex_ptr[2] = voxel_size * (z + ratio_z);
 
-                        float* normal_ptr =
-                                normal_indexer.GetDataPtrFromCoord<float>(idx);
-                        GetNormalAt(static_cast<int>(xv) + (e == 0),
-                                    static_cast<int>(yv) + (e == 1),
-                                    static_cast<int>(zv) + (e == 2),
-                                    static_cast<int>(workload_block_idx), ne);
-                        float nx = (1 - ratio) * no[0] + ratio * ne[0];
-                        float ny = (1 - ratio) * no[1] + ratio * ne[1];
-                        float nz = (1 - ratio) * no[2] + ratio * ne[2];
-                        float norm = static_cast<float>(
-                                sqrt(nx * nx + ny * ny + nz * nz) + 1e-5);
-                        normal_ptr[0] = nx / norm;
-                        normal_ptr[1] = ny / norm;
-                        normal_ptr[2] = nz / norm;
+                        if (extract_normal) {
+                            float* normal_ptr =
+                                    normal_indexer.GetDataPtrFromCoord<float>(
+                                            idx);
+                            GetNormalAt(static_cast<int>(xv) + (e == 0),
+                                        static_cast<int>(yv) + (e == 1),
+                                        static_cast<int>(zv) + (e == 2),
+                                        static_cast<int>(workload_block_idx),
+                                        ne);
+                            float nx = (1 - ratio) * no[0] + ratio * ne[0];
+                            float ny = (1 - ratio) * no[1] + ratio * ne[1];
+                            float nz = (1 - ratio) * no[2] + ratio * ne[2];
+                            float norm = static_cast<float>(
+                                    sqrt(nx * nx + ny * ny + nz * nz) + 1e-5);
+                            normal_ptr[0] = nx / norm;
+                            normal_ptr[1] = ny / norm;
+                            normal_ptr[2] = nz / norm;
+                        }
 
                         if (extract_color) {
                             float* color_ptr =
@@ -849,18 +880,18 @@ void ExtractSurfaceMeshCPU
             });
 
     // Pass 3: connect vertices and form triangles.
-#if defined(__CUDACC__)
-    core::Tensor triangle_count(std::vector<int>{0}, {}, core::Dtype::Int32,
-                                block_values.GetDevice());
-    int* tri_count_ptr = triangle_count.GetDataPtr<int>();
-#else
-    std::atomic<int> tri_count_atomic(0);
-    std::atomic<int>* tri_count_ptr = &tri_count_atomic;
-#endif
-
-    triangles = core::Tensor({total_vtx_count * 3, 3}, core::Dtype::Int64,
+    int triangle_count = vertex_count * 3;
+    triangles = core::Tensor({triangle_count, 3}, core::Dtype::Int64,
                              block_values.GetDevice());
     NDArrayIndexer triangle_indexer(triangles, 1);
+
+#if defined(__CUDACC__)
+    count = core::Tensor(std::vector<int>{0}, {}, core::Dtype::Int32,
+                         block_values.GetDevice());
+    count_ptr = count.GetDataPtr<int>();
+#else
+    (*count_ptr) = 0;
+#endif
 
 #if defined(__CUDACC__)
     core::kernel::CUDALauncher::LaunchGeneralKernel(
@@ -889,7 +920,7 @@ void ExtractSurfaceMeshCPU
                 for (size_t tri = 0; tri < 16; tri += 3) {
                     if (tri_table[table_idx][tri] == -1) return;
 
-                    int tri_idx = OPEN3D_ATOMIC_ADD(tri_count_ptr, 1);
+                    int tri_idx = OPEN3D_ATOMIC_ADD(count_ptr, 1);
 
                     for (size_t vertex = 0; vertex < 3; ++vertex) {
                         int edge = tri_table[table_idx][tri + vertex];
@@ -925,12 +956,12 @@ void ExtractSurfaceMeshCPU
             });
 
 #if defined(__CUDACC__)
-    int total_tri_count = triangle_count.Item<int>();
+    triangle_count = count.Item<int>();
 #else
-    int total_tri_count = (*tri_count_ptr).load();
+    triangle_count = (*count_ptr).load();
 #endif
-    utility::LogDebug("Total triangle count = {}", total_tri_count);
-    triangles = triangles.Slice(0, 0, total_tri_count);
+    utility::LogInfo("Total triangle count = {}", triangle_count);
+    triangles = triangles.Slice(0, 0, triangle_count);
 }
 
 #if defined(__CUDACC__)

@@ -333,6 +333,7 @@ PointCloud TSDFVoxelGrid::ExtractSurfacePoints(int estimated_number,
     // Extract points around zero-crossings.
     core::Tensor points, normals, colors;
 
+    int point_count = estimated_number;
     kernel::tsdf::ExtractSurfacePoints(
             active_addrs.To(core::Dtype::Int64),
             active_nb_addrs.To(core::Dtype::Int64), active_nb_masks,
@@ -346,21 +347,29 @@ PointCloud TSDFVoxelGrid::ExtractSurfacePoints(int estimated_number,
                     ? utility::optional<std::reference_wrapper<core::Tensor>>(
                               colors)
                     : utility::nullopt,
-            block_resolution_, voxel_size_, weight_threshold, estimated_number);
+            block_resolution_, voxel_size_, weight_threshold, point_count);
 
-    auto pcd = PointCloud(points.Slice(0, 0, estimated_number));
+    auto pcd = PointCloud(points.Slice(0, 0, point_count));
     if ((surface_mask & SurfaceMaskCode::ColorMap) &&
         colors.GetLength() == points.GetLength()) {
-        pcd.SetPointColors(colors.Slice(0, 0, estimated_number));
+        pcd.SetPointColors(colors.Slice(0, 0, point_count));
     }
-    if (surface_mask & SurfaceMaskCode::NormalMap) {
-        pcd.SetPointNormals(normals.Slice(0, 0, estimated_number));
+    if ((surface_mask & SurfaceMaskCode::NormalMap) &&
+        normals.GetLength() == points.GetLength()) {
+        pcd.SetPointNormals(normals.Slice(0, 0, point_count));
     }
 
     return pcd;
 }
 
-TriangleMesh TSDFVoxelGrid::ExtractSurfaceMesh(float weight_threshold) {
+TriangleMesh TSDFVoxelGrid::ExtractSurfaceMesh(int estimate_vertices,
+                                               float weight_threshold,
+                                               int surface_mask) {
+    // Extract active voxel blocks from the hashmap.
+    if ((surface_mask & SurfaceMaskCode::VertexMap) == 0) {
+        utility::LogError("VertexMap must be specified in Surface extraction.");
+    }
+
     // Query active blocks and their nearest neighbors to handle boundary cases.
     core::Tensor active_addrs;
     block_hashmap_->GetActiveIndices(active_addrs);
@@ -379,18 +388,32 @@ TriangleMesh TSDFVoxelGrid::ExtractSurfaceMesh(float weight_threshold) {
             core::Tensor(iota_map, {num_blocks}, core::Dtype::Int64, device_));
 
     core::Tensor vertices, triangles, vertex_normals, vertex_colors;
+    int vertex_count = estimate_vertices;
     kernel::tsdf::ExtractSurfaceMesh(
             active_addrs.To(core::Dtype::Int64), inverse_index_map,
             active_nb_addrs.To(core::Dtype::Int64), active_nb_masks,
             block_hashmap_->GetKeyTensor(), block_hashmap_->GetValueTensor(),
-            vertices, triangles, vertex_normals, vertex_colors,
-            block_resolution_, voxel_size_, weight_threshold);
+            vertices, triangles,
+            surface_mask & SurfaceMaskCode::NormalMap
+                    ? utility::optional<std::reference_wrapper<core::Tensor>>(
+                              vertex_normals)
+                    : utility::nullopt,
+            surface_mask & SurfaceMaskCode::ColorMap
+                    ? utility::optional<std::reference_wrapper<core::Tensor>>(
+                              vertex_colors)
+                    : utility::nullopt,
+            block_resolution_, voxel_size_, weight_threshold, vertex_count);
 
     TriangleMesh mesh(vertices, triangles);
-    mesh.SetVertexNormals(vertex_normals);
-    if (vertex_colors.NumElements() != 0) {
+    if ((surface_mask & SurfaceMaskCode::ColorMap) &&
+        vertex_colors.GetLength() == vertices.GetLength()) {
         mesh.SetVertexColors(vertex_colors);
     }
+    if ((surface_mask & SurfaceMaskCode::NormalMap) &&
+        vertex_normals.GetLength() == vertices.GetLength()) {
+        mesh.SetVertexNormals(vertex_normals);
+    }
+
     return mesh;
 }
 
