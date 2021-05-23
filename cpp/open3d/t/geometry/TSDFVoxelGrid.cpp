@@ -432,9 +432,7 @@ TSDFVoxelGrid TSDFVoxelGrid::To(const core::Device &device, bool copy) const {
 
 std::pair<core::Tensor, core::Tensor> TSDFVoxelGrid::BufferRadiusNeighbors(
         const core::Tensor &active_addrs) {
-    // Fixed radius search for spatially hashed voxel blocks.
-    // A generalization will be implementing dense/sparse fixed radius search
-    // with coordinates as hashmap keys.
+    // Fixed radius search for spatially hashed voxel blocks
     core::Tensor key_buffer_int3_tensor = block_hashmap_->GetKeyTensor();
 
     core::Tensor active_keys = key_buffer_int3_tensor.IndexGet(

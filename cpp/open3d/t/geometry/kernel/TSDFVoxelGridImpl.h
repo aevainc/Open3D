@@ -600,39 +600,33 @@ void ExtractSurfaceMeshCPU
 #endif
 
     if (vertex_count < 0) {
-#if defined(__CUDACC__)
-        core::kernel::CUDALauncher::LaunchGeneralKernel(
-                n, [=] OPEN3D_DEVICE(int64_t widx) {
-#else
-        core::kernel::CPULauncher::LaunchGeneralKernel(n, [&](int64_t widx) {
-#endif
-                    // Natural index (0, N) -> (block_idx, voxel_idx)
-                    int64_t workload_block_idx = widx / resolution3;
-                    int64_t voxel_idx = widx % resolution3;
+        launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(int64_t widx) {
+            // Natural index (0, N) -> (block_idx, voxel_idx)
+            int64_t workload_block_idx = widx / resolution3;
+            int64_t voxel_idx = widx % resolution3;
 
-                    // voxel_idx -> (x_voxel, y_voxel, z_voxel)
-                    int64_t xv, yv, zv;
-                    voxel_indexer.WorkloadToCoord(voxel_idx, &xv, &yv, &zv);
+            // voxel_idx -> (x_voxel, y_voxel, z_voxel)
+            int64_t xv, yv, zv;
+            voxel_indexer.WorkloadToCoord(voxel_idx, &xv, &yv, &zv);
 
-                    // Obtain voxel's mesh struct ptr
-                    int* mesh_struct_ptr =
-                            mesh_structure_indexer.GetDataPtr<int>(
-                                    xv, yv, zv, workload_block_idx);
+            // Obtain voxel's mesh struct ptr
+            int* mesh_struct_ptr = mesh_structure_indexer.GetDataPtr<int>(
+                    xv, yv, zv, workload_block_idx);
 
-                    // Early quit -- no allocated vertex to compute
-                    if (mesh_struct_ptr[0] != -1 && mesh_struct_ptr[1] != -1 &&
-                        mesh_struct_ptr[2] != -1) {
-                        return;
-                    }
+            // Early quit -- no allocated vertex to compute
+            if (mesh_struct_ptr[0] != -1 && mesh_struct_ptr[1] != -1 &&
+                mesh_struct_ptr[2] != -1) {
+                return;
+            }
 
-                    // Enumerate 3 edges in the voxel
-                    for (int e = 0; e < 3; ++e) {
-                        int vertex_idx = mesh_struct_ptr[e];
-                        if (vertex_idx != -1) continue;
+            // Enumerate 3 edges in the voxel
+            for (int e = 0; e < 3; ++e) {
+                int vertex_idx = mesh_struct_ptr[e];
+                if (vertex_idx != -1) continue;
 
-                        OPEN3D_ATOMIC_ADD(count_ptr, 1);
-                    }
-                });
+                OPEN3D_ATOMIC_ADD(count_ptr, 1);
+            }
+        });
 
 #if defined(__CUDACC__)
         vertex_count = count.Item<int>();
@@ -810,13 +804,7 @@ void ExtractSurfaceMeshCPU
 #else
     (*count_ptr) = 0;
 #endif
-
-#if defined(__CUDACC__)
-    core::kernel::CUDALauncher::LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(
-                                                               int64_t widx) {
-#else
-    core::kernel::CPULauncher::LaunchGeneralKernel(n, [&](int64_t widx) {
-#endif
+    launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(int64_t widx) {
         // Natural index (0, N) -> (block_idx, voxel_idx)
         int64_t workload_block_idx = widx / resolution3;
         int64_t voxel_idx = widx % resolution3;
@@ -890,9 +878,6 @@ void EstimateRangeCPU
          float voxel_size,
          float depth_min,
          float depth_max) {
-
-    // TODO(wei): reserve it in a reusable buffer
-
     // Every 2 channels: (min, max)
     int h_down = h / down_factor;
     int w_down = w / down_factor;
@@ -904,7 +889,6 @@ void EstimateRangeCPU
     const int fragment_size = 16;
     const int frag_buffer_size = 65535;
 
-    // TODO(wei): explicit buffer
     static core::Tensor fragment_buffer;
     if (fragment_buffer.GetLength() == 0) {
         fragment_buffer =
@@ -1271,13 +1255,11 @@ void RayCastCPU
 
             // Iterative ray intersection check
             float t_prev = t;
-
             float tsdf_prev = -1.0f;
             float tsdf = 1.0;
 
             // Camera origin
             c2w_transform_indexer.GetCameraPosition(&x_o, &y_o, &z_o);
-
             // Direction
             c2w_transform_indexer.Unproject(static_cast<float>(x),
                                             static_cast<float>(y), 1.0f, &x_c,
