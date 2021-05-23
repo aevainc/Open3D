@@ -124,11 +124,9 @@ int main(int argc, char* argv[]) {
     }
     core::Device device(device_code);
     utility::LogInfo("Using device: {}", device.ToString());
-    t::geometry::TSDFVoxelGrid voxel_grid({{"tsdf", core::Dtype::Float32},
-                                           {"weight", core::Dtype::UInt16},
-                                           {"color", core::Dtype::UInt16}},
-                                          voxel_size, sdf_trunc, 8, block_count,
-                                          device);
+    t::geometry::TSDFVoxelGrid voxel_grid(
+            {{"tsdf", core::Dtype::Float32}, {"weight", core::Dtype::Float32}},
+            voxel_size, sdf_trunc, 8, block_count, device);
 
     double time_total = 0;
     double time_int = 0;
@@ -172,13 +170,13 @@ int main(int argc, char* argv[]) {
             auto result = voxel_grid.RayCast(
                     intrinsic_t, extrinsic_t, depth.GetCols(), depth.GetRows(),
                     depth_scale, 0.2, depth_max, std::min(i * 1.0f, 3.0f),
-                    MaskCode::DepthMap | MaskCode::ColorMap);
+                    MaskCode::DepthMap);
             ray_timer.Stop();
 
             utility::LogInfo("main.raycast {}", ray_timer.GetDuration());
             time_raycasting += ray_timer.GetDuration();
 
-            if (i % 200 == 0) {
+            if (false) {
                 core::Tensor range_map = result[MaskCode::RangeMap];
                 t::geometry::Image im_near(
                         range_map.Slice(2, 0, 1).Contiguous() / depth_max);
@@ -203,10 +201,10 @@ int main(int argc, char* argv[]) {
                 // visualization::DrawGeometries(
                 //         {std::make_shared<open3d::geometry::Image>(
                 //                 normal.ToLegacyImage())});
-                t::geometry::Image color(result[MaskCode::ColorMap]);
-                visualization::DrawGeometries(
-                        {std::make_shared<open3d::geometry::Image>(
-                                color.ToLegacyImage())});
+                // t::geometry::Image color(result[MaskCode::ColorMap]);
+                // visualization::DrawGeometries(
+                //         {std::make_shared<open3d::geometry::Image>(
+                //                 color.ToLegacyImage())});
             }
         }
 
