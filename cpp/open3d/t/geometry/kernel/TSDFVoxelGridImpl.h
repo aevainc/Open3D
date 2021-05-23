@@ -601,8 +601,7 @@ void ExtractSurfaceMeshCPU
 
                     if (table_idx == 0 || table_idx == 255) return;
 
-                    // Check per-edge sign in the cube to determine cube
-                    // type
+                    // Check per-edge sign determine the cube type
                     int edges_with_vertices = edge_table[table_idx];
                     for (int i = 0; i < 12; ++i) {
                         if (edges_with_vertices & (1 << i)) {
@@ -690,12 +689,10 @@ void ExtractSurfaceMeshCPU
 #endif
     }
 
-    utility::LogInfo("Total vertex count = {}", vertex_count);
+    utility::LogDebug("Total vertex count = {}", vertex_count);
     vertices = core::Tensor({vertex_count, 3}, core::Dtype::Float32,
                             block_values.GetDevice());
 
-    // Normals
-    utility::LogInfo("setup normals");
     bool extract_normal = false;
     NDArrayIndexer normal_indexer;
     if (normals.has_value()) {
@@ -704,7 +701,6 @@ void ExtractSurfaceMeshCPU
                 core::Tensor({vertex_count, 3}, core::Dtype::Float32,
                              block_values.GetDevice());
         normal_indexer = NDArrayIndexer(normals.value().get(), 1);
-        utility::LogInfo("normals set");
     }
 
     NDArrayIndexer block_keys_indexer(block_keys, 1);
@@ -720,9 +716,7 @@ void ExtractSurfaceMeshCPU
 
     // Pass 2: extract vertices.
     DISPATCH_BYTESIZE_TO_VOXEL(
-
             voxel_block_buffer_indexer.ElementByteSize(), [&]() {
-                utility::LogInfo("setup colors");
                 bool extract_color = false;
                 NDArrayIndexer color_indexer;
                 if (voxel_t::HasColor() && colors.has_value()) {
@@ -731,9 +725,8 @@ void ExtractSurfaceMeshCPU
                             {vertex_count, 3}, core::Dtype::Float32,
                             block_values.GetDevice());
                     color_indexer = NDArrayIndexer(colors.value().get(), 1);
-                    utility::LogInfo("colors set");
                 }
-                utility::LogInfo("launch");
+
                 launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(
                                                         int64_t workload_idx) {
                     auto GetVoxelAt = [&] OPEN3D_DEVICE(
@@ -889,8 +882,7 @@ void ExtractSurfaceMeshCPU
     core::kernel::CPULauncher::LaunchGeneralKernel(
             n, [&](int64_t workload_idx) {
 #endif
-                // Natural index (0, N) -> (block_idx,
-                // voxel_idx)
+                // Natural index (0, N) -> (block_idx, voxel_idx)
                 int64_t workload_block_idx = workload_idx / resolution3;
                 int64_t voxel_idx = workload_idx % resolution3;
 
