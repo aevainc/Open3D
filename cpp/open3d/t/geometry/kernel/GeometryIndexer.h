@@ -329,14 +329,13 @@ public:
     }
 
     template <typename T>
-    inline OPEN3D_HOST_DEVICE T* GetDataPtrFromCoord(int64_t x) const {
+    inline OPEN3D_HOST_DEVICE T* GetDataPtr(int64_t x) const {
         return static_cast<T*>(static_cast<void*>(static_cast<uint8_t*>(ptr_) +
                                                   x * element_byte_size_));
     }
 
     template <typename T>
-    inline OPEN3D_HOST_DEVICE T* GetDataPtrFromCoord(int64_t x,
-                                                     int64_t y) const {
+    inline OPEN3D_HOST_DEVICE T* GetDataPtr(int64_t x, int64_t y) const {
         int64_t workload;
         CoordToWorkload(x, y, &workload);
         return static_cast<T*>(static_cast<void*>(
@@ -344,9 +343,9 @@ public:
     }
 
     template <typename T>
-    inline OPEN3D_HOST_DEVICE T* GetDataPtrFromCoord(int64_t x,
-                                                     int64_t y,
-                                                     int64_t z) const {
+    inline OPEN3D_HOST_DEVICE T* GetDataPtr(int64_t x,
+                                            int64_t y,
+                                            int64_t z) const {
         int64_t workload;
         CoordToWorkload(x, y, z, &workload);
         return static_cast<T*>(static_cast<void*>(
@@ -354,10 +353,10 @@ public:
     }
 
     template <typename T>
-    inline OPEN3D_HOST_DEVICE T* GetDataPtrFromCoord(int64_t x,
-                                                     int64_t y,
-                                                     int64_t z,
-                                                     int64_t t) const {
+    inline OPEN3D_HOST_DEVICE T* GetDataPtr(int64_t x,
+                                            int64_t y,
+                                            int64_t z,
+                                            int64_t t) const {
         int64_t workload;
         CoordToWorkload(x, y, z, t, &workload);
         return static_cast<T*>(static_cast<void*>(

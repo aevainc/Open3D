@@ -165,8 +165,7 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
             int64_t y = (workload_idx / cols_strided) * stride;
             int64_t x = (workload_idx % cols_strided) * stride;
 
-            float d = *depth_indexer.GetDataPtrFromCoord<scalar_t>(x, y) /
-                      depth_scale;
+            float d = *depth_indexer.GetDataPtr<scalar_t>(x, y) / depth_scale;
             if (d > 0 && d < depth_max) {
                 float x_c = 0, y_c = 0, z_c = 0;
                 ti.Unproject(static_cast<float>(x), static_cast<float>(y), 1.0,
