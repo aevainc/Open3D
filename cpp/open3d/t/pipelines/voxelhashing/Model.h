@@ -107,6 +107,9 @@ public:
     t::geometry::PointCloud ExtractPointCloud(int estimated_number = -1,
                                               float weight_threshold = 3.0f);
 
+    t::geometry::TriangleMesh ExtractTriangleMesh(
+            int estimated_number = -1, float weight_threshold = 3.0f);
+
     /// Get block hashmap int the TSDFVoxelGrid.
     core::Hashmap GetHashmap();
 

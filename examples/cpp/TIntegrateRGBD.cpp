@@ -176,7 +176,7 @@ int main(int argc, char* argv[]) {
             utility::LogInfo("main.raycast {}", ray_timer.GetDuration());
             time_raycasting += ray_timer.GetDuration();
 
-            if (false) {
+            if (i % 100 == 0) {
                 core::Tensor range_map = result[MaskCode::RangeMap];
                 t::geometry::Image im_near(
                         range_map.Slice(2, 0, 1).Contiguous() / depth_max);
@@ -188,11 +188,18 @@ int main(int argc, char* argv[]) {
                 visualization::DrawGeometries(
                         {std::make_shared<open3d::geometry::Image>(
                                 im_far.ToLegacyImage())});
-                t::geometry::Image depth(result[MaskCode::DepthMap]);
+                t::geometry::Image depth_raycast(result[MaskCode::DepthMap]);
+                visualization::DrawGeometries(
+                        {std::make_shared<open3d::geometry::Image>(
+                                depth_raycast
+                                        .ColorizeDepth(depth_scale, 0.3,
+                                                       depth_max)
+                                        .ToLegacyImage())});
                 visualization::DrawGeometries(
                         {std::make_shared<open3d::geometry::Image>(
                                 depth.ColorizeDepth(depth_scale, 0.3, depth_max)
                                         .ToLegacyImage())});
+
                 // t::geometry::Image vertex(result[MaskCode::VertexMap]);
                 // visualization::DrawGeometries(
                 //         {std::make_shared<open3d::geometry::Image>(
