@@ -1,0 +1,655 @@
+
+
+<html lang="en">
+
+
+<!-- Mirrored from www.tanksandtemples.org/details/1293/Horse/ by HTTrack Website Copier/3.x [XR&CO'2014], Mon, 24 May 2021 12:06:00 GMT -->
+<!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=utf-8" /><!-- /Added by HTTrack -->
+<head>
+
+
+    <link rel="shortcut icon" type="image/x-icon" href="https://www.tanksandtemples.org/static/websites/modern-business/images/temple_gray2.ico">
+<!--    <link rel="icon" type="image/png" href="favicon.png" />-->
+<!--    <link rel="shortcut icon" type="image/png" href="/static/websites/modern-business/images/temple_gray2.png">-->
+
+    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Tanks and Temples Benchmark</title>
+    <!-- Bootstrap Core CSS -->
+    
+    <link href="https://www.tanksandtemples.org/static/websites/modern-business/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    
+
+    <!-- Custom CSS -->
+    
+    <link href="https://www.tanksandtemples.org/static/websites/modern-business/css/modern-business.css" rel="stylesheet" media="screen">
+    
+    <!-- Custom Fonts -->
+    
+<!--    <link href="/static/modern-business/font-awesome/css/font-awesome.min.css" rel="stylesheet" media="screen">-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"/>
+
+    <link href="https://www.tanksandtemples.org/static/websites/modern-business/css/custom.css" rel="stylesheet" media="screen">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    
+    
+    
+
+    
+    
+
+
+
+
+<script src="https://www.tanksandtemples.org/static/websites/modern-business/js/jquery.js"></script>
+<script src="https://www.tanksandtemples.org/static/websites/modern-business/js/chartjs-plugin-annotation.min.js"></script>
+<script src="https://www.tanksandtemples.org/static/websites/modern-business/js/chartjs-plugin-annotation.js"></script>
+
+<script type="text/javascript">  
+
+
+    
+
+    $(function() {
+    var temp="Horse";
+    $("#my_selection").val(temp);
+    });
+
+
+    
+</script>
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function () {
+    
+    
+    // draw background
+var backgroundColor = 'white';
+Chart.plugins.register({
+    beforeDraw: function(c) {
+        var ctx = c.chart.ctx;
+        ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, c.chart.width, c.chart.height);
+    }
+});
+    
+    
+    
+/**
+ * This is the function that will take care of image extracting and
+ * setting proper filename for the download.
+ * IMPORTANT: Call it from within a onclick event.
+*/
+function downloadCanvas(link, canvasId, filename) {
+    link.href = document.getElementById(canvasId).toDataURL();
+    link.download = filename;
+}
+
+/** 
+ * The event handler for the link's onclick event. We give THIS as a
+ * parameter (=the link element), ID of the canvas and a filename.
+*/
+document.getElementById('downloadP').addEventListener('click', function() {
+    downloadCanvas(this, 'myChartP', 'https://www.tanksandtemples.org/details/1293/Horse/precision.png');
+}, false);
+    
+    
+    document.getElementById('downloadR').addEventListener('click', function() {
+    downloadCanvas(this, 'myChartR', 'https://www.tanksandtemples.org/details/1293/Horse/recall.png');
+}, false);
+    
+    
+  });
+</script>
+                                             
+                                             
+                                             
+
+    
+
+<!--
+<script type="text/javascript" src="/static/websites/tablesorter/jquery-latest.js"></script> 
+<script type="text/javascript" src="/static/websites/tablesorter/jquery.tablesorter.js"></script> 
+-->
+<!--
+<script src="http://tablesorter.com/jquery-latest.js" type="text/javascript"></script> 
+<script src="http://tablesorter.com/jquery.tablesorter.min.js" type="text/javascript"> </script>    
+-->
+<!--<script src="js/bootstrap.min.js"></script>-->
+
+
+    
+    
+
+  
+ 
+    
+    
+</head>
+
+<body>
+    
+    
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-custom navbar-fixed-top" role="navigation">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand " href="https://www.tanksandtemples.org/">Tanks and Temples</a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right" >
+                  
+<!--
+                    <li>
+                        <a href="/"style="font-family:verdana;font-size: 18px; color: #777; ">Home</a>
+                    </li>
+-->
+                    <li>
+                        <a href="https://www.tanksandtemples.org/" >Home</a>
+                    </li>
+                    <li>
+                        <a href="https://www.tanksandtemples.org/download/">Download</a>
+                    </li>
+                    <li>
+                        <a href="https://www.tanksandtemples.org/submit/">Submit</a>
+                    </li>
+                    <li>
+                        <a href="https://www.tanksandtemples.org/leaderboard/">Leaderboard</a>
+                    </li>
+                    <li>
+                        <a href="https://www.tanksandtemples.org/tutorial/">Tutorial</a>
+                    </li>
+                    <li>
+                        <a href="https://www.tanksandtemples.org/license/">License</a>
+                    </li>
+                    <li>
+                        <a href="https://www.tanksandtemples.org/contact/">Contact</a>
+                    </li>
+            
+                     
+                    <li class="dropdown">
+	          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa  fa-1.5x fa-unlock"></i> <span class="caret"></span></a>
+	          <ul class="dropdown-menu" role="menu">
+	            <li><a href="https://www.tanksandtemples.org/signmeup">Sign me up</a></li>
+                <li><a href="https://www.tanksandtemples.org/reset">Forgot my password</a></li>
+	            <li class="divider"></li>
+	            <li><a href="https://www.tanksandtemples.org/login">Login</a></li>
+	          </ul>
+	        </li>
+                    
+                    
+                    
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+            
+            
+            
+        </div>
+        <!-- /.container -->
+    </nav>
+
+    
+    
+    
+    
+
+    
+    
+    <header class="container" style="margin-top: 15px;">
+        <div class="jumbotron" style="height:200px; text-shadow: 0px 3px 4px #555; background:url(https://www.tanksandtemples.org/static/websites/modern-business/images/family2.png)no-repeat 100% center, linear-gradient(125deg,white, #444444);background-size: auto 100%;"> 
+<!--            #box-shadow: 0 6px 20px -7px black;">-->
+            
+                        <h1  style="font-size: 320%">ACMMP Details</h1>
+                    
+        
+        </div>              
+    </header>
+    
+   
+    
+    
+    
+        <div class="container">
+
+
+
+
+
+
+
+            
+            
+           
+            
+
+        
+
+
+
+        <!-- Marketing Icons Section -->
+        <div class="row">
+            
+            
+            
+<!--
+            <div class="section col-md-12">
+                <p><h2>License Terms and Conditions</h2></p>
+                
+            </div>
+-->
+            
+<div class="section col-md-12" id="element">
+             
+                    
+                    <p>
+                    <h4>Author(s): </h4>
+         
+                    <p>Anonymous</p >
+                    </p>
+                    <br>
+            
+                    <p>
+                    <h4>Description: </h4>
+
+   
+
+                    <p>ACMMP</p>
+
+                    </p>
+                    <br>
+                    
+                    
+                    <h4>Method parameters: </h4>
+                    <p>1</p>
+                    
+                    <br>
+                    
+
+
+                    <p>
+                    <h4>Used image set:</h4>
+                    
+                    
+                        Reconstructions from provided image set
+                    
+                    </p>
+                    <br>
+                    <p>
+                    <h4>Publication:</h4>
+                    <p> <a href=https://www.tanksandtemples.org/details/1293/Horse/None target="_blank">None</a> </p>
+
+                    </p>
+                    <br>
+                    <p>
+                    <h4>Software or method website:</h4>
+                    <p> <a href=https://www.tanksandtemples.org/details/1293/Horse/None target="_blank">None</a> </p>
+
+                    </p>
+                    <br>
+                    <hr>
+<p id=positionx></p>
+     <br>     
+
+
+
+
+
+<div class="section col-md-12">
+<h2>Error Visualization: </h2>
+<table>
+  <thead>
+    <tr>
+      
+<!--      <th style="width:10%;">Method</th>-->
+        
+      <th style="width:45%;" class="text-center"></th>
+      <th style="width:45%;" class="text-center"></th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+     
+<!--      <td>COLMAP</td>-->
+      <td>&nbsp;</td>
+      <td>&nbsp;</td>
+    </tr>
+    <tr>
+     
+<!--      <td>COLMAP</td>-->
+      
+    
+        
+            <td><img src="https://www.tanksandtemples.org/get_image/1293/Horse/P"  class="img-responsive"/></td>
+            <td><img src="https://www.tanksandtemples.org/get_image/1293/Horse/R"  class="img-responsive"/></td>
+        
+
+
+        
+    </tr>
+    <tr>
+      <td>&nbsp;</td>
+      <td>&nbsp;</td>
+    </tr>
+    <tr>
+      <td class="text-center"><b>Precision</b></td>
+      <td class="text-center"><b>Recall</b></td>
+    </tr>
+      <tr>
+      <td>&nbsp;</td>
+      <td>&nbsp;</td>
+    </tr>
+      
+<!--
+    <tr>
+     
+      <td>Jacob</td>
+      <td><img src='/get_image/image/'  class="img-responsive"/></td>
+      <td><img src='/get_image/image/'  class="img-responsive"/></td>
+    </tr>
+-->
+   
+  </tbody>
+</table>
+<img src="https://www.tanksandtemples.org/get_image/1293/Horse/C"  class="img-responsive"/>
+</div>
+
+
+
+
+
+<div class="section col-md-4">
+    <h4>Change scene: </h4>
+<select id="my_selection" class="form-control" style="font-family:Times New Roman">
+    <option value="Auditorium" href="https://www.tanksandtemples.org/details/1293/Auditorium/#positionx">Auditorium (&tau; = 10mm)</option>
+    <option value="Ballroom" href="https://www.tanksandtemples.org/details/1293/Ballroom/#positionx">Ballroom (&tau; = 10mm)</option>
+    <option value="Courtroom" href="https://www.tanksandtemples.org/details/1293/Courtroom/#positionx">Courtroom (&tau; = 10mm)</option>
+    <option value="Family" href="https://www.tanksandtemples.org/details/1293/Family/#positionx">Family (&tau; = 3mm)</option>
+    <option value="Francis" href="https://www.tanksandtemples.org/details/1293/Francis/#positionx">Francis (&tau; = 5mm)</option>
+    <option value="Horse" href="https://www.tanksandtemples.org/details/1293/Horse/#positionx">Horse (&tau; = 3mm)</option>
+    <option value="Lighthouse" href="https://www.tanksandtemples.org/details/1293/Lighthouse/#positionx">Lighthouse (&tau; = 5mm)</option>
+    <option value="M60" href="https://www.tanksandtemples.org/details/1293/M60/#positionx">M60 (&tau; = 5mm)</option>
+    <option value="Museum" href="https://www.tanksandtemples.org/details/1293/Museum/#positionx">Museum (&tau; = 10mm)</option>
+    <option value="Palace" href="https://www.tanksandtemples.org/details/1293/Palace/#positionx">Palace (&tau; = 30mm)</option>
+    <option value="Panther" href="https://www.tanksandtemples.org/details/1293/Panther/#positionx">Panther (&tau; = 5mm)</option>
+    <option value="Playground" href="https://www.tanksandtemples.org/details/1293/Playground/#positionx">Playground (&tau; = 10mm)</option>
+    <option value="Train" href="https://www.tanksandtemples.org/details/1293/Train/#positionx">Train (&tau; = 5mm)</option>
+    <option value="Temple" href="https://www.tanksandtemples.org/details/1293/Temple/#positionx">Temple (&tau; = 15mm)</option>
+</select>
+</div>   
+
+
+
+
+
+
+<br><br><br>&nbsp;
+
+
+<div class="section col-md-12">
+
+                
+                    <br><h2>Precision Horse</h2><hr><br>
+                    <canvas id="myChartP" width="850" height="1000"></canvas>
+
+                      <script type="text/javascript" src="https://www.tanksandtemples.org/static/js/Chart.min.js"></script>
+                      <script type="text/javascript">
+                          
+                            
+                
+                
+                          $.get("https://www.tanksandtemples.org/line_chart_from_idP/1293/Horse/", function (data) {
+                              var ctx = $("#myChartP").get(0).getContext("2d");
+                              var chartOptions = {
+                                  scales: {
+                                                xAxes: [{
+                                                            gridLines: {
+                                                                display:true
+                                                            },
+                                                    ticks: {
+                                                                fontFamily: 'Times New Roman',
+                                                              }
+                                                        }],
+                                                yAxes: [{
+                                                            gridLines: {
+                                                                display:true
+                                                            },
+                                                    ticks: {
+                                                              min: 0,
+                                                              max: 100,
+                                                              stepSize: 10
+                                                            }
+                                                        }]
+                                                },
+                                                  responsive: false,
+                                                  legend: {
+                                                    display: true,
+                                                    position: 'bottom',
+                                                    labels: {
+                                                      boxWidth: 15,
+                                                      fontColor: 'black'
+                                                    }
+                                                  },
+
+                                                };
+                              new Chart(ctx, {
+                                  type: 'line',
+                                  data: data,
+                                  options: chartOptions
+                              });
+                          });
+                      </script>
+    
+                
+
+    
+                
+
+                      
+</div>
+
+
+  
+        <div class="row">    
+            <p><div class="section col-md-3"><a href="#"  id ="downloadP"  class="btn btn-primary"><i class="fa fa-download"></i> Download precision chart as image</a></div></p>
+        </div>
+        <div class="row">    
+            <p><div class="section col-md-3"><a href="https://www.tanksandtemples.org/get_raw_csv_data/1293/precision/Horse/" class="btn btn-primary"><i class="fa fa-download"></i> Download precision chart as CSV</a></p></div>
+        </div>
+
+
+<div class="section col-md-12">
+    <br>&nbsp;
+    
+    
+                    <h2>Recall Horse</h2><hr><br>
+                    <canvas id="myChartR" width="850" height="1000"></canvas>
+                      <script type="text/javascript" src="https://www.tanksandtemples.org/static/js/Chart.min.js"></script>
+                      <script type="text/javascript">
+     
+                          $.get("https://www.tanksandtemples.org/line_chart_from_idR/1293/Horse/", function (data) {
+                              var ctx = $("#myChartR").get(0).getContext("2d");
+                              var chartOptions = {
+                                  scales: {
+                                                xAxes: [{
+                                                            gridLines: {
+                                                             display:true,
+                                                            }, 
+                                                    ticks: {                                         
+                                                       fontFamily: 'Times New Roman',
+                                                              }
+                                                        }],
+                                                yAxes: [{
+                                                            gridLines: {
+                                                                display:true
+                                                            } ,
+                                                    ticks: {
+                                                              min: 0,
+                                                              max: 100,
+                                                              stepSize: 10
+                                                            }
+                                                        }]
+                                                },
+                                  
+                                                  responsive: false,
+                                                  legend: {
+                                                    display: true,
+                                                    position: 'bottom',
+                                                    labels: {
+                                                      boxWidth: 10,
+                                                      fontColor: 'black',
+                                                        layout: 'horizontal'
+                                                    }
+                                                  },
+                                                };
+                              new Chart(ctx, {
+                                  type: 'line',
+                                  data: data,
+                                  options: chartOptions
+                              });
+                          });
+                      </script>
+    
+
+    
+                    
+
+                    
+                       
+                    
+                      
+
+                
+                   
+                   
+</div>
+<!--<a id="downloadX">Download chart image</a>-->
+<div class="row">    
+    <p><div class="section col-md-3"><a href="#"  id ="downloadR"  class="btn btn-primary"><i class="fa fa-download"></i> Download recall chart as image</a></div></p>
+</div>
+<div class="row">    
+    <p><div class="section col-md-3"><a href="https://www.tanksandtemples.org/get_raw_csv_data/1293/recall/Horse/" class="btn btn-primary"><i class="fa fa-download"></i> Download recall chart as CSV</a></p></div>
+</div>
+
+
+
+<!--
+                    
+            </p>
+                
+            </div>
+            
+            
+            
+           
+        </div>
+
+        <!-- /.row -->
+
+       
+        
+       
+
+
+
+
+            
+        <!-- Footer -->
+        <footer>
+            <div class="row">
+                <div class="text-center col-lg-12">
+                    <p>&copy;  2017 | tanksandtemples.org</p>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+    
+    <!-- jQuery -->
+    
+
+    
+    
+
+
+    
+    <script src="https://www.tanksandtemples.org/static/websites/modern-business/js/jquery.js"></script>
+    
+    
+    <!-- Bootstrap Core JavaScript -->
+    
+    <script src="https://www.tanksandtemples.org/static/websites/modern-business/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://www.tanksandtemples.org/static/websites/modern-business/js/bootstrap-filestyle.min.js"></script>
+    
+    
+    
+    
+    
+    <!-- Script to Activate the Carousel -->
+    <script>
+    $('.carousel').carousel({
+        interval: 15000 //changes the speed
+    })
+   
+    </script>
+    
+<!--    Supposed to store Tab-positions-->
+<!--
+    <script>
+     
+    </script>
+-->
+                 
+
+
+    
+
+
+         
+
+<script type="text/javascript">  
+
+    
+document.getElementById('my_selection').onchange = function() {
+    
+      
+    localStorage.setItem('my_selection', document.getElementById("my_selection").value);
+    window.location.href = this.children[this.selectedIndex].getAttribute('href');
+    
+    
+}
+
+</script>
+               
+
+</body>
+
+
+<!-- Mirrored from www.tanksandtemples.org/details/1293/Horse/ by HTTrack Website Copier/3.x [XR&CO'2014], Mon, 24 May 2021 12:06:00 GMT -->
+</html>
