@@ -1,3 +1,15 @@
+# Tanks and Temples WebRTC demo
+
+```bash
+# Assumes linux, in build directory.
+pip uninstall -y open3d && make install-pip-package -j$(nproc)
+python ../examples/python/gui/draw_webrtc.py
+```
+
+Then visit [http://localhost:8888/](http://localhost:8888/).
+
+---
+
 <p align="center">
 <img src="https://raw.githubusercontent.com/intel-isl/Open3D/master/docs/_static/open3d_logo_horizontal.png" width="320" />
 </p>
@@ -30,15 +42,15 @@ the open-source community.
 
 **Core features of Open3D include:**
 
-* 3D data structures
-* 3D data processing algorithms
-* Scene reconstruction
-* Surface alignment
-* 3D visualization
-* Physically based rendering (PBR)
-* 3D machine learning support with PyTorch and TensorFlow
-* GPU acceleration for core 3D operations
-* Available in C++ and Python
+- 3D data structures
+- 3D data processing algorithms
+- Scene reconstruction
+- Surface alignment
+- 3D visualization
+- Physically based rendering (PBR)
+- 3D machine learning support with PyTorch and TensorFlow
+- GPU acceleration for core 3D operations
+- Available in C++ and Python
 
 For more, please visit the [Open3D documentation](http://www.open3d.org/docs).
 
@@ -65,13 +77,13 @@ To compile Open3D from source, refer to
 
 Checkout the following links to get started with Open3D C++ API
 
-* [Compiling Open3D from source](http://www.open3d.org/docs/release/compilation.html)
-* [Open3D C++ API](http://www.open3d.org/docs/release/cpp_api.html)
+- [Compiling Open3D from source](http://www.open3d.org/docs/release/compilation.html)
+- [Open3D C++ API](http://www.open3d.org/docs/release/cpp_api.html)
 
 To use Open3D in your C++ project, checkout the following examples
 
-* [Find Pre-Installed Open3D Package in CMake](https://github.com/intel-isl/open3d-cmake-find-package)
-* [Use Open3D as a CMake External Project](https://github.com/intel-isl/open3d-cmake-external-project)
+- [Find Pre-Installed Open3D Package in CMake](https://github.com/intel-isl/open3d-cmake-find-package)
+- [Use Open3D as a CMake External Project](https://github.com/intel-isl/open3d-cmake-external-project)
 
 ## Open3D-Viewer app
 
@@ -92,10 +104,10 @@ top of the Open3D core library and extends it with machine learning tools for
 
 ## Communication channels
 
-* [GitHub Issue](https://github.com/intel-isl/Open3D/issues): bug reports,
+- [GitHub Issue](https://github.com/intel-isl/Open3D/issues): bug reports,
   feature requests, etc.
-* [Forum](https://forum.open3d.org): discussion on the usage of Open3D.
-* [Discord Chat](https://discord.gg/D35BGvn): online chats, discussions,
+- [Forum](https://forum.open3d.org): discussion on the usage of Open3D.
+- [Discord Chat](https://discord.gg/D35BGvn): online chats, discussions,
   and collaboration with other users and developers.
 
 ## Citation
