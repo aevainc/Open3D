@@ -1,0 +1,45 @@
+
+function(link_everything target)
+    # Link Open3D
+    target_link_libraries(${target} PRIVATE Open3D)
+
+    # Link 3rd-prty libraries
+    open3d_link_3rdparty_libraries(${target})
+
+    # Other properties
+    open3d_show_and_abort_on_warning(${target})
+    open3d_set_global_properties(${target})
+    if (BUILD_CUDA_MODULE)
+        target_include_directories(${target} SYSTEM PRIVATE
+            ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+        )
+    endif()
+
+    # Binary dir: build/examples/hashmap
+    set_target_properties(${target} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/hashmap"
+    )
+endfunction()
+
+add_executable(DemoSlabhash DemoSlabhash.cu)
+link_everything(DemoSlabhash)
+
+add_executable(DemoStdgpu DemoStdgpu.cu)
+link_everything(DemoStdgpu)
+
+add_executable(DemoCudpp
+    DemoCudpp/DemoCudpp.cu
+    DemoCudpp/mt19937ar.cpp
+    DemoCudpp/random_numbers.cpp
+)
+link_everything(DemoCudpp)
+target_include_directories(DemoCudpp SYSTEM PRIVATE DemoCudpp)
+
+add_executable(TestHashmap TestHashmap.cu)
+link_everything(TestHashmap)
+
+add_executable(TestHashmapVoxelDownsample TestHashmapVoxelDownsample.cu)
+link_everything(TestHashmapVoxelDownsample)
+
+add_executable(TestHashmapInt3 TestHashmapInt3.cu)
+link_everything(TestHashmapInt3)
