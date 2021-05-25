@@ -53,11 +53,14 @@ std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(int n) {
     std::uniform_int_distribution<int> dis(-100, 100);
 
     for (int i = 0; i < n; ++i) {
-        k[i * 3 + 1] = dis(gen);
-        k[i * 3 + 2] = dis(gen);
-        k[i * 3 + 3] = dis(gen);
+        int x = dis(gen);
+        int y = dis(gen);
+        int z = dis(gen);
 
-        v[i * N + 0] = i;
+        k[i * 3 + 0] = x;
+        k[i * 3 + 1] = y;
+        k[i * 3 + 2] = z;
+        v[i * N + 0] = x + y + z;
     }
     return std::make_pair(k, v);
 }
@@ -188,6 +191,7 @@ int main(int argc, char** argv) {
     }
 
     // Find experiments
+    // bool saved = false;
     {
         double find_time = 0;
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
@@ -196,6 +200,15 @@ int main(int argc, char** argv) {
         core::Tensor t_addrs({n}, core::Dtype::Int32, device);
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
         hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
+
+        // if (!saved) {
+        //     auto query_keys = t_keys.IndexGet({t_masks});
+        //     auto query_values = hashmap.GetValueTensor().IndexGet(
+        //             {t_addrs.To(core::Dtype::Int64).IndexGet({t_masks})});
+        //     query_keys.Save("keys.npy");
+        //     query_values.Save("values.npy");
+        //     saved = true;
+        // }
 
         for (int i = 0; i < runs; ++i) {
             timer.Start();
