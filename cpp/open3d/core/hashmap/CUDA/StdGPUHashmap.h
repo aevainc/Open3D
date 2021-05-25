@@ -38,6 +38,7 @@
 
 #include "open3d/core/hashmap/CUDA/CUDAHashmapBufferAccessor.h"
 #include "open3d/core/hashmap/DeviceHashmap.h"
+#include "open3d/core/hashmap/Dispatch.h"
 #include "open3d/core/kernel/CUDALauncher.cuh"
 
 namespace open3d {
@@ -392,13 +393,36 @@ float StdGPUHashmap<Key, Hash>::LoadFactor() const {
     return impl_.load_factor();
 }
 
-// Need an explicit kernel for non-const access to map
-template <typename Key, typename Hash>
+// Accelerates insertion
+#define DISPATCH_DVALUE_SIZE_TO_T(DVALUE_SIZE, ...) \
+    [&] {                                           \
+        if (DVALUE_SIZE % 16 == 0) {                \
+            using T = int4;                         \
+            return __VA_ARGS__();                   \
+        } else if (DVALUE_SIZE % 12 == 0) {         \
+            using T = int3;                         \
+            return __VA_ARGS__();                   \
+        } else if (DVALUE_SIZE % 8 == 0) {          \
+            using T = int2;                         \
+            return __VA_ARGS__();                   \
+        } else if (DVALUE_SIZE % 4 == 0) {          \
+            using T = int;                          \
+            return __VA_ARGS__();                   \
+        } else if (DVALUE_SIZE % 2 == 0) {          \
+            using T = int16_t;                      \
+            return __VA_ARGS__();                   \
+        } else {                                    \
+            using T = uint8_t;                      \
+            return __VA_ARGS__();                   \
+        }                                           \
+    }()
+
+template <typename Key, typename T, typename Hash>
 __global__ void STDGPUInsertKernel(stdgpu::unordered_map<Key, addr_t, Hash> map,
                                    CUDAHashmapBufferAccessor buffer_accessor,
                                    const Key* input_keys,
-                                   const void* input_values,
-                                   int64_t dsize_value,
+                                   const T* input_values_in_T,
+                                   int64_t dsize_value_in_T,
                                    addr_t* output_addrs,
                                    bool* output_masks,
                                    int64_t count) {
@@ -422,13 +446,11 @@ __global__ void STDGPUInsertKernel(stdgpu::unordered_map<Key, addr_t, Hash> map,
         *static_cast<Key*>(dst_kv_iter.first) = key;
 
         // Copy/reset non-templated value in buffer
-        uint8_t* dst_value = static_cast<uint8_t*>(dst_kv_iter.second);
-        if (input_values != nullptr) {
-            const uint8_t* src_value =
-                    static_cast<const uint8_t*>(input_values) +
-                    dsize_value * tid;
-            for (int byte = 0; byte < dsize_value; ++byte) {
-                dst_value[byte] = src_value[byte];
+        if (input_values_in_T != nullptr) {
+            auto dst_value_as_T = static_cast<T*>(dst_kv_iter.second);
+            auto src_value_as_T = input_values_in_T + (tid * dsize_value_in_T);
+            for (int i = 0; i < dsize_value_in_T; ++i) {
+                dst_value_as_T[i] = src_value_as_T[i];
             }
         }
 
@@ -450,11 +472,14 @@ void StdGPUHashmap<Key, Hash>::InsertImpl(const void* input_keys,
     uint32_t threads = 128;
     uint32_t blocks = (count + threads - 1) / threads;
 
-    STDGPUInsertKernel<<<blocks, threads>>>(impl_, buffer_accessor_,
-                                            static_cast<const Key*>(input_keys),
-                                            input_values, this->dsize_value_,
-                                            output_addrs, output_masks, count);
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    DISPATCH_DVALUE_SIZE_TO_T(this->dsize_value_, [&] {
+        STDGPUInsertKernel<Key, T, Hash><<<blocks, threads>>>(
+                impl_, buffer_accessor_, static_cast<const Key*>(input_keys),
+                static_cast<const T*>(input_values),
+                this->dsize_value_ / sizeof(T), output_addrs, output_masks,
+                count);
+        OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    });
 }
 
 template <typename Key, typename Hash>

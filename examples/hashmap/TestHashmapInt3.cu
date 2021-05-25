@@ -13,6 +13,7 @@
 #include "open3d/utility/Console.h"
 #include "open3d/utility/Timer.h"
 
+/// Int3 type
 class hash_int3 {
 public:
     STDGPU_HOST_DEVICE stdgpu::index_t operator()(const int3& key) const {
@@ -28,15 +29,47 @@ STDGPU_HOST_DEVICE bool operator==(const int3& a, const int3& b) {
     return a.x == b.x && a.y == b.y && a.z == b.z;
 }
 
-using iterator_t =
-        typename stdgpu::unordered_map<int3, int, hash_int3>::iterator;
+// Value type
+template <size_t N>
+struct int_blob {
+    STDGPU_HOST_DEVICE int_blob() {}
+    STDGPU_HOST_DEVICE int_blob(int v) {
+        for (size_t i = 0; i < N; ++i) {
+            data_[i] = v;
+        }
+    }
 
-__global__ void insert_int3(const int* d_keys,
-                            const int* d_values,
-                            bool* d_masks,
-                            iterator_t* d_output,
-                            const stdgpu::index_t n,
-                            stdgpu::unordered_map<int3, int, hash_int3> map) {
+    int data_[N];
+};
+
+// Data generation for int3 keys
+template <size_t N>
+std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(int n) {
+    std::vector<int> k(n * 3);
+    std::vector<int> v(n * N);
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dis(-100, 100);
+
+    for (int i = 0; i < n; ++i) {
+        k[i * 3 + 1] = dis(gen);
+        k[i * 3 + 2] = dis(gen);
+        k[i * 3 + 3] = dis(gen);
+
+        v[i * N + 0] = i;
+    }
+    return std::make_pair(k, v);
+}
+
+template <typename T>
+__global__ void insert_int3(
+        const int* d_keys,
+        const T* d_values,
+        bool* d_masks,
+        typename stdgpu::unordered_map<int3, T, hash_int3>::iterator* d_output,
+        const stdgpu::index_t n,
+        stdgpu::unordered_map<int3, T, hash_int3> map) {
     stdgpu::index_t i =
             static_cast<stdgpu::index_t>(blockIdx.x * blockDim.x + threadIdx.x);
 
@@ -50,11 +83,13 @@ __global__ void insert_int3(const int* d_keys,
     }
 }
 
-__global__ void find_int3(const int* d_keys,
-                          bool* d_masks,
-                          iterator_t* d_output,
-                          const stdgpu::index_t n,
-                          stdgpu::unordered_map<int3, int, hash_int3> map) {
+template <typename T>
+__global__ void find_int3(
+        const int* d_keys,
+        bool* d_masks,
+        typename stdgpu::unordered_map<int3, T, hash_int3>::iterator* d_output,
+        const stdgpu::index_t n,
+        stdgpu::unordered_map<int3, T, hash_int3> map) {
     stdgpu::index_t i =
             static_cast<stdgpu::index_t>(blockIdx.x * blockDim.x + threadIdx.x);
 
@@ -65,23 +100,6 @@ __global__ void find_int3(const int* d_keys,
     d_output[i] = iter;
 }
 
-std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(int n) {
-    std::vector<int> k(n * 3), v(n);
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dis(-100, 100);
-
-    for (int i = 0; i < n; ++i) {
-        k[i * 3 + 1] = dis(gen);
-        k[i * 3 + 2] = dis(gen);
-        k[i * 3 + 3] = dis(gen);
-
-        v[i] = i;
-    }
-    return std::make_pair(k, v);
-}
-
 int main(int argc, char** argv) {
     //
     // EXAMPLE DESCRIPTION
@@ -90,26 +108,29 @@ int main(int argc, char** argv) {
     // duplicate-free set of numbers.
     //
     using namespace open3d;
+    constexpr stdgpu::index_t C = 4096;
+    using T = int_blob<C>;
+    using iterator_t =
+            typename stdgpu::unordered_map<int3, T, hash_int3>::iterator;
 
     stdgpu::index_t n =
             utility::GetProgramOptionAsInt(argc, argv, "--n", 10000);
     int runs = utility::GetProgramOptionAsInt(argc, argv, "--runs", 1000);
 
-    auto kv = GenerateKVVector(n);
-
-    utility::LogInfo("n = {}", n);
+    auto kv = GenerateKVVector<C>(n);
+    utility::LogInfo("n = {}, c = {}", n, C);
 
     // Ours
     core::Tensor t_keys = core::Tensor(kv.first, {n, 3}, core::Dtype::Int32,
                                        core::Device("CUDA:0"));
-    core::Tensor t_values = core::Tensor(kv.second, {n}, core::Dtype::Int32,
+    core::Tensor t_values = core::Tensor(kv.second, {n, C}, core::Dtype::Int32,
                                          core::Device("CUDA:0"));
 
     // Warm up
     core::Device device("CUDA:0");
     {
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
-                              core::SizeVector{3, 1}, core::SizeVector{1},
+                              core::SizeVector{3, 1}, core::SizeVector{C},
                               device);
         core::Tensor t_addrs({n}, core::Dtype::Int32, device);
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
@@ -129,7 +150,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < runs; ++i) {
             timer.Start();
             core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
-                                  core::SizeVector{3, 1}, core::SizeVector{1},
+                                  core::SizeVector{3, 1}, core::SizeVector{C},
                                   device);
             core::Tensor t_addrs({n}, core::Dtype::Int32, device);
             core::Tensor t_masks({n}, core::Dtype::Bool, device);
@@ -143,23 +164,21 @@ int main(int argc, char** argv) {
         // stdgpu
         insert_time = 0;
         int* d_keys = static_cast<int*>(t_keys.GetDataPtr());
-        int* d_values = static_cast<int*>(t_values.GetDataPtr());
+        T* d_values = static_cast<T*>(t_values.GetDataPtr());
         for (int i = 0; i < runs; ++i) {
             timer.Start();
-            stdgpu::unordered_map<int3, int, hash_int3> map =
-                    stdgpu::unordered_map<int3, int,
-                                          hash_int3>::createDeviceObject(n);
+            auto map = stdgpu::unordered_map<int3, T,
+                                             hash_int3>::createDeviceObject(n);
             bool* d_masks = createDeviceArray<bool>(n);
             iterator_t* d_output = createDeviceArray<iterator_t>(n);
 
-            insert_int3<<<static_cast<unsigned int>(blocks),
-                          static_cast<unsigned int>(threads)>>>(
+            insert_int3<T><<<static_cast<unsigned int>(blocks),
+                             static_cast<unsigned int>(threads)>>>(
                     d_keys, d_values, d_masks, d_output, n, map);
 
             destroyDeviceArray<bool>(d_masks);
             destroyDeviceArray<iterator_t>(d_output);
-            stdgpu::unordered_map<int3, int, hash_int3>::destroyDeviceObject(
-                    map);
+            stdgpu::unordered_map<int3, T, hash_int3>::destroyDeviceObject(map);
             cudaDeviceSynchronize();
             timer.Stop();
             insert_time += timer.GetDuration();
@@ -172,7 +191,7 @@ int main(int argc, char** argv) {
     {
         double find_time = 0;
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
-                              core::SizeVector{3, 1}, core::SizeVector{1},
+                              core::SizeVector{3, 1}, core::SizeVector{C},
                               device);
         core::Tensor t_addrs({n}, core::Dtype::Int32, device);
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
@@ -191,14 +210,14 @@ int main(int argc, char** argv) {
         // stdgpu
         find_time = 0;
         int* d_keys = static_cast<int*>(t_keys.GetDataPtr());
-        int* d_values = static_cast<int*>(t_values.GetDataPtr());
-        stdgpu::unordered_map<int3, int, hash_int3> map =
-                stdgpu::unordered_map<int3, int, hash_int3>::createDeviceObject(
+        T* d_values = static_cast<T*>(t_values.GetDataPtr());
+        auto map =
+                stdgpu::unordered_map<int3, T, hash_int3>::createDeviceObject(
                         n);
         bool* d_masks = createDeviceArray<bool>(n);
         iterator_t* d_output = createDeviceArray<iterator_t>(n);
-        insert_int3<<<static_cast<unsigned int>(blocks),
-                      static_cast<unsigned int>(threads)>>>(
+        insert_int3<T><<<static_cast<unsigned int>(blocks),
+                         static_cast<unsigned int>(threads)>>>(
                 d_keys, d_values, d_masks, d_output, n, map);
         destroyDeviceArray<bool>(d_masks);
         destroyDeviceArray<iterator_t>(d_output);
@@ -209,9 +228,9 @@ int main(int argc, char** argv) {
             bool* d_masks = createDeviceArray<bool>(n);
             iterator_t* d_output = createDeviceArray<iterator_t>(n);
 
-            find_int3<<<static_cast<unsigned int>(blocks),
-                        static_cast<unsigned int>(threads)>>>(d_keys, d_masks,
-                                                              d_output, n, map);
+            find_int3<T><<<static_cast<unsigned int>(blocks),
+                           static_cast<unsigned int>(threads)>>>(
+                    d_keys, d_masks, d_output, n, map);
             destroyDeviceArray<bool>(d_masks);
             destroyDeviceArray<iterator_t>(d_output);
             cudaDeviceSynchronize();

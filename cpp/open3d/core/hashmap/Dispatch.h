@@ -126,6 +126,5 @@ public:
         return hash;
     }
 };
-
 }  // namespace core
 }  // namespace open3d
