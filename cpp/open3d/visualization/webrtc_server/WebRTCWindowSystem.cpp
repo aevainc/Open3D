@@ -182,6 +182,8 @@ WebRTCWindowSystem::OSWindow WebRTCWindowSystem::GetOSWindowByUID(
 }
 
 void WebRTCWindowSystem::StartWebRTCServer() {
+    open3d::utility::SetVerbosityLevel(open3d::utility::VerbosityLevel::Debug);
+
     if (!impl_->sever_started_) {
         auto start_webrtc_thread = [this]() {
             // Ensure Application::Initialize() is called before this.
