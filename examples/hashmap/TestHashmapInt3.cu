@@ -144,6 +144,7 @@ void run(int n, int runs, double density, bool debug) {
     auto kv = GenerateKVVector<C>(n, density);
     utility::LogInfo("n {}", n);
     utility::LogInfo("c {}", C);
+    utility::LogInfo("density {}", density);
 
     // Ours
     core::Tensor t_keys = core::Tensor(kv.first, {n, 3}, core::Dtype::Int32,
@@ -161,8 +162,6 @@ void run(int n, int runs, double density, bool debug) {
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
 
         hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
-        utility::LogInfo("density {}", double(hashmap.Size()) / double(n));
-
         hashmap.Find(t_keys, t_addrs, t_masks);
         cudaDeviceSynchronize();
     }
@@ -185,13 +184,15 @@ void run(int n, int runs, double density, bool debug) {
             timer.Stop();
             insert_time += timer.GetDuration();
         }
+        utility::LogInfo("ours.insertion {}", insert_time / runs);
 
-        utility::LogInfo("ours.insertion: {}", insert_time / runs);
+        // Potential destructor
+        cudaDeviceSynchronize();
 
         // stdgpu
-        insert_time = 0;
         int* d_keys = static_cast<int*>(t_keys.GetDataPtr());
         T* d_values = static_cast<T*>(t_values.GetDataPtr());
+        insert_time = 0;
         for (int i = 0; i < runs; ++i) {
             timer.Start();
             auto map = stdgpu::unordered_map<int3, T,
@@ -211,13 +212,12 @@ void run(int n, int runs, double density, bool debug) {
             insert_time += timer.GetDuration();
         }
 
-        utility::LogInfo("stdgpu.insertion: {}", insert_time / runs);
+        utility::LogInfo("stdgpu.insertion {}", insert_time / runs);
     }
 
     // Find experiments
     bool saved = false;
     {
-        double find_time = 0;
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                               core::SizeVector{3, 1}, core::SizeVector{C},
                               device);
@@ -225,15 +225,26 @@ void run(int n, int runs, double density, bool debug) {
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
         hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
 
+        if (double(hashmap.Size()) / n != density) {
+            utility::LogError("Failure! ours density mismatch");
+        }
+
         if (debug && !saved) {
             auto query_keys = t_keys.IndexGet({t_masks});
             auto query_values = hashmap.GetValueTensor().IndexGet(
                     {t_addrs.To(core::Dtype::Int64).IndexGet({t_masks})});
+            if (!query_keys.Sum({1}).AllClose(query_values.T()[0].T())) {
+                utility::LogError("Not all equal, query failed.");
+            } else {
+                utility::LogInfo("Check passed");
+            }
+
             query_keys.Save("keys.npy");
             query_values.Save("values.npy");
             saved = true;
         }
 
+        double find_time = 0;
         for (int i = 0; i < runs; ++i) {
             timer.Start();
             t_addrs = core::Tensor({n}, core::Dtype::Int32, device);
@@ -242,10 +253,12 @@ void run(int n, int runs, double density, bool debug) {
             timer.Stop();
             find_time += timer.GetDuration();
         }
-        utility::LogInfo("ours.find: {}", find_time / runs);
+        utility::LogInfo("ours.find {}", find_time / runs);
+
+        // Potential destructor
+        cudaDeviceSynchronize();
 
         // stdgpu
-        find_time = 0;
         int* d_keys = static_cast<int*>(t_keys.GetDataPtr());
         T* d_values = static_cast<T*>(t_values.GetDataPtr());
         auto map =
@@ -256,11 +269,14 @@ void run(int n, int runs, double density, bool debug) {
         insert_int3<T><<<static_cast<unsigned int>(blocks),
                          static_cast<unsigned int>(threads)>>>(
                 d_keys, d_values, d_masks, d_output, n, map);
-
         destroyDeviceArray<bool>(d_masks);
         destroyDeviceArray<iterator_t>(d_output);
         cudaDeviceSynchronize();
+        if (double(map.size()) / n != density) {
+            utility::LogError("Failure! stdgpu density mismatch");
+        }
 
+        find_time = 0;
         for (int i = 0; i < runs; ++i) {
             timer.Start();
             bool* d_masks = createDeviceArray<bool>(n);
@@ -276,7 +292,8 @@ void run(int n, int runs, double density, bool debug) {
             find_time += timer.GetDuration();
         }
 
-        utility::LogInfo("stdgpu.find: {}", find_time / runs);
+        utility::LogInfo("stdgpu.find {}", find_time / runs);
+        stdgpu::unordered_map<int3, T, hash_int3>::destroyDeviceObject(map);
     }
 }
 
