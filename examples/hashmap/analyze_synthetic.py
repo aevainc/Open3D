@@ -84,6 +84,7 @@ if __name__ == '__main__':
     densities = [0.1, 0.1, 0.99, 0.99]
     ops = ['insert', 'find', 'insert', 'find']
 
+    # Main plot
     for k in range(4):
         label_set = False
         for i in range(len(iters)):
@@ -126,12 +127,68 @@ if __name__ == '__main__':
             ax.fill(np.append(x, x[::-1]),
                     np.append(stdgpu_curve, ours_curve[::-1]),
                     color=colors[i])
-            ax.set_title(r'Density = ${}$, Operation {}'.format(di, opi))
+            ax.set_title(r'Density = ${}$, Operation {}'.format(di, opi), fontsize=20)
         ax.legend()
-        ax.set_xlabel('Hashmap value size (byte)')
+        ax.set_xlabel('Hashmap value size (byte)', fontsize=15)
         ax.set_xscale('log')
 
-        ax.set_ylabel('Time (ms)')
+        ax.set_ylabel('Time (ms)', fontsize=15)
+        ax.set_yscale('log')
+        ax.grid()
+    plt.tight_layout()
+    plt.show()
+
+    # Ablation for insertion vs activation
+    fig, axes = plt.subplots(1, 2, figsize=(16, 5))
+
+    densities = [0.1, 0.99]
+    for k in range(2):
+        label_set = False
+        for i in range(len(iters)):
+            di = densities[k]
+            ax = axes[ k]
+
+            if i == 3:
+                limit = -3
+            else:
+                limit = None
+            x = np.array(channels[:limit]) * 4
+            insert_curve = stats_ours[di]['insert'][i][:limit]
+            activate_curve = stats_ours[di]['activate'][i][:limit]
+
+            # Color indicator
+            if not label_set:
+                ax.plot(x, insert_curve, color='b', label='insert')
+                # linestyle=linestyles[i],
+                #marker=markers[i])
+                ax.plot(x, activate_curve, color='r', label='activate')
+                #linestyle=linestyles[i],
+                #marker=markers[i])
+                label_set = True
+
+            ax.plot(
+                x,
+                insert_curve,
+                color='b',
+                #linestyle=linestyles[i],
+                marker=markers[i],
+                label=num_ops[i])
+            ax.plot(
+                x,
+                activate_curve,
+                color='r',
+                #linestyle=linestyles[i],
+                marker=markers[i])
+
+            ax.fill(np.append(x, x[::-1]),
+                    np.append(insert_curve, activate_curve[::-1]),
+                    color=colors[i])
+            ax.set_title(r'Density = ${}$, Operation activate vs insert'.format(di), fontsize=20)
+        ax.legend()
+        ax.set_xlabel('Hashmap value size (byte)', fontsize=15)
+        ax.set_xscale('log')
+
+        ax.set_ylabel('Time (ms)', fontsize=15)
         ax.set_yscale('log')
         ax.grid()
     plt.tight_layout()
