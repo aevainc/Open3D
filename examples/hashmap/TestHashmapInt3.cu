@@ -44,22 +44,53 @@ struct int_blob {
 
 // Data generation for int3 keys
 template <size_t N>
-std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(int n) {
+std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(
+        int n, double density = 0.9) {
     std::vector<int> k(n * 3);
     std::vector<int> v(n * N);
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dis(-100, 100);
+    std::uniform_int_distribution<int> dist(-n, n);
 
+    int valid_entries = n * density;
+    std::vector<int> x_pool(n);
+    std::vector<int> y_pool(n);
+    std::vector<int> z_pool(n);
+
+    // Generate random keys
+    for (int i = 0; i < valid_entries; ++i) {
+        x_pool[i] = dist(gen);
+        y_pool[i] = dist(gen);
+        z_pool[i] = dist(gen);
+    }
+
+    // Reuse generated keys to ensure density
+    std::uniform_int_distribution<int> dist_sel(0, valid_entries);
+    for (int i = valid_entries; i < n; ++i) {
+        int sel = dist_sel(gen);
+        x_pool[i] = x_pool[sel];
+        y_pool[i] = y_pool[sel];
+        z_pool[i] = z_pool[sel];
+    }
+
+    // Shuffle the keys
+    std::vector<int> indices(n);
+    std::iota(indices.begin(), indices.end(), 0);
+    std::shuffle(indices.begin(), indices.end(), gen);
+
+    // Put into the keys vector
     for (int i = 0; i < n; ++i) {
-        int x = dis(gen);
-        int y = dis(gen);
-        int z = dis(gen);
+        int sel = indices[i];
+
+        int x = x_pool[sel];
+        int y = y_pool[sel];
+        int z = z_pool[sel];
 
         k[i * 3 + 0] = x;
         k[i * 3 + 1] = y;
         k[i * 3 + 2] = z;
+
         v[i * N + 0] = x + y + z;
     }
     return std::make_pair(k, v);
@@ -103,25 +134,16 @@ __global__ void find_int3(
     d_output[i] = iter;
 }
 
-int main(int argc, char** argv) {
-    //
-    // EXAMPLE DESCRIPTION
-    // -------------------
-    // This example demonstrates how stdgpu::unordered_map is used to compute a
-    // duplicate-free set of numbers.
-    //
+template <int C>
+void run(int n, int runs, double density, bool debug) {
     using namespace open3d;
-    constexpr stdgpu::index_t C = 128;
     using T = int_blob<C>;
     using iterator_t =
             typename stdgpu::unordered_map<int3, T, hash_int3>::iterator;
 
-    stdgpu::index_t n =
-            utility::GetProgramOptionAsInt(argc, argv, "--n", 10000);
-    int runs = utility::GetProgramOptionAsInt(argc, argv, "--runs", 1000);
-
-    auto kv = GenerateKVVector<C>(n);
-    utility::LogInfo("n = {}, c = {}", n, C);
+    auto kv = GenerateKVVector<C>(n, density);
+    utility::LogInfo("n {}", n);
+    utility::LogInfo("c {}", C);
 
     // Ours
     core::Tensor t_keys = core::Tensor(kv.first, {n, 3}, core::Dtype::Int32,
@@ -139,6 +161,8 @@ int main(int argc, char** argv) {
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
 
         hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
+        utility::LogInfo("density {}", double(hashmap.Size()) / double(n));
+
         hashmap.Find(t_keys, t_addrs, t_masks);
         cudaDeviceSynchronize();
     }
@@ -162,7 +186,7 @@ int main(int argc, char** argv) {
             insert_time += timer.GetDuration();
         }
 
-        utility::LogInfo("ours insertion time: {}", insert_time / runs);
+        utility::LogInfo("ours.insertion: {}", insert_time / runs);
 
         // stdgpu
         insert_time = 0;
@@ -187,11 +211,11 @@ int main(int argc, char** argv) {
             insert_time += timer.GetDuration();
         }
 
-        utility::LogInfo("stdgpu insert time: {}", insert_time / runs);
+        utility::LogInfo("stdgpu.insertion: {}", insert_time / runs);
     }
 
     // Find experiments
-    // bool saved = false;
+    bool saved = false;
     {
         double find_time = 0;
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
@@ -201,14 +225,14 @@ int main(int argc, char** argv) {
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
         hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
 
-        // if (!saved) {
-        //     auto query_keys = t_keys.IndexGet({t_masks});
-        //     auto query_values = hashmap.GetValueTensor().IndexGet(
-        //             {t_addrs.To(core::Dtype::Int64).IndexGet({t_masks})});
-        //     query_keys.Save("keys.npy");
-        //     query_values.Save("values.npy");
-        //     saved = true;
-        // }
+        if (debug && !saved) {
+            auto query_keys = t_keys.IndexGet({t_masks});
+            auto query_values = hashmap.GetValueTensor().IndexGet(
+                    {t_addrs.To(core::Dtype::Int64).IndexGet({t_masks})});
+            query_keys.Save("keys.npy");
+            query_values.Save("values.npy");
+            saved = true;
+        }
 
         for (int i = 0; i < runs; ++i) {
             timer.Start();
@@ -218,7 +242,7 @@ int main(int argc, char** argv) {
             timer.Stop();
             find_time += timer.GetDuration();
         }
-        utility::LogInfo("ours find time: {}", find_time / runs);
+        utility::LogInfo("ours.find: {}", find_time / runs);
 
         // stdgpu
         find_time = 0;
@@ -232,6 +256,7 @@ int main(int argc, char** argv) {
         insert_int3<T><<<static_cast<unsigned int>(blocks),
                          static_cast<unsigned int>(threads)>>>(
                 d_keys, d_values, d_masks, d_output, n, map);
+
         destroyDeviceArray<bool>(d_masks);
         destroyDeviceArray<iterator_t>(d_output);
         cudaDeviceSynchronize();
@@ -251,6 +276,51 @@ int main(int argc, char** argv) {
             find_time += timer.GetDuration();
         }
 
-        utility::LogInfo("stdgpu find time: {}", find_time / runs);
+        utility::LogInfo("stdgpu.find: {}", find_time / runs);
     }
+}
+
+int main(int argc, char** argv) {
+    using namespace open3d;
+
+    stdgpu::index_t n =
+            utility::GetProgramOptionAsInt(argc, argv, "--n", 10000);
+    int runs = utility::GetProgramOptionAsInt(argc, argv, "--runs", 10);
+    int channels =
+            utility::GetProgramOptionAsInt(argc, argv, "--channels", 1024);
+    double density =
+            utility::GetProgramOptionAsDouble(argc, argv, "--density", 0.99);
+    bool debug = utility::ProgramOptionExists(argc, argv, "--debug");
+
+    if (channels == 1) {
+        run<1>(n, runs, density, debug);
+    } else if (channels == 2) {
+        run<2>(n, runs, density, debug);
+    } else if (channels == 4) {
+        run<4>(n, runs, density, debug);
+    } else if (channels == 8) {
+        run<8>(n, runs, density, debug);
+    } else if (channels == 16) {
+        run<16>(n, runs, density, debug);
+    } else if (channels == 32) {
+        run<32>(n, runs, density, debug);
+    } else if (channels == 64) {
+        run<64>(n, runs, density, debug);
+    } else if (channels == 128) {
+        run<128>(n, runs, density, debug);
+    } else if (channels == 256) {
+        run<256>(n, runs, density, debug);
+    } else if (channels == 512) {
+        run<512>(n, runs, density, debug);
+    } else if (channels == 1024) {
+        run<1024>(n, runs, density, debug);
+    } else if (channels == 2048) {
+        run<2048>(n, runs, density, debug);
+    } else if (channels == 4096) {
+        run<4096>(n, runs, density, debug);
+    } else {
+        utility::LogInfo("C({}) not dispatched", channels);
+    }
+
+    return 0;
 }
