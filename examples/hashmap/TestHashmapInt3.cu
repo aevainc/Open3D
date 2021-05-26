@@ -215,6 +215,26 @@ void run(int n, int runs, double density, bool debug) {
         utility::LogInfo("stdgpu.insertion {}", insert_time / runs);
     }
 
+    // Activate experiments
+    {
+        double insert_time = 0;
+        for (int i = 0; i < runs; ++i) {
+            timer.Start();
+            core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
+                                  core::SizeVector{3, 1}, core::SizeVector{C},
+                                  device);
+            core::Tensor t_addrs({n}, core::Dtype::Int32, device);
+            core::Tensor t_masks({n}, core::Dtype::Bool, device);
+            hashmap.Activate(t_keys, t_addrs, t_masks);
+            timer.Stop();
+            insert_time += timer.GetDuration();
+        }
+        utility::LogInfo("ours.activate {}", insert_time / runs);
+
+        // Potential destructor
+        cudaDeviceSynchronize();
+    }
+
     // Find experiments
     bool saved = false;
     {
@@ -226,7 +246,8 @@ void run(int n, int runs, double density, bool debug) {
         hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
 
         if (double(hashmap.Size()) / n != density) {
-            utility::LogError("Failure! ours density mismatch");
+            utility::LogError("Failure! ours density mismatch {} vs {}",
+                              density, double(hashmap.Size()) / n);
         }
 
         if (debug && !saved) {
