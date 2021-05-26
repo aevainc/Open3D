@@ -25,13 +25,6 @@ class _AsyncEventLoop:
         self._run_queue = []
         self._return_vals = {}
         self._started = False
-        # self._start()
-
-    def _start(self):
-        if not self._started:
-            self._thread = threading.Thread(target=self._thread_main)
-            self._thread.start()
-            self._started = True
 
     def run_sync(self, f):
         with self._lock:
