@@ -47,9 +47,8 @@ def my_draw(geometry=None,
                           on_animation_tick=on_animation_tick,
                           non_blocking_and_return_uid=True))
 
-if __name__ == "__main__":
-    o3d.visualization.webrtc_server.enable_webrtc()
 
+def main():
     cube_red = o3d.geometry.TriangleMesh.create_box(1, 2, 4)
     cube_red.compute_vertex_normals()
     cube_red.paint_uniform_color((1.0, 0.0, 0.0))
@@ -61,3 +60,8 @@ if __name__ == "__main__":
     cube_blue.paint_uniform_color((0.0, 0.0, 1.0))
     my_draw(cube_blue)
     print("Cube blue created")
+
+
+if __name__ == "__main__":
+    o3d.visualization.webrtc_server.enable_webrtc()
+    _async_event_loop._start_async(main)

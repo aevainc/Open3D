@@ -7,11 +7,11 @@ import functools
 import open3d as o3d
 import time
 
-from open3d._build_config import _build_config
-if not _build_config["BUILD_JUPYTER_EXTENSION"]:
-    raise RuntimeError(
-        "Open3D WebVisualizer Jupyter extension is not available. To use "
-        "WebVisualizer, build Open3D with -DBUILD_JUPYTER_EXTENSION=ON.")
+# from open3d._build_config import _build_config
+# if not _build_config["BUILD_JUPYTER_EXTENSION"]:
+#     raise RuntimeError(
+#         "Open3D WebVisualizer Jupyter extension is not available. To use "
+#         "WebVisualizer, build Open3D with -DBUILD_JUPYTER_EXTENSION=ON.")
 
 
 @ipywidgets.register
@@ -117,7 +117,7 @@ class _AsyncEventLoop:
         self._run_queue = []
         self._return_vals = {}
         self._started = False
-        self._start()
+        # self._start()
 
     def _start(self):
         if not self._started:
@@ -137,6 +137,12 @@ class _AsyncEventLoop:
             # Give up our timeslice (Windows requires non-zero to actually work),
             # so that we don't use 100% CPU here
             time.sleep(0.0001)
+
+    def _start_async(self, main_func):
+        self._thread = threading.Thread(target=main_func)
+        self._thread.start()
+        self._started = True
+        self._thread_main()
 
     def _thread_main(self):
         app = o3d.visualization.gui.Application.instance
