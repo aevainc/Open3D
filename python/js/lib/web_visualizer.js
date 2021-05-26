@@ -184,8 +184,6 @@ let WebVisualizerView = widgets.DOMWidgetView.extend({
 
   render: function () {
     let windowUID = this.model.get("window_uid");
-    let webRtcOptions = "rtptransport=tcp&timeout=60";
-    let videoId = "video_" + windowUID;
     let onClose = function () {
       console.log("onClose() called for window_uid:", windowUID);
     };
@@ -199,7 +197,7 @@ let WebVisualizerView = widgets.DOMWidgetView.extend({
     this.callId = 0;
 
     this.videoElt = document.createElement("video");
-    this.videoElt.id = videoId;
+    this.videoElt.id = "video_tag";
     this.videoElt.muted = true;
     this.videoElt.controls = false;
     this.videoElt.playsinline = true;
@@ -214,7 +212,7 @@ let WebVisualizerView = widgets.DOMWidgetView.extend({
       onClose,
       this.commsCall.bind(this)
     );
-    this.webRtcClient.connect(windowUID, null, webRtcOptions);
+    this.webRtcClient.connect(windowUID);
   },
 });
 
