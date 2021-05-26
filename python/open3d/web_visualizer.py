@@ -5,6 +5,7 @@ import json
 import threading
 import functools
 import open3d as o3d
+import time
 
 from open3d._build_config import _build_config
 if not _build_config["BUILD_JUPYTER_EXTENSION"]:
@@ -133,6 +134,9 @@ class _AsyncEventLoop:
             with self._lock:
                 if task.task_id in self._return_vals:
                     return self._return_vals[task.task_id]
+            # Give up our timeslice (Windows requires non-zero to actually work),
+            # so that we don't use 100% CPU here
+            time.sleep(0.0001)
 
     def _thread_main(self):
         app = o3d.visualization.gui.Application.instance
