@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
     // duplicate-free set of numbers.
     //
     using namespace open3d;
-    constexpr stdgpu::index_t C = 4096;
+    constexpr stdgpu::index_t C = 128;
     using T = int_blob<C>;
     using iterator_t =
             typename stdgpu::unordered_map<int3, T, hash_int3>::iterator;

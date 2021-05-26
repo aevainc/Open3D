@@ -148,12 +148,16 @@ int main(int argc, char* argv[]) {
     for (size_t i = 0; i < iterations; ++i) {
         utility::LogInfo("Processing {}/{}...", i, iterations);
         // Load image into frame
+        timer.Start();
         Image input_depth = *t::io::CreateImageFromFile(depth_filenames[i]);
         Image input_color = *t::io::CreateImageFromFile(color_filenames[i]);
         input_frame.SetDataFromImage("depth", input_depth);
         input_frame.SetDataFromImage("color", input_color);
+        timer.Stop();
+        utility::LogInfo("main.io {}", timer.GetDuration());
 
         bool tracking_success = true;
+        timer.Start();
         if (i > 0) {
             auto result =
                     model.TrackFrameToModel(input_frame, raycast_frame,
@@ -182,6 +186,9 @@ int main(int argc, char* argv[]) {
 
         // Integrate
         model.UpdateFramePose(i, T_frame_to_model);
+        timer.Stop();
+        utility::LogInfo("main.tracking {}", timer.GetDuration());
+
         if (tracking_success) {
             timer.Start();
             model.Integrate(input_frame, depth_scale, depth_max);
