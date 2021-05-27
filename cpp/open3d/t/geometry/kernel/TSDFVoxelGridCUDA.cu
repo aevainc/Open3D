@@ -60,6 +60,7 @@ struct Coord3i {
 void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
                const core::Tensor& points,
                core::Tensor& voxel_block_coords,
+               int& voxel_block_count,
                int64_t voxel_grid_resolution,
                float voxel_size,
                float sdf_trunc) {
@@ -72,39 +73,43 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
     core::Device device = points.GetDevice();
     core::Tensor block_coordi({8 * n, 3}, core::Dtype::Int32, device);
     int* block_coordi_ptr = static_cast<int*>(block_coordi.GetDataPtr());
-    core::Tensor count(std::vector<int>{0}, {}, core::Dtype::Int32, device);
+    core::Tensor count(std::vector<int>{0}, {1}, core::Dtype::Int32, device);
     int* count_ptr = static_cast<int*>(count.GetDataPtr());
 
-    core::kernel::CUDALauncher::LaunchGeneralKernel(
-            n, [=] OPEN3D_DEVICE(int64_t workload_idx) {
-                float x = pcd_ptr[3 * workload_idx + 0];
-                float y = pcd_ptr[3 * workload_idx + 1];
-                float z = pcd_ptr[3 * workload_idx + 2];
+    core::kernel::CUDALauncher launcher;
+    launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(int64_t workload_idx) {
+        float x = pcd_ptr[3 * workload_idx + 0];
+        float y = pcd_ptr[3 * workload_idx + 1];
+        float z = pcd_ptr[3 * workload_idx + 2];
 
-                int xb_lo =
-                        static_cast<int>(floorf((x - sdf_trunc) / block_size));
-                int xb_hi =
-                        static_cast<int>(floorf((x + sdf_trunc) / block_size));
-                int yb_lo =
-                        static_cast<int>(floorf((y - sdf_trunc) / block_size));
-                int yb_hi =
-                        static_cast<int>(floorf((y + sdf_trunc) / block_size));
-                int zb_lo =
-                        static_cast<int>(floorf((z - sdf_trunc) / block_size));
-                int zb_hi =
-                        static_cast<int>(floorf((z + sdf_trunc) / block_size));
+        int xb = floor(x / block_size);
+        int yb = floor(y / block_size);
+        int zb = floor(z / block_size);
 
-                for (int xb = xb_lo; xb <= xb_hi; ++xb) {
-                    for (int yb = yb_lo; yb <= yb_hi; ++yb) {
-                        for (int zb = zb_lo; zb <= zb_hi; ++zb) {
-                            int idx = atomicAdd(count_ptr, 1);
-                            block_coordi_ptr[3 * idx + 0] = xb;
-                            block_coordi_ptr[3 * idx + 1] = yb;
-                            block_coordi_ptr[3 * idx + 2] = zb;
-                        }
-                    }
+        int xb_lo = max(static_cast<int>(floorf((x - sdf_trunc) / block_size)),
+                        xb - 1);
+        int xb_hi = min(static_cast<int>(floorf((x + sdf_trunc) / block_size)),
+                        xb + 1);
+        int yb_lo = max(static_cast<int>(floorf((y - sdf_trunc) / block_size)),
+                        yb - 1);
+        int yb_hi = min(static_cast<int>(floorf((y + sdf_trunc) / block_size)),
+                        yb + 1);
+        int zb_lo = max(static_cast<int>(floorf((z - sdf_trunc) / block_size)),
+                        zb - 1);
+        int zb_hi = min(static_cast<int>(floorf((z + sdf_trunc) / block_size)),
+                        zb + 1);
+
+        for (int xb = xb_lo; xb <= xb_hi; ++xb) {
+            for (int yb = yb_lo; yb <= yb_hi; ++yb) {
+                for (int zb = zb_lo; zb <= zb_hi; ++zb) {
+                    int idx = atomicAdd(count_ptr, 1);
+                    block_coordi_ptr[3 * idx + 0] = xb;
+                    block_coordi_ptr[3 * idx + 1] = yb;
+                    block_coordi_ptr[3 * idx + 2] = zb;
                 }
-            });
+            }
+        }
+    });
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
 
     int total_block_count = count.Item<int>();
@@ -119,7 +124,26 @@ void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
     core::Tensor block_addrs, block_masks;
     hashmap->Activate(block_coordi.Slice(0, 0, count.Item<int>()), block_addrs,
                       block_masks);
-    voxel_block_coords = block_coordi.IndexGet({block_masks});
+
+    int* voxel_block_coord_ptr = voxel_block_coords.GetDataPtr<int>();
+    bool* block_masks_ptr = block_masks.GetDataPtr<bool>();
+    count[0] = 0;
+    launcher.LaunchGeneralKernel(
+            total_block_count, [=] OPEN3D_DEVICE(int64_t workload_idx) {
+                if (block_masks_ptr[workload_idx]) {
+                    int idx = OPEN3D_ATOMIC_ADD(count_ptr, 1);
+                    int offset_lhs = 3 * idx;
+                    int offset_rhs = 3 * workload_idx;
+                    voxel_block_coord_ptr[offset_lhs + 0] =
+                            block_coordi_ptr[offset_rhs + 0];
+                    voxel_block_coord_ptr[offset_lhs + 1] =
+                            block_coordi_ptr[offset_rhs + 1];
+                    voxel_block_coord_ptr[offset_lhs + 2] =
+                            block_coordi_ptr[offset_rhs + 2];
+                }
+            });
+    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
+    voxel_block_count = count.Item<int>();
 }
 
 void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,

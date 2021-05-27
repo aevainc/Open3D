@@ -146,17 +146,16 @@ void TSDFVoxelGrid::Integrate(const Image &depth,
     timer.Start();
 
     // Version #1
-    // PointCloud pcd = PointCloud::CreateFromDepthImage(
-    //         depth, intrinsics, extrinsics, depth_scale, depth_max,
-    //         down_factor);
-    // kernel::tsdf::Touch(point_hashmap_, pcd.GetPoints().Contiguous(),
-    //                     block_coords, block_resolution_, voxel_size_,
-    //                     sdf_trunc_);
+    PointCloud pcd = PointCloud::CreateFromDepthImage(
+            depth, intrinsics, extrinsics, depth_scale, depth_max, down_factor);
+    kernel::tsdf::Touch(point_hashmap_, pcd.GetPoints().Contiguous(),
+                        block_coords_buffer_, active_block_count_,
+                        block_resolution_, voxel_size_, sdf_trunc_);
     // Version #2
-    kernel::tsdf::Touch(point_hashmap_, depth.AsTensor(), intrinsics,
-                        extrinsics, block_coords_buffer_, active_block_count_,
-                        block_resolution_, voxel_size_, sdf_trunc_, depth_scale,
-                        depth_max, down_factor);
+    // kernel::tsdf::Touch(point_hashmap_, depth.AsTensor(), intrinsics,
+    //                     extrinsics, block_coords_buffer_,
+    //                     active_block_count_, block_resolution_, voxel_size_,
+    //                     sdf_trunc_, depth_scale, depth_max, down_factor);
     timer.Stop();
     utility::LogInfo("integration.touch {:.3f}", timer.GetDuration());
 
@@ -272,22 +271,22 @@ TSDFVoxelGrid::RayCast(const core::Tensor &intrinsics,
     timer.Start();
 
     /// Version #1
-    core::Tensor point_values = point_hashmap_->GetValueTensor();
-    auto device_hashmap = point_hashmap_->GetDeviceHashmap();
-    kernel::tsdf::RayCast(device_hashmap, point_values, block_values,
-                          range_minmax_map, vertex_map, depth_map, color_map,
-                          normal_map, intrinsics, extrinsics, height, width,
-                          block_resolution_, voxel_size_, sdf_trunc_,
-                          depth_scale, depth_min, depth_max, weight_threshold);
-
-    /// Version #2
-    // auto device_hashmap = block_hashmap_->GetDeviceHashmap();
-    // kernel::tsdf::RayCast(device_hashmap, block_values, range_minmax_map,
-    //                       vertex_map, depth_map, color_map, normal_map,
-    //                       intrinsics, extrinsics, height, width,
+    // core::Tensor point_values = point_hashmap_->GetValueTensor();
+    // auto device_hashmap = point_hashmap_->GetDeviceHashmap();
+    // kernel::tsdf::RayCast(device_hashmap, point_values, block_values,
+    //                       range_minmax_map, vertex_map, depth_map, color_map,
+    //                       normal_map, intrinsics, extrinsics, height, width,
     //                       block_resolution_, voxel_size_, sdf_trunc_,
     //                       depth_scale, depth_min, depth_max,
     //                       weight_threshold);
+
+    /// Version #2
+    auto device_hashmap = block_hashmap_->GetDeviceHashmap();
+    kernel::tsdf::RayCast(device_hashmap, block_values, range_minmax_map,
+                          vertex_map, depth_map, color_map, normal_map,
+                          intrinsics, extrinsics, height, width,
+                          block_resolution_, voxel_size_, sdf_trunc_,
+                          depth_scale, depth_min, depth_max, weight_threshold);
     timer.Stop();
     utility::LogInfo("raycast.kernel {}", timer.GetDuration());
 

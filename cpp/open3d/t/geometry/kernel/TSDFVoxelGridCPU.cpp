@@ -72,6 +72,7 @@ void TouchCPU(std::shared_ptr<core::Hashmap>&
                       hashmap,  // dummy for now, one pass insertion is faster
               const core::Tensor& points,
               core::Tensor& voxel_block_coords,
+              int& voxel_block_count,
               int64_t voxel_grid_resolution,
               float voxel_size,
               float sdf_trunc) {
@@ -109,16 +110,14 @@ void TouchCPU(std::shared_ptr<core::Hashmap>&
                 }
             });
 
-    int64_t block_count = set.size();
-    if (block_count == 0) {
+    voxel_block_count = set.size();
+    if (voxel_block_count == 0) {
         utility::LogError(
                 "No block is touched in TSDF volume, abort integration. Please "
                 "check specified parameters, "
                 "especially depth_scale and voxel_size");
     }
 
-    voxel_block_coords = core::Tensor({block_count, 3}, core::Dtype::Int32,
-                                      points.GetDevice());
     int* block_coords_ptr = static_cast<int*>(voxel_block_coords.GetDataPtr());
     int count = 0;
     for (auto it = set.begin(); it != set.end(); ++it, ++count) {

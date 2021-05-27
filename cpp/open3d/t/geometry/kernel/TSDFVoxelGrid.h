@@ -40,6 +40,7 @@ namespace tsdf {
 void Touch(std::shared_ptr<core::Hashmap>& hashmap,
            const core::Tensor& points,
            core::Tensor& voxel_block_coords,
+           int& voxel_block_count,
            int64_t voxel_grid_resolution,
            float voxel_size,
            float sdf_trunc);
@@ -154,6 +155,7 @@ void ExtractSurfaceMesh(
 void TouchCPU(std::shared_ptr<core::Hashmap>& hashmap,
               const core::Tensor& points,
               core::Tensor& voxel_block_coords,
+              int& voxel_block_count,
               int64_t voxel_grid_resolution,
               float voxel_size,
               float sdf_trunc);
@@ -268,6 +270,7 @@ void ExtractSurfaceMeshCPU(
 void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
                const core::Tensor& points,
                core::Tensor& voxel_block_coords,
+               int& voxel_block_count,
                int64_t voxel_grid_resolution,
                float voxel_size,
                float sdf_trunc);

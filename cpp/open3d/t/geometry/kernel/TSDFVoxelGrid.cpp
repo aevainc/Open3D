@@ -41,6 +41,7 @@ namespace tsdf {
 void Touch(std::shared_ptr<core::Hashmap>& hashmap,
            const core::Tensor& points,
            core::Tensor& voxel_block_coords,
+           int& voxel_block_count,
            int64_t voxel_grid_resolution,
            float voxel_size,
            float sdf_trunc) {
@@ -48,12 +49,12 @@ void Touch(std::shared_ptr<core::Hashmap>& hashmap,
 
     core::Device::DeviceType device_type = device.GetType();
     if (device_type == core::Device::DeviceType::CPU) {
-        TouchCPU(hashmap, points, voxel_block_coords, voxel_grid_resolution,
-                 voxel_size, sdf_trunc);
+        TouchCPU(hashmap, points, voxel_block_coords, voxel_block_count,
+                 voxel_grid_resolution, voxel_size, sdf_trunc);
     } else if (device_type == core::Device::DeviceType::CUDA) {
 #ifdef BUILD_CUDA_MODULE
-        TouchCUDA(hashmap, points, voxel_block_coords, voxel_grid_resolution,
-                  voxel_size, sdf_trunc);
+        TouchCUDA(hashmap, points, voxel_block_coords, voxel_block_count,
+                  voxel_grid_resolution, voxel_size, sdf_trunc);
 #else
         utility::LogError("Not compiled with CUDA, but CUDA device is used.");
 #endif

@@ -124,9 +124,11 @@ int main(int argc, char* argv[]) {
     }
     core::Device device(device_code);
     utility::LogInfo("Using device: {}", device.ToString());
-    t::geometry::TSDFVoxelGrid voxel_grid(
-            {{"tsdf", core::Dtype::Float32}, {"weight", core::Dtype::Float32}},
-            voxel_size, sdf_trunc, 8, block_count, device);
+    t::geometry::TSDFVoxelGrid voxel_grid({{"tsdf", core::Dtype::Float32},
+                                           {"color", core::Dtype::UInt16},
+                                           {"weight", core::Dtype::UInt16}},
+                                          voxel_size, sdf_trunc, 16,
+                                          block_count, device);
 
     double time_total = 0;
     double time_int = 0;
@@ -170,13 +172,13 @@ int main(int argc, char* argv[]) {
             auto result = voxel_grid.RayCast(
                     intrinsic_t, extrinsic_t, depth.GetCols(), depth.GetRows(),
                     depth_scale, 0.2, depth_max, std::min(i * 1.0f, 3.0f),
-                    MaskCode::DepthMap);
+                    MaskCode::DepthMap | MaskCode::ColorMap);
             ray_timer.Stop();
 
             utility::LogInfo("main.raycast {}", ray_timer.GetDuration());
             time_raycasting += ray_timer.GetDuration();
 
-            if (i % 100 == 0) {
+            if (false) {
                 core::Tensor range_map = result[MaskCode::RangeMap];
                 t::geometry::Image im_near(
                         range_map.Slice(2, 0, 1).Contiguous() / depth_max);
@@ -228,8 +230,9 @@ int main(int argc, char* argv[]) {
     if (utility::ProgramOptionExists(argc, argv, "--mesh")) {
         utility::Timer timer;
         timer.Start();
-        auto mesh = voxel_grid.ExtractSurfaceMesh(3000000, 3.0f,
-                                                  MaskCode::VertexMap);
+        auto mesh = voxel_grid.ExtractSurfaceMesh(
+                3000000, 3.0f,
+                MaskCode::VertexMap | MaskCode::ColorMap | MaskCode::NormalMap);
         timer.Stop();
         utility::LogInfo("mesh extraction takes {}", timer.GetDuration());
         auto mesh_legacy = std::make_shared<geometry::TriangleMesh>(
@@ -241,8 +244,9 @@ int main(int argc, char* argv[]) {
     if (utility::ProgramOptionExists(argc, argv, "--pointcloud")) {
         utility::Timer timer;
         timer.Start();
-        auto pcd = voxel_grid.ExtractSurfacePoints(3000000, 3.0f,
-                                                   MaskCode::VertexMap);
+        auto pcd = voxel_grid.ExtractSurfacePoints(
+                3000000, 3.0f,
+                MaskCode::VertexMap | MaskCode::ColorMap | MaskCode::NormalMap);
         timer.Stop();
         utility::LogInfo("point cloud extraction takes {}",
                          timer.GetDuration());
