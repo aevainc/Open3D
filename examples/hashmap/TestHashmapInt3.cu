@@ -137,6 +137,7 @@ __global__ void find_int3(
 template <int C>
 void run(int n, int runs, double density, bool debug) {
     using namespace open3d;
+    auto backend = core::HashmapBackend::Slab;
     using T = int_blob<C>;
     using iterator_t =
             typename stdgpu::unordered_map<int3, T, hash_int3>::iterator;
@@ -157,7 +158,7 @@ void run(int n, int runs, double density, bool debug) {
     {
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                               core::SizeVector{3, 1}, core::SizeVector{C},
-                              device, core::HashmapBackend::Slab);
+                              device, backend);
         core::Tensor t_addrs({n}, core::Dtype::Int32, device);
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
 
@@ -177,7 +178,7 @@ void run(int n, int runs, double density, bool debug) {
             timer.Start();
             core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                                   core::SizeVector{3, 1}, core::SizeVector{C},
-                                  device);
+                                  device, backend);
             core::Tensor t_addrs({n}, core::Dtype::Int32, device);
             core::Tensor t_masks({n}, core::Dtype::Bool, device);
             hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
@@ -222,7 +223,7 @@ void run(int n, int runs, double density, bool debug) {
             timer.Start();
             core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                                   core::SizeVector{3, 1}, core::SizeVector{C},
-                                  device);
+                                  device, backend);
             core::Tensor t_addrs({n}, core::Dtype::Int32, device);
             core::Tensor t_masks({n}, core::Dtype::Bool, device);
             hashmap.Activate(t_keys, t_addrs, t_masks);
@@ -240,7 +241,7 @@ void run(int n, int runs, double density, bool debug) {
     {
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                               core::SizeVector{3, 1}, core::SizeVector{C},
-                              device);
+                              device, backend);
         core::Tensor t_addrs({n}, core::Dtype::Int32, device);
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
         hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
