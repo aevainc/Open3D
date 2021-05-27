@@ -157,7 +157,7 @@ void run(int n, int runs, double density, bool debug) {
     {
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                               core::SizeVector{3, 1}, core::SizeVector{C},
-                              device);
+                              device, core::HashmapBackend::Slab);
         core::Tensor t_addrs({n}, core::Dtype::Int32, device);
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
 

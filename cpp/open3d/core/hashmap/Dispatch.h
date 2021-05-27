@@ -126,5 +126,29 @@ public:
         return hash;
     }
 };
+
+#define DISPATCH_DVALUE_SIZE_TO_T(DVALUE_SIZE, ...) \
+    [&] {                                           \
+        if (DVALUE_SIZE % 16 == 0) {                \
+            using T = int4;                         \
+            return __VA_ARGS__();                   \
+        } else if (DVALUE_SIZE % 12 == 0) {         \
+            using T = int3;                         \
+            return __VA_ARGS__();                   \
+        } else if (DVALUE_SIZE % 8 == 0) {          \
+            using T = int2;                         \
+            return __VA_ARGS__();                   \
+        } else if (DVALUE_SIZE % 4 == 0) {          \
+            using T = int;                          \
+            return __VA_ARGS__();                   \
+        } else if (DVALUE_SIZE % 2 == 0) {          \
+            using T = int16_t;                      \
+            return __VA_ARGS__();                   \
+        } else {                                    \
+            using T = uint8_t;                      \
+            return __VA_ARGS__();                   \
+        }                                           \
+    }()
+
 }  // namespace core
 }  // namespace open3d

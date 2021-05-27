@@ -32,6 +32,7 @@
 #include "open3d/core/CUDAUtils.h"
 #include "open3d/core/hashmap/CUDA/SlabHashmapImpl.h"
 #include "open3d/core/hashmap/DeviceHashmap.h"
+#include "open3d/core/hashmap/Dispatch.h"
 
 namespace open3d {
 namespace core {
@@ -261,8 +262,12 @@ void SlabHashmap<Key, Hash>::Assign(const void* input_keys,
 
     const int64_t num_blocks =
             (count + kThreadsPerBlock - 1) / kThreadsPerBlock;
-    AssignKernel<<<num_blocks, kThreadsPerBlock>>>(
-            impl_, input_keys, input_values, output_addrs, output_masks, count);
+    DISPATCH_DVALUE_SIZE_TO_T(this->dsize_value_, [&]() {
+        AssignKernel<Key, T, Hash><<<num_blocks, kThreadsPerBlock>>>(
+                impl_, input_keys, static_cast<const T*>(input_values),
+                this->dsize_value_ / sizeof(T), output_addrs, output_masks,
+                count);
+    });
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 }
@@ -383,8 +388,13 @@ void SlabHashmap<Key, Hash>::InsertImpl(const void* input_keys,
             impl_, input_keys, output_addrs, prev_heap_counter, count);
     InsertKernelPass1<<<num_blocks, kThreadsPerBlock>>>(
             impl_, input_keys, output_addrs, output_masks, count);
-    InsertKernelPass2<<<num_blocks, kThreadsPerBlock>>>(
-            impl_, input_values, output_addrs, output_masks, count);
+
+    DISPATCH_DVALUE_SIZE_TO_T(this->dsize_value_, [&]() {
+        InsertKernelPass2<Key, T, Hash><<<num_blocks, kThreadsPerBlock>>>(
+                impl_, static_cast<const T*>(input_values),
+                this->dsize_value_ / sizeof(T), output_addrs, output_masks,
+                count);
+    });
     OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
     OPEN3D_CUDA_CHECK(cudaGetLastError());
 }

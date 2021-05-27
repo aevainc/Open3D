@@ -578,9 +578,10 @@ __global__ void InsertKernelPass1(SlabHashmapImpl<Key, Hash> impl,
     }
 }
 
-template <typename Key, typename Hash>
+template <typename Key, typename T, typename Hash>
 __global__ void InsertKernelPass2(SlabHashmapImpl<Key, Hash> impl,
-                                  const void* input_values,
+                                  const T* input_values,
+                                  int64_t dsize_value_in_T,
                                   addr_t* output_addrs,
                                   bool* output_masks,
                                   int64_t count) {
@@ -595,10 +596,11 @@ __global__ void InsertKernelPass2(SlabHashmapImpl<Key, Hash> impl,
 
             // Success: copy remaining input_values
             if (input_values != nullptr) {
-                MEMCPY_AS_INTS(iterator.second,
-                               static_cast<const uint8_t*>(input_values) +
-                                       tid * impl.dsize_value_,
-                               impl.dsize_value_);
+                auto dst_value_as_T = static_cast<T*>(iterator.second);
+                auto src_value_as_T = input_values + (tid * dsize_value_in_T);
+                for (int i = 0; i < dsize_value_in_T; ++i) {
+                    dst_value_as_T[i] = src_value_as_T[i];
+                }
             }
         } else {
             impl.buffer_accessor_.DeviceFree(iterator_addr);
@@ -645,10 +647,11 @@ __global__ void FindKernel(SlabHashmapImpl<Key, Hash> impl,
     }
 }
 
-template <typename Key, typename Hash>
+template <typename Key, typename T, typename Hash>
 __global__ void AssignKernel(SlabHashmapImpl<Key, Hash> impl,
                              const void* input_keys,
-                             const void* input_values,
+                             const T* input_values,
+                             int64_t dsize_value_in_T,
                              addr_t* output_addrs,
                              bool* output_masks,
                              int64_t count) {
@@ -688,10 +691,11 @@ __global__ void AssignKernel(SlabHashmapImpl<Key, Hash> impl,
             iterator_t iterator =
                     impl.buffer_accessor_.ExtractIterator(result.first);
             if (input_values != nullptr) {
-                MEMCPY_AS_INTS(iterator.second,
-                               static_cast<const uint8_t*>(input_values) +
-                                       tid * impl.dsize_value_,
-                               impl.dsize_value_);
+                auto dst_value_as_T = static_cast<T*>(iterator.second);
+                auto src_value_as_T = input_values + (tid * dsize_value_in_T);
+                for (int i = 0; i < dsize_value_in_T; ++i) {
+                    dst_value_as_T[i] = src_value_as_T[i];
+                }
             }
         }
     }
