@@ -162,7 +162,7 @@ struct Application::Impl {
         // Initialize rendering
         visualization::rendering::EngineInstance::SelectBackend(
                 visualization::rendering::EngineInstance::RenderingType::
-                        kOpenGL);
+                        kMetal);
     }
 
     void CleanupAfterRunning() {

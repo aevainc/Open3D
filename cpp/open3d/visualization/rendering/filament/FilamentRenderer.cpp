@@ -244,7 +244,8 @@ void FilamentRenderer::RequestReadPixels(
         int width,
         int height,
         std::function<void(std::shared_ptr<core::Tensor>)> callback) {
-    core::SizeVector shape{height, width, 3};
+//    core::SizeVector shape{height, width, 3};
+    core::SizeVector shape{height, width, 4};
     core::Dtype dtype = core::Dtype::UInt8;
     int64_t nbytes = shape.NumElements() * dtype.ByteSize();
 
@@ -254,7 +255,8 @@ void FilamentRenderer::RequestReadPixels(
     using namespace filament;
     using namespace backend;
 
-    PixelBufferDescriptor pd(image->GetDataPtr(), nbytes, PixelDataFormat::RGB,
+//    PixelBufferDescriptor pd(image->GetDataPtr(), nbytes, PixelDataFormat::RGB,
+    PixelBufferDescriptor pd(image->GetDataPtr(), nbytes, PixelDataFormat::RGBA,
                              PixelDataType::UBYTE, ReadPixelsCallback,
                              user_data);
     renderer_->readPixels(0, 0, width, height, std::move(pd));

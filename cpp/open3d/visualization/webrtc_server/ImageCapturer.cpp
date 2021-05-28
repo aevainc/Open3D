@@ -78,7 +78,7 @@ void ImageCapturer::OnCaptureResult(
             i420_buffer->StrideY(), i420_buffer->MutableDataU(),
             i420_buffer->StrideU(), i420_buffer->MutableDataV(),
             i420_buffer->StrideV(), 0, 0, width, height, i420_buffer->width(),
-            i420_buffer->height(), libyuv::kRotate0, ::libyuv::FOURCC_RAW);
+            i420_buffer->height(), libyuv::kRotate0, ::libyuv::FOURCC_ABGR);
 
     if (conversion_result >= 0) {
         webrtc::VideoFrame video_frame(i420_buffer,

@@ -24,7 +24,10 @@ class _AsyncEventLoop:
         self._lock = threading.Lock()
         self._run_queue = []
         self._return_vals = {}
-        self._started = False
+
+        self._thread = threading.Thread(target=self._thread_main)
+        self._thread.start()
+        self._started = True
 
     def run_sync(self, f):
         with self._lock:
@@ -39,11 +42,11 @@ class _AsyncEventLoop:
             # so that we don't use 100% CPU here
             time.sleep(0.0001)
 
-    def _start_async(self, main_func):
-        self._thread = threading.Thread(target=main_func)
-        self._thread.start()
-        self._started = True
-        self._thread_main()
+    #def _start_async(self, main_func):
+    #    self._thread = threading.Thread(target=main_func)
+    #    self._thread.start()
+    #    self._started = True
+    #    self._thread_main()
 
     def _thread_main(self):
         app = o3d.visualization.gui.Application.instance
@@ -126,7 +129,6 @@ def main():
     my_draw(cube_blue)
     print("Cube blue created")
 
-
 if __name__ == "__main__":
     o3d.visualization.webrtc_server.enable_webrtc()
-    _async_event_loop._start_async(main)
+    main()

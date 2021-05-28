@@ -69,9 +69,9 @@ file(COPY ${GUI_RESOURCE_SOURCE_FILES}
 
 # Compile .mat files and copy to resources directory in output directory
 if (IOS OR ANDROID)
-    set(GUI_MATC_ARGS --platform mobile)
+    set(GUI_MATC_ARGS --platform mobile --api opengl --api metal)
 elseif (NOT WIN32)
-    set(GUI_MATC_ARGS --platform desktop)
+    set(GUI_MATC_ARGS --platform desktop --api opengl --api metal)
 endif()
 
 set(GUI_MATERIAL_COMPILED_FILES "")
