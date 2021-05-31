@@ -251,7 +251,7 @@ void run(int n, int runs, double density, bool debug) {
         core::Tensor t_masks({n}, core::Dtype::Bool, device);
         hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
 
-        if (double(hashmap.Size()) / n != density) {
+        if (hashmap.Size() != int(n * density)) {
             utility::LogError("Failure! ours density mismatch {} vs {}",
                               density, double(hashmap.Size()) / n);
         }
@@ -299,7 +299,7 @@ void run(int n, int runs, double density, bool debug) {
         destroyDeviceArray<bool>(d_masks);
         destroyDeviceArray<iterator_t>(d_output);
         cudaDeviceSynchronize();
-        if (double(map.size()) / n != density) {
+        if (map.size() != int(n * density)) {
             utility::LogError("Failure! stdgpu density mismatch");
         }
 
