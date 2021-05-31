@@ -44,8 +44,8 @@ struct int_blob {
 
 // Data generation for int3 keys
 template <size_t N>
-std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(
-        int n, double density = 0.9) {
+std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(int n,
+                                                               double density) {
     std::vector<int> k(n * 3);
     std::vector<int> v(n * N);
 
@@ -134,6 +134,11 @@ __global__ void find_int3(
     d_output[i] = iter;
 }
 
+/// \param C (templated) Channels. Number of ints in one hashmap value.
+/// \param n Number of hashmap operations to perform.
+/// \param runs Number of runs to repeat. The final runtime is averaged.
+/// \param density The initial hashmap density.
+/// \param debug If true, saves additional debug files.
 template <int C>
 void run(int n, int runs, double density, bool debug) {
     using namespace open3d;
