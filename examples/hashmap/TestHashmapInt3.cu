@@ -187,6 +187,7 @@ void run(int n, int runs, double density, bool debug) {
             core::Tensor t_addrs({n}, core::Dtype::Int32, device);
             core::Tensor t_masks({n}, core::Dtype::Bool, device);
             hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
+            cudaDeviceSynchronize();
             timer.Stop();
             insert_time += timer.GetDuration();
         }
@@ -232,6 +233,7 @@ void run(int n, int runs, double density, bool debug) {
             core::Tensor t_addrs({n}, core::Dtype::Int32, device);
             core::Tensor t_masks({n}, core::Dtype::Bool, device);
             hashmap.Activate(t_keys, t_addrs, t_masks);
+            cudaDeviceSynchronize();
             timer.Stop();
             insert_time += timer.GetDuration();
         }
@@ -277,6 +279,7 @@ void run(int n, int runs, double density, bool debug) {
             t_addrs = core::Tensor({n}, core::Dtype::Int32, device);
             t_masks = core::Tensor({n}, core::Dtype::Bool, device);
             hashmap.Find(t_keys, t_addrs, t_masks);
+            cudaDeviceSynchronize();
             timer.Stop();
             find_time += timer.GetDuration();
         }
