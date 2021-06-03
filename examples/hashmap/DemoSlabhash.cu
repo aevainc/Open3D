@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     std::iota(index.begin(), index.end(), 0);
     std::shuffle(index.begin(), index.end(), rng);
 
-    for (int32_t i = 0; i < index.size(); i++) {
+    for (size_t i = 0; i < index.size(); i++) {
         h_key[i] = index[i];
         h_value[i] = f(h_key[i]);
     }
@@ -83,12 +83,12 @@ int main(int argc, char** argv) {
     //=== generating random queries with a fixed ratio existing in keys
     uint32_t num_existing = static_cast<uint32_t>(existing_ratio * num_queries);
 
-    for (int i = 0; i < num_existing; i++) {
+    for (size_t i = 0; i < num_existing; i++) {
         h_query[i] = h_key[num_keys - 1 - i];
         h_correct_result[i] = f(h_query[i]);
     }
 
-    for (int i = 0; i < (num_queries - num_existing); i++) {
+    for (size_t i = 0; i < (num_queries - num_existing); i++) {
         h_query[num_existing + i] = h_key[num_keys + i];
         h_correct_result[num_existing + i] = SEARCH_NOT_FOUND;
     }
@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
     std::vector<int> q_index(num_queries);
     std::iota(q_index.begin(), q_index.end(), 0);
     std::shuffle(q_index.begin(), q_index.end(), rng);
-    for (int i = 0; i < num_queries; i++) {
+    for (size_t i = 0; i < num_queries; i++) {
         std::swap(h_query[i], h_query[q_index[i]]);
         std::swap(h_correct_result[i], h_correct_result[q_index[i]]);
     }
@@ -127,9 +127,9 @@ int main(int argc, char** argv) {
            num_buckets);
 
     // ==== validation:
-    for (int i = 0; i < num_queries; i++) {
+    for (size_t i = 0; i < num_queries; i++) {
         if (h_correct_result[i] != h_result[i]) {
-            printf("### wrong result at index %d: [%d] -> %d, but should be "
+            printf("### wrong result at index %ld: [%d] -> %d, but should be "
                    "%d\n",
                    i, h_query[i], h_result[i], h_correct_result[i]);
             break;
