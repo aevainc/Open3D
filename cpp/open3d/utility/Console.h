@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <Eigen/Core>
+#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -319,12 +319,6 @@ double GetProgramOptionAsDouble(int argc,
                                 char **argv,
                                 const std::string &option,
                                 const double default_value = 0.0);
-
-Eigen::VectorXd GetProgramOptionAsEigenVectorXd(
-        int argc,
-        char **argv,
-        const std::string &option,
-        const Eigen::VectorXd default_value = Eigen::VectorXd::Zero(0));
 
 bool ProgramOptionExists(int argc, char **argv, const std::string &option);
 

@@ -50,6 +50,12 @@ typedef Eigen::Matrix<double, 4, 4, Eigen::DontAlign> Matrix4d_u;
 namespace open3d {
 namespace utility {
 
+Eigen::VectorXd GetProgramOptionAsEigenVectorXd(
+        int argc,
+        char **argv,
+        const std::string &option,
+        const Eigen::VectorXd default_value = Eigen::VectorXd::Zero(0));
+
 using Matrix4d_allocator = Eigen::aligned_allocator<Eigen::Matrix4d>;
 using Matrix6d_allocator = Eigen::aligned_allocator<Eigen::Matrix6d>;
 using Vector2d_allocator = Eigen::aligned_allocator<Eigen::Vector2d>;

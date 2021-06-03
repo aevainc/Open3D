@@ -30,9 +30,39 @@
 #include <Eigen/Sparse>
 
 #include "open3d/utility/Console.h"
+#include "open3d/utility/Helper.h"
 
 namespace open3d {
 namespace utility {
+
+Eigen::VectorXd GetProgramOptionAsEigenVectorXd(
+        int argc,
+        char **argv,
+        const std::string &option,
+        const Eigen::VectorXd default_value /* =
+        Eigen::VectorXd::Zero()*/) {
+    std::string str = GetProgramOptionAsString(argc, argv, option, "");
+    if (str.length() == 0 || (!(str.front() == '(' && str.back() == ')') &&
+                              !(str.front() == '[' && str.back() == ']') &&
+                              !(str.front() == '<' && str.back() == '>'))) {
+        return default_value;
+    }
+    std::vector<std::string> tokens =
+            SplitString(str.substr(1, str.length() - 2), ",");
+    Eigen::VectorXd vec(tokens.size());
+    for (size_t i = 0; i < tokens.size(); i++) {
+        char *end;
+        errno = 0;
+        double l = std::strtod(tokens[i].c_str(), &end);
+        if (errno == ERANGE && (l == HUGE_VAL || l == -HUGE_VAL)) {
+            return default_value;
+        } else if (*end != '\0') {
+            return default_value;
+        }
+        vec(i) = l;
+    }
+    return vec;
+}
 
 /// Function to solve Ax=b
 std::tuple<bool, Eigen::VectorXd> SolveLinearSystemPSD(
