@@ -235,11 +235,6 @@ void SlabHashmap<Key, Hash>::Find(const void* input_keys,
                                   bool* output_masks,
                                   int64_t count) {
     if (count == 0) return;
-
-    OPEN3D_CUDA_CHECK(cudaMemset(output_masks, 0, sizeof(bool) * count));
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
-
     const int64_t num_blocks =
             (count + kThreadsPerBlock - 1) / kThreadsPerBlock;
     FindKernel<<<num_blocks, kThreadsPerBlock>>>(
@@ -255,10 +250,6 @@ void SlabHashmap<Key, Hash>::Assign(const void* input_keys,
                                     bool* output_masks,
                                     int64_t count) {
     if (count == 0) return;
-
-    OPEN3D_CUDA_CHECK(cudaMemset(output_masks, 0, sizeof(bool) * count));
-    OPEN3D_CUDA_CHECK(cudaDeviceSynchronize());
-    OPEN3D_CUDA_CHECK(cudaGetLastError());
 
     const int64_t num_blocks =
             (count + kThreadsPerBlock - 1) / kThreadsPerBlock;
