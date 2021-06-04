@@ -120,10 +120,10 @@ if __name__ == '__main__':
 
             # Color indicator
             if not label_set:
-                ax.plot(x, ours_curve, color='b', label='stdgpu')
+                ax.plot(x, ours_curve, color='b', label='ASH-stdgpu')
                 # linestyle=linestyles[i],
                 #marker=markers[i])
-                ax.plot(x, slab_curve, color='r', label='slab')
+                ax.plot(x, slab_curve, color='r', label='ASH-slab')
                 #linestyle=linestyles[i],
                 #marker=markers[i])
                 label_set = True
@@ -146,13 +146,13 @@ if __name__ == '__main__':
                     np.append(slab_curve, ours_curve[::-1]),
                     color=colors[i])
             ax.set_title(r'Density = ${}$, Operation {}'.format(di, opi), fontsize=20)
-        ax.legend()
         ax.set_xlabel('Hashmap value size (byte)', fontsize=15)
         ax.set_xscale('log')
 
         ax.set_ylabel('Time (ms)', fontsize=15)
         ax.set_yscale('log')
         ax.grid()
+    plt.legend()
     plt.tight_layout()
     plt.show()
 

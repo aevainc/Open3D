@@ -74,41 +74,54 @@ std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(
 int main(int argc, char** argv) {
     using namespace open3d;
     auto backend = core::HashmapBackend::Slab;
+
     int n = utility::GetProgramOptionAsInt(argc, argv, "--n", 10000);
+
+    // Slabhash setup
+    uint32_t num_keys = n;
+    uint32_t num_queries = n;
+    float expected_chain = 0.6f;
+    uint32_t num_elements_per_unit = 15;
+    uint32_t expected_elements_per_bucket =
+            expected_chain * num_elements_per_unit;
+    uint32_t num_buckets = (num_keys + expected_elements_per_bucket - 1) /
+                           expected_elements_per_bucket;
+
     int runs = utility::GetProgramOptionAsInt(argc, argv, "--runs", 10);
     double density =
             utility::GetProgramOptionAsDouble(argc, argv, "--density", 0.99);
 
     auto kv = GenerateKVVector(n, density);
-    core::Tensor t_keys = core::Tensor(kv.first, {n}, core::Dtype::Int32,
-                                       core::Device("CPU:0"));
-    core::Tensor t_values = core::Tensor(kv.second, {n}, core::Dtype::Int32,
-                                         core::Device("CPU:0"));
+
+    core::Device host("CPU:0");
+    core::Device device("CUDA:0");
+    core::Tensor t_keys = core::Tensor(kv.first, {n}, core::Dtype::Int32, host);
+    core::Tensor t_values =
+            core::Tensor(kv.second, {n}, core::Dtype::Int32, host);
 
     {  // Warm up
 
-        core::Device device("CUDA:0");
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                               core::SizeVector{1}, core::SizeVector{1}, device,
                               backend);
-        core::Tensor t_addrs({n}, core::Dtype::Int32, device);
-        core::Tensor t_masks({n}, core::Dtype::Bool, device);
+        core::Tensor t_addrs, t_masks;
         hashmap.Insert(t_keys.To(device), t_values.To(device), t_addrs,
                        t_masks);
         cudaDeviceSynchronize();
     }
 
-    {  // Insertion: slab ours
+    {
+        // Insertion: slab ours
         utility::Timer timer;
-        core::Device device("CUDA:0");
         double insert_time = 0;
         for (int i = 0; i < runs; ++i) {
-            timer.Start();
             core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                                   core::SizeVector{1}, core::SizeVector{1},
                                   device, backend);
-            core::Tensor t_addrs({n}, core::Dtype::Int32, device);
-            core::Tensor t_masks({n}, core::Dtype::Bool, device);
+            cudaDeviceSynchronize();
+
+            timer.Start();
+            core::Tensor t_addrs, t_masks;
             hashmap.Insert(t_keys.To(device), t_values.To(device), t_addrs,
                            t_masks);
             cudaDeviceSynchronize();
@@ -120,19 +133,14 @@ int main(int argc, char** argv) {
 
     {  // Insertion: slab
         utility::Timer timer;
-        uint32_t num_keys = n;
-        float expected_chain = 0.6f;
-        uint32_t num_elements_per_unit = 15;
-        uint32_t expected_elements_per_bucket =
-                expected_chain * num_elements_per_unit;
-        uint32_t num_buckets = (num_keys + expected_elements_per_bucket - 1) /
-                               expected_elements_per_bucket;
 
         double insert_time = 0;
         for (int i = 0; i < runs; ++i) {
-            timer.Start();
             gpu_hash_table<int, int, SlabHashTypeT::ConcurrentMap> hash_table(
                     num_keys, num_buckets, /*DEVICE_ID=*/0, /*seed=*/1);
+            cudaDeviceSynchronize();
+
+            timer.Start();
             hash_table.hash_build(kv.first.data(), kv.second.data(), num_keys);
             cudaDeviceSynchronize();
             timer.Stop();
@@ -148,17 +156,23 @@ int main(int argc, char** argv) {
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                               core::SizeVector{1}, core::SizeVector{1}, device,
                               backend);
-        core::Tensor t_addrs({n}, core::Dtype::Int32, device);
-        core::Tensor t_masks({n}, core::Dtype::Bool, device);
+        core::Tensor t_addrs, t_masks;
         hashmap.Insert(t_keys.To(device), t_values.To(device), t_addrs,
                        t_masks);
+        // Check, and warm up for finding
+        hashmap.Find(t_keys.To(device), t_addrs, t_masks);
+        auto query_keys = t_keys.IndexGet({t_masks}).To(device);
+        auto query_values = hashmap.GetValueTensor().IndexGet(
+                {t_addrs.To(core::Dtype::Int64).IndexGet({t_masks})});
+        if (!query_keys.View({-1, 1}).AllClose(query_values / 10)) {
+            utility::LogError("Not all equal, query failed.");
+        }
         cudaDeviceSynchronize();
 
         double find_time = 0;
         for (int i = 0; i < runs; ++i) {
             timer.Start();
-            t_addrs = core::Tensor({n}, core::Dtype::Int32, device);
-            t_masks = core::Tensor({n}, core::Dtype::Bool, device);
+            core::Tensor t_addrs, t_masks;
             hashmap.Find(t_keys.To(device), t_addrs, t_masks);
             cudaDeviceSynchronize();
             timer.Stop();
@@ -168,23 +182,23 @@ int main(int argc, char** argv) {
     }
 
     {
-        uint32_t num_queries = n;
-        uint32_t num_keys = n;
-        float expected_chain = 0.6f;
-        uint32_t num_elements_per_unit = 15;
-        uint32_t expected_elements_per_bucket =
-                expected_chain * num_elements_per_unit;
-        uint32_t num_buckets = (num_keys + expected_elements_per_bucket - 1) /
-                               expected_elements_per_bucket;
-
         gpu_hash_table<int, int, SlabHashTypeT::ConcurrentMap> hash_table(
                 num_keys, num_buckets, /*DEVICE_ID=*/0, /*seed=*/1);
         hash_table.hash_build(kv.first.data(), kv.second.data(), num_keys);
+
+        // Check, and warm up for finding
+        std::vector<int> h_result(n);
+        hash_table.hash_search(kv.first.data(), h_result.data(), num_keys);
+        for (int i = 0; i < n; ++i) {
+            if (kv.first[i] * 10 != h_result[i]) {
+                utility::LogInfo("Slab find fails!");
+            }
+        }
         cudaDeviceSynchronize();
 
         utility::Timer timer;
         double find_time = 0;
-        std::vector<int> h_result(n);
+
         for (int i = 0; i < runs; ++i) {
             timer.Start();
             hash_table.hash_search(kv.first.data(), h_result.data(),

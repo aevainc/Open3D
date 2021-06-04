@@ -13,6 +13,8 @@
 #include "open3d/utility/Console.h"
 #include "open3d/utility/Timer.h"
 
+using namespace open3d;
+
 /// Int3 type
 class hash_int3 {
 public:
@@ -51,7 +53,7 @@ std::pair<std::vector<int>, std::vector<int>> GenerateKVVector(
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(-n, n);
+    std::uniform_int_distribution<int> dist(-10 * n, 10 * n);
 
     int valid_entries = n * density;
     std::vector<int> x_pool(n);
@@ -135,9 +137,11 @@ __global__ void find_int3(
 }
 
 template <int C>
-void run(int n, int runs, double density, bool debug) {
-    using namespace open3d;
-    auto backend = core::HashmapBackend::Slab;
+void run(int n,
+         int runs,
+         double density,
+         bool debug,
+         const core::HashmapBackend backend = core::HashmapBackend::StdGPU) {
     using T = int_blob<C>;
     using iterator_t =
             typename stdgpu::unordered_map<int3, T, hash_int3>::iterator;
@@ -159,9 +163,7 @@ void run(int n, int runs, double density, bool debug) {
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                               core::SizeVector{3, 1}, core::SizeVector{C},
                               device, backend);
-        core::Tensor t_addrs({n}, core::Dtype::Int32, device);
-        core::Tensor t_masks({n}, core::Dtype::Bool, device);
-
+        core::Tensor t_addrs, t_masks;
         hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
         hashmap.Find(t_keys, t_addrs, t_masks);
         cudaDeviceSynchronize();
@@ -171,33 +173,35 @@ void run(int n, int runs, double density, bool debug) {
     stdgpu::index_t threads = 128;
     stdgpu::index_t blocks = (n + threads - 1) / threads;
 
-    // Insert experiments
     {
+        // Insert: ours
+        // Note: exclude construction and destruction for fairness
         double insert_time = 0;
         for (int i = 0; i < runs; ++i) {
-            timer.Start();
             core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                                   core::SizeVector{3, 1}, core::SizeVector{C},
                                   device, backend);
-            core::Tensor t_addrs({n}, core::Dtype::Int32, device);
-            core::Tensor t_masks({n}, core::Dtype::Bool, device);
+            cudaDeviceSynchronize();
+
+            timer.Start();
+            core::Tensor t_addrs, t_masks;
             hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
+            cudaDeviceSynchronize();
             timer.Stop();
             insert_time += timer.GetDuration();
         }
         utility::LogInfo("ours.insertion {}", insert_time / runs);
-
-        // Potential destructor
-        cudaDeviceSynchronize();
 
         // stdgpu
         int* d_keys = static_cast<int*>(t_keys.GetDataPtr());
         T* d_values = static_cast<T*>(t_values.GetDataPtr());
         insert_time = 0;
         for (int i = 0; i < runs; ++i) {
-            timer.Start();
             auto map = stdgpu::unordered_map<int3, T,
                                              hash_int3>::createDeviceObject(n);
+            cudaDeviceSynchronize();
+
+            timer.Start();
             bool* d_masks = createDeviceArray<bool>(n);
             iterator_t* d_output = createDeviceArray<iterator_t>(n);
 
@@ -207,50 +211,45 @@ void run(int n, int runs, double density, bool debug) {
 
             destroyDeviceArray<bool>(d_masks);
             destroyDeviceArray<iterator_t>(d_output);
-            stdgpu::unordered_map<int3, T, hash_int3>::destroyDeviceObject(map);
             cudaDeviceSynchronize();
             timer.Stop();
             insert_time += timer.GetDuration();
-        }
 
+            stdgpu::unordered_map<int3, T, hash_int3>::destroyDeviceObject(map);
+        }
         utility::LogInfo("stdgpu.insertion {}", insert_time / runs);
     }
 
-    // Activate experiments
     {
-        double insert_time = 0;
+        // Ablation: activation
+        double activate_time = 0;
         for (int i = 0; i < runs; ++i) {
-            timer.Start();
             core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                                   core::SizeVector{3, 1}, core::SizeVector{C},
                                   device, backend);
-            core::Tensor t_addrs({n}, core::Dtype::Int32, device);
-            core::Tensor t_masks({n}, core::Dtype::Bool, device);
-            hashmap.Activate(t_keys, t_addrs, t_masks);
-            timer.Stop();
-            insert_time += timer.GetDuration();
-        }
-        utility::LogInfo("ours.activate {}", insert_time / runs);
+            cudaDeviceSynchronize();
 
-        // Potential destructor
-        cudaDeviceSynchronize();
+            timer.Start();
+            core::Tensor t_addrs, t_masks;
+            hashmap.Activate(t_keys, t_addrs, t_masks);
+            cudaDeviceSynchronize();
+            timer.Stop();
+            activate_time += timer.GetDuration();
+        }
+        utility::LogInfo("ours.activate {}", activate_time / runs);
     }
 
-    // Find experiments
-    bool saved = false;
     {
+        // Find experiments
         core::Hashmap hashmap(n, core::Dtype::Int32, core::Dtype::Int32,
                               core::SizeVector{3, 1}, core::SizeVector{C},
                               device, backend);
-        core::Tensor t_addrs({n}, core::Dtype::Int32, device);
-        core::Tensor t_masks({n}, core::Dtype::Bool, device);
+        core::Tensor t_addrs, t_masks;
         hashmap.Insert(t_keys, t_values, t_addrs, t_masks);
+        hashmap.Find(t_keys, t_addrs, t_masks);
+        cudaDeviceSynchronize();
 
-        if (double(hashmap.Size()) / n != density) {
-            utility::LogError("Failure! ours density mismatch {} vs {}",
-                              density, double(hashmap.Size()) / n);
-        }
-
+        bool saved = false;
         if (debug && !saved) {
             auto query_keys = t_keys.IndexGet({t_masks});
             auto query_values = hashmap.GetValueTensor().IndexGet(
@@ -269,16 +268,12 @@ void run(int n, int runs, double density, bool debug) {
         double find_time = 0;
         for (int i = 0; i < runs; ++i) {
             timer.Start();
-            t_addrs = core::Tensor({n}, core::Dtype::Int32, device);
-            t_masks = core::Tensor({n}, core::Dtype::Bool, device);
             hashmap.Find(t_keys, t_addrs, t_masks);
+            cudaDeviceSynchronize();
             timer.Stop();
             find_time += timer.GetDuration();
         }
         utility::LogInfo("ours.find {}", find_time / runs);
-
-        // Potential destructor
-        cudaDeviceSynchronize();
 
         // stdgpu
         int* d_keys = static_cast<int*>(t_keys.GetDataPtr());
@@ -294,9 +289,6 @@ void run(int n, int runs, double density, bool debug) {
         destroyDeviceArray<bool>(d_masks);
         destroyDeviceArray<iterator_t>(d_output);
         cudaDeviceSynchronize();
-        if (double(map.size()) / n != density) {
-            utility::LogError("Failure! stdgpu density mismatch");
-        }
 
         find_time = 0;
         for (int i = 0; i < runs; ++i) {
@@ -329,34 +321,45 @@ int main(int argc, char** argv) {
             utility::GetProgramOptionAsInt(argc, argv, "--channels", 1024);
     double density =
             utility::GetProgramOptionAsDouble(argc, argv, "--density", 0.99);
+    std::string backend_str = utility::GetProgramOptionAsString(
+            argc, argv, "--backend", "stdgpu");
+
+    core::HashmapBackend backend;
+    if (backend_str == "stdgpu") {
+        backend = core::HashmapBackend::StdGPU;
+    } else if (backend_str == "slab") {
+        backend = core::HashmapBackend::Slab;
+    } else {
+        utility::LogError("Unsupported backend {}", backend_str);
+    }
     bool debug = utility::ProgramOptionExists(argc, argv, "--debug");
 
     if (channels == 1) {
-        run<1>(n, runs, density, debug);
+        run<1>(n, runs, density, debug, backend);
     } else if (channels == 2) {
-        run<2>(n, runs, density, debug);
+        run<2>(n, runs, density, debug, backend);
     } else if (channels == 4) {
-        run<4>(n, runs, density, debug);
+        run<4>(n, runs, density, debug, backend);
     } else if (channels == 8) {
-        run<8>(n, runs, density, debug);
+        run<8>(n, runs, density, debug, backend);
     } else if (channels == 16) {
-        run<16>(n, runs, density, debug);
+        run<16>(n, runs, density, debug, backend);
     } else if (channels == 32) {
-        run<32>(n, runs, density, debug);
+        run<32>(n, runs, density, debug, backend);
     } else if (channels == 64) {
-        run<64>(n, runs, density, debug);
+        run<64>(n, runs, density, debug, backend);
     } else if (channels == 128) {
-        run<128>(n, runs, density, debug);
+        run<128>(n, runs, density, debug, backend);
     } else if (channels == 256) {
-        run<256>(n, runs, density, debug);
+        run<256>(n, runs, density, debug, backend);
     } else if (channels == 512) {
-        run<512>(n, runs, density, debug);
+        run<512>(n, runs, density, debug, backend);
     } else if (channels == 1024) {
-        run<1024>(n, runs, density, debug);
+        run<1024>(n, runs, density, debug, backend);
     } else if (channels == 2048) {
-        run<2048>(n, runs, density, debug);
+        run<2048>(n, runs, density, debug, backend);
     } else if (channels == 4096) {
-        run<4096>(n, runs, density, debug);
+        run<4096>(n, runs, density, debug, backend);
     } else {
         utility::LogInfo("C({}) not dispatched", channels);
     }
