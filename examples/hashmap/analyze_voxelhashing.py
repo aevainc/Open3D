@@ -1,6 +1,8 @@
 import numpy as np
 
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import cm
+
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "sans-serif",
@@ -16,7 +18,8 @@ plt.rcParams.update({
 # Tango
 # colors = ['#3465a4', '#ef2929', '#73d216', '#fcaf3e']
 # Google
-colors = ['#4285F4f0', '#DB4437f0', '#F4B400f0', '#0F9D58f0']
+# colors = ['#4285F4f0', '#DB4437f0', '#F4B400f0', '#0F9D58f0']
+colors = cm.Pastel1.colors
 fig, axs = plt.subplots(1, 2, figsize=(16, 5))
 x = np.arange(0, 3)
 width = 0.2
@@ -92,8 +95,8 @@ for i in range(2):
         axs[i].set_yscale('log')
     axs[i].set_ylabel(ylabels[i])
     axs[i].set_xticks(xticks)
-    axs[i].set_xticklabels(xlabels)
-    axs[i].set_title(titles[i])
+    axs[i].set_xticklabels(xlabels, fontsize=15)
+    axs[i].set_title(titles[i], fontsize=20)
     axs[i].yaxis.grid()
 
 plt.legend()
