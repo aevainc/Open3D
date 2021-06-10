@@ -125,11 +125,9 @@ int main(int argc, char* argv[]) {
     }
     core::Device device(device_code);
     utility::LogInfo("Using device: {}", device.ToString());
-    t::geometry::TSDFVoxelGrid voxel_grid({{"tsdf", core::Dtype::Float32},
-                                           {"weight", core::Dtype::UInt16},
-                                           {"color", core::Dtype::UInt16}},
-                                          voxel_size, sdf_trunc, 16,
-                                          block_count, device);
+    t::geometry::TSDFVoxelGrid voxel_grid(
+            {{"tsdf", core::Dtype::Float32}, {"weight", core::Dtype::Float32}},
+            voxel_size, sdf_trunc, 16, block_count, device);
 
     double time_total = 0;
     double time_int = 0;
