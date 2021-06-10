@@ -123,11 +123,12 @@ int main(int argc, char* argv[]) {
     if (utility::ProgramOptionExists(argc, argv, "--device")) {
         device_code = utility::GetProgramOptionAsString(argc, argv, "--device");
     }
+    std::cout << "voxel size: " << voxel_size << "\n";
     core::Device device(device_code);
     utility::LogInfo("Using device: {}", device.ToString());
     t::geometry::TSDFVoxelGrid voxel_grid(
             {{"tsdf", core::Dtype::Float32}, {"weight", core::Dtype::Float32}},
-            voxel_size, sdf_trunc, 16, block_count, device);
+            voxel_size, sdf_trunc, 8, block_count, device);
 
     double time_total = 0;
     double time_int = 0;
@@ -231,4 +232,6 @@ int main(int argc, char* argv[]) {
         open3d::io::WritePointCloud("pcd_" + device.ToString() + ".ply",
                                     *pcd_legacy);
     }
+
+    open3d::t::io::WriteTSDFVoxelGrid("tsdf.json", voxel_grid);
 }
