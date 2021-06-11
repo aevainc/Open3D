@@ -22,7 +22,7 @@ tsdf = value_np[:, :, :, :, 0]
 weight = value_np[:, :, :, :, 1]
 
 # Cross out some of the volumes for sanity check
-tsdf[:, :, 0, :] = 0
+tsdf[:, :, :, 0] = 0
 
 # Put back value
 value_np = np.stack((tsdf, weight), axis=-1)
