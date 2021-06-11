@@ -233,5 +233,9 @@ int main(int argc, char* argv[]) {
                                     *pcd_legacy);
     }
 
-    open3d::t::io::WriteTSDFVoxelGrid("tsdf.json", voxel_grid);
+    if (utility::ProgramOptionExists(argc, argv, "--tsdf")) {
+        open3d::t::io::WriteTSDFVoxelGrid("tsdf.json", voxel_grid);
+    }
+
+    return 0;
 }

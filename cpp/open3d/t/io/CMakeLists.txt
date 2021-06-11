@@ -4,10 +4,10 @@ target_sources(tio PRIVATE
     ImageIO.cpp
     PointCloudIO.cpp
     TriangleMeshIO.cpp
+    TSDFVoxelGridIO.cpp
 )
 
 target_sources(tio PRIVATE
-    TSDFVoxelGridIO.cpp
     file_format/FileXYZI.cpp
     file_format/FilePLY.cpp
     file_format/FileJPG.cpp
