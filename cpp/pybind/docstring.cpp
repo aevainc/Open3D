@@ -402,5 +402,53 @@ std::vector<std::string> FunctionDoc::GetArgumentTokens(
     return argument_tokens;
 }
 
+void ModuleNamespaceFix(py::module& pybind_module) {
+    std::stack<PyObject*> module_stack;
+    PyObject* module = pybind_module.ptr();
+    if (module != nullptr) module_stack.push(module);
+
+    while (!module_stack.empty()) {
+        PyObject* item = module_stack.top();
+        module_stack.pop();
+        PyObject* item_dict = PyModule_GetDict(item);
+        if (item_dict == nullptr) continue;
+        std::cout << "dict: ";
+        PyObject_Print(item_dict, stdout, 0);
+        std::cout << std::endl;
+        PyObject *key, *value = NULL;
+        Py_ssize_t pos = 0;
+
+        /* PyObject* iterator = PyObject_GetIter(item_dir); */
+        /* if (iterator == nullptr) continue; */
+        /* std::cout << "iter: "; */
+        /* PyObject_Print(iterator, stdout, 0); */
+        /* std::cout << std::endl; */
+
+        while (PyDict_Next(item_dict, &pos, &key, &value)) {
+            if (value == nullptr) continue;
+            if (PyObject_HasAttrString(value, "__doc__")) {
+                // fix namespace
+                PyObject* pydoc = PyObject_GetAttrString(value, "__doc__");
+                if (pydoc == nullptr) continue;
+                const char* c_doc =
+                        static_cast<const char*>(PyUnicode_DATA(pydoc));
+                if (c_doc == nullptr) continue;
+                PyObject_Print(key, stdout, 0);
+                PyObject_Print(value, stdout, 0);
+                std::cout << '\t' << c_doc << std::endl;
+                std::string doc = std::regex_replace(std::string(c_doc),
+                                                     std::regex("::"), ".");
+                doc = std::regex_replace(
+                        doc, std::regex("open3d\\.(cpu|cuda)\\.pybind\\."),
+                        "open3d.");
+                /* PyObject_SetAttrString(value, "__doc__", */
+                /*                        PyUnicode_FromString(doc.c_str())); */
+            }
+            if (value != item) module_stack.push(value);
+            /* Py_DECREF(value);  // release reference when done */
+        }
+    }
+}
+
 }  // namespace docstring
 }  // namespace open3d

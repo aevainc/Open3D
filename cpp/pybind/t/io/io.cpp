@@ -26,6 +26,7 @@
 
 #include "pybind/t/io/io.h"
 
+#include "pybind/docstring.h"
 #include "pybind/open3d_pybind.h"
 
 namespace open3d {
@@ -37,6 +38,7 @@ void pybind_io(py::module& m) {
             m.def_submodule("io", "Tensor-based input-output handling module.");
     pybind_class_io(m_io);
     pybind_sensor(m_io);
+    docstring::ModuleNamespaceFix(m_io);
 }
 
 }  // namespace io

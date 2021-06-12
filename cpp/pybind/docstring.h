@@ -152,6 +152,10 @@ void ClassMethodDocInject(
                 map_parameter_body_docs =
                         std::unordered_map<std::string, std::string>());
 
+/// Fix namespaces for all docstrings. CHange :: -> . and remove
+/// pybind.(cuda|cpu)
+void ModuleNamespaceFix(py::module& pybind_module);
+
 extern py::handle static_property;
 
 }  // namespace docstring
