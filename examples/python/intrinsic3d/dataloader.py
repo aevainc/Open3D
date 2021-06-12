@@ -91,4 +91,5 @@ for i, (color_kfname,
         rgbd, intrinsic, np.linalg.inv(trajectory_kf[i]))
     pcd_map += pcd
 
-o3d.visualization.draw_geometries([pcd_map])
+mesh = o3d.io.read_triangle_mesh('mesh_colored.ply')
+o3d.visualization.draw_geometries([pcd_map, mesh])
