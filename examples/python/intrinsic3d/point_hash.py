@@ -99,6 +99,7 @@ addr_zm, mask_zm = point_hashmap.find(xyz_zm)
 
 mask_nb_laplacian = mask_xp & mask_xm & mask_yp & mask_ym & mask_zp & mask_zm
 
+# Wrap up in torch
 index_o = to_torch(addrs[mask_nb_laplacian].to(o3d.core.Dtype.Int64))
 
 index_xp = to_torch(addr_xp[mask_nb_laplacian].to(o3d.core.Dtype.Int64))
@@ -117,6 +118,8 @@ ny = mapped_tsdf[index_yp] - mapped_tsdf[index_ym]
 nz = mapped_tsdf[index_zp] - mapped_tsdf[index_zm]
 nnorm = ((nx * nx + ny * ny + nz * nz).sqrt())
 
+# TODO: optimize in torch
+
 # Visualize
 nx = (nx / nnorm)
 ny = (ny / nnorm)
@@ -128,4 +131,6 @@ xyz = (mapped_keys[index_o].float() * 0.004)
 pcd = o3d.geometry.PointCloud()
 pcd.points = o3d.utility.Vector3dVector(xyz.cpu().numpy())
 pcd.normals = o3d.utility.Vector3dVector(normal.cpu().numpy())
-o3d.visualization.draw_geometries([pcd])
+
+mesh = o3d.io.read_triangle_mesh('mesh_colored.ply')
+o3d.visualization.draw_geometries([pcd, mesh])
