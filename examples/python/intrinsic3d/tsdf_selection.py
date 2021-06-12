@@ -22,6 +22,7 @@ weight_c = np.ascontiguousarray(np.expand_dims(weight, axis=-1))
 
 mask_weight = weight_c > 0
 mask_tsdf = np.abs(tsdf_c) < (2 * 0.004 / 0.015)
+# print(mask_tsdf)
 
 mask_general = mask_weight & mask_tsdf
 tsdf_c[mask_general] *= 0.5
