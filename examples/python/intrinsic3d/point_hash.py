@@ -4,6 +4,9 @@ import numpy as np
 import torch
 import torch.utils.dlpack
 
+def to_torch(tensor):
+    return torch.utils.dlpack.from_dlpack(tensor.to_dlpack())
+
 volume = o3d.t.io.read_tsdf_voxelgrid('tsdf.json')
 hashmap = volume.get_block_hashmap()
 
@@ -96,18 +99,18 @@ addr_zm, mask_zm = point_hashmap.find(xyz_zm)
 
 mask_nb_laplacian = mask_xp & mask_xm & mask_yp & mask_ym & mask_zp & mask_zm
 
-index_o = addrs[mask_nb_laplacian].to(o3d.core.Dtype.Int64)
+index_o = to_torch(addrs[mask_nb_laplacian].to(o3d.core.Dtype.Int64))
 
-index_xp = addr_xp[mask_nb_laplacian].to(o3d.core.Dtype.Int64)
-index_yp = addr_yp[mask_nb_laplacian].to(o3d.core.Dtype.Int64)
-index_zp = addr_zp[mask_nb_laplacian].to(o3d.core.Dtype.Int64)
+index_xp = to_torch(addr_xp[mask_nb_laplacian].to(o3d.core.Dtype.Int64))
+index_yp = to_torch(addr_yp[mask_nb_laplacian].to(o3d.core.Dtype.Int64))
+index_zp = to_torch(addr_zp[mask_nb_laplacian].to(o3d.core.Dtype.Int64))
 
-index_xm = addr_xm[mask_nb_laplacian].to(o3d.core.Dtype.Int64)
-index_ym = addr_ym[mask_nb_laplacian].to(o3d.core.Dtype.Int64)
-index_zm = addr_zm[mask_nb_laplacian].to(o3d.core.Dtype.Int64)
+index_xm = to_torch(addr_xm[mask_nb_laplacian].to(o3d.core.Dtype.Int64))
+index_ym = to_torch(addr_ym[mask_nb_laplacian].to(o3d.core.Dtype.Int64))
+index_zm = to_torch(addr_zm[mask_nb_laplacian].to(o3d.core.Dtype.Int64))
 
-mapped_keys = point_hashmap.get_key_tensor()
-mapped_tsdf = point_hashmap.get_value_tensor()
+mapped_keys = to_torch(point_hashmap.get_key_tensor())
+mapped_tsdf = to_torch(point_hashmap.get_value_tensor())
 
 nx = mapped_tsdf[index_xp] - mapped_tsdf[index_xm]
 ny = mapped_tsdf[index_yp] - mapped_tsdf[index_ym]
@@ -115,14 +118,14 @@ nz = mapped_tsdf[index_zp] - mapped_tsdf[index_zm]
 nnorm = ((nx * nx + ny * ny + nz * nz).sqrt())
 
 # Visualize
-nx = (nx / nnorm).cpu().numpy()
-ny = (ny / nnorm).cpu().numpy()
-nz = (nz / nnorm).cpu().numpy()
+nx = (nx / nnorm)
+ny = (ny / nnorm)
+nz = (nz / nnorm)
 
-normal = np.concatenate((nx, ny, nz), axis=1)
-xyz = (mapped_keys[index_o].to(o3d.core.Dtype.Float64) * 0.004).cpu().numpy()
+normal = torch.cat((nx, ny, nz), axis=1)
+xyz = (mapped_keys[index_o].float() * 0.004)
 
 pcd = o3d.geometry.PointCloud()
-pcd.points = o3d.utility.Vector3dVector(xyz)
-pcd.normals = o3d.utility.Vector3dVector(normal)
+pcd.points = o3d.utility.Vector3dVector(xyz.cpu().numpy())
+pcd.normals = o3d.utility.Vector3dVector(normal.cpu().numpy())
 o3d.visualization.draw_geometries([pcd])
