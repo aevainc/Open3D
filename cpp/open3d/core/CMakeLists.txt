@@ -1,30 +1,15 @@
-add_library(core OBJECT)
+add_library(core_internal OBJECT)
 
-target_sources(core PRIVATE
-    AdvancedIndexing.cpp
-    CUDAUtils.cpp
-    Dtype.cpp
-    EigenConverter.cpp
-    Indexer.cpp
-    MemoryManager.cpp
-    MemoryManagerCPU.cpp
-    NumpyIO.cpp
-    ShapeUtil.cpp
-    Tensor.cpp
-    TensorKey.cpp
-    TensorList.cpp
-)
-
-target_sources(core PRIVATE
+target_sources(core_internal PRIVATE
     hashmap/DeviceHashmap.cpp
     hashmap/Hashmap.cpp
 )
 
-target_sources(core PRIVATE
+target_sources(core_internal PRIVATE
     hashmap/CPU/CreateCPUHashmap.cpp
 )
 
-target_sources(core PRIVATE
+target_sources(core_internal PRIVATE
     kernel/Arange.cpp
     kernel/ArangeCPU.cpp
     kernel/BinaryEW.cpp
@@ -40,7 +25,7 @@ target_sources(core PRIVATE
     kernel/UnaryEWCPU.cpp
 )
 
-target_sources(core PRIVATE
+target_sources(core_internal PRIVATE
     linalg/Det.cpp
     linalg/Inverse.cpp
     linalg/InverseCPU.cpp
@@ -58,7 +43,7 @@ target_sources(core PRIVATE
     linalg/TriCPU.cpp
 )
 
-target_sources(core PRIVATE
+target_sources(core_internal PRIVATE
     nns/FixedRadiusIndex.cpp
     nns/NanoFlannIndex.cpp
     nns/NearestNeighborSearch.cpp
@@ -66,18 +51,18 @@ target_sources(core PRIVATE
 )
 
 if (BUILD_CUDA_MODULE)
-    target_sources(core PRIVATE
+    target_sources(core_internal PRIVATE
         MemoryManagerCUDACached.cu
         MemoryManagerCUDASimple.cu
     )
 
-    target_sources(core PRIVATE
+    target_sources(core_internal PRIVATE
         hashmap/CUDA/CreateCUDAHashmap.cu
         hashmap/CUDA/CUDAHashmapBufferAccessor.cu
         hashmap/CUDA/SlabNodeManager.cu
     )
 
-    target_sources(core PRIVATE
+    target_sources(core_internal PRIVATE
         kernel/ArangeCUDA.cu
         kernel/BinaryEWCUDA.cu
         kernel/IndexGetSetCUDA.cu
@@ -86,7 +71,7 @@ if (BUILD_CUDA_MODULE)
         kernel/UnaryEWCUDA.cu
     )
 
-    target_sources(core PRIVATE
+    target_sources(core_internal PRIVATE
         linalg/InverseCUDA.cpp
         linalg/LeastSquaresCUDA.cpp
         linalg/LinalgUtils.cpp
@@ -97,16 +82,38 @@ if (BUILD_CUDA_MODULE)
         linalg/TriCUDA.cu
     )
 
-    target_sources(core PRIVATE
+    target_sources(core_internal PRIVATE
         nns/FixedRadiusSearch.cu
     )
 endif()
 
 if (WITH_FAISS)
-    target_sources(core PRIVATE
+    target_sources(core_internal PRIVATE
         nns/FaissIndex.cpp
     )
 endif()
+
+open3d_show_and_abort_on_warning(core_internal)
+open3d_set_global_properties(core_internal)
+open3d_set_open3d_lib_properties(core_internal HIDDEN)
+open3d_link_3rdparty_libraries(core_internal)
+
+add_library(core OBJECT $<TARGET_OBJECTS:core_internal>)
+
+target_sources(core PRIVATE
+    AdvancedIndexing.cpp
+    CUDAUtils.cpp
+    Dtype.cpp
+    EigenConverter.cpp
+    Indexer.cpp
+    MemoryManager.cpp
+    MemoryManagerCPU.cpp
+    NumpyIO.cpp
+    ShapeUtil.cpp
+    Tensor.cpp
+    TensorKey.cpp
+    TensorList.cpp
+)
 
 open3d_show_and_abort_on_warning(core)
 open3d_set_global_properties(core)
