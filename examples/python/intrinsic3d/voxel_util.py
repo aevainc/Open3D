@@ -1,7 +1,7 @@
 import open3d as o3d
 
 import numpy as np
-
+import torch
 
 def find_neighbors(xyz, check=True):
     device = o3d.core.Device('CUDA:0')
@@ -152,6 +152,29 @@ def compute_normals(tsdf, nb_dict):
     voxel_normal[mask, 2] = nz / norm
 
     return voxel_normal, mask
+
+
+def compute_normals_torch(param_tsdf, nb_dict):
+    mask_plus = nb_dict['mask_xp'] & nb_dict['mask_yp'] & nb_dict['mask_zp']
+    mask_minus = nb_dict['mask_xm'] & nb_dict['mask_ym'] & nb_dict['mask_zm']
+    mask = mask_plus & mask_minus
+
+    index_xp = torch.from_numpy(nb_dict['index_xp'][mask]).cuda()
+    index_yp = torch.from_numpy(nb_dict['index_yp'][mask]).cuda()
+    index_zp = torch.from_numpy(nb_dict['index_zp'][mask]).cuda()
+    index_xm = torch.from_numpy(nb_dict['index_xm'][mask]).cuda()
+    index_ym = torch.from_numpy(nb_dict['index_ym'][mask]).cuda()
+    index_zm = torch.from_numpy(nb_dict['index_zm'][mask]).cuda()
+
+
+    nx = param_tsdf[index_xp] - param_tsdf[index_xm]
+    ny = param_tsdf[index_yp] - param_tsdf[index_ym]
+    nz = param_tsdf[index_zp] - param_tsdf[index_zm]
+    norm = (nx **2 + ny **2 + nz **2).sqrt()
+
+    voxel_normal = torch.stack((nx / norm, ny / norm, nz / norm))
+
+    return voxel_normal
 
 
 def compute_nearest_surface(points, sdf, normals):
