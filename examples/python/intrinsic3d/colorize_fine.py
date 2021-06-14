@@ -52,34 +52,60 @@ if __name__ == '__main__':
         corres_weight[i, valid_voxel_indices] = weight
         corres_color[i, valid_voxel_indices] = color / 255.0
 
-    t_max = 5
+        # pcd = make_o3d_pcd(voxel_surfaces[valid_voxel_indices][mask],
+        #                    normals=None,
+        #                    colors=voxel_color[valid_voxel_indices][mask])
+
+
     # At least one valid; pick up up-to 5 corres
     # Corres mask: (n_voxels)
-    corres_mask = np.logical_and(
-        corres_mask.sum(axis=0) >= 1,
-        corres_weight.sum(axis=0) > 0)
+    t_max = 5
+    corres_mask_saved = corres_mask
 
+    corres_mask = np.logical_and(
+        corres_mask_saved.sum(axis=0) >= 1,
+        corres_weight.sum(axis=0) > 0)
     valid_voxel_indices = np.arange(n_voxel)[corres_mask]
 
     # (t_max, num of valid voxels (both for normal estimation and with correspondences))
-    corres_kf_sorted = np.argsort(-corres_weight, axis=0)[:t_max]
+    corres_kf_sorted = np.argsort(-corres_weight, axis=0)
 
     sum_color = np.zeros((n_voxel, 3))
     sum_weight = np.zeros((n_voxel, 1))
+
+    kf_association = np.zeros((n_kf, n_voxel), dtype=bool)
+    print(kf_association.sum())
     for k in range(t_max):
-        w = corres_weight[corres_kf_sorted[k, valid_voxel_indices],
-                          valid_voxel_indices]
-        c = corres_color[corres_kf_sorted[k, valid_voxel_indices],
-                         valid_voxel_indices, :]
+        kf_sel = corres_kf_sorted[k, valid_voxel_indices]
+
+        w = corres_weight[kf_sel, valid_voxel_indices]
+        c = corres_color[kf_sel, valid_voxel_indices]
         sum_color[valid_voxel_indices] += np.expand_dims(w, axis=-1) * c
         sum_weight[valid_voxel_indices] += np.expand_dims(w, axis=-1)
+
+        # Cannot set True: in some cases with < t_max associations,
+        # We use placeholder 0-weight and 0-indices,
+        # which are fine with numerical computation but not for boolean masks
+        kf_association[kf_sel, valid_voxel_indices] = corres_mask_saved[
+            kf_sel, valid_voxel_indices]
 
     voxel_color[valid_voxel_indices] = sum_color[
         valid_voxel_indices] / sum_weight[valid_voxel_indices]
 
-    pcd = make_o3d_pcd(voxel_surfaces[valid_voxel_indices],
+    pcd = make_o3d_pcd(voxel_surfaces[corres_mask],
                        normals=None,
-                       colors=voxel_color[valid_voxel_indices])
-    o3d.visualization.draw([pcd])
+                       colors=voxel_color[corres_mask])
+    o3d.visualization.draw_geometries([pcd])
 
-    np.savez(args.output, voxel_tsdf=voxel_tsdf, voxel_color=voxel_color)
+    for k in range(n_kf):
+        pcd = make_o3d_pcd(voxel_surfaces[kf_association[k]],
+                           normals=None,
+                           colors=voxel_color[kf_association[k]])
+        o3d.visualization.draw_geometries([colors[k]])
+        o3d.visualization.draw_geometries([pcd])
+
+
+    np.savez(args.output,
+             voxel_tsdf=voxel_tsdf,
+             voxel_color=voxel_color,
+             kf_association=kf_association)

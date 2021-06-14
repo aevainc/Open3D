@@ -125,8 +125,6 @@ def project(pcd, color, depth, pose, normal=None):
     corres_depth[mask] = depth_np[v[mask], u[mask]]
 
     mask[corres_depth == 0] = False
-    color = np.zeros((len(u), 3), dtype=np.float64)
-    color[mask] = color_np[v[mask], u[mask]]
 
     if normal is not None:
         view_angle = np.linalg.inv(K_color) @ np.stack((u, v, np.ones_like(u)))
@@ -134,10 +132,15 @@ def project(pcd, color, depth, pose, normal=None):
         normal = R @ normal.T
 
         dot = np.sum(-normal * view_angle, axis=0)
+        mask[dot <= 0] = False
 
         weight = np.zeros_like(mask, dtype=np.float64)
         weight[mask] = dot[mask] / (corres_depth[mask]**2)
+
     else:
         weight = mask.astype(float)
+
+    color = np.zeros((len(u), 3), dtype=np.float64)
+    color[mask] = color_np[v[mask], u[mask]]
 
     return mask, weight, color
