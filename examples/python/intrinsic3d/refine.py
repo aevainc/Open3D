@@ -27,6 +27,6 @@ if __name__ == '__main__':
 
     np.savez(args.path_voxel_refined,
              mask=mask,
-             tsdf_refined=tsdf,
-             albedo_refined=albedo_refined,
-             color_refined=color_refined)
+             tsdf=tsdf,
+             albedo=albedo_refined,
+             color=color_refined)

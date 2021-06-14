@@ -109,3 +109,50 @@ def find_neighbors(xyz, check=True):
         'mask_ym': mask_ym,
         'mask_zm': mask_zm
     }
+
+
+def get_nb_dict(data):
+    nb_dict = {}
+    keys = [
+        'index_xp',
+        'index_yp',
+        'index_zp',
+        'index_xm',
+        'index_ym',
+        'index_zm',
+        'mask_xp',
+        'mask_yp',
+        'mask_zp',
+        'mask_xm',
+        'mask_ym',
+        'mask_zm',
+    ]
+
+    for key in list(data.keys()):
+        if key in keys:
+            nb_dict[key] = data[key]
+
+    return nb_dict
+
+
+def compute_normals(tsdf, nb_dict):
+    # TODO: use pytorch to make it differentiable
+    mask_plus = nb_dict['mask_xp'] & nb_dict['mask_yp'] & nb_dict['mask_zp']
+    mask_minus = nb_dict['mask_xm'] & nb_dict['mask_ym'] & nb_dict['mask_zm']
+    mask = mask_plus & mask_minus
+
+    voxel_normal = np.zeros((len(tsdf), 3))
+    nx = tsdf[nb_dict['index_xp'][mask]] - tsdf[nb_dict['index_xm'][mask]]
+    ny = tsdf[nb_dict['index_yp'][mask]] - tsdf[nb_dict['index_ym'][mask]]
+    nz = tsdf[nb_dict['index_zp'][mask]] - tsdf[nb_dict['index_zm'][mask]]
+    norm = np.sqrt((nx**2 + ny**2 + nz**2))
+
+    voxel_normal[mask, 0] = nx / norm
+    voxel_normal[mask, 1] = ny / norm
+    voxel_normal[mask, 2] = nz / norm
+
+    return voxel_normal, mask
+
+
+def compute_nearest_surface(points, sdf, normals):
+    return points - np.expand_dims(sdf, axis=-1) * normals

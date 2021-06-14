@@ -72,7 +72,7 @@ def tsdf_value_merge_color(tsdf, weight, color):
     tsdf_c = np.ascontiguousarray(np.expand_dims(tsdf, axis=-1)).view(np.uint8)
     weight_c = np.ascontiguousarray(np.expand_dims(weight, -1)).astype(
         np.uint16).view(np.uint8)
-    color = (color.astype(np.uint16) * 65535).view(np.uint8)
+    color = ((color * 65535).astype(np.uint16)).view(np.uint8)
     return np.concatenate((tsdf_c, weight_c, color), axis=-1)
 
 

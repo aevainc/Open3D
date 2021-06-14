@@ -18,14 +18,13 @@ if __name__ == '__main__':
     weight = values[:, :, :, :, 1]
 
     # Select
-    mask = select_voxels(tsdf, weight, sdf_thr=(2 * voxel_size / sdf_trunc))
+    mask = select_voxels(tsdf, weight, sdf_thr=(3 * voxel_size / sdf_trunc))
 
     # Generate coordinate for projection and hashing
     tsdf = tsdf[mask]
     voxel_coords = generate_voxel_coords(keys, mask)
 
     nbs = find_neighbors(voxel_coords)
-
     np.savez(args.path_voxel,
              mask=mask,
              voxel_coords=voxel_coords,
