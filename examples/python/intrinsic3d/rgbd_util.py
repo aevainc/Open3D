@@ -104,7 +104,7 @@ def load_keyframes(path_dataset, check=True):
     return colors, depths, poses_kf
 
 
-def project(pcd, normal, color, depth, pose):
+def project(pcd, color, depth, pose, normal=None):
     T = np.linalg.inv(pose)
     R = T[:3, :3]
     t = T[:3, 3:]
@@ -118,12 +118,6 @@ def project(pcd, normal, color, depth, pose):
     depth_np = np.asarray(depth).astype(np.float32) / 1000.0
     h, w, _ = color_np.shape
 
-    view_angle = np.linalg.inv(K_color) @ np.stack((u, v, np.ones_like(u)))
-    view_angle = view_angle / np.expand_dims(np.linalg.norm(view_angle), axis=0)
-    normal = R @ normal.T
-
-    dot = np.sum(-normal * view_angle, axis=0)
-
     # mask at point's shape
     mask = (u >= 0) & (u < w) & (v >= 0) & (v < h)
 
@@ -131,11 +125,19 @@ def project(pcd, normal, color, depth, pose):
     corres_depth[mask] = depth_np[v[mask], u[mask]]
 
     mask[corres_depth == 0] = False
-
-    weight = np.zeros_like(mask, dtype=np.float64)
-    weight[mask] = dot[mask] / (corres_depth[mask]**2)
-
     color = np.zeros((len(u), 3), dtype=np.float64)
     color[mask] = color_np[v[mask], u[mask]]
+
+    if normal is not None:
+        view_angle = np.linalg.inv(K_color) @ np.stack((u, v, np.ones_like(u)))
+        view_angle = view_angle / np.expand_dims(np.linalg.norm(view_angle), axis=0)
+        normal = R @ normal.T
+
+        dot = np.sum(-normal * view_angle, axis=0)
+
+        weight = np.zeros_like(mask, dtype=np.float64)
+        weight[mask] = dot[mask] / (corres_depth[mask]**2)
+    else:
+        weight = np.ones_like(mask, dtype=np.float64)
 
     return mask, weight, color

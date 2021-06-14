@@ -42,8 +42,11 @@ if __name__ == '__main__':
     corres_color = np.zeros((len(poses), len(voxel_surface_pts), 3))
 
     for i, (color, depth, pose) in enumerate(zip(colors, depths, poses)):
-        mask, weight, color = project(voxel_surface_pts, voxel_normals[nb_mask],
-                                      color, depth, pose)
+        mask, weight, color = project(voxel_surface_pts,
+                                      color,
+                                      depth,
+                                      pose,
+                                      normal=voxel_normals[nb_mask])
 
         # pcd = make_o3d_pcd(voxel_surface_pts[mask],
         #                    normals=None,
@@ -95,4 +98,7 @@ if __name__ == '__main__':
     print(corres_nb_indices)
     print(colors.sum(axis=0))
 
-    np.savez('voxels_init.npz', tsdf=tsdf, color=colors)
+    np.savez('voxels_refined.npz',
+             tsdf=tsdf,
+             color=colors,
+             indices=corres_nb_indices)
