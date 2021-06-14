@@ -27,13 +27,13 @@ if __name__ == '__main__':
     voxel_coords = generate_voxel_coords(keys, volume_mask)
     voxel_tsdf = tsdf[volume_mask]
 
-    nbs = find_neighbors(voxel_coords)
+    voxel_nbs = find_neighbors(voxel_coords)
 
     # Constant, wont' be changed during optimization
     np.savez(args.spatial,
              volume_mask=volume_mask,
-             voxel_coords=voxel_coords,
-             **nbs)
+             voxel_coords=voxel_coords * voxel_size,
+             **voxel_nbs)
 
     # To be refined
     np.savez(args.output, voxel_tsdf=voxel_tsdf)

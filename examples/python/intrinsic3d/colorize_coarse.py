@@ -17,16 +17,18 @@ if __name__ == '__main__':
 
     # Load data
     spatial = np.load(args.spatial)
-    voxel_coords = spatial['voxel_coords'] * voxel_size
+    voxel_coords = spatial['voxel_coords']
 
     input_data = np.load(args.input)
     voxel_tsdf = input_data['voxel_tsdf']
 
     colors, depths, poses = load_keyframes(args.path_dataset, check=False)
 
-    corres_mask = np.zeros((len(poses), len(voxel_coords)), dtype=bool)
-    corres_weight = np.zeros((len(poses), len(voxel_coords)))
-    corres_color = np.zeros((len(poses), len(voxel_coords), 3))
+    n_kf = len(poses)
+    n_voxel = len(voxel_coords)
+    corres_mask = np.zeros((n_kf, n_voxel), dtype=bool)
+    corres_weight = np.zeros((n_kf, n_voxel))
+    corres_color = np.zeros((n_kf, n_voxel, 3))
 
     for i, (color, depth, pose) in enumerate(zip(colors, depths, poses)):
         mask, weight, color = project(voxel_coords, color, depth, pose)
@@ -35,32 +37,18 @@ if __name__ == '__main__':
         corres_weight[i] = weight
         corres_color[i] = color / 255.0
 
-    t_max = 5
-    corres_mask_valid = (corres_mask.sum(axis=0) >=
-                         1) & (corres_weight.sum(axis=0) > 0)
-    corres_indices_sorted = np.argsort(-corres_mask.astype(int), axis=0)[:t_max]
+    corres_valid_mask = corres_weight.sum(axis=0) >= 1
 
-    # pick up max weights
-    pcd_indices = np.arange(len(voxel_coords),
-                            dtype=np.int64)[corres_mask_valid]
+    weighted_color = corres_color * np.expand_dims(corres_weight, axis=-1)
+    sum_weighted_color = corres_color.sum(axis=0)
+    sum_weight = corres_weight.sum(axis=0)
+    voxel_color = sum_weighted_color / np.expand_dims(sum_weight, axis=-1)
 
-    c_sum = np.zeros((len(pcd_indices), 3))
-    w_sum = np.zeros((len(pcd_indices), 1))
-    for i in range(t_max):
-        w = corres_weight[corres_indices_sorted[i, corres_mask_valid],
-                          pcd_indices]
-        c = corres_color[corres_indices_sorted[i, corres_mask_valid],
-                         pcd_indices, :]
-        c_sum += np.expand_dims(w, axis=-1) * c
-        w_sum += np.expand_dims(w, axis=-1)
+    voxel_color[~corres_valid_mask] = 0
 
-    pcd_colors = c_sum / w_sum
-    pcd = make_o3d_pcd(voxel_coords[pcd_indices],
+    pcd = make_o3d_pcd(voxel_coords[corres_valid_mask],
                        normals=None,
-                       colors=pcd_colors)
+                       colors=voxel_color[corres_valid_mask])
     o3d.visualization.draw([pcd])
 
-    colors = np.zeros((len(voxel_tsdf), 3))
-    colors[pcd_indices] = pcd_colors
-
-    np.savez(args.output, voxel_tsdf=voxel_tsdf, voxel_color=colors)
+    np.savez(args.output, voxel_tsdf=voxel_tsdf, voxel_color=voxel_color)

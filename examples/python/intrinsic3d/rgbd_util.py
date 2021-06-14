@@ -138,6 +138,6 @@ def project(pcd, color, depth, pose, normal=None):
         weight = np.zeros_like(mask, dtype=np.float64)
         weight[mask] = dot[mask] / (corres_depth[mask]**2)
     else:
-        weight = np.ones_like(mask, dtype=np.float64)
+        weight = mask.astype(float)
 
     return mask, weight, color

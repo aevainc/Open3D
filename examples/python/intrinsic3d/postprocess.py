@@ -32,4 +32,8 @@ if __name__ == '__main__':
     values_with_color = tsdf_value_merge_color(tsdf, weight, color)
     colored_volume = construct_colored_tsdf_volume(keys, values_with_color)
     mesh = colored_volume.extract_surface_mesh()
-    o3d.visualization.draw_geometries([mesh.to_legacy_triangle_mesh()])
+    mesh = mesh.to_legacy_triangle_mesh()
+    o3d.visualization.draw_geometries([mesh])
+
+    o3d.io.write_triangle_mesh(''.join(args.input.split('.')[:-1]) + '.ply',
+                               mesh)
