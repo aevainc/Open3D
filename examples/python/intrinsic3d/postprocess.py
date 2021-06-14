@@ -6,32 +6,27 @@ from tsdf_util import *
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('path_tsdf')
-    parser.add_argument('--path_voxel', default='voxels.npz')
-    parser.add_argument('--path_voxel_init', default='voxels_init.npz')
-    parser.add_argument('--path_voxel_refined', default='voxels_refined.npz')
+    parser.add_argument('--spatial', default='voxels_spatial.npz')
+    parser.add_argument('--input', default='colored_voxels_fine.npz')
     args = parser.parse_args()
 
     # Copy and simple modification
-    data = np.load(args.path_voxel)
-    data_init = np.load(args.path_voxel_init)
-    data_refined = np.load(args.path_voxel_refined)
+    spatial = np.load(args.spatial)
+    volume_mask = spatial['volume_mask']
 
-    mask = data['mask']
-    tsdf_refined = data_refined['tsdf']
-    color_init = data_init['color']
-    color_refined = data_refined['color']
-    indices = data_refined['indices']
+    input_data = np.load(args.input)
+
+    voxel_tsdf_refined = input_data['voxel_tsdf']
+    voxel_color = input_data['voxel_color']
 
     keys, values = load_tsdf_kv(args.path_tsdf)
     tsdf = values[:, :, :, :, 0]
     weight = values[:, :, :, :, 1]
     color = np.zeros((*tsdf.shape, 3))
 
-    color_init[indices] = color_refined[indices]
-
     # Update geometry
-    tsdf[mask] = tsdf_refined
-    color[mask] = color_init
+    tsdf[volume_mask] = voxel_tsdf_refined
+    color[volume_mask] = voxel_color
 
     # Build new volume and extract mesh
     values_with_color = tsdf_value_merge_color(tsdf, weight, color)

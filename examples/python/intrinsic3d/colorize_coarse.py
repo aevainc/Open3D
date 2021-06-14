@@ -8,15 +8,19 @@ from rgbd_util import *
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('path_dataset')
-    parser.add_argument('--path_voxel', default='voxels.npz')
-    parser.add_argument('--path_voxel_init', default='voxels_init.npz')
+    parser.add_argument('--spatial', default='voxels_spatial.npz')
+
+    parser.add_argument('--input', default='voxels_init.npz')
+    parser.add_argument('--output', default='colored_voxels_coarse.npz')
+
     args = parser.parse_args()
 
     # Load data
-    data = np.load(args.path_voxel)
-    tsdf = data['tsdf']
+    spatial = np.load(args.spatial)
+    voxel_coords = spatial['voxel_coords'] * voxel_size
 
-    voxel_coords = data['voxel_coords'] * voxel_size
+    input_data = np.load(args.input)
+    voxel_tsdf = input_data['voxel_tsdf']
 
     colors, depths, poses = load_keyframes(args.path_dataset, check=False)
 
@@ -56,7 +60,7 @@ if __name__ == '__main__':
                        colors=pcd_colors)
     o3d.visualization.draw([pcd])
 
-    colors = np.zeros((len(tsdf), 3))
+    colors = np.zeros((len(voxel_tsdf), 3))
     colors[pcd_indices] = pcd_colors
 
-    np.savez('voxels_init.npz', tsdf=tsdf, color=colors)
+    np.savez(args.output, voxel_tsdf=voxel_tsdf, voxel_color=colors)
