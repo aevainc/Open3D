@@ -53,9 +53,7 @@ if __name__ == '__main__':
     dict_voxel_selection['index_lap_xm'] = voxel_nbs['index_xm'][index_1ring]
     dict_voxel_selection['index_lap_ym'] = voxel_nbs['index_ym'][index_1ring]
     dict_voxel_selection['index_lap_zm'] = voxel_nbs['index_zm'][index_1ring]
-    print(
-        f'voxels with 1-ring nbs {len(index_1ring)}/{n_voxel}: {len(index_1ring) / float(n_voxel)}'
-    )
+    print('laplacian constraints (1-ring): {}'.format(len(index_1ring)))
 
     onering_hashmap = o3d.core.Hashmap(len(index_1ring), o3d.core.Dtype.Int64,
                                        o3d.core.Dtype.Int64, (1), (1))
@@ -82,9 +80,8 @@ if __name__ == '__main__':
         index_1ring_grad]
     dict_voxel_selection['index_data_zp'] = voxel_nbs['index_zp'][
         index_1ring_grad]
-    print(
-        f'voxels with 1-ring nbs and gradient {len(index_1ring_grad)}/{n_voxel}: {len(index_1ring_grad) / float(n_voxel)}'
-    )
+    print('data constraints (1-ring with valid x+,y+,z+ nbs): {}'.format(
+        len(index_1ring_grad)))
 
     ## For albedo regularizer
     intensity_hashmap = o3d.core.Hashmap(len(index), o3d.core.Dtype.Int64,
@@ -130,6 +127,13 @@ if __name__ == '__main__':
     dict_voxel_selection['index_xm_nb'] = voxel_nbs['index_xm'][index_xm_self]
     dict_voxel_selection['index_ym_nb'] = voxel_nbs['index_ym'][index_ym_self]
     dict_voxel_selection['index_zm_nb'] = voxel_nbs['index_zm'][index_zm_self]
+
+    print('x+dir albedo constraint {}'.format(len(index_xp_self)))
+    print('x-dir albedo constraint {}'.format(len(index_xm_self)))
+    print('y+dir albedo constraint {}'.format(len(index_yp_self)))
+    print('y-dir albedo constraint {}'.format(len(index_ym_self)))
+    print('z+dir albedo constraint {}'.format(len(index_zp_self)))
+    print('z-dir albedo constraint {}'.format(len(index_zm_self)))
 
     np.savez(args.output, **dict_voxel_selection)
 
