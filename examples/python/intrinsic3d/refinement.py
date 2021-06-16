@@ -91,6 +91,9 @@ if __name__ == '__main__':
 
     robust_kernel = lambda x: 1 / (1 + x)**3
     for i in range(100):
+        # TODO: revisit colorize_util and get a better association for data term
+        # TODO: figure out the mask for valid neighbors, in a chain or a brute-force search, or another hashmap?
+
         # TSDF stablizer
         loss_stable = (param_tsdf - init_tsdf_const)
         loss_stable = (loss_stable**2).sum()
@@ -103,13 +106,19 @@ if __name__ == '__main__':
         loss_laplacian = (loss_laplacian**2).sum()
 
         # Albedo regularizer
-        # TODO: case-by-case, not shared mask
-        w_xp = (voxel_chromaticity[mask] - voxel_chromaticity[index_xp]).norm(dim=1)
-        w_xm = (voxel_chromaticity[mask] - voxel_chromaticity[index_xm]).norm(dim=1)
-        w_yp = (voxel_chromaticity[mask] - voxel_chromaticity[index_yp]).norm(dim=1)
-        w_ym = (voxel_chromaticity[mask] - voxel_chromaticity[index_ym]).norm(dim=1)
-        w_zp = (voxel_chromaticity[mask] - voxel_chromaticity[index_zp]).norm(dim=1)
-        w_zm = (voxel_chromaticity[mask] - voxel_chromaticity[index_zm]).norm(dim=1)
+        # TODO: case-by-case, not a shared mask
+        w_xp = (voxel_chromaticity[mask] -
+                voxel_chromaticity[index_xp]).norm(dim=1)
+        w_xm = (voxel_chromaticity[mask] -
+                voxel_chromaticity[index_xm]).norm(dim=1)
+        w_yp = (voxel_chromaticity[mask] -
+                voxel_chromaticity[index_yp]).norm(dim=1)
+        w_ym = (voxel_chromaticity[mask] -
+                voxel_chromaticity[index_ym]).norm(dim=1)
+        w_zp = (voxel_chromaticity[mask] -
+                voxel_chromaticity[index_zp]).norm(dim=1)
+        w_zm = (voxel_chromaticity[mask] -
+                voxel_chromaticity[index_zm]).norm(dim=1)
 
         diff_albedo_xp = robust_kernel(w_xp) * (param_albedo[index_xp] -
                                                 param_albedo[mask])**2
