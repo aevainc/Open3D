@@ -135,8 +135,9 @@ if __name__ == '__main__':
         surfaces_zp, normals_zp = compute_surface_and_normal(
             voxel_coords, param_tsdf, 'index_data_zp', selection, voxel_nbs)
 
-        # pcd_c = make_o3d_pcd(surfaces_c.detach().cpu().numpy(),
-        #                      normals=normals_c.detach().cpu().numpy())
+        pcd_c = make_o3d_pcd(surfaces_c.detach().cpu().numpy(),
+                             normals=normals_c.detach().cpu().numpy())
+        o3d.visualization.draw([pcd_c])
         # pcd_xp = make_o3d_pcd(surfaces_xp.detach().cpu().numpy(),
         #                       normals=normals_xp.detach().cpu().numpy())
         # pcd_yp = make_o3d_pcd(surfaces_yp.detach().cpu().numpy(),
