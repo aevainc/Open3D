@@ -60,7 +60,7 @@ def project(xyz, color, depth, pose):
     mask[corres_depth == 0] = False
 
     intensity = np.zeros((len(xyz)), dtype=np.float64)
-    intensity[mask] = color_to_intensity(color_np[v[mask], u[mask]])
+    intensity[mask] = color_to_intensity(color_np[v[mask], u[mask]]) / 255.0
 
     return mask, intensity
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     parser.add_argument('--association', default='tsdf_association.npz')
 
     parser.add_argument('--input', default='colored_voxels_fine.npz')
-    parser.add_argument('--output', default='tsdf_association.npz')
+    parser.add_argument('--output', default='colored_voxels_refined.npz')
 
     args = parser.parse_args()
 
@@ -124,8 +124,9 @@ if __name__ == '__main__':
     param_albedo = torch.nn.Parameter(voxel_albedo)
     optimizer = torch.optim.Adam([param_tsdf, param_albedo], lr=1e-3)
 
-    max_epochs = 10
+    max_epochs = 20
     for epoch in range(max_epochs):
+
         surfaces_c, normals_c = compute_surface_and_normal(
             voxel_coords, param_tsdf, 'index_data_c', selection, voxel_nbs)
         surfaces_xp, normals_xp = compute_surface_and_normal(
@@ -135,9 +136,13 @@ if __name__ == '__main__':
         surfaces_zp, normals_zp = compute_surface_and_normal(
             voxel_coords, param_tsdf, 'index_data_zp', selection, voxel_nbs)
 
-        pcd_c = make_o3d_pcd(surfaces_c.detach().cpu().numpy(),
-                             normals=normals_c.detach().cpu().numpy())
-        o3d.visualization.draw([pcd_c])
+        # if epoch % 10 == 0:
+        #     pcd_c = make_o3d_pcd(
+        #         surfaces_c.detach().cpu().numpy(),
+        #         normals=normals_c.detach().cpu().numpy(),
+        #         colors=param_albedo[
+        #             selection['index_data_c']].detach().cpu().numpy())
+        #     o3d.visualization.draw([pcd_c])
         # pcd_xp = make_o3d_pcd(surfaces_xp.detach().cpu().numpy(),
         #                       normals=normals_xp.detach().cpu().numpy())
         # pcd_yp = make_o3d_pcd(surfaces_yp.detach().cpu().numpy(),
@@ -234,3 +239,8 @@ if __name__ == '__main__':
 
         loss.backward()
         optimizer.step()
+
+    np.savez(args.output,
+             voxel_tsdf=param_tsdf.detach().cpu().numpy(),
+             voxel_albedo=param_albedo.detach().cpu().numpy(),
+             voxel_color=voxel_color.cpu().numpy())
