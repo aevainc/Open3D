@@ -53,9 +53,10 @@ if __name__ == '__main__':
     # Load data
     spatial = np.load(args.spatial)
     selection = to_torch(dict(np.load(args.selection)))
-    voxel_nbs = to_torch(get_nb_dict(spatial))
-
     input_data = np.load(args.input)
+    association = to_torch(np.load(args.association))
+
+    voxel_nbs = to_torch(get_nb_dict(spatial))
     voxel_coords = torch.from_numpy(spatial['voxel_coords']).cuda()
 
     voxel_color = torch.from_numpy(input_data['voxel_tsdf']).cuda()
@@ -88,3 +89,30 @@ if __name__ == '__main__':
     print('Loading keyframes ...')
     colors, depths, poses = load_keyframes(args.path_dataset, check=False)
     print('Loading finished.')
+
+    assoc = association['corres_final']
+    n_kf = len(poses)
+    for i in range(n_kf):
+        sel = assoc[i]
+        surfaces_c_sel = surfaces_c[sel]
+        normals_c_sel = normals_c[sel]
+
+        surfaces_xp_sel = surfaces_xp[sel]
+        normals_xp_sel = normals_xp[sel]
+
+        surfaces_yp_sel = surfaces_yp[sel]
+        normals_yp_sel = normals_yp[sel]
+
+        surfaces_zp_sel = surfaces_zp[sel]
+        normals_zp_sel = normals_zp[sel]
+
+        pcd_c = make_o3d_pcd(surfaces_c_sel.detach().cpu().numpy(),
+                             normals=normals_c_sel.detach().cpu().numpy())
+        pcd_xp = make_o3d_pcd(surfaces_xp_sel.detach().cpu().numpy(),
+                              normals=normals_xp_sel.detach().cpu().numpy())
+        pcd_yp = make_o3d_pcd(surfaces_yp_sel.detach().cpu().numpy(),
+                              normals=normals_yp_sel.detach().cpu().numpy())
+        pcd_zp = make_o3d_pcd(surfaces_zp_sel.detach().cpu().numpy(),
+                              normals=normals_zp_sel.detach().cpu().numpy())
+        o3d.visualization.draw([pcd_c, pcd_xp, pcd_yp, pcd_zp])
+
