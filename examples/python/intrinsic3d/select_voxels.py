@@ -9,7 +9,6 @@ from rgbd_util import *
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('path_dataset')
     parser.add_argument('--spatial', default='voxels_spatial.npz')
     parser.add_argument('--input', default='colored_voxels_fine.npz')
 
