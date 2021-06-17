@@ -115,7 +115,8 @@ if __name__ == '__main__':
     print('Loading keyframes ...')
     colors, depths, poses = load_keyframes(args.path_dataset, check=False)
     print('Loading finished.')
-    assoc = association['corres_final']
+    assoc = association['association_mask']
+    assoc_weight = association['association_weight']
     n_kf = len(poses)
 
     # Now start to optimize
@@ -124,9 +125,13 @@ if __name__ == '__main__':
     param_albedo = torch.nn.Parameter(voxel_albedo)
     optimizer = torch.optim.Adam([param_tsdf, param_albedo], lr=1e-3)
 
-    max_epochs = 20
-    for epoch in range(max_epochs):
+    max_epochs = 50
 
+    lambda_data = 1000
+    lambda_tsdf_laplacian = 0.01
+    lambda_tsdf_stability = 0.1
+    lambda_albedo = 0.1
+    for epoch in range(max_epochs):
         surfaces_c, normals_c = compute_surface_and_normal(
             voxel_coords, param_tsdf, 'index_data_c', selection, voxel_nbs)
         surfaces_xp, normals_xp = compute_surface_and_normal(
@@ -154,6 +159,8 @@ if __name__ == '__main__':
         loss_data = 0
         for i in range(n_kf):
             sel = assoc[i]
+            w = assoc_weight[i, sel]
+
             surfaces_c_sel = surfaces_c[sel]
             normals_c_sel = normals_c[sel]
             albedo_c_sel = param_albedo[index_data][sel]
@@ -183,7 +190,6 @@ if __name__ == '__main__':
                 poses[i])
 
             mask = mask_c_sel & mask_xp_sel & mask_yp_sel & mask_zp_sel
-
             dIx = torch.from_numpy(
                 (intensity_xp_sel - intensity_c_sel)[mask]).cuda()
             dIy = torch.from_numpy(
@@ -192,6 +198,7 @@ if __name__ == '__main__':
                 (intensity_zp_sel - intensity_c_sel)[mask]).cuda()
 
             # Next compute dBx, dBy, dBz
+            mask = torch.from_numpy(mask).cuda()
             b_c = forward_sh(l, normals_c_sel) * albedo_c_sel
             b_xp = forward_sh(l, normals_xp_sel) * albedo_xp_sel
             b_yp = forward_sh(l, normals_yp_sel) * albedo_yp_sel
@@ -202,7 +209,7 @@ if __name__ == '__main__':
             dBz = (b_zp - b_c)[mask]
 
             loss_data_i = (dBx - dIx)**2 + (dBy - dIy)**2 + (dBz - dIz)**2
-            loss_data = loss_data + loss_data_i.sum()
+            loss_data = loss_data + (w[mask] * loss_data_i).sum()
 
         # Regularizer: TSDF Stability
         loss_tsdf_stability = ((param_tsdf - voxel_tsdf)**2).sum()
@@ -234,8 +241,16 @@ if __name__ == '__main__':
             albedo_diff = (param_albedo[index_c] - param_albedo[index_nb])**2
             loss_albedo_chromaticity += (rho(w) * albedo_diff).sum()
 
-        loss = loss_data + loss_tsdf_stability + loss_tsdf_laplacian + loss_albedo_chromaticity
-        print(loss.item())
+        loss = lambda_data * loss_data \
+             + lambda_tsdf_stability * loss_tsdf_stability \
+             + lambda_tsdf_laplacian * loss_tsdf_laplacian \
+             + lambda_albedo * loss_albedo_chromaticity
+        print(
+            'epoch {}, loss = {:.2f}, data: {:.2f} stability reg: {:.2f}, laplacian reg: {:.2f}, albedo reg: {:.2f}'
+            .format(epoch, loss.item(), lambda_data * loss_data.item(),
+                    lambda_tsdf_stability * loss_tsdf_stability.item(),
+                    lambda_tsdf_laplacian * loss_tsdf_laplacian.item(),
+                    lambda_albedo * loss_albedo_chromaticity.item()))
 
         loss.backward()
         optimizer.step()

@@ -76,16 +76,20 @@ if __name__ == '__main__':
     sel = np.arange(n_voxel, dtype=np.int64)
     corres_kf_sorted = np.argsort(-corres_weight, axis=0)
 
-    corres_final = np.zeros((n_kf, n_voxel), dtype=bool)
+    corres_final_mask = np.zeros((n_kf, n_voxel), dtype=bool)
+    corres_final_weight = np.zeros((n_kf, n_voxel), dtype=float)
     for k in range(args.t_max):
         kf_sel = corres_kf_sorted[k]
-        corres_final[kf_sel, sel] = corres_mask[kf_sel, sel]
+        corres_final_mask[kf_sel, sel] = corres_mask[kf_sel, sel]
+        corres_final_weight[kf_sel, sel] = corres_weight[kf_sel, sel]
 
     for i in range(n_kf):
-        sel = corres_final[i]
+        sel = corres_final_mask[i]
         pcd = make_o3d_pcd(voxel_surfaces[sel],
                            normals=normals[sel],
                            colors=voxel_color[index_data][sel])
         o3d.visualization.draw([pcd])
 
-    np.savez(args.output, corres_final=corres_final)
+    np.savez(args.output,
+             association_mask=corres_final_mask,
+             association_weight=corres_final_weight)
