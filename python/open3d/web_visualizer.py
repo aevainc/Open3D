@@ -177,7 +177,6 @@ def draw(geometry=None,
          on_animation_frame=None,
          on_animation_tick=None):
     """Draw in Jupyter Cell"""
-
     window_uid = _async_event_loop.run_sync(
         functools.partial(o3d.visualization.draw,
                           geometry=geometry,

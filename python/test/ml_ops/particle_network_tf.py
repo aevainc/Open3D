@@ -98,8 +98,9 @@ class MyParticleNetwork(tf.keras.Model):
                            box,
                            box_feats,
                            fixed_radius_search_hash_table=None):
-        """Expects that the pos and vel has already been updated with gravity and velocity"""
-
+        """Expects that the pos and vel has already been updated with gravity
+        and velocity
+        """
         # compute the extent of the filters (the diameter)
         filter_extent = tf.constant(self.filter_extent)
 
@@ -144,7 +145,7 @@ class MyParticleNetwork(tf.keras.Model):
         return self.pos_correction
 
     def call(self, inputs, fixed_radius_search_hash_table=None):
-        """computes 1 simulation timestep
+        """Computes 1 simulation timestep
         inputs: list or tuple with (pos,vel,feats,box,box_feats)
           pos and vel are the positions and velocities of the fluid particles.
           feats is reserved for passing additional features, use None here.

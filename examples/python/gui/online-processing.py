@@ -50,7 +50,8 @@ import open3d.visualization.rendering as rendering
 # Camera and processing
 class PipelineModel:
     """Controls IO (camera, video file, recording, saving frames). Methods run
-    in worker threads."""
+    in worker threads.
+    """
 
     def __init__(self,
                  update_view,
@@ -243,7 +244,9 @@ class PipelineModel:
 
 
 class PipelineView:
-    """Controls display and user interface. All methods must run in the main thread."""
+    """Controls display and user interface. All methods must run in the main
+    thread.
+    """
 
     def __init__(self, vfov=60, max_pcd_vertices=1 << 20, **callbacks):
         """Initialize.
@@ -255,7 +258,6 @@ class PipelineView:
             callbacks (dict of kwargs): Callbacks provided by the controller
                 for various operations.
         """
-
         self.vfov = vfov
         self.max_pcd_vertices = max_pcd_vertices
 

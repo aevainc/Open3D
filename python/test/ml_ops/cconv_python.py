@@ -55,7 +55,7 @@ _convert_parameter_str_dict = {
 
 
 def map_cube_to_cylinder(points, inverse=False):
-    """maps a cube to a cylinder and vice versa
+    """Maps a cube to a cylinder and vice versa
     The input and output range of the coordinates is [-1,1]. The cylinder axis
     is along z.
 
@@ -96,12 +96,13 @@ def map_cube_to_cylinder(points, inverse=False):
 
 
 def map_cylinder_to_sphere(points, inverse=False):
-    """maps a cylinder to a sphere and vice versa.
+    """Maps a cylinder to a sphere and vice versa.
     The input and output range of the coordinates is [-1,1]. The cylinder axis
     is along z.
 
-    points: numpy array with shape [n,3]
-    inverse: If True apply the inverse transform: sphere -> cylinder
+    Args:
+        points: numpy array with shape [n,3]
+        inverse: If True apply the inverse transform: sphere -> cylinder
     """
     assert points.ndim == 2
     assert points.shape[1] == 3
@@ -229,7 +230,7 @@ def compute_filter_coordinates(pos, filter_xyz_size, inv_extents, offset,
 
 
 def window_function(pos, inv_extents, window, window_params):
-    """Implements 3 types of window functions
+    r"""Implements 3 types of window functions
 
     pos: A single 3D point. An array of shape [3] with x,y,z coordinates.
 
@@ -275,7 +276,7 @@ def window_function(pos, inv_extents, window, window_params):
 
 
 def interpolate(xyz, xyz_size, interpolation):
-    """ Computes interpolation weights and indices
+    """Computes interpolation weights and indices
 
     xyz: A single 3D point.
 
@@ -362,53 +363,53 @@ def cconv(filter, out_positions, extent, offset, inp_positions, inp_features,
           inp_importance, neighbors_index, neighbors_importance,
           neighbors_row_splits, align_corners, coordinate_mapping, normalize,
           interpolation, **kwargs):
-    """ Computes the output features of a continuous convolution.
+    """Computes the output features of a continuous convolution.
 
-    filter: 5D filter array with shape [depth,height,width,inp_ch, out_ch]
+    Args:
+        filter: 5D filter array with shape [depth,height,width,inp_ch, out_ch]
 
-    out_positions: The positions of the output points. The shape is
-                   [num_out, 3].
+        out_positions: The positions of the output points. The shape is
+                       [num_out, 3].
 
-    extents: The spatial extents of the filter in coordinate units.
-             This is a 2D array with shape [1,1] or [1,3] or [num_out,1]
-             or [num_out,3]
+        extent: The spatial extents of the filter in coordinate units.
+                This is a 2D array with shape [1,1] or [1,3] or [num_out,1]
+                or [num_out,3]
 
-    offset: A single 3D vector used in the filter coordinate
-            computation. The shape is [3].
+        offset: A single 3D vector used in the filter coordinate
+                computation. The shape is [3].
 
-    inp_positions: The positions of the input points. The shape is
-                   [num_inp, 3].
+        inp_positions: The positions of the input points. The shape is
+                       [num_inp, 3].
 
-    inp_features: The input features with shape [num_inp, in_channels].
+        inp_features: The input features with shape [num_inp, in_channels].
 
-    inp_importance: Optional importance for each input point with
-                    shape [num_inp]. Set to np.array([]) to disable.
+        inp_importance: Optional importance for each input point with
+                        shape [num_inp]. Set to np.array([]) to disable.
 
-    neighbors_index: The array with lists of neighbors for each
-           output point. The start and end of each sublist is defined by
-           neighbors_row_splits.
+        neighbors_index: The array with lists of neighbors for each
+               output point. The start and end of each sublist is defined by
+               neighbors_row_splits.
 
-    neighbors_importance: Optional importance for each entry in
-           neighbors_index. Set to np.array([]) to disable.
+        neighbors_importance: Optional importance for each entry in
+               neighbors_index. Set to np.array([]) to disable.
 
-    neighbors_row_splits:   The prefix sum which defines the start
-           and end of the sublists in neighbors_index. The size of the
-           array is num_out + 1.
+        neighbors_row_splits:   The prefix sum which defines the start
+               and end of the sublists in neighbors_index. The size of the
+               array is num_out + 1.
 
-    align_corners: If true then the voxel centers of the outer voxels
-           of the filter array are mapped to the boundary of the filter shape.
-           If false then the boundary of the filter array is mapped to the
-           boundary of the filter shape.
+        align_corners: If true then the voxel centers of the outer voxels
+               of the filter array are mapped to the boundary of the filter
+               shape.  If false then the boundary of the filter array is mapped
+               to the boundary of the filter shape.
 
-    coordinate_mapping: The coordinate mapping function. One of
-           IDENTITY, BALL_TO_CUBE_RADIAL, BALL_TO_CUBE_VOLUME_PRESERVING.
+        coordinate_mapping: The coordinate mapping function. One of
+               IDENTITY, BALL_TO_CUBE_RADIAL, BALL_TO_CUBE_VOLUME_PRESERVING.
 
-    normalize: If true then the result is normalized either by the
-           number of points (neighbors_importance is null) or by the sum of
-           the respective values in neighbors_importance.
+        normalize: If true then the result is normalized either by the
+               number of points (neighbors_importance is null) or by the sum of
+               the respective values in neighbors_importance.
 
-    interpolation: The interpolation mode. Either LINEAR or NEAREST_NEIGHBOR.
-
+        interpolation: The interpolation mode. Either LINEAR or NEAREST_NEIGHBOR.
     """
     assert filter.ndim == 5
     assert all(filter.shape)
