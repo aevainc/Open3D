@@ -1,12 +1,14 @@
+# Private symbols and functions (i.e. OPEN3D_LOCAL)
 add_library(core_internal OBJECT)
+# Public symbols (i.e. OPEN3D_API)
+add_library(core OBJECT $<TARGET_OBJECTS:core_internal>)
 
 target_sources(core_internal PRIVATE
     hashmap/DeviceHashmap.cpp
-    hashmap/Hashmap.cpp
-)
-
-target_sources(core_internal PRIVATE
     hashmap/CPU/CreateCPUHashmap.cpp
+)
+target_sources(core PRIVATE
+    hashmap/Hashmap.cpp
 )
 
 target_sources(core_internal PRIVATE
@@ -26,29 +28,33 @@ target_sources(core_internal PRIVATE
 )
 
 target_sources(core_internal PRIVATE
+    linalg/InverseCPU.cpp
+    linalg/LeastSquaresCPU.cpp
+    linalg/LUCPU.cpp
+    linalg/MatmulCPU.cpp
+    linalg/SolveCPU.cpp
+    linalg/SVDCPU.cpp
+    linalg/TriCPU.cpp
+)
+target_sources(core PRIVATE
     linalg/Det.cpp
     linalg/Inverse.cpp
-    linalg/InverseCPU.cpp
     linalg/LeastSquares.cpp
-    linalg/LeastSquaresCPU.cpp
     linalg/LU.cpp
-    linalg/LUCPU.cpp
     linalg/Matmul.cpp
-    linalg/MatmulCPU.cpp
     linalg/Solve.cpp
-    linalg/SolveCPU.cpp
     linalg/SVD.cpp
-    linalg/SVDCPU.cpp
     linalg/Tri.cpp
-    linalg/TriCPU.cpp
 )
 
 target_sources(core_internal PRIVATE
     nns/FixedRadiusIndex.cpp
     nns/NanoFlannIndex.cpp
-    nns/NearestNeighborSearch.cpp
     nns/NNSIndex.cpp
 )
+target_sources(core PRIVATE
+    nns/NearestNeighborSearch.cpp
+    )
 
 if (BUILD_CUDA_MODULE)
     target_sources(core_internal PRIVATE
@@ -93,13 +99,6 @@ if (WITH_FAISS)
     )
 endif()
 
-open3d_show_and_abort_on_warning(core_internal)
-open3d_set_global_properties(core_internal)
-open3d_set_open3d_lib_properties(core_internal HIDDEN)
-open3d_link_3rdparty_libraries(core_internal)
-
-add_library(core OBJECT $<TARGET_OBJECTS:core_internal>)
-
 target_sources(core PRIVATE
     AdvancedIndexing.cpp
     CUDAUtils.cpp
@@ -114,6 +113,11 @@ target_sources(core PRIVATE
     TensorKey.cpp
     TensorList.cpp
 )
+
+open3d_show_and_abort_on_warning(core_internal)
+open3d_set_global_properties(core_internal)
+open3d_set_open3d_lib_properties(core_internal HIDDEN)
+open3d_link_3rdparty_libraries(core_internal)
 
 open3d_show_and_abort_on_warning(core)
 open3d_set_global_properties(core)
