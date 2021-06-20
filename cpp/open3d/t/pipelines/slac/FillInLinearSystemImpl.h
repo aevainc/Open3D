@@ -181,13 +181,16 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
 
     // Enumerate pose graph edges.
     std::vector<std::pair<int, int>> skiped_correspondences;
+    bool enable_step_timer = false;
     for (auto& edge : pose_graph.edges_) {
         int i = edge.source_node_id_;
         int j = edge.target_node_id_;
 
         utility::Timer step_timer;
 
-        step_timer.Start();
+        if (enable_step_timer) {
+            step_timer.Start();
+        }
         std::string corres_fname = fmt::format("{}/{:03d}_{:03d}.npy",
                                                params.GetSubfolderName(), i, j);
         if (!utility::filesystem::FileExists(corres_fname)) {
@@ -195,81 +198,109 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
             continue;
         }
         Tensor corres_ij = Tensor::Load(corres_fname).To(device);
-        step_timer.Stop();
-        utility::LogInfo("   FillInSLACAlignmentTerm::1 took: {:.3f}ms.",
-                         step_timer.GetDuration());
+        if (enable_step_timer) {
+            step_timer.Stop();
+            utility::LogInfo("   FillInSLACAlignmentTerm::1 took: {:.3f}ms.",
+                             step_timer.GetDuration());
+        }
 
-        step_timer.Start();
+        if (enable_step_timer) {
+            step_timer.Start();
+        }
         PointCloud tpcd_i = CreateTPCDFromFile(fnames[i], device);
         PointCloud tpcd_j = CreateTPCDFromFile(fnames[j], device);
-        step_timer.Stop();
-        utility::LogInfo("   FillInSLACAlignmentTerm::2 took: {:.3f}ms.",
-                         step_timer.GetDuration());
 
-        step_timer.Start();
+        if (enable_step_timer) {
+            step_timer.Stop();
+            utility::LogInfo("   FillInSLACAlignmentTerm::2 took: {:.3f}ms.",
+                             step_timer.GetDuration());
+        }
+
+        if (enable_step_timer) {
+            step_timer.Start();
+        }
         PointCloud tpcd_i_indexed(
                 tpcd_i.GetPoints().IndexGet({corres_ij.T()[0]}));
         tpcd_i_indexed.SetPointNormals(
                 tpcd_i.GetPointNormals().IndexGet({corres_ij.T()[0]}));
-        step_timer.Stop();
-        utility::LogInfo("   FillInSLACAlignmentTerm::3 took: {:.3f}ms.",
-                         step_timer.GetDuration());
+        if (enable_step_timer) {
+            step_timer.Stop();
+            utility::LogInfo("   FillInSLACAlignmentTerm::3 took: {:.3f}ms.",
+                             step_timer.GetDuration());
+        }
 
-        step_timer.Start();
+        if (enable_step_timer) {
+            step_timer.Start();
+        }
         PointCloud tpcd_j_indexed(
                 tpcd_j.GetPoints().IndexGet({corres_ij.T()[1]}));
         tpcd_j_indexed.SetPointNormals(
                 tpcd_j.GetPointNormals().IndexGet({corres_ij.T()[1]}));
-        step_timer.Stop();
-        utility::LogInfo("   FillInSLACAlignmentTerm::4 took: {:.3f}ms.",
-                         step_timer.GetDuration());
+        if (enable_step_timer) {
+            step_timer.Stop();
+            utility::LogInfo("   FillInSLACAlignmentTerm::4 took: {:.3f}ms.",
+                             step_timer.GetDuration());
+        }
 
         // Parameterize points in the control grid.
-        step_timer.Start();
+        if (enable_step_timer) {
+            step_timer.Start();
+        }
         PointCloud tpcd_param_i = ctr_grid.Parameterize(tpcd_i_indexed);
         PointCloud tpcd_param_j = ctr_grid.Parameterize(tpcd_j_indexed);
-        step_timer.Stop();
-        utility::LogInfo("   FillInSLACAlignmentTerm::5 took: {:.3f}ms.",
-                         step_timer.GetDuration());
+        if (enable_step_timer) {
+            step_timer.Stop();
+            utility::LogInfo("   FillInSLACAlignmentTerm::5 took: {:.3f}ms.",
+                             step_timer.GetDuration());
+        }
 
         // Load poses.
-        step_timer.Start();
+        if (enable_step_timer) {
+            step_timer.Start();
+        }
         auto Ti = EigenMatrixToTensor(pose_graph.nodes_[i].pose_)
                           .To(device, core::Dtype::Float32);
         auto Tj = EigenMatrixToTensor(pose_graph.nodes_[j].pose_)
                           .To(device, core::Dtype::Float32);
         auto Tij = EigenMatrixToTensor(edge.transformation_)
                            .To(device, core::Dtype::Float32);
-        utility::LogInfo("   FillInSLACAlignmentTerm::6 took: {:.3f}ms.",
-                         step_timer.GetDuration());
 
-        step_timer.Stop();
-        utility::LogInfo(
-                "   FillInSLACAlignmentTerm::LoadFileAndPoses took: {:.3f}ms.",
-                step_timer.GetDuration());
+        if (enable_step_timer) {
+            step_timer.Stop();
+            utility::LogInfo("   FillInSLACAlignmentTerm::6 took: {:.3f}ms.",
+                             step_timer.GetDuration());
+        }
 
         // Fill In.
-        step_timer.Start();
+        if (enable_step_timer) {
+            step_timer.Start();
+        }
         FillInSLACAlignmentTerm(AtA, Atb, residual, ctr_grid, tpcd_param_i,
                                 tpcd_param_j, Ti, Tj, i, j, n_frags,
                                 params.distance_threshold_);
-        step_timer.Stop();
-        utility::LogInfo(
-                "   FillInSLACAlignmentTerm::FillInSLACAlignmentTerm took: "
-                "{:.3f}ms.",
-                step_timer.GetDuration());
+        if (enable_step_timer) {
+            step_timer.Stop();
+            utility::LogInfo(
+                    "   FillInSLACAlignmentTerm::FillInSLACAlignmentTerm took: "
+                    "{:.3f}ms.",
+                    step_timer.GetDuration());
+        }
 
-        step_timer.Start();
+        if (enable_step_timer) {
+            step_timer.Start();
+        }
         if (debug_option.debug_ && i >= debug_option.debug_start_node_idx_) {
             VisualizePointCloudCorrespondences(tpcd_i, tpcd_j, corres_ij,
                                                Tj.Inverse().Matmul(Ti));
             VisualizePointCloudEmbedding(tpcd_param_i, ctr_grid);
             VisualizePointCloudDeformation(tpcd_param_i, ctr_grid);
         }
-        step_timer.Stop();
-        utility::LogInfo(
-                "   FillInSLACAlignmentTerm::DebugInfo took: {:.3f}ms.",
-                step_timer.GetDuration());
+        if (enable_step_timer) {
+            step_timer.Stop();
+            utility::LogInfo(
+                    "   FillInSLACAlignmentTerm::DebugInfo took: {:.3f}ms.",
+                    step_timer.GetDuration());
+        }
     }
     utility::LogWarning("Correspondence {} skipped!", skiped_correspondences);
 }
