@@ -152,6 +152,7 @@ int main(int argc, char* argv[]) {
                                              device);
 
     int k = 0;
+    double total_time = 0.0;
     for (size_t i = 0; i < posegraph->nodes_.size(); ++i) {
         auto fragment_pose_graph = *io::CreatePoseGraphFromFile(fmt::format(
                 "{}/fragment_optimized_{:03d}.json", fragment_folder, i));
@@ -192,10 +193,11 @@ int main(int argc, char* argv[]) {
 #endif
             }
         }
-
-        utility::LogInfo("Integrating fragment {} took {}", i,
-                         timer.GetDuration());
+        double duration = timer.GetDuration();
+        total_time += duration;
+        utility::LogInfo("Integrating fragment {} took {}ms", i, duration);
     }
+    utility::LogInfo("Total integration time: {}ms", total_time);
 
     if (utility::ProgramOptionExists(argc, argv, "--mesh")) {
         auto mesh = voxel_grid.ExtractSurfaceMesh();
