@@ -345,6 +345,7 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
     utility::LogInfo("Initializing the {}^2 Hessian matrix", num_params);
 
     PoseGraph pose_graph_update(pose_graph);
+    double total_time = 0;
     for (int itr = 0; itr < params.max_iterations_; ++itr) {
         utility::LogInfo("Iteration {}", itr);
         utility::Timer timer;
@@ -384,9 +385,13 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
         UpdatePoses(pose_graph_update, delta_poses);
         UpdateControlGrid(ctr_grid, delta_cgrids);
         timer.Stop();
-        utility::LogInfo("Iteration {} duration: {:.3f}.", itr,
-                         timer.GetDuration());
+        double elapsed_time = timer.GetDuration();
+        utility::LogInfo("Iteration {} duration: {:.3f}ms.", itr, elapsed_time);
+        total_time += elapsed_time;
     }
+    utility::LogInfo("Avg. iteration time over {} interations: {:.3f}ms.",
+                     params.max_iterations_,
+                     total_time / params.max_iterations_);
     return std::make_pair(pose_graph_update, ctr_grid);
 }
 
