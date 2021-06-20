@@ -153,9 +153,13 @@ int main(int argc, char* argv[]) {
 
     int k = 0;
     for (size_t i = 0; i < posegraph->nodes_.size(); ++i) {
-        utility::LogInfo("Fragment: {}", i);
         auto fragment_pose_graph = *io::CreatePoseGraphFromFile(fmt::format(
                 "{}/fragment_optimized_{:03d}.json", fragment_folder, i));
+
+        utility::LogInfo("Fragment: {}", i);
+        utility::Timer timer;
+        timer.Start();
+
         for (auto node : fragment_pose_graph.nodes_) {
             Eigen::Matrix4d pose_local = node.pose_;
             Tensor extrinsic_local_t =
@@ -172,9 +176,6 @@ int main(int argc, char* argv[]) {
                     t::io::CreateImageFromFile(color_filenames[k])->To(device);
             t::geometry::RGBDImage rgbd(color, depth);
 
-            utility::Timer timer;
-            timer.Start();
-
             t::geometry::RGBDImage rgbd_projected =
                     ctr_grid.Deform(rgbd, intrinsic_t, extrinsic_local_t,
                                     depth_scale, max_depth);
@@ -184,8 +185,6 @@ int main(int argc, char* argv[]) {
             timer.Stop();
 
             ++k;
-            utility::LogInfo("{}: Deformation + Integration takes {}", k,
-                             timer.GetDuration());
 
             if (k % 10 == 0) {
 #ifdef BUILD_CUDA_MODULE
@@ -193,6 +192,9 @@ int main(int argc, char* argv[]) {
 #endif
             }
         }
+
+        utility::LogInfo("Integrating fragment {} took {}", i,
+                         timer.GetDuration());
     }
 
     if (utility::ProgramOptionExists(argc, argv, "--mesh")) {

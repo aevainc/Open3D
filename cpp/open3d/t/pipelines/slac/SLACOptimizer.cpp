@@ -31,6 +31,7 @@
 #include "open3d/io/PointCloudIO.h"
 #include "open3d/t/pipelines/slac/FillInLinearSystemImpl.h"
 #include "open3d/utility/FileSystem.h"
+#include "open3d/utility/Timer.h"
 
 namespace open3d {
 namespace t {
@@ -346,6 +347,8 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
     PoseGraph pose_graph_update(pose_graph);
     for (int itr = 0; itr < params.max_iterations_; ++itr) {
         utility::LogInfo("Iteration {}", itr);
+        utility::Timer timer;
+        timer.Start();
         core::Tensor AtA = core::Tensor::Zeros({num_params, num_params},
                                                core::Dtype::Float32, device);
         core::Tensor Atb = core::Tensor::Zeros({num_params, 1},
@@ -380,6 +383,9 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
 
         UpdatePoses(pose_graph_update, delta_poses);
         UpdateControlGrid(ctr_grid, delta_cgrids);
+        timer.Stop();
+        utility::LogInfo("Iteration {} duration: {:.3f}.", itr,
+                         timer.GetDuration());
     }
     return std::make_pair(pose_graph_update, ctr_grid);
 }
