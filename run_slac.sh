@@ -11,6 +11,7 @@ make -j$(nproc) SLAC
 make -j$(nproc) SLACIntegrate
 
 echo "Running: SLAC"
+sudo perf record -g \
 ./bin/examples/SLAC \
     ${DATASET_DIR} \
     --device CUDA:0 \
@@ -20,15 +21,16 @@ echo "Running: SLAC"
     --distance_threshold 0.07 \
     --iterations 5
 echo "Done: SLAC"
+perf report -g 'graph,0.5,caller'
 
-echo "Running: SLACIntegrate"
-./bin/examples/SLACIntegrate \
-    ${DATASET_DIR} \
-    ${DATASET_DIR}/slac/0.050 \
-    --device CUDA:0 \
-    --mesh \
-    --block_count 80000 \
-    --color_subfolder color
-echo "Done: SLACIntegrate"
+# echo "Running: SLACIntegrate"
+# ./bin/examples/SLACIntegrate \
+#     ${DATASET_DIR} \
+#     ${DATASET_DIR}/slac/0.050 \
+#     --device CUDA:0 \
+#     --mesh \
+#     --block_count 80000 \
+#     --color_subfolder color
+# echo "Done: SLACIntegrate"
 
 popd
