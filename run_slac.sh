@@ -28,7 +28,7 @@ echo "Running: SLACIntegrate"
     --device CUDA:0 \
     --mesh \
     --block_count 80000 \
-    --color_subfolder image
+    --color_subfolder color
 echo "Done: SLACIntegrate"
 
 popd
