@@ -280,10 +280,8 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
                                 params.distance_threshold_);
         if (enable_step_timer) {
             step_timer.Stop();
-            utility::LogInfo(
-                    "   FillInSLACAlignmentTerm::FillInSLACAlignmentTerm took: "
-                    "{:.3f}ms.",
-                    step_timer.GetDuration());
+            utility::LogInfo("   FillInSLACAlignmentTerm::7 took: {:.3f}ms.",
+                             step_timer.GetDuration());
         }
 
         if (enable_step_timer) {
@@ -297,9 +295,8 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
         }
         if (enable_step_timer) {
             step_timer.Stop();
-            utility::LogInfo(
-                    "   FillInSLACAlignmentTerm::DebugInfo took: {:.3f}ms.",
-                    step_timer.GetDuration());
+            utility::LogInfo("   FillInSLACAlignmentTerm::8 took: {:.3f}ms.",
+                             step_timer.GetDuration());
         }
     }
     utility::LogWarning("Correspondence {} skipped!", skiped_correspondences);
