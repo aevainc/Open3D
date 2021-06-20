@@ -5,6 +5,16 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 BUILD_DIR=${SCRIPT_DIR}/build
 DATASET_DIR=${SCRIPT_DIR}/examples/python/reconstruction_system/dataset/redwood_simulated/livingroom1-simulated
 
+# Number of CPU cores, not counting hyper-threading:
+# https://stackoverflow.com/a/6481016/1255535
+#
+# Typically, set max # of threads to the # of physical cores, not logical:
+# https://www.thunderheadeng.com/2014/08/openmp-benchmarks/
+# https://stackoverflow.com/a/36959375/1255535
+NUM_CORES=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
+export OMP_NUM_THREADS=${NUM_CORES}
+echo "OMP_NUM_THREADS: ${OMP_NUM_THREADS}"
+
 pushd ${BUILD_DIR}
 
 make -j$(nproc) SLAC
