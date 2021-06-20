@@ -5,7 +5,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 BUILD_DIR=${SCRIPT_DIR}/build
 DATASET_DIR=${SCRIPT_DIR}/examples/python/reconstruction_system/dataset/redwood_simulated/livingroom1-simulated
 
-popd ${BUILD_DIR}
+pushd ${BUILD_DIR}
 
 make -j SLAC
 make -j SLACIntegrate
