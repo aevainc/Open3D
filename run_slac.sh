@@ -21,7 +21,8 @@ make -j$(nproc) SLAC
 make -j$(nproc) SLACIntegrate
 
 echo "Running: SLAC"
-sudo perf record -g \
+sudo rm -f perf.data
+sudo --preserve-env=OMP_NUM_THREADS perf record -g \
 ./bin/examples/SLAC \
     ${DATASET_DIR} \
     --device CUDA:0 \
@@ -29,7 +30,7 @@ sudo perf record -g \
     --method slac \
     --weight 1 \
     --distance_threshold 0.07 \
-    --iterations 5
+    --iterations 1  # Change to 5 for final time
 echo "Done: SLAC"
 sudo chown $(id -u):$(id -g) perf.data
 perf report -g 'graph,0.5,caller'
