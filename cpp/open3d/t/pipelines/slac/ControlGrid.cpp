@@ -168,7 +168,7 @@ ControlGrid::GetNeighborGridMap() {
 
 geometry::PointCloud ControlGrid::Parameterize(
         const geometry::PointCloud& pcd) {
-    bool enable_step_timer = false;
+    bool enable_step_timer = true;
 
     utility::Timer step_timer;
     if (enable_step_timer) {
