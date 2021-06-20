@@ -27,6 +27,7 @@
 #include "open3d/t/pipelines/slac/ControlGrid.h"
 
 #include "open3d/core/EigenConverter.h"
+#include "open3d/utility/Timer.h"
 
 namespace open3d {
 namespace t {
@@ -167,6 +168,12 @@ ControlGrid::GetNeighborGridMap() {
 
 geometry::PointCloud ControlGrid::Parameterize(
         const geometry::PointCloud& pcd) {
+    bool enable_step_timer = true;
+
+    utility::Timer step_timer;
+    if (enable_step_timer) {
+        step_timer.Start();
+    }
     core::Tensor pts = pcd.GetPoints();
     core::Tensor nms;
     if (pcd.HasPointNormals()) {
@@ -176,8 +183,16 @@ geometry::PointCloud ControlGrid::Parameterize(
 
     core::Tensor pts_quantized = pts / grid_size_;
     core::Tensor pts_quantized_floor = pts_quantized.Floor();
+    if (enable_step_timer) {
+        step_timer.Stop();
+        utility::LogInfo("       ControlGrid::Parameterize::1 took: {:.3f}ms.",
+                         step_timer.GetDuration());
+    }
 
     // (N x 3) -> [0, 1] for trilinear interpolation
+    if (enable_step_timer) {
+        step_timer.Start();
+    }
     core::Tensor residual = pts_quantized - pts_quantized_floor;
     std::vector<std::vector<core::Tensor>> residuals(3);
     for (int axis = 0; axis < 3; ++axis) {
@@ -188,7 +203,15 @@ geometry::PointCloud ControlGrid::Parameterize(
         residuals[axis].emplace_back(1.f - residual_axis);
         residuals[axis].emplace_back(residual_axis);
     }
+    if (enable_step_timer) {
+        step_timer.Stop();
+        utility::LogInfo("       ControlGrid::Parameterize::2 took: {:.3f}ms.",
+                         step_timer.GetDuration());
+    }
 
+    if (enable_step_timer) {
+        step_timer.Start();
+    }
     core::Tensor keys = pts_quantized_floor.To(core::Dtype::Int32);
     core::Tensor keys_nb({8, n, 3}, core::Dtype::Int32, device_);
     core::Tensor point_ratios_nb({8, n}, core::Dtype::Float32, device_);
@@ -216,12 +239,27 @@ geometry::PointCloud ControlGrid::Parameterize(
                     z_sign * nms[2] * residuals[0][x_sel] * residuals[1][y_sel];
         }
     }
-
     keys_nb = keys_nb.View({8 * n, 3});
+    if (enable_step_timer) {
+        step_timer.Stop();
+        utility::LogInfo("       ControlGrid::Parameterize::3 took: {:.3f}ms.",
+                         step_timer.GetDuration());
+    }
 
+    if (enable_step_timer) {
+        step_timer.Start();
+    }
     core::Tensor addrs_nb, masks_nb;
     ctr_hashmap_->Find(keys_nb, addrs_nb, masks_nb);
+    if (enable_step_timer) {
+        step_timer.Stop();
+        utility::LogInfo("       ControlGrid::Parameterize::4 took: {:.3f}ms.",
+                         step_timer.GetDuration());
+    }
 
+    if (enable_step_timer) {
+        step_timer.Start();
+    }
     // (n, 8)
     addrs_nb = addrs_nb.View({8, n}).T().Contiguous();
     // (n, 8)
@@ -233,6 +271,15 @@ geometry::PointCloud ControlGrid::Parameterize(
     core::Tensor valid_mask =
             masks_nb.View({8, n}).To(core::Dtype::Int64).Sum({0}).Eq(8);
 
+    if (enable_step_timer) {
+        step_timer.Stop();
+        utility::LogInfo("       ControlGrid::Parameterize::5 took: {:.3f}ms.",
+                         step_timer.GetDuration());
+    }
+
+    if (enable_step_timer) {
+        step_timer.Start();
+    }
     geometry::PointCloud pcd_with_params = pcd;
     pcd_with_params.SetPoints(pcd.GetPoints().IndexGet({valid_mask}));
     pcd_with_params.SetPointAttr(kGrid8NbIndices,
@@ -250,6 +297,11 @@ geometry::PointCloud ControlGrid::Parameterize(
         normal_ratios_nb = normal_ratios_nb.T().Contiguous();
         pcd_with_params.SetPointAttr(kGrid8NbNormalInterpRatios,
                                      normal_ratios_nb.IndexGet({valid_mask}));
+    }
+    if (enable_step_timer) {
+        step_timer.Stop();
+        utility::LogInfo("       ControlGrid::Parameterize::6 took: {:.3f}ms.",
+                         step_timer.GetDuration());
     }
 
     return pcd_with_params;

@@ -181,7 +181,7 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
 
     // Enumerate pose graph edges.
     std::vector<std::pair<int, int>> skiped_correspondences;
-    bool enable_step_timer = false;
+    bool enable_step_timer = true;
     for (auto& edge : pose_graph.edges_) {
         int i = edge.source_node_id_;
         int j = edge.target_node_id_;
