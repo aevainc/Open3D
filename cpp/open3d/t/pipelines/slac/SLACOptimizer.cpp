@@ -348,25 +348,39 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
     double total_time = 0;
     for (int itr = 0; itr < params.max_iterations_; ++itr) {
         utility::LogInfo("Iteration {}", itr);
-        utility::Timer timer;
-        timer.Start();
+        utility::Timer itr_timer;
+        itr_timer.Start();
+
+        utility::Timer step_timer;
+
+        step_timer.Start();
         core::Tensor AtA = core::Tensor::Zeros({num_params, num_params},
                                                core::Dtype::Float32, device);
         core::Tensor Atb = core::Tensor::Zeros({num_params, 1},
                                                core::Dtype::Float32, device);
-
         core::Tensor indices_eye0 =
                 core::Tensor::Arange(0, 6, 1, core::Dtype::Int64, device);
+        step_timer.Stop();
+        utility::LogInfo("Tensor init took: {:.3f}ms.",
+                         step_timer.GetDuration());
+
+        step_timer.Start();
         AtA.IndexSet({indices_eye0, indices_eye0},
                      core::Tensor::Ones({}, core::Dtype::Float32, device));
+        step_timer.Stop();
+        utility::LogInfo("IndexSet took: {:.3f}ms.", step_timer.GetDuration());
 
+        step_timer.Start();
         core::Tensor residual_data =
                 core::Tensor::Zeros({1}, core::Dtype::Float32, device);
         FillInSLACAlignmentTerm(AtA, Atb, residual_data, ctr_grid, fnames_down,
                                 pose_graph_update, params, debug_option);
-
         utility::LogInfo("Alignment loss = {}", residual_data[0].Item<float>());
+        step_timer.Stop();
+        utility::LogInfo("FillInSLACAlignmentTerm took: {:.3f}ms.",
+                         step_timer.GetDuration());
 
+        step_timer.Start();
         core::Tensor residual_reg =
                 core::Tensor::Zeros({1}, core::Dtype::Float32, device);
         FillInSLACRegularizerTerm(AtA, Atb, residual_reg, ctr_grid,
@@ -374,18 +388,36 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
                                   debug_option);
         utility::LogInfo("Regularizer loss = {}",
                          residual_reg[0].Item<float>());
+        step_timer.Stop();
+        utility::LogInfo("FillInSLACRegularizerTerm took: {:.3f}ms.",
+                         step_timer.GetDuration());
 
+        step_timer.Start();
         core::Tensor delta = AtA.Solve(Atb.Neg());
+        step_timer.Stop();
+        utility::LogInfo("Solve, Neg took: {:.3f}ms.",
+                         step_timer.GetDuration());
 
+        step_timer.Start();
         core::Tensor delta_poses =
                 delta.Slice(0, 0, 6 * pose_graph_update.nodes_.size());
         core::Tensor delta_cgrids = delta.Slice(
                 0, 6 * pose_graph_update.nodes_.size(), delta.GetLength());
+        step_timer.Stop();
+        utility::LogInfo("Slice took: {:.3f}ms.", step_timer.GetDuration());
 
+        step_timer.Start();
         UpdatePoses(pose_graph_update, delta_poses);
+        utility::LogInfo("UpdatePoses took: {:.3f}ms.",
+                         step_timer.GetDuration());
+
+        step_timer.Start();
         UpdateControlGrid(ctr_grid, delta_cgrids);
-        timer.Stop();
-        double elapsed_time = timer.GetDuration();
+        utility::LogInfo("UpdateControlGrid took: {:.3f}ms.",
+                         step_timer.GetDuration());
+
+        itr_timer.Stop();
+        double elapsed_time = itr_timer.GetDuration();
         utility::LogInfo("Iteration {} duration: {:.3f}ms.", itr, elapsed_time);
         total_time += elapsed_time;
     }
