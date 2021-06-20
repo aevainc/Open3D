@@ -7,8 +7,8 @@ DATASET_DIR=${SCRIPT_DIR}/examples/python/reconstruction_system/dataset/redwood_
 
 pushd ${BUILD_DIR}
 
-make -j SLAC
-make -j SLACIntegrate
+make -j$(nproc) SLAC
+make -j$(nproc) SLACIntegrate
 
 echo "Running: SLAC"
 ./bin/examples/SLAC \

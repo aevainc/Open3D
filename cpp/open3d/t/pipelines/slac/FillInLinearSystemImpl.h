@@ -179,6 +179,7 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
     int n_frags = pose_graph.nodes_.size();
 
     // Enumerate pose graph edges.
+    std::vector<std::pair<int, int>> skiped_correspondences;
     for (auto& edge : pose_graph.edges_) {
         int i = edge.source_node_id_;
         int j = edge.target_node_id_;
@@ -186,7 +187,7 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
         std::string corres_fname = fmt::format("{}/{:03d}_{:03d}.npy",
                                                params.GetSubfolderName(), i, j);
         if (!utility::filesystem::FileExists(corres_fname)) {
-            utility::LogWarning("Correspondence {} {} skipped!", i, j);
+            skiped_correspondences.emplace_back(i, j);
             continue;
         }
         Tensor corres_ij = Tensor::Load(corres_fname).To(device);
@@ -228,6 +229,7 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
             VisualizePointCloudDeformation(tpcd_param_i, ctr_grid);
         }
     }
+    utility::LogWarning("Correspondence {} skipped!", skiped_correspondences);
 }
 
 void FillInSLACRegularizerTerm(Tensor& AtA,
