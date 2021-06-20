@@ -579,7 +579,7 @@ function(open3d_set_global_properties target)
         target_compile_options(${target} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-Wno-unknown-pragmas>")
     endif()
     # TODO: comment me when generating the final statistics
-    target_compile_options(${target} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-fno-omit-frame-pointer>")
+    target_compile_options(${target} PRIVATE "-fno-omit-frame-pointer")
     if(WIN32)
         target_compile_definitions(${target} PRIVATE
             WINDOWS
