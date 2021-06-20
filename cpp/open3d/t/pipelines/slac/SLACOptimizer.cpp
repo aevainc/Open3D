@@ -408,17 +408,20 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
 
         step_timer.Start();
         UpdatePoses(pose_graph_update, delta_poses);
+        step_timer.Stop();
         utility::LogInfo("UpdatePoses took: {:.3f}ms.",
                          step_timer.GetDuration());
 
         step_timer.Start();
         UpdateControlGrid(ctr_grid, delta_cgrids);
+        step_timer.Stop();
         utility::LogInfo("UpdateControlGrid took: {:.3f}ms.",
                          step_timer.GetDuration());
 
         itr_timer.Stop();
         double elapsed_time = itr_timer.GetDuration();
         utility::LogInfo("Iteration {} duration: {:.3f}ms.", itr, elapsed_time);
+        utility::LogInfo("###################################################");
         total_time += elapsed_time;
     }
     utility::LogInfo("Avg. iteration time over {} interations: {:.3f}ms.",
