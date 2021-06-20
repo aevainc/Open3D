@@ -21,6 +21,7 @@ sudo perf record -g \
     --distance_threshold 0.07 \
     --iterations 5
 echo "Done: SLAC"
+sudo chown $(id -u):$(id -g) perf.data
 perf report -g 'graph,0.5,caller'
 
 # echo "Running: SLACIntegrate"
