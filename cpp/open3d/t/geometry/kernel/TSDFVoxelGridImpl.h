@@ -1508,6 +1508,89 @@ void RayCastCPU
 #endif
 }
 
+#ifdef __CUDACC__
+void UpsampleCUDA
+#else
+void UpsampleCPU
+#endif
+        (const core::Tensor& block_indices_upsampled,
+         const core::Tensor& block_indices,
+         const core::Tensor& nb_block_indices,
+         const core::Tensor& nb_block_masks,
+         const core::Tensor& block_keys_upsampled,
+         core::Tensor& block_values_upsampled,
+         const core::Tensor& block_values,
+         int64_t resolution) {
+    // Parameters
+    int64_t resolution_upsampled = resolution * 2;
+    int64_t resolution_upsampled3 =
+            resolution_upsampled * resolution_upsampled * resolution_upsampled;
+
+    // Shape / transform indexers, no data involved
+    NDArrayIndexer voxel_indexer(
+            {resolution_upsampled, resolution_upsampled, resolution_upsampled});
+
+    NDArrayIndexer nb_block_indices_indexer(nb_block_indices, 2);
+    NDArrayIndexer nb_block_masks_indexer(nb_block_masks, 2);
+
+    NDArrayIndexer block_keys_upsampled_indexer(block_keys_upsampled, 1);
+
+    NDArrayIndexer block_voxels_indexer(block_values, 4);
+    NDArrayIndexer block_voxels_upsampled_indexer(block_values_upsampled, 4);
+
+    const int* indices_upsampled_ptr =
+            block_indices_upsampled.GetDataPtr<int>();
+    const int* indices_ptr = block_indices.GetDataPtr<int>();
+
+    int64_t n_blocks = block_indices.GetLength();
+    int64_t n = n_blocks * resolution_upsampled3;
+#if defined(__CUDACC__)
+    core::kernel::CUDALauncher launcher;
+#else
+    core::kernel::CPULauncher launcher;
+#endif
+    DISPATCH_BYTESIZE_TO_VOXEL(
+            block_voxels_upsampled_indexer.ElementByteSize(), [&]() {
+                launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(
+                                                        int64_t workload_idx) {
+                    /// Get voxel from original coordinate
+                    // auto GetVoxelAt = [&] OPEN3D_DEVICE(
+                    //                           int xo, int yo, int zo,
+                    //                           int curr_block_idx) ->
+                    //                           voxel_t* {
+                    //     return DeviceGetVoxelAt<voxel_t>(
+                    //             xo, yo, zo, curr_block_idx,
+                    //             static_cast<int>(resolution),
+                    //             nb_block_masks_indexer,
+                    //             nb_block_indices_indexer,
+                    //             block_voxels_indexer);
+                    // };
+
+                    int block_idx = workload_idx / resolution_upsampled3;
+                    int voxel_idx = workload_idx % resolution_upsampled3;
+
+                    int block_dst = indices_upsampled_ptr[block_idx];
+                    int block_src = indices_ptr[block_idx];
+
+                    int64_t x_upsample, y_upsample, z_upsample;
+                    voxel_indexer.WorkloadToCoord(voxel_idx, &x_upsample,
+                                                  &y_upsample, &z_upsample);
+                    int64_t x_origin = x_upsample / 2;
+                    int64_t y_origin = y_upsample / 2;
+                    int64_t z_origin = z_upsample / 2;
+
+                    voxel_t* voxel_ptr_src =
+                            block_voxels_indexer.GetDataPtr<voxel_t>(
+                                    x_origin, y_origin, z_origin, block_src);
+                    voxel_t* voxel_ptr_dst =
+                            block_voxels_upsampled_indexer.GetDataPtr<voxel_t>(
+                                    x_upsample, y_upsample, z_upsample,
+                                    block_dst);
+                    voxel_ptr_dst->tsdf = voxel_ptr_src->tsdf;
+                    voxel_ptr_dst->weight = voxel_ptr_src->weight;
+                });
+            });
+}
 }  // namespace tsdf
 }  // namespace kernel
 }  // namespace geometry

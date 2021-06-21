@@ -411,6 +411,47 @@ std::pair<core::Tensor, core::Tensor> TSDFVoxelGrid::BufferRadiusNeighbors(
     block_hashmap_->Find(keys_nb, addrs_nb, masks_nb);
     return std::make_pair(addrs_nb.View({27, n, 1}), masks_nb.View({27, n, 1}));
 }
+
+TSDFVoxelGrid TSDFVoxelGrid::Upsample() {
+    auto voxelgrid_upsampled = TSDFVoxelGrid(
+            attr_dtype_map_, voxel_size_ / 2, sdf_trunc_ / 2,
+            block_resolution_ * 2, block_hashmap_->Size(), device_);
+    auto block_hashmap_upsampled = voxelgrid_upsampled.GetBlockHashmap();
+
+    core::Tensor active_addrs;
+    block_hashmap_->GetActiveIndices(active_addrs);
+    core::Tensor active_nb_addrs, active_nb_masks;
+    std::tie(active_nb_addrs, active_nb_masks) =
+            BufferRadiusNeighbors(active_addrs);
+
+    core::Tensor active_keys = block_hashmap_->GetKeyTensor().IndexGet(
+            {active_addrs.To(core::Dtype::Int64)});
+    core::Tensor active_addrs_upsampled, active_masks_upsampled;
+    block_hashmap_upsampled->Activate(active_keys, active_addrs_upsampled,
+                                      active_masks_upsampled);
+    // active_addrs <-> active_keys <-> active_addrs_upsampled
+
+    core::Tensor keys_upsampled =
+            block_hashmap_upsampled->GetKeyTensor().IndexGet(
+                    {active_addrs_upsampled.To(core::Dtype::Int64)});
+    core::Tensor keys = block_hashmap_->GetKeyTensor().IndexGet(
+            {active_addrs.To(core::Dtype::Int64)});
+
+    // utility::LogInfo("upsampled: {}", keys_upsampled[0].ToString());
+    // utility::LogInfo("original: {}", keys[0].ToString());
+
+    // utility::LogInfo("upsampled: {}", keys_upsampled[128].ToString());
+    // utility::LogInfo("original: {}", keys[128].ToString());
+    core::Tensor block_value_tensor_upsampled =
+            block_hashmap_upsampled->GetValueTensor();
+    kernel::tsdf::Upsample(active_addrs_upsampled, active_addrs,
+                           active_nb_addrs, active_nb_masks,
+                           block_hashmap_upsampled->GetKeyTensor(),
+                           block_value_tensor_upsampled,
+                           block_hashmap_->GetValueTensor(), block_resolution_);
+
+    return voxelgrid_upsampled;
+}
 }  // namespace geometry
 }  // namespace t
 }  // namespace open3d

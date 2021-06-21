@@ -170,19 +170,20 @@ public:
 
     friend class io::TSDFVoxelGridMetadata;
 
-protected:
+    TSDFVoxelGrid Upsample();
+
     /// Return  addrs and masks for radius (3) neighbor entries.
-    /// We first find all active entries in the hashmap with there coordinates.
-    /// We then query these coordinates and their 3^3 neighbors.
-    /// addrs_nb: indexer used for the internal hashmap to access voxel block
-    /// coordinates in the 3^3 neighbors.
-    /// masks_nb: flag used for hashmap to indicate whether a query is a
-    /// success.
-    /// Currently we preserve a dense output (27 x active_entries) without
-    /// compression / reduction.
+    /// We first find all active entries in the hashmap with there
+    /// coordinates. We then query these coordinates and their 3^3
+    /// neighbors. addrs_nb: indexer used for the internal hashmap to access
+    /// voxel block coordinates in the 3^3 neighbors. masks_nb: flag used
+    /// for hashmap to indicate whether a query is a success. Currently we
+    /// preserve a dense output (27 x active_entries) without compression /
+    /// reduction.
     std::pair<core::Tensor, core::Tensor> BufferRadiusNeighbors(
             const core::Tensor &active_addrs);
 
+protected:
     float voxel_size_;
     float sdf_trunc_;
 

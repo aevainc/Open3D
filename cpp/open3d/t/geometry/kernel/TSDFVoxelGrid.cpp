@@ -272,6 +272,31 @@ void ExtractSurfaceMesh(
         utility::LogError("Unimplemented device");
     }
 }
+
+void Upsample(const core::Tensor& block_indices_upsampled,
+              const core::Tensor& block_indices,
+              const core::Tensor& nb_block_indices,
+              const core::Tensor& nb_block_masks,
+              const core::Tensor& block_keys_upsampled,
+              core::Tensor& block_values_upsampled,
+              const core::Tensor& block_values,
+              int64_t block_resolution) {
+    core::Device device = block_indices_upsampled.GetDevice();
+
+    core::Device::DeviceType device_type = device.GetType();
+    if (device_type == core::Device::DeviceType::CPU) {
+        UpsampleCPU(block_indices_upsampled, block_indices, nb_block_indices,
+                    nb_block_masks, block_keys_upsampled,
+                    block_values_upsampled, block_values, block_resolution);
+    } else if (device_type == core::Device::DeviceType::CUDA) {
+        CUDA_CALL(UpsampleCUDA, block_indices_upsampled, block_indices,
+                  nb_block_indices, nb_block_masks, block_keys_upsampled,
+                  block_values_upsampled, block_values, block_resolution);
+    } else {
+        utility::LogError("Unimplemented device");
+    }
+}
+
 }  // namespace tsdf
 }  // namespace kernel
 }  // namespace geometry

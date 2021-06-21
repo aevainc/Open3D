@@ -118,6 +118,15 @@ void ExtractSurfaceMesh(
         float weight_threshold,
         int& vertex_count);
 
+void Upsample(const core::Tensor& block_indices_upsampled,
+              const core::Tensor& block_indices,
+              const core::Tensor& nb_block_indices,
+              const core::Tensor& nb_block_masks,
+              const core::Tensor& block_keys_upsampled,
+              core::Tensor& block_values_upsampled,
+              const core::Tensor& block_values,
+              int64_t block_resolution);
+
 void TouchCPU(std::shared_ptr<core::Hashmap>& hashmap,
               const core::Tensor& points,
               core::Tensor& voxel_block_coords,
@@ -198,6 +207,15 @@ void ExtractSurfaceMeshCPU(
         float voxel_size,
         float weight_threshold,
         int& vertex_count);
+
+void UpsampleCPU(const core::Tensor& block_indices_upsampled,
+                 const core::Tensor& block_indices,
+                 const core::Tensor& nb_block_indices,
+                 const core::Tensor& nb_block_masks,
+                 const core::Tensor& block_keys_upsampled,
+                 core::Tensor& block_values_upsampled,
+                 const core::Tensor& block_values,
+                 int64_t block_resolution);
 
 #ifdef BUILD_CUDA_MODULE
 void TouchCUDA(std::shared_ptr<core::Hashmap>& hashmap,
@@ -280,6 +298,16 @@ void ExtractSurfaceMeshCUDA(
         float voxel_size,
         float weight_threshold,
         int& vertex_count);
+
+void UpsampleCUDA(const core::Tensor& block_indices_upsampled,
+                  const core::Tensor& block_indices,
+                  const core::Tensor& nb_block_indices,
+                  const core::Tensor& nb_block_masks,
+                  const core::Tensor& block_keys_upsampled,
+                  core::Tensor& block_values_upsampled,
+                  const core::Tensor& block_values,
+                  int64_t block_resolution);
+
 #endif
 }  // namespace tsdf
 }  // namespace kernel
