@@ -1304,6 +1304,7 @@ void RayCastCPU
                     if (t >= t_max) return;
 
                     // Coordinates in camera and global
+
                     float x_c = 0, y_c = 0, z_c = 0;
                     float x_g = 0, y_g = 0, z_g = 0;
                     float x_o = 0, y_o = 0, z_o = 0;
@@ -1540,7 +1541,6 @@ void UpsampleCPU
 
     const int* indices_upsampled_ptr =
             block_indices_upsampled.GetDataPtr<int>();
-    const int* indices_ptr = block_indices.GetDataPtr<int>();
 
     int64_t n_blocks = block_indices.GetLength();
     int64_t n = n_blocks * resolution_upsampled3;
@@ -1554,40 +1554,79 @@ void UpsampleCPU
                 launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(
                                                         int64_t workload_idx) {
                     /// Get voxel from original coordinate
-                    // auto GetVoxelAt = [&] OPEN3D_DEVICE(
-                    //                           int xo, int yo, int zo,
-                    //                           int curr_block_idx) ->
-                    //                           voxel_t* {
-                    //     return DeviceGetVoxelAt<voxel_t>(
-                    //             xo, yo, zo, curr_block_idx,
-                    //             static_cast<int>(resolution),
-                    //             nb_block_masks_indexer,
-                    //             nb_block_indices_indexer,
-                    //             block_voxels_indexer);
-                    // };
+                    auto GetVoxelAt = [&] OPEN3D_DEVICE(
+                                              int xo, int yo, int zo,
+                                              int block_idx) -> voxel_t* {
+                        int xn = (xo + resolution) % resolution;
+                        int yn = (yo + resolution) % resolution;
+                        int zn = (zo + resolution) % resolution;
+
+                        int64_t dxb = Sign(xo - xn);
+                        int64_t dyb = Sign(yo - yn);
+                        int64_t dzb = Sign(zo - zn);
+
+                        int64_t nb_idx =
+                                (dxb + 1) + (dyb + 1) * 3 + (dzb + 1) * 9;
+
+                        bool block_mask_i =
+                                *nb_block_masks_indexer.GetDataPtr<bool>(
+                                        block_idx, nb_idx);
+                        if (!block_mask_i) return nullptr;
+
+                        int64_t block_idx_i =
+                                *nb_block_indices_indexer.GetDataPtr<int>(
+                                        block_idx, nb_idx);
+
+                        return block_voxels_indexer.GetDataPtr<voxel_t>(
+                                xn, yn, zn, block_idx_i);
+                    };
 
                     int block_idx = workload_idx / resolution_upsampled3;
                     int voxel_idx = workload_idx % resolution_upsampled3;
 
                     int block_dst = indices_upsampled_ptr[block_idx];
-                    int block_src = indices_ptr[block_idx];
 
                     int64_t x_upsample, y_upsample, z_upsample;
                     voxel_indexer.WorkloadToCoord(voxel_idx, &x_upsample,
                                                   &y_upsample, &z_upsample);
-                    int64_t x_origin = x_upsample / 2;
-                    int64_t y_origin = y_upsample / 2;
-                    int64_t z_origin = z_upsample / 2;
-
-                    voxel_t* voxel_ptr_src =
-                            block_voxels_indexer.GetDataPtr<voxel_t>(
-                                    x_origin, y_origin, z_origin, block_src);
                     voxel_t* voxel_ptr_dst =
                             block_voxels_upsampled_indexer.GetDataPtr<voxel_t>(
                                     x_upsample, y_upsample, z_upsample,
                                     block_dst);
-                    voxel_ptr_dst->tsdf = voxel_ptr_src->tsdf;
-                    voxel_ptr_dst->weight = voxel_ptr_src->weight;
+
+                    voxel_ptr_dst->tsdf = 0;
+                    voxel_ptr_dst->weight = 0;
+
+                    float sum_ratio = 0;
+                    int64_t x_origin = x_upsample / 2;
+                    int64_t y_origin = y_upsample / 2;
+                    int64_t z_origin = z_upsample / 2;
+
+                    // Can be optimized, but not necessary
+                    // TODO: check color
+                    for (int k = 0; k < 8; ++k) {
+                        int x = x_origin + ((k & 1) > 0);
+                        int y = y_origin + ((k & 2) > 0);
+                        int z = z_origin + ((k & 4) > 0);
+
+                        float x_ratio = 2 - abs(x * 2 - x_upsample);
+                        float y_ratio = 2 - abs(y * 2 - y_upsample);
+                        float z_ratio = 2 - abs(z * 2 - z_upsample);
+                        float ratio = x_ratio * y_ratio * z_ratio;
+                        if (ratio == 0) continue;
+
+                        voxel_t* voxel_ptr_src = GetVoxelAt(x, y, z, block_idx);
+                        if (voxel_ptr_src == nullptr) continue;
+
+                        voxel_ptr_dst->tsdf += voxel_ptr_src->tsdf * ratio;
+                        voxel_ptr_dst->weight += voxel_ptr_src->weight * ratio;
+                        sum_ratio += ratio;
+                    }
+
+                    if (sum_ratio > 0) {
+                        voxel_ptr_dst->tsdf /= sum_ratio;
+                        voxel_ptr_dst->weight /= sum_ratio;
+                    }
                 });
             });
 }

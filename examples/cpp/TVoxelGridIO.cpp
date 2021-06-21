@@ -39,8 +39,12 @@ int main(int argc, char *argv[]) {
 
     auto voxel_grid_upsampled = voxel_grid.Upsample();
 
-    auto pcd = voxel_grid.ExtractSurfacePoints(-1, 3.0f);
-    auto pcd_upsampled = voxel_grid_upsampled.ExtractSurfacePoints(-1, 3.0f);
+    using MaskCode = t::geometry::TSDFVoxelGrid::SurfaceMaskCode;
+
+    auto pcd = voxel_grid.ExtractSurfacePoints(
+            -1, 3.0f, MaskCode::VertexMap | MaskCode::NormalMap);
+    auto pcd_upsampled = voxel_grid_upsampled.ExtractSurfacePoints(
+            -1, 3.0f, MaskCode::VertexMap | MaskCode::NormalMap);
     visualization::Draw(
             {std::make_shared<geometry::PointCloud>(pcd.ToLegacyPointCloud()),
              std::make_shared<geometry::PointCloud>(

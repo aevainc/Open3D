@@ -437,11 +437,6 @@ TSDFVoxelGrid TSDFVoxelGrid::Upsample() {
     core::Tensor keys = block_hashmap_->GetKeyTensor().IndexGet(
             {active_addrs.To(core::Dtype::Int64)});
 
-    // utility::LogInfo("upsampled: {}", keys_upsampled[0].ToString());
-    // utility::LogInfo("original: {}", keys[0].ToString());
-
-    // utility::LogInfo("upsampled: {}", keys_upsampled[128].ToString());
-    // utility::LogInfo("original: {}", keys[128].ToString());
     core::Tensor block_value_tensor_upsampled =
             block_hashmap_upsampled->GetValueTensor();
     kernel::tsdf::Upsample(active_addrs_upsampled, active_addrs,
