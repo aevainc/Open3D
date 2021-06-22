@@ -1,16 +1,15 @@
-
 import open3d as o3d
 import numpy as np
 import argparse
 import torch
 import torch.nn
+import pytorch3d.transforms as transform3d
 
 from tsdf_util import *
 from lighting_util import *
 from voxel_util import *
 from rgbd_util import *
 
-K_depth_th = torch.from_numpy(K_depth).float().cuda()
 K_color_th = torch.from_numpy(K_color).float().cuda()
 
 
@@ -40,13 +39,8 @@ def compute_surface_and_normal(voxel_coords, voxel_tsdf, key, selection,
     return surfaces, normals
 
 
-def project(xyz, intensity, depth, pose):
-    # NOTE: non autodiff w.r.t. pose for now, only find association
-    T = pose.inverse().float()
-    R = T[:3, :3]
-    t = T[:3, 3:]
-
-    projection = K_color_th @ (R @ xyz.T + t)
+def project(xyz, intensity, depth, R, t, K):
+    projection = K @ (R @ xyz.T + t.unsqueeze(-1))
 
     u = (projection[0] / projection[2])
     v = (projection[1] / projection[2])
@@ -124,139 +118,186 @@ if __name__ == '__main__':
     assoc_weight = association['association_weight']
     n_kf = len(poses)
 
+    # Parameterize poses
+    Rs_transpose_init = torch.zeros((n_kf, 3, 3))
+    ts_init = torch.zeros((n_kf, 3))
+
+    rots = torch.zeros((n_kf, 3))
+    for i in range(n_kf):
+        extrinsic = torch.from_numpy(np.linalg.inv(poses[i]))
+        R = extrinsic[:3, :3]
+        t = extrinsic[:3, 3]
+
+        rots[i] = transform3d.matrix_to_euler_angles(R, "ZYZ")
+        Rs_transpose_init[i] = R.T
+        ts_init[i] = t
+
+    Rs_transpose_init = Rs_transpose_init.cuda()
+    ts_init = ts_init.cuda()
+
     # Now start to optimize
     # voxel_tsdf is reserved for stability check
     param_tsdf = torch.nn.Parameter(voxel_tsdf.clone())
     param_albedo = torch.nn.Parameter(voxel_albedo)
-    optimizer = torch.optim.Adam([param_tsdf, param_albedo], lr=1e-3)
+    rot_param = torch.nn.Parameter(rots.cuda())
+    t_param = torch.nn.Parameter(ts_init.clone().cuda())
 
-    max_epochs = 50
-
+    max_epochs = 30
     lambda_data = 1000
     lambda_tsdf_laplacian = 0.01
     lambda_tsdf_stability = 0.1
     lambda_albedo = 0.1
-    for epoch in range(max_epochs):
-        surfaces_c, normals_c = compute_surface_and_normal(
-            voxel_coords, param_tsdf, 'index_data_c', selection, voxel_nbs)
-        surfaces_xp, normals_xp = compute_surface_and_normal(
-            voxel_coords, param_tsdf, 'index_data_xp', selection, voxel_nbs)
-        surfaces_yp, normals_yp = compute_surface_and_normal(
-            voxel_coords, param_tsdf, 'index_data_yp', selection, voxel_nbs)
-        surfaces_zp, normals_zp = compute_surface_and_normal(
-            voxel_coords, param_tsdf, 'index_data_zp', selection, voxel_nbs)
+    lambda_R = 0
+    lambda_t = 0
 
-        # if epoch % 10 == 0:
-        #     pcd_c = make_o3d_pcd(
-        #         surfaces_c.detach().cpu().numpy(),
-        #         normals=normals_c.detach().cpu().numpy(),
-        #         colors=param_albedo[
-        #             selection['index_data_c']].detach().cpu().numpy())
-        #     o3d.visualization.draw([pcd_c])
-        # pcd_xp = make_o3d_pcd(surfaces_xp.detach().cpu().numpy(),
-        #                       normals=normals_xp.detach().cpu().numpy())
-        # pcd_yp = make_o3d_pcd(surfaces_yp.detach().cpu().numpy(),
-        #                       normals=normals_yp.detach().cpu().numpy())
-        # pcd_zp = make_o3d_pcd(surfaces_zp.detach().cpu().numpy(),
-        #                       normals=normals_zp.detach().cpu().numpy())
-        # o3d.visualization.draw([pcd_c, pcd_xp, pcd_yp, pcd_zp])
+    for factor in [4, 2, 1]:
+        # Re-initialize Adam per pyramid level
+        optimizer = torch.optim.Adam([param_tsdf, param_albedo],
+                                     lr=1e-3)
+        for epoch in range(max_epochs):
+            surfaces_c, normals_c = compute_surface_and_normal(
+                voxel_coords, param_tsdf, 'index_data_c', selection, voxel_nbs)
+            surfaces_xp, normals_xp = compute_surface_and_normal(
+                voxel_coords, param_tsdf, 'index_data_xp', selection, voxel_nbs)
+            surfaces_yp, normals_yp = compute_surface_and_normal(
+                voxel_coords, param_tsdf, 'index_data_yp', selection, voxel_nbs)
+            surfaces_zp, normals_zp = compute_surface_and_normal(
+                voxel_coords, param_tsdf, 'index_data_zp', selection, voxel_nbs)
 
-        loss_data = 0
-        for i in range(n_kf):
-            sel = assoc[i]
-            w = assoc_weight[i, sel]
-            intensity = torch.from_numpy(
-                color_to_intensity_im(np.asarray(colors[i]).astype(
-                    np.float32))).cuda() / 255.0
-            depth = torch.from_numpy(np.asarray(depths[i]).astype(
-                np.float32)).cuda() / 1000.0
-            pose = torch.from_numpy(poses[i]).cuda()
+            # if epoch % 10 == 0:
+            #     pcd_c = make_o3d_pcd(
+            #         surfaces_c.detach().cpu().numpy(),
+            #         normals=normals_c.detach().cpu().numpy(),
+            #         colors=param_albedo[
+            #             selection['index_data_c']].detach().cpu().numpy())
+            #     o3d.visualization.draw([pcd_c])
+            # pcd_xp = make_o3d_pcd(surfaces_xp.detach().cpu().numpy(),
+            #                       normals=normals_xp.detach().cpu().numpy())
+            # pcd_yp = make_o3d_pcd(surfaces_yp.detach().cpu().numpy(),
+            #                       normals=normals_yp.detach().cpu().numpy())
+            # pcd_zp = make_o3d_pcd(surfaces_zp.detach().cpu().numpy(),
+            #                       normals=normals_zp.detach().cpu().numpy())
+            # o3d.visualization.draw([pcd_c, pcd_xp, pcd_yp, pcd_zp])
 
-            surfaces_c_sel = surfaces_c[sel]
-            normals_c_sel = normals_c[sel]
-            albedo_c_sel = param_albedo[index_data][sel]
-            mask_c_sel, intensity_c_sel = project(surfaces_c_sel, intensity,
-                                                  depth, pose)
+            Rs = transform3d.euler_angles_to_matrix(rot_param, "ZYZ")
 
-            surfaces_xp_sel = surfaces_xp[sel]
-            normals_xp_sel = normals_xp[sel]
-            albedo_xp_sel = param_albedo[index_data_xp][sel]
-            mask_xp_sel, intensity_xp_sel = project(surfaces_xp_sel, intensity,
-                                                    depth, pose)
+            # https://discuss.pytorch.org/t/is-there-a-way-to-compute-matrix-trace-in-batch-broadcast-fashion/43866
+            loss_R_stability = torch.acos(torch.clamp(
+                (torch.einsum('bii->b', torch.matmul(Rs, Rs_transpose_init)) - 1) /
+                2, 0.00001, 0.99999)).sum()
+            loss_t_stability = (t_param - ts_init).norm(dim=1).sum()
 
-            surfaces_yp_sel = surfaces_yp[sel]
-            normals_yp_sel = normals_yp[sel]
-            albedo_yp_sel = param_albedo[index_data_yp][sel]
-            mask_yp_sel, intensity_yp_sel = project(surfaces_yp_sel, intensity,
-                                                    depth, pose)
+            loss_data = 0
+            for i in range(n_kf):
+                sel = assoc[i]
+                w = assoc_weight[i, sel]
+                intensity = torch.from_numpy(
+                    color_to_intensity_im(np.asarray(colors[i]).astype(
+                        np.float32))).cuda() / 255.0
+                depth = torch.from_numpy(np.asarray(depths[i]).astype(
+                    np.float32)).cuda() / 1000.0
 
-            surfaces_zp_sel = surfaces_zp[sel]
-            normals_zp_sel = normals_zp[sel]
-            albedo_zp_sel = param_albedo[index_data_zp][sel]
-            mask_zp_sel, intensity_zp_sel = project(surfaces_zp_sel, intensity,
-                                                    depth, pose)
+                intensity = intensity[::factor, ::factor]
+                depth = depth[::factor, ::factor]
 
-            mask = mask_c_sel & mask_xp_sel & mask_yp_sel & mask_zp_sel
-            dIx = (intensity_xp_sel - intensity_c_sel)[mask]
-            dIy = (intensity_yp_sel - intensity_c_sel)[mask]
-            dIz = (intensity_zp_sel - intensity_c_sel)[mask]
+                K = K_color_th / factor
+                K[2, 2] = 1
 
-            # Next compute dBx, dBy, dBz
-            b_c = forward_sh(l, normals_c_sel) * albedo_c_sel
-            b_xp = forward_sh(l, normals_xp_sel) * albedo_xp_sel
-            b_yp = forward_sh(l, normals_yp_sel) * albedo_yp_sel
-            b_zp = forward_sh(l, normals_zp_sel) * albedo_zp_sel
+                T = np.linalg.inv(poses[i])
+                R = torch.from_numpy(T[:3, :3]).float().cuda()
+                t = torch.from_numpy(T[:3, 3]).float().cuda()
+                # R = Rs[i].float()
+                # t = t_param[i].float()
 
-            dBx = (b_xp - b_c)[mask]
-            dBy = (b_yp - b_c)[mask]
-            dBz = (b_zp - b_c)[mask]
+                surfaces_c_sel = surfaces_c[sel]
+                normals_c_sel = normals_c[sel]
+                albedo_c_sel = param_albedo[index_data][sel]
+                mask_c_sel, intensity_c_sel = project(surfaces_c_sel, intensity,
+                                                      depth, R, t, K)
 
-            loss_data_i = (dBx - dIx)**2 + (dBy - dIy)**2 + (dBz - dIz)**2
-            loss_data = loss_data + (w[mask] * loss_data_i).sum()
+                surfaces_xp_sel = surfaces_xp[sel]
+                normals_xp_sel = normals_xp[sel]
+                albedo_xp_sel = param_albedo[index_data_xp][sel]
+                mask_xp_sel, intensity_xp_sel = project(surfaces_xp_sel, intensity,
+                                                        depth, R, t, K)
 
-        # Regularizer: TSDF Stability
-        loss_tsdf_stability = ((param_tsdf - voxel_tsdf)**2).sum()
+                surfaces_yp_sel = surfaces_yp[sel]
+                normals_yp_sel = normals_yp[sel]
+                albedo_yp_sel = param_albedo[index_data_yp][sel]
+                mask_yp_sel, intensity_yp_sel = project(surfaces_yp_sel, intensity,
+                                                        depth, R, t, K)
 
-        # Regularizer: TSDF Laplacian
-        tsdf_c = param_tsdf[selection['index_lap_c']]
-        tsdf_xp = param_tsdf[selection['index_lap_xp']]
-        tsdf_yp = param_tsdf[selection['index_lap_yp']]
-        tsdf_zp = param_tsdf[selection['index_lap_zp']]
-        tsdf_xm = param_tsdf[selection['index_lap_xm']]
-        tsdf_ym = param_tsdf[selection['index_lap_ym']]
-        tsdf_zm = param_tsdf[selection['index_lap_zm']]
+                surfaces_zp_sel = surfaces_zp[sel]
+                normals_zp_sel = normals_zp[sel]
+                albedo_zp_sel = param_albedo[index_data_zp][sel]
+                mask_zp_sel, intensity_zp_sel = project(surfaces_zp_sel, intensity,
+                                                        depth, R, t, K)
 
-        dxx = tsdf_xp + tsdf_xm - 2 * tsdf_c
-        dyy = tsdf_yp + tsdf_ym - 2 * tsdf_c
-        dzz = tsdf_zp + tsdf_zm - 2 * tsdf_c
+                mask = mask_c_sel & mask_xp_sel & mask_yp_sel & mask_zp_sel
+                dIx = (intensity_xp_sel - intensity_c_sel)[mask]
+                dIy = (intensity_yp_sel - intensity_c_sel)[mask]
+                dIz = (intensity_zp_sel - intensity_c_sel)[mask]
 
-        loss_tsdf_laplacian = ((dxx + dyy + dzz)**2).sum()
+                # Next compute dBx, dBy, dBz
+                b_c = forward_sh(l, normals_c_sel) * albedo_c_sel
+                b_xp = forward_sh(l, normals_xp_sel) * albedo_xp_sel
+                b_yp = forward_sh(l, normals_yp_sel) * albedo_yp_sel
+                b_zp = forward_sh(l, normals_zp_sel) * albedo_zp_sel
 
-        # Regularizer: albedo
-        loss_albedo_chromaticity = 0
-        rho = lambda x: 1 / (1 + x)**3
+                dBx = (b_xp - b_c)[mask]
+                dBy = (b_yp - b_c)[mask]
+                dBz = (b_zp - b_c)[mask]
 
-        for key in ['xp', 'yp', 'zp', 'xm', 'ym', 'zm']:
-            index_c = selection['index_' + key + '_self']
-            index_nb = selection['index_' + key + '_nb']
-            w = (voxel_chromaticity[index_c] -
-                 voxel_chromaticity[index_nb]).norm(dim=1)
-            albedo_diff = (param_albedo[index_c] - param_albedo[index_nb])**2
-            loss_albedo_chromaticity += (rho(w) * albedo_diff).sum()
+                loss_data_i = (dBx - dIx)**2 + (dBy - dIy)**2 + (dBz - dIz)**2
+                loss_data = loss_data + (w[mask] * loss_data_i).sum()
 
-        loss = lambda_data * loss_data \
-             + lambda_tsdf_stability * loss_tsdf_stability \
-             + lambda_tsdf_laplacian * loss_tsdf_laplacian \
-             + lambda_albedo * loss_albedo_chromaticity
-        print(
-            'epoch {}, loss = {:.2f}, data: {:.2f} stability reg: {:.2f}, laplacian reg: {:.2f}, albedo reg: {:.2f}'
-            .format(epoch, loss.item(), lambda_data * loss_data.item(),
-                    lambda_tsdf_stability * loss_tsdf_stability.item(),
-                    lambda_tsdf_laplacian * loss_tsdf_laplacian.item(),
-                    lambda_albedo * loss_albedo_chromaticity.item()))
+            # Regularizer: TSDF Stability
+            loss_tsdf_stability = ((param_tsdf - voxel_tsdf)**2).sum()
 
-        loss.backward()
-        optimizer.step()
+            # Regularizer: TSDF Laplacian
+            tsdf_c = param_tsdf[selection['index_lap_c']]
+            tsdf_xp = param_tsdf[selection['index_lap_xp']]
+            tsdf_yp = param_tsdf[selection['index_lap_yp']]
+            tsdf_zp = param_tsdf[selection['index_lap_zp']]
+            tsdf_xm = param_tsdf[selection['index_lap_xm']]
+            tsdf_ym = param_tsdf[selection['index_lap_ym']]
+            tsdf_zm = param_tsdf[selection['index_lap_zm']]
+
+            dxx = tsdf_xp + tsdf_xm - 2 * tsdf_c
+            dyy = tsdf_yp + tsdf_ym - 2 * tsdf_c
+            dzz = tsdf_zp + tsdf_zm - 2 * tsdf_c
+
+            loss_tsdf_laplacian = ((dxx + dyy + dzz)**2).sum()
+
+            # Regularizer: albedo
+            loss_albedo_chromaticity = 0
+            rho = lambda x: 1 / (1 + x)**3
+
+            for key in ['xp', 'yp', 'zp', 'xm', 'ym', 'zm']:
+                index_c = selection['index_' + key + '_self']
+                index_nb = selection['index_' + key + '_nb']
+                w = (voxel_chromaticity[index_c] -
+                     voxel_chromaticity[index_nb]).norm(dim=1)
+                albedo_diff = (param_albedo[index_c] - param_albedo[index_nb])**2
+                loss_albedo_chromaticity += (rho(w) * albedo_diff).sum()
+
+            loss = lambda_data * loss_data \
+                 + lambda_tsdf_stability * loss_tsdf_stability \
+                 + lambda_tsdf_laplacian * loss_tsdf_laplacian \
+                 + lambda_albedo * loss_albedo_chromaticity \
+                 + lambda_R * loss_R_stability \
+                 + lambda_t * loss_t_stability
+            print(
+                'epoch {}, loss = {:.2f}, data: {:.2f} stability reg: {:.2f}, laplacian reg: {:.2f}, albedo reg: {:.2f}, R reg: {:.2f}, t reg: {:.2f}'
+                .format(epoch, loss.item(), lambda_data * loss_data.item(),
+                        lambda_tsdf_stability * loss_tsdf_stability.item(),
+                        lambda_tsdf_laplacian * loss_tsdf_laplacian.item(),
+                        lambda_albedo * loss_albedo_chromaticity.item(),
+                        lambda_R * loss_R_stability.item(),
+                        lambda_t * loss_t_stability.item()))
+
+            loss.backward()
+            optimizer.step()
 
     np.savez(args.output,
              voxel_tsdf=param_tsdf.detach().cpu().numpy(),
