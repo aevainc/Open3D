@@ -10,6 +10,9 @@ from voxel_util import *
 from rgbd_util import *
 
 
+K_depth_th = torch.from_numpy(K_depth).cuda()
+K_color_th = torch.from_numpy(K_color).cuda()
+
 def to_torch(np_dict):
     torch_dict = {}
     for key in np_dict:
@@ -38,29 +41,27 @@ def compute_surface_and_normal(voxel_coords, voxel_tsdf, key, selection,
 
 def project(xyz, color, depth, pose):
     # NOTE: non autodiff w.r.t. pose for now, only find association
-    T = np.linalg.inv(pose)
+    T = pose.inverse()
     R = T[:3, :3]
     t = T[:3, 3:]
 
-    projection = K_color @ (R @ xyz.T + t)
+    projection = K_color_th @ (R @ xyz.T + t)
 
-    u = (projection[0] / projection[2]).round().astype(int)
-    v = (projection[1] / projection[2]).round().astype(int)
+    u = (projection[0] / projection[2]).round().long()
+    v = (projection[1] / projection[2]).round().long()
 
-    color_np = np.asarray(color)
-    depth_np = np.asarray(depth).astype(np.float32) / 1000.0
-    h, w, _ = color_np.shape
+    h, w, _ = color.size()
 
     # mask at point's shape
     mask = (u >= 0) & (u < w) & (v >= 0) & (v < h)
 
-    corres_depth = np.zeros_like(mask, dtype=np.float64)
-    corres_depth[mask] = depth_np[v[mask], u[mask]]
+    corres_depth = torch.ones_like(mask, dtype=torch.float32)
+    corres_depth[mask] = depth[v[mask], u[mask]]
 
     mask[corres_depth == 0] = False
 
-    intensity = np.zeros((len(xyz)), dtype=np.float64)
-    intensity[mask] = color_to_intensity(color_np[v[mask], u[mask]]) / 255.0
+    intensity = torch.zeros((len(xyz)), dtype=torch.float32).cuda()
+    intensity[mask] = color_to_intensity(color[v[mask], u[mask]]) / 255.0
 
     return mask, intensity
 
@@ -160,45 +161,40 @@ if __name__ == '__main__':
         for i in range(n_kf):
             sel = assoc[i]
             w = assoc_weight[i, sel]
+            color = torch.from_numpy(np.asarray(colors[i])).cuda()
+            depth = torch.from_numpy(np.asarray(depths[i]).astype(np.float32)).cuda() / 1000.0
+            pose = torch.from_numpy(poses[i]).cuda()
 
             surfaces_c_sel = surfaces_c[sel]
             normals_c_sel = normals_c[sel]
             albedo_c_sel = param_albedo[index_data][sel]
             mask_c_sel, intensity_c_sel = project(
-                surfaces_c_sel.detach().cpu().numpy(), colors[i], depths[i],
-                poses[i])
+                surfaces_c_sel, color, depth, pose)
 
             surfaces_xp_sel = surfaces_xp[sel]
             normals_xp_sel = normals_xp[sel]
             albedo_xp_sel = param_albedo[index_data_xp][sel]
             mask_xp_sel, intensity_xp_sel = project(
-                surfaces_xp_sel.detach().cpu().numpy(), colors[i], depths[i],
-                poses[i])
+                surfaces_xp_sel, color, depth, pose)
 
             surfaces_yp_sel = surfaces_yp[sel]
             normals_yp_sel = normals_yp[sel]
             albedo_yp_sel = param_albedo[index_data_yp][sel]
             mask_yp_sel, intensity_yp_sel = project(
-                surfaces_yp_sel.detach().cpu().numpy(), colors[i], depths[i],
-                poses[i])
+                surfaces_yp_sel, color, depth, pose)
 
             surfaces_zp_sel = surfaces_zp[sel]
             normals_zp_sel = normals_zp[sel]
             albedo_zp_sel = param_albedo[index_data_zp][sel]
             mask_zp_sel, intensity_zp_sel = project(
-                surfaces_zp_sel.detach().cpu().numpy(), colors[i], depths[i],
-                poses[i])
+                surfaces_zp_sel, color, depth, pose)
 
             mask = mask_c_sel & mask_xp_sel & mask_yp_sel & mask_zp_sel
-            dIx = torch.from_numpy(
-                (intensity_xp_sel - intensity_c_sel)[mask]).cuda()
-            dIy = torch.from_numpy(
-                (intensity_yp_sel - intensity_c_sel)[mask]).cuda()
-            dIz = torch.from_numpy(
-                (intensity_zp_sel - intensity_c_sel)[mask]).cuda()
+            dIx = (intensity_xp_sel - intensity_c_sel)[mask]
+            dIy = (intensity_yp_sel - intensity_c_sel)[mask]
+            dIz = (intensity_zp_sel - intensity_c_sel)[mask]
 
             # Next compute dBx, dBy, dBz
-            mask = torch.from_numpy(mask).cuda()
             b_c = forward_sh(l, normals_c_sel) * albedo_c_sel
             b_xp = forward_sh(l, normals_xp_sel) * albedo_xp_sel
             b_yp = forward_sh(l, normals_yp_sel) * albedo_yp_sel
