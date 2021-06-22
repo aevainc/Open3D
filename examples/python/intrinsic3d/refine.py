@@ -1,3 +1,4 @@
+
 import open3d as o3d
 import numpy as np
 import argparse
@@ -9,9 +10,9 @@ from lighting_util import *
 from voxel_util import *
 from rgbd_util import *
 
+K_depth_th = torch.from_numpy(K_depth).float().cuda()
+K_color_th = torch.from_numpy(K_color).float().cuda()
 
-K_depth_th = torch.from_numpy(K_depth).cuda()
-K_color_th = torch.from_numpy(K_color).cuda()
 
 def to_torch(np_dict):
     torch_dict = {}
@@ -39,31 +40,34 @@ def compute_surface_and_normal(voxel_coords, voxel_tsdf, key, selection,
     return surfaces, normals
 
 
-def project(xyz, color, depth, pose):
+def project(xyz, intensity, depth, pose):
     # NOTE: non autodiff w.r.t. pose for now, only find association
-    T = pose.inverse()
+    T = pose.inverse().float()
     R = T[:3, :3]
     t = T[:3, 3:]
 
     projection = K_color_th @ (R @ xyz.T + t)
 
-    u = (projection[0] / projection[2]).round().long()
-    v = (projection[1] / projection[2]).round().long()
+    u = (projection[0] / projection[2])
+    v = (projection[1] / projection[2])
 
-    h, w, _ = color.size()
+    h, w = intensity.size()
+    mask = (u > 0) & (u < w - 1) & (v > 0) & (v < h - 1)
 
-    # mask at point's shape
-    mask = (u >= 0) & (u < w) & (v >= 0) & (v < h)
+    grid = torch.stack((2 * u / w, 2 * v / h)).T.view(1, 1, -1, 2) - 1
+    depth_sampler = depth.view(1, 1, *depth.size())
+    intensity_sampler = intensity.view(1, 1, *intensity.size())
 
-    corres_depth = torch.ones_like(mask, dtype=torch.float32)
-    corres_depth[mask] = depth[v[mask], u[mask]]
+    corres_depth = torch.nn.functional.grid_sample(depth_sampler,
+                                                   grid,
+                                                   padding_mode='border')
+    corres_intensity = torch.nn.functional.grid_sample(intensity_sampler,
+                                                       grid,
+                                                       padding_mode='border')
 
-    mask[corres_depth == 0] = False
+    mask_out = (mask) * (corres_depth > 0)
 
-    intensity = torch.zeros((len(xyz)), dtype=torch.float32).cuda()
-    intensity[mask] = color_to_intensity(color[v[mask], u[mask]]) / 255.0
-
-    return mask, intensity
+    return mask_out.squeeze(), corres_intensity.squeeze()
 
 
 if __name__ == '__main__':
@@ -87,10 +91,10 @@ if __name__ == '__main__':
     association = to_torch(np.load(args.association))
 
     voxel_nbs = to_torch(get_nb_dict(spatial))
-    voxel_coords = torch.from_numpy(spatial['voxel_coords']).cuda()
+    voxel_coords = torch.from_numpy(spatial['voxel_coords']).float().cuda()
 
-    voxel_tsdf = torch.from_numpy(input_data['voxel_tsdf']).cuda()
-    voxel_color = torch.from_numpy(input_data['voxel_color']).cuda()
+    voxel_tsdf = torch.from_numpy(input_data['voxel_tsdf']).float().cuda()
+    voxel_color = torch.from_numpy(input_data['voxel_color']).float().cuda()
     voxel_intensity = color_to_intensity(voxel_color)
     voxel_chromaticity = voxel_color / voxel_intensity.unsqueeze(dim=-1)
 
@@ -161,33 +165,36 @@ if __name__ == '__main__':
         for i in range(n_kf):
             sel = assoc[i]
             w = assoc_weight[i, sel]
-            color = torch.from_numpy(np.asarray(colors[i])).cuda()
-            depth = torch.from_numpy(np.asarray(depths[i]).astype(np.float32)).cuda() / 1000.0
+            intensity = torch.from_numpy(
+                color_to_intensity_im(np.asarray(colors[i]).astype(
+                    np.float32))).cuda() / 255.0
+            depth = torch.from_numpy(np.asarray(depths[i]).astype(
+                np.float32)).cuda() / 1000.0
             pose = torch.from_numpy(poses[i]).cuda()
 
             surfaces_c_sel = surfaces_c[sel]
             normals_c_sel = normals_c[sel]
             albedo_c_sel = param_albedo[index_data][sel]
-            mask_c_sel, intensity_c_sel = project(
-                surfaces_c_sel, color, depth, pose)
+            mask_c_sel, intensity_c_sel = project(surfaces_c_sel, intensity,
+                                                  depth, pose)
 
             surfaces_xp_sel = surfaces_xp[sel]
             normals_xp_sel = normals_xp[sel]
             albedo_xp_sel = param_albedo[index_data_xp][sel]
-            mask_xp_sel, intensity_xp_sel = project(
-                surfaces_xp_sel, color, depth, pose)
+            mask_xp_sel, intensity_xp_sel = project(surfaces_xp_sel, intensity,
+                                                    depth, pose)
 
             surfaces_yp_sel = surfaces_yp[sel]
             normals_yp_sel = normals_yp[sel]
             albedo_yp_sel = param_albedo[index_data_yp][sel]
-            mask_yp_sel, intensity_yp_sel = project(
-                surfaces_yp_sel, color, depth, pose)
+            mask_yp_sel, intensity_yp_sel = project(surfaces_yp_sel, intensity,
+                                                    depth, pose)
 
             surfaces_zp_sel = surfaces_zp[sel]
             normals_zp_sel = normals_zp[sel]
             albedo_zp_sel = param_albedo[index_data_zp][sel]
-            mask_zp_sel, intensity_zp_sel = project(
-                surfaces_zp_sel, color, depth, pose)
+            mask_zp_sel, intensity_zp_sel = project(surfaces_zp_sel, intensity,
+                                                    depth, pose)
 
             mask = mask_c_sel & mask_xp_sel & mask_yp_sel & mask_zp_sel
             dIx = (intensity_xp_sel - intensity_c_sel)[mask]

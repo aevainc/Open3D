@@ -5,6 +5,9 @@ import numpy as np
 def color_to_intensity(rgb):
     return 0.2126 * rgb[:, 0] + 0.7152 * rgb[:, 1] + 0.0722 * rgb[:, 2]
 
+def color_to_intensity_im(rgb):
+    return 0.2126 * rgb[:, :, 0] + 0.7152 * rgb[:, :, 1] + 0.0722 * rgb[:, :, 2]
+
 
 def backward_sh(ns, intensities, albedos):
     nx = ns[:, 0]
