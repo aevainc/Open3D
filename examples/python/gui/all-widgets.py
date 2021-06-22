@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import open3d.visualization.gui as gui
 import os.path
 
