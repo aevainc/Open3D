@@ -122,13 +122,13 @@ if __name__ == '__main__':
     Rs_transpose_init = torch.zeros((n_kf, 3, 3))
     ts_init = torch.zeros((n_kf, 3))
 
-    rots = torch.zeros((n_kf, 3))
+    rots = torch.zeros((n_kf, 6))
     for i in range(n_kf):
         extrinsic = torch.from_numpy(np.linalg.inv(poses[i]))
         R = extrinsic[:3, :3]
         t = extrinsic[:3, 3]
 
-        rots[i] = transform3d.matrix_to_euler_angles(R, "ZYZ")
+        rots[i] = transform3d.matrix_to_rotation_6d(R)
         Rs_transpose_init[i] = R.T
         ts_init[i] = t
 
@@ -147,13 +147,12 @@ if __name__ == '__main__':
     lambda_tsdf_laplacian = 0.01
     lambda_tsdf_stability = 0.1
     lambda_albedo = 0.1
-    lambda_R = 0
-    lambda_t = 0
+    lambda_R = 1000
+    lambda_t = 1000
 
     for factor in [4, 2, 1]:
         # Re-initialize Adam per pyramid level
-        optimizer = torch.optim.Adam([param_tsdf, param_albedo],
-                                     lr=1e-3)
+        optimizer = torch.optim.Adam([param_tsdf, param_albedo], lr=1e-3)
         for epoch in range(max_epochs):
             surfaces_c, normals_c = compute_surface_and_normal(
                 voxel_coords, param_tsdf, 'index_data_c', selection, voxel_nbs)
@@ -178,13 +177,13 @@ if __name__ == '__main__':
             # pcd_zp = make_o3d_pcd(surfaces_zp.detach().cpu().numpy(),
             #                       normals=normals_zp.detach().cpu().numpy())
             # o3d.visualization.draw([pcd_c, pcd_xp, pcd_yp, pcd_zp])
-
-            Rs = transform3d.euler_angles_to_matrix(rot_param, "ZYZ")
+            Rs = transform3d.rotation_6d_to_matrix(rot_param)
 
             # https://discuss.pytorch.org/t/is-there-a-way-to-compute-matrix-trace-in-batch-broadcast-fashion/43866
-            loss_R_stability = torch.acos(torch.clamp(
-                (torch.einsum('bii->b', torch.matmul(Rs, Rs_transpose_init)) - 1) /
-                2, 0.00001, 0.99999)).sum()
+            loss_R_stability = torch.acos(
+                torch.clamp((torch.einsum(
+                    'bii->b', torch.matmul(Rs, Rs_transpose_init)) - 1) / 2,
+                            0.00001, 0.99999)).sum()
             loss_t_stability = (t_param - ts_init).norm(dim=1).sum()
 
             loss_data = 0
@@ -192,10 +191,11 @@ if __name__ == '__main__':
                 sel = assoc[i]
                 w = assoc_weight[i, sel]
                 intensity = torch.from_numpy(
-                    color_to_intensity_im(np.asarray(colors[i]).astype(
-                        np.float32))).cuda() / 255.0
-                depth = torch.from_numpy(np.asarray(depths[i]).astype(
-                    np.float32)).cuda() / 1000.0
+                    color_to_intensity_im(
+                        np.asarray(colors[i]).astype(
+                            np.float32))).cuda() / 255.0
+                depth = torch.from_numpy(
+                    np.asarray(depths[i]).astype(np.float32)).cuda() / 1000.0
 
                 intensity = intensity[::factor, ::factor]
                 depth = depth[::factor, ::factor]
@@ -203,11 +203,11 @@ if __name__ == '__main__':
                 K = K_color_th / factor
                 K[2, 2] = 1
 
-                T = np.linalg.inv(poses[i])
-                R = torch.from_numpy(T[:3, :3]).float().cuda()
-                t = torch.from_numpy(T[:3, 3]).float().cuda()
-                # R = Rs[i].float()
-                # t = t_param[i].float()
+                # T = np.linalg.inv(poses[i])
+                # R = torch.from_numpy(T[:3, :3]).float().cuda()
+                # t = torch.from_numpy(T[:3, 3]).float().cuda()
+                R = Rs[i].float()
+                t = t_param[i].float()
 
                 surfaces_c_sel = surfaces_c[sel]
                 normals_c_sel = normals_c[sel]
@@ -218,20 +218,23 @@ if __name__ == '__main__':
                 surfaces_xp_sel = surfaces_xp[sel]
                 normals_xp_sel = normals_xp[sel]
                 albedo_xp_sel = param_albedo[index_data_xp][sel]
-                mask_xp_sel, intensity_xp_sel = project(surfaces_xp_sel, intensity,
-                                                        depth, R, t, K)
+                mask_xp_sel, intensity_xp_sel = project(surfaces_xp_sel,
+                                                        intensity, depth, R, t,
+                                                        K)
 
                 surfaces_yp_sel = surfaces_yp[sel]
                 normals_yp_sel = normals_yp[sel]
                 albedo_yp_sel = param_albedo[index_data_yp][sel]
-                mask_yp_sel, intensity_yp_sel = project(surfaces_yp_sel, intensity,
-                                                        depth, R, t, K)
+                mask_yp_sel, intensity_yp_sel = project(surfaces_yp_sel,
+                                                        intensity, depth, R, t,
+                                                        K)
 
                 surfaces_zp_sel = surfaces_zp[sel]
                 normals_zp_sel = normals_zp[sel]
                 albedo_zp_sel = param_albedo[index_data_zp][sel]
-                mask_zp_sel, intensity_zp_sel = project(surfaces_zp_sel, intensity,
-                                                        depth, R, t, K)
+                mask_zp_sel, intensity_zp_sel = project(surfaces_zp_sel,
+                                                        intensity, depth, R, t,
+                                                        K)
 
                 mask = mask_c_sel & mask_xp_sel & mask_yp_sel & mask_zp_sel
                 dIx = (intensity_xp_sel - intensity_c_sel)[mask]
@@ -278,7 +281,8 @@ if __name__ == '__main__':
                 index_nb = selection['index_' + key + '_nb']
                 w = (voxel_chromaticity[index_c] -
                      voxel_chromaticity[index_nb]).norm(dim=1)
-                albedo_diff = (param_albedo[index_c] - param_albedo[index_nb])**2
+                albedo_diff = (param_albedo[index_c] -
+                               param_albedo[index_nb])**2
                 loss_albedo_chromaticity += (rho(w) * albedo_diff).sum()
 
             loss = lambda_data * loss_data \
