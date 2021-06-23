@@ -106,10 +106,12 @@ if __name__ == '__main__':
     surfaces, normals = compute_surface_and_normal(voxel_coords, voxel_tsdf,
                                                    'index_data_c', selection,
                                                    voxel_nbs)
-    l = backward_sh(normals.cpu().numpy(),
-                    voxel_intensity[index_data].cpu().numpy(),
-                    voxel_albedo[index_data].cpu().numpy())
-    l = torch.from_numpy(l).cuda()
+    # l_init = backward_sh(normals.cpu().numpy(),
+    #                      voxel_intensity[index_data].cpu().numpy(),
+    #                      voxel_albedo[index_data].cpu().numpy())
+    # print(l_init)
+    # l = torch.from_numpy(l_init).cuda()
+    l = torch.from_numpy(np.load('svsh.npy')).cuda()
 
     print('Loading keyframes ...')
     colors, depths, poses = load_keyframes(args.path_dataset, check=False)
@@ -156,10 +158,13 @@ if __name__ == '__main__':
         for epoch in range(max_epochs):
             surfaces_c, normals_c = compute_surface_and_normal(
                 voxel_coords, param_tsdf, 'index_data_c', selection, voxel_nbs)
+
             surfaces_xp, normals_xp = compute_surface_and_normal(
                 voxel_coords, param_tsdf, 'index_data_xp', selection, voxel_nbs)
+
             surfaces_yp, normals_yp = compute_surface_and_normal(
                 voxel_coords, param_tsdf, 'index_data_yp', selection, voxel_nbs)
+
             surfaces_zp, normals_zp = compute_surface_and_normal(
                 voxel_coords, param_tsdf, 'index_data_zp', selection, voxel_nbs)
 
@@ -212,12 +217,14 @@ if __name__ == '__main__':
                 surfaces_c_sel = surfaces_c[sel]
                 normals_c_sel = normals_c[sel]
                 albedo_c_sel = param_albedo[index_data][sel]
+                l_c_sel = l[index_data][sel]
                 mask_c_sel, intensity_c_sel = project(surfaces_c_sel, intensity,
                                                       depth, R, t, K)
 
                 surfaces_xp_sel = surfaces_xp[sel]
                 normals_xp_sel = normals_xp[sel]
                 albedo_xp_sel = param_albedo[index_data_xp][sel]
+                l_xp_sel = l[index_data_xp][sel]
                 mask_xp_sel, intensity_xp_sel = project(surfaces_xp_sel,
                                                         intensity, depth, R, t,
                                                         K)
@@ -225,6 +232,7 @@ if __name__ == '__main__':
                 surfaces_yp_sel = surfaces_yp[sel]
                 normals_yp_sel = normals_yp[sel]
                 albedo_yp_sel = param_albedo[index_data_yp][sel]
+                l_yp_sel = l[index_data_yp][sel]
                 mask_yp_sel, intensity_yp_sel = project(surfaces_yp_sel,
                                                         intensity, depth, R, t,
                                                         K)
@@ -232,6 +240,7 @@ if __name__ == '__main__':
                 surfaces_zp_sel = surfaces_zp[sel]
                 normals_zp_sel = normals_zp[sel]
                 albedo_zp_sel = param_albedo[index_data_zp][sel]
+                l_zp_sel = l[index_data_zp][sel]
                 mask_zp_sel, intensity_zp_sel = project(surfaces_zp_sel,
                                                         intensity, depth, R, t,
                                                         K)
@@ -242,10 +251,10 @@ if __name__ == '__main__':
                 dIz = (intensity_zp_sel - intensity_c_sel)[mask]
 
                 # Next compute dBx, dBy, dBz
-                b_c = forward_sh(l, normals_c_sel) * albedo_c_sel
-                b_xp = forward_sh(l, normals_xp_sel) * albedo_xp_sel
-                b_yp = forward_sh(l, normals_yp_sel) * albedo_yp_sel
-                b_zp = forward_sh(l, normals_zp_sel) * albedo_zp_sel
+                b_c = forward_svsh(l_c_sel, normals_c_sel) * albedo_c_sel
+                b_xp = forward_svsh(l_xp_sel, normals_xp_sel) * albedo_xp_sel
+                b_yp = forward_svsh(l_yp_sel, normals_yp_sel) * albedo_yp_sel
+                b_zp = forward_svsh(l_zp_sel, normals_zp_sel) * albedo_zp_sel
 
                 dBx = (b_xp - b_c)[mask]
                 dBy = (b_yp - b_c)[mask]

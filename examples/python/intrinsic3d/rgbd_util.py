@@ -3,6 +3,8 @@ import numpy as np
 import open3d as o3d
 import argparse
 
+from lighting_util import *
+
 K_depth = np.array([577.871, 0, 319.623, 0, 580.258, 239.624, 0, 0,
                     1]).reshape(3, 3)
 K_color = np.array([1170.19, 0, 647.75, 0, 1170.19, 483.75, 0, 0,
@@ -82,7 +84,12 @@ def load_keyframes(path_dataset, check=True):
         depth_resized = o3d.geometry.Image(depth_np_resized)
 
         depths.append(depth_resized)
-        colors.append(o3d.io.read_image(f'{path_dataset}/color/{color_kfname}'))
+
+        color = o3d.io.read_image(f'{path_dataset}/color/{color_kfname}')
+        color_np = np.asarray(color)
+        color_rgb = srgb_to_rgb(color_np)
+        color_rgb = o3d.geometry.Image(color_rgb)
+        colors.append(color_rgb)
 
     if check:
         pcd_map = o3d.geometry.PointCloud()
