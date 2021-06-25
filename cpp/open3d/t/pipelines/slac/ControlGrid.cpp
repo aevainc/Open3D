@@ -202,8 +202,8 @@ geometry::PointCloud ControlGrid::Parameterize(
         float y_sign = y_sel * 2.0 - 1.0;
         float z_sign = z_sel * 2.0 - 1.0;
 
-        core::Tensor dt = core::Tensor(std::vector<int>{x_sel, y_sel, z_sel},
-                                       {1, 3}, core::Dtype::Int32, device_);
+        core::Tensor dt =
+                core::Tensor::Init<int>({{x_sel, y_sel, z_sel}}, device_);
         keys_nb[nb] = keys + dt;
         point_ratios_nb[nb] =
                 residuals[0][x_sel] * residuals[1][y_sel] * residuals[2][z_sel];
