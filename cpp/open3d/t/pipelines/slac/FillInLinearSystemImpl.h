@@ -32,6 +32,7 @@
 #include "open3d/t/pipelines/kernel/FillInLinearSystem.h"
 #include "open3d/t/pipelines/slac/SLACOptimizer.h"
 #include "open3d/utility/FileSystem.h"
+#include "open3d/utility/Timer.h"
 
 namespace open3d {
 namespace t {
@@ -177,6 +178,8 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
                              const SLACDebugOption& debug_option) {
     core::Device device(params.device_);
     int n_frags = pose_graph.nodes_.size();
+    utility::Timer step_timer;
+    bool printed = false;
 
     // Enumerate pose graph edges.
     for (auto& edge : pose_graph.edges_) {
@@ -205,8 +208,17 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
                 tpcd_j.GetPointNormals().IndexGet({corres_ij.T()[1]}));
 
         // Parameterize points in the control grid.
+        if (!printed) {
+            step_timer.Start();
+        }
         PointCloud tpcd_param_i = ctr_grid.Parameterize(tpcd_i_indexed);
         PointCloud tpcd_param_j = ctr_grid.Parameterize(tpcd_j_indexed);
+        if (!printed) {
+            step_timer.Stop();
+            printed = true;
+            utility::LogInfo("   FillInSLACAlignmentTerm::5 took: {:.3f}ms.",
+                             step_timer.GetDuration());
+        }
 
         // Load poses.
         auto Ti = EigenMatrixToTensor(pose_graph.nodes_[i].pose_)
