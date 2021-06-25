@@ -33,14 +33,14 @@ echo "Running: SLAC"
 echo "Done: SLAC"
 # sudo chown $(id -u):$(id -g) perf.data && perf report -g 'graph,0.5,caller'
 
-# echo "Running: SLACIntegrate"
-# ./bin/examples/SLACIntegrate \
-#     ${DATASET_DIR} \
-#     ${DATASET_DIR}/slac/0.050 \
-#     --device CUDA:0 \
-#     --mesh \
-#     --block_count 80000 \
-#     --color_subfolder color
-# echo "Done: SLACIntegrate"
+echo "Running: SLACIntegrate"
+./bin/examples/SLACIntegrate \
+    ${DATASET_DIR} \
+    ${DATASET_DIR}/slac/0.050 \
+    --device CUDA:0 \
+    --mesh \
+    --block_count 80000 \
+    --color_subfolder color
+echo "Done: SLACIntegrate"
 
 popd
