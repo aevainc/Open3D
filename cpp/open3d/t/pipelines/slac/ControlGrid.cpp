@@ -27,6 +27,7 @@
 #include "open3d/t/pipelines/slac/ControlGrid.h"
 
 #include "open3d/core/EigenConverter.h"
+#include "open3d/utility/Timer.h"
 
 namespace open3d {
 namespace t {
@@ -193,6 +194,11 @@ geometry::PointCloud ControlGrid::Parameterize(
     core::Tensor keys_nb({8, n, 3}, core::Dtype::Int32, device_);
     core::Tensor point_ratios_nb({8, n}, core::Dtype::Float32, device_);
     core::Tensor normal_ratios_nb({8, n}, core::Dtype::Float32, device_);
+    utility::Timer timer;
+    double duration_0 = 0;
+    double duration_1 = 0;
+    double duration_2 = 0;
+    double duration_3 = 0;
     for (int nb = 0; nb < 8; ++nb) {
         int x_sel = (nb & 4) >> 2;
         int y_sel = (nb & 2) >> 1;
@@ -202,20 +208,45 @@ geometry::PointCloud ControlGrid::Parameterize(
         float y_sign = y_sel * 2.0 - 1.0;
         float z_sign = z_sel * 2.0 - 1.0;
 
+        timer.Start();
         core::Tensor dt =
                 core::Tensor::Init<int>({{x_sel, y_sel, z_sel}}, device_);
+        timer.Stop();
+        duration_0 += timer.GetDuration();
+
+        timer.Start();
         keys_nb[nb] = keys + dt;
+        timer.Stop();
+        duration_1 += timer.GetDuration();
+
+        timer.Start();
         point_ratios_nb[nb] =
                 residuals[0][x_sel] * residuals[1][y_sel] * residuals[2][z_sel];
+        timer.Stop();
+        duration_2 += timer.GetDuration();
+
+        timer.Start();
         if (pcd.HasPointNormals()) {
+            // clang-format off
             normal_ratios_nb[nb] =
-                    x_sign * nms[0] * residuals[1][y_sel] *
-                            residuals[2][z_sel] +
-                    y_sign * nms[1] * residuals[0][x_sel] *
-                            residuals[2][z_sel] +
-                    z_sign * nms[2] * residuals[0][x_sel] * residuals[1][y_sel];
+                x_sign * nms[0] * residuals[1][y_sel] * residuals[2][z_sel] +
+                y_sign * nms[1] * residuals[0][x_sel] * residuals[2][z_sel] +
+                z_sign * nms[2] * residuals[0][x_sel] * residuals[1][y_sel];
+            utility::LogInfo("nms[0].shape: {}",
+                             nms[0].GetShape().ToString());
+            utility::LogInfo("residuals[1][y_sel].shape: {}",
+                             residuals[1][y_sel].GetShape().ToString());
+            utility::LogInfo("residuals[2][z_sel].shape: {}",
+                             residuals[2][z_sel].GetShape().ToString());
+            // clang-format on
         }
+        timer.Stop();
+        duration_3 += timer.GetDuration();
     }
+    utility::LogInfo("duration_0: {}", duration_0);
+    utility::LogInfo("duration_1: {}", duration_1);
+    utility::LogInfo("duration_2: {}", duration_2);
+    utility::LogInfo("duration_3: {}", duration_3);
 
     keys_nb = keys_nb.View({8 * n, 3});
 
