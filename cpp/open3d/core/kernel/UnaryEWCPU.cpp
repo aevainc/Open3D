@@ -156,7 +156,8 @@ void CopyCPU(const Tensor& src, Tensor& dst) {
             scalar_t scalar_element = src.To(dst_dtype).Item<scalar_t>();
             scalar_t* dst_ptr = static_cast<scalar_t*>(dst.GetDataPtr());
             cpu_launcher::LaunchParallel(
-                    num_elements, [&](int64_t workload_idx) {
+                    num_elements, cpu_launcher::SMALL_OP_MIN_PARALLEL_SIZE,
+                    [&](int64_t workload_idx) {
                         dst_ptr[workload_idx] = scalar_element;
                     });
         });
