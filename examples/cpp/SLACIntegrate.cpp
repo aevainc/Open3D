@@ -183,8 +183,6 @@ int main(int argc, char* argv[]) {
             voxel_grid.Integrate(rgbd_projected.depth_, rgbd_projected.color_,
                                  intrinsic_t, extrinsic_t, depth_scale,
                                  max_depth);
-            timer.Stop();
-
             ++k;
 
             if (k % 10 == 0) {
@@ -193,6 +191,7 @@ int main(int argc, char* argv[]) {
 #endif
             }
         }
+        timer.Stop();
         double duration = timer.GetDuration();
         total_time += duration;
         utility::LogInfo("Integrating fragment {} took {}ms", i, duration);
