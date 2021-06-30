@@ -374,10 +374,10 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
         step_timer.Start();
         core::Tensor residual_data =
                 core::Tensor::Zeros({1}, core::Dtype::Float32, device);
-        // utility::SingletonAccumulativeTimer::GetInstance().Pause();
+        utility::SingletonAccumulativeTimer::GetInstance().Pause();
         FillInSLACAlignmentTerm(AtA, Atb, residual_data, ctr_grid, fnames_down,
                                 pose_graph_update, params, debug_option);
-        // utility::SingletonAccumulativeTimer::GetInstance().Start();
+        utility::SingletonAccumulativeTimer::GetInstance().Start();
         utility::LogInfo("Alignment loss = {}", residual_data[0].Item<float>());
         step_timer.Stop();
         utility::LogInfo("FillInSLACAlignmentTerm took: {:.3f}ms.",

@@ -217,6 +217,7 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
                              step_timer.GetDuration());
         }
 
+        utility::SingletonAccumulativeTimer::GetInstance().Start();
         if (enable_step_timer && !printed) {
             step_timer.Start();
         }
@@ -300,6 +301,7 @@ void FillInSLACAlignmentTerm(Tensor& AtA,
             utility::LogInfo("   FillInSLACAlignmentTerm::8 took: {:.3f}ms.",
                              step_timer.GetDuration());
         }
+        utility::SingletonAccumulativeTimer::GetInstance().Pause();
     }
     utility::LogWarning("Correspondence {} skipped!", skiped_correspondences);
 }
