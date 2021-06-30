@@ -31,6 +31,23 @@
 namespace open3d {
 namespace utility {
 
+class SingletonAccumulativeTimer {
+public:
+    static SingletonAccumulativeTimer &GetInstance();
+    void Start();
+    void Pause();
+    void Reset();
+    double GetDuration();
+
+private:
+    SingletonAccumulativeTimer();
+    ~SingletonAccumulativeTimer();
+    static double GetSystemTimeInMS();
+    bool is_running_;
+    double duration_time_ms_;
+    double start_time_ms_;
+};
+
 class Timer {
 public:
     Timer();

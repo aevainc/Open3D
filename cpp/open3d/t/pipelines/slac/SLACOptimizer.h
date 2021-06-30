@@ -26,12 +26,14 @@
 
 #pragma once
 
+#include <chrono>
 #include <string>
 #include <vector>
 
 #include "open3d/pipelines/registration/PoseGraph.h"
 #include "open3d/t/pipelines/slac/ControlGrid.h"
 #include "open3d/t/pipelines/slac/Visualization.h"
+#include "open3d/utility/Timer.h"
 
 namespace open3d {
 namespace t {

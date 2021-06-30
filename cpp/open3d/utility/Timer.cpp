@@ -33,6 +33,52 @@
 namespace open3d {
 namespace utility {
 
+SingletonAccumulativeTimer &SingletonAccumulativeTimer::GetInstance() {
+    static SingletonAccumulativeTimer instance;
+    return instance;
+}
+
+void SingletonAccumulativeTimer::Start() {
+    if (is_running_) {
+        utility::LogError("Timer is already running, cannot Start().");
+    }
+    start_time_ms_ = GetSystemTimeInMS();
+    is_running_ = true;
+}
+
+void SingletonAccumulativeTimer::Pause() {
+    if (!is_running_) {
+        utility::LogError("Timer is not running, cannot Pause().");
+    }
+    // Accumulate time in duration_time_ms_.
+    double end_time_ms = GetSystemTimeInMS();
+    duration_time_ms_ = duration_time_ms_ + end_time_ms - start_time_ms_;
+    is_running_ = false;
+}
+
+void SingletonAccumulativeTimer::Reset() {
+    is_running_ = false;
+    duration_time_ms_ = 0;
+}
+
+double SingletonAccumulativeTimer::GetDuration() {
+    if (is_running_) {
+        utility::LogError("Please call Pause() before GetDuration().");
+    }
+    return duration_time_ms_;
+}
+
+SingletonAccumulativeTimer::SingletonAccumulativeTimer()
+    : is_running_(false), duration_time_ms_(0) {}
+
+SingletonAccumulativeTimer::~SingletonAccumulativeTimer() {}
+
+double SingletonAccumulativeTimer::GetSystemTimeInMS() {
+    std::chrono::duration<double, std::milli> current_time =
+            std::chrono::high_resolution_clock::now().time_since_epoch();
+    return current_time.count();
+}
+
 Timer::Timer()
     : start_time_in_milliseconds_(0.0), end_time_in_milliseconds_(0.0) {}
 

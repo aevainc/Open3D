@@ -347,6 +347,7 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
     PoseGraph pose_graph_update(pose_graph);
     double total_time = 0;
     for (int itr = 0; itr < params.max_iterations_; ++itr) {
+        utility::SingletonAccumulativeTimer::GetInstance().Start();
         utility::LogInfo("Iteration {}", itr);
         utility::Timer itr_timer;
         itr_timer.Start();
@@ -373,8 +374,10 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
         step_timer.Start();
         core::Tensor residual_data =
                 core::Tensor::Zeros({1}, core::Dtype::Float32, device);
+        // utility::SingletonAccumulativeTimer::GetInstance().Pause();
         FillInSLACAlignmentTerm(AtA, Atb, residual_data, ctr_grid, fnames_down,
                                 pose_graph_update, params, debug_option);
+        // utility::SingletonAccumulativeTimer::GetInstance().Start();
         utility::LogInfo("Alignment loss = {}", residual_data[0].Item<float>());
         step_timer.Stop();
         utility::LogInfo("FillInSLACAlignmentTerm took: {:.3f}ms.",
@@ -421,6 +424,11 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
         itr_timer.Stop();
         double elapsed_time = itr_timer.GetDuration();
         utility::LogInfo("Iteration {} duration: {:.3f}ms.", itr, elapsed_time);
+        utility::SingletonAccumulativeTimer::GetInstance().Pause();
+        utility::LogInfo("Iteration {} duration without I/O: {:.3f}ms.", itr,
+                         utility::SingletonAccumulativeTimer::GetInstance()
+                                 .GetDuration());
+        utility::SingletonAccumulativeTimer::GetInstance().Reset();
         utility::LogInfo("###################################################");
         total_time += elapsed_time;
     }
