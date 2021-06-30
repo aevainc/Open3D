@@ -347,6 +347,7 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
     PoseGraph pose_graph_update(pose_graph);
     double total_time = 0;
     double total_time_without_io = 0;
+    utility::SingletonAccumulativeTimer::GetInstance().Reset();
     for (int itr = 0; itr < params.max_iterations_; ++itr) {
         utility::SingletonAccumulativeTimer::GetInstance().Start();
         utility::LogInfo("Iteration {}", itr);

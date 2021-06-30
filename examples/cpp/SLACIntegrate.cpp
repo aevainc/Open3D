@@ -153,6 +153,8 @@ int main(int argc, char* argv[]) {
 
     int k = 0;
     double total_time = 0.0;
+    utility::SingletonAccumulativeTimer::GetInstance().Reset();
+    int num_rgbd_frames = 0;
     for (size_t i = 0; i < posegraph->nodes_.size(); ++i) {
         auto fragment_pose_graph = *io::CreatePoseGraphFromFile(fmt::format(
                 "{}/fragment_optimized_{:03d}.json", fragment_folder, i));
@@ -175,6 +177,8 @@ int main(int argc, char* argv[]) {
                     t::io::CreateImageFromFile(depth_filenames[k])->To(device);
             auto color =
                     t::io::CreateImageFromFile(color_filenames[k])->To(device);
+
+            utility::SingletonAccumulativeTimer::GetInstance().Start();
             t::geometry::RGBDImage rgbd(color, depth);
 
             t::geometry::RGBDImage rgbd_projected =
@@ -183,6 +187,8 @@ int main(int argc, char* argv[]) {
             voxel_grid.Integrate(rgbd_projected.depth_, rgbd_projected.color_,
                                  intrinsic_t, extrinsic_t, depth_scale,
                                  max_depth);
+            num_rgbd_frames++;
+            utility::SingletonAccumulativeTimer::GetInstance().Pause();
             ++k;
 
             if (k % 10 == 0) {
@@ -196,6 +202,14 @@ int main(int argc, char* argv[]) {
         total_time += duration;
         utility::LogInfo("Integrating fragment {} took {}ms", i, duration);
     }
+
+    double total_time_without_io =
+            utility::SingletonAccumulativeTimer::GetInstance().GetDuration();
+    utility::LogInfo("Total integration time without IO: {}ms",
+                     total_time_without_io);
+    utility::LogInfo(
+            "Avg time per frame without IO {}ms, computed over total {} frames",
+            total_time_without_io / num_rgbd_frames, num_rgbd_frames);
     utility::LogInfo("Total integration time: {}ms", total_time);
 
     if (utility::ProgramOptionExists(argc, argv, "--mesh")) {
