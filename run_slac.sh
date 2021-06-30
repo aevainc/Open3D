@@ -29,7 +29,7 @@ echo "Running: SLAC"
     --method slac \
     --weight 1 \
     --distance_threshold 0.07 \
-    --iterations 5  # Change to 5 for final time
+    --iterations 10
 echo "Done: SLAC"
 # sudo chown $(id -u):$(id -g) perf.data && perf report -g 'graph,0.5,caller'
 
