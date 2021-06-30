@@ -346,6 +346,7 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
 
     PoseGraph pose_graph_update(pose_graph);
     double total_time = 0;
+    double total_time_without_io = 0;
     for (int itr = 0; itr < params.max_iterations_; ++itr) {
         utility::SingletonAccumulativeTimer::GetInstance().Start();
         utility::LogInfo("Iteration {}", itr);
@@ -425,9 +426,12 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
         double elapsed_time = itr_timer.GetDuration();
         utility::LogInfo("Iteration {} duration: {:.3f}ms.", itr, elapsed_time);
         utility::SingletonAccumulativeTimer::GetInstance().Pause();
+        double duration_without_io =
+                utility::SingletonAccumulativeTimer::GetInstance()
+                        .GetDuration();
         utility::LogInfo("Iteration {} duration without I/O: {:.3f}ms.", itr,
-                         utility::SingletonAccumulativeTimer::GetInstance()
-                                 .GetDuration());
+                         duration_without_io);
+        total_time_without_io += duration_without_io;
         utility::SingletonAccumulativeTimer::GetInstance().Reset();
         utility::LogInfo("###################################################");
         total_time += elapsed_time;
@@ -435,6 +439,10 @@ std::pair<PoseGraph, ControlGrid> RunSLACOptimizerForFragments(
     utility::LogInfo("Avg. iteration time over {} interations: {:.3f}ms.",
                      params.max_iterations_,
                      total_time / params.max_iterations_);
+    utility::LogInfo(
+            "Avg. iteration time without I/O over {} interations: {:.3f}ms.",
+            params.max_iterations_,
+            total_time_without_io / params.max_iterations_);
     return std::make_pair(pose_graph_update, ctr_grid);
 }
 
