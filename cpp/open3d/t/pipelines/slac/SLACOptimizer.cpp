@@ -238,7 +238,9 @@ void SaveCorrespondencesForPointClouds(
 
         std::string correspondences_fname = fmt::format(
                 "{}/{:03d}_{:03d}.npy", params.GetSubfolderName(), i, j);
-        if (utility::filesystem::FileExists(correspondences_fname)) continue;
+        if (utility::filesystem::FileExists(correspondences_fname)) {
+            continue;
+        }
 
         PointCloud tpcd_i =
                 CreateTPCDFromFile(fnames_processed[i], params.device_);
@@ -267,6 +269,28 @@ void SaveCorrespondencesForPointClouds(
                              correspondence_set.GetLength(), i, j);
         }
     }
+
+    // Report correspondence statistics
+    int num_edges = 0;
+    int num_correspondences = 0;
+    for (auto& edge : pose_graph.edges_) {
+        int i = edge.source_node_id_;
+        int j = edge.target_node_id_;
+        std::string correspondences_fname = fmt::format(
+                "{}/{:03d}_{:03d}.npy", params.GetSubfolderName(), i, j);
+        if (!utility::filesystem::FileExists(correspondences_fname)) {
+            // Some correspondence_set has length 0, so it is not saved.
+            continue;
+        }
+        core::Tensor correspondence_set =
+                core::Tensor::Load(correspondences_fname);
+        num_correspondences += correspondence_set.GetLength();
+        num_edges++;
+    }
+    utility::LogInfo(
+            "[Correspondence statistics] {} valid edges, total {} "
+            "correspondences.",
+            num_edges, num_correspondences);
 }
 
 static void InitializeControlGrid(ControlGrid& ctr_grid,
