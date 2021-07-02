@@ -5,3 +5,4 @@ tags
 .vscode
 docs/_static/build
 docs/_out
+examples/python/reconstruction_system/dataset
