@@ -43,14 +43,13 @@ def match_runtime(line):
     Ref:
         https://stackoverflow.com/a/14550569/1255535
     """
-    pattern = r"^(.*) +(\d+(?:\.\d+)?) ms +.*ms +([0-9]+)$"
+    pattern = r"^.* +(\d+(?:\.\d+)?) ms +.*ms +([0-9]+)$"
     match = re.match(pattern, line)
     if match:
         print(line)
-        print("test name :", match.group(1))
-        print("total time:", float(match.group(2)))
-        print("num iters :", float(match.group(3)))
-        return float(match.group(2)) / float(match.group(3))
+        print("total time:", float(match.group(1)))
+        print("num iters :", float(match.group(2)))
+        return float(match.group(1)) / float(match.group(2))
     else:
         return None
 
