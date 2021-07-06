@@ -60,6 +60,7 @@ open3d_add_example(ViewPCDMatch)
 open3d_add_example(Visualizer)
 open3d_add_example(VoxelHashing)
 open3d_add_example(Voxelization)
+open3d_add_example(CPUConsumer)
 
 if (BUILD_GUI)
     open3d_add_example(Draw)
