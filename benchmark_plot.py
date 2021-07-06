@@ -83,7 +83,7 @@ def parse_file(log_file):
                     })
                 # Reset to fresh
                 current_num_thread = num_thread
-                runtime = []
+                current_runtimes = []
             elif runtime:
                 current_runtimes.append(runtime)
 
