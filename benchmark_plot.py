@@ -43,13 +43,14 @@ def match_runtime(line):
     Ref:
         https://stackoverflow.com/a/14550569/1255535
     """
-    pattern = r"^.* +(\d+(?:\.\d+)?) ms +.*ms +([0-9]+)$"
+    pattern = r"^(.*) +(\d+(?:\.\d+)?) ms +.*ms +([0-9]+)$"
     match = re.match(pattern, line)
     if match:
         print(line)
-        print("total time:", float(match.group(1)))
-        print("num iters :", float(match.group(2)))
-        return float(match.group(1)) / float(match.group(2))
+        print("test name :", match.group(1))
+        print("total time:", float(match.group(2)))
+        print("num iters :", float(match.group(3)))
+        return float(match.group(2)) / float(match.group(3))
     else:
         return None
 
@@ -111,7 +112,7 @@ if __name__ == '__main__':
         ax.plot(xs, ys, 'b-')
         ax.plot(xs, ys, 'b*')
         for x, y in zip(xs, ys):
-            ax.annotate(f"{y:.1f}", xy=(x, y))
+            ax.annotate(f"{y:.2f}", xy=(x, y))
         ax.set_ylim(ymin=0)
         ax.set_title(title)
         ax.set_xticks(np.arange(min(xs), max(xs) + 1, 1.0))
