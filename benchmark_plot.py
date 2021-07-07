@@ -54,6 +54,21 @@ def match_runtime(line):
         return None
 
 
+def extract_cpu_prefix(filename):
+    """
+    Input:
+        benchmark_Intel(R)_Core(TM)_i5-8265U_CPU_with_dummy.log
+    Output:
+        benchmark_Intel(R)_Core(TM)_i5-8265U_CPU
+    """
+    pattern = r"^(.*_CPU).*$"
+    match = re.match(pattern, filename)
+    if match:
+        return match.group(1)
+    else:
+        raise ValueError(f"Invalid log file {filename}")
+
+
 def parse_file(log_file):
     """
     Returns: results, a list of directories, e.g.
@@ -98,25 +113,38 @@ def parse_file(log_file):
 if __name__ == '__main__':
     log_files = sorted(list(pwd.glob('benchmark_*.log')))
     log_files = [str(log_file) for log_file in log_files]
-    num_log_files = len(log_files)
 
-    fig = plt.figure()
-    for idx, log_file in enumerate(log_files):
-        ax = fig.add_subplot(num_log_files, 1, idx + 1)
-        results = parse_file(log_file)
-        title = Path(log_file).name[len("benchmark_"):-len(".log")]
-        title = title.replace("_", " ")
-        xs = [result["num_threads"] for result in results]
-        ys = [result["gmean"] for result in results]
-        ax.plot(xs, ys, 'b-')
-        ax.plot(xs, ys, 'b*')
-        for x, y in zip(xs, ys):
-            ax.annotate(f"{y:.2f}", xy=(x, y))
-        ax.set_ylim(ymin=0)
-        ax.set_title(title)
-        ax.set_xticks(np.arange(min(xs), max(xs) + 1, 1.0))
-        ax.set_xlabel("# of threads")
-        ax.set_ylabel("Runtime gmean (ms)")
+    cpu_prefixes = set([extract_cpu_prefix(log_file) for log_file in log_files])
+    map_cpu_prefix_to_log_files = dict()
+    for cpu_prefix in cpu_prefixes:
+        map_cpu_prefix_to_log_files[cpu_prefix] = []
+        for log_file in log_files:
+            if log_file.startswith(cpu_prefix):
+                map_cpu_prefix_to_log_files[cpu_prefix].append(log_file)
+        map_cpu_prefix_to_log_files[cpu_prefix] = sorted(
+            map_cpu_prefix_to_log_files[cpu_prefix])
+    print(map_cpu_prefix_to_log_files)
 
-    fig.tight_layout()
+    for cpu_prefix in map_cpu_prefix_to_log_files:
+        log_files = map_cpu_prefix_to_log_files[cpu_prefix]
+        num_log_files = len(log_files)
+        fig = plt.figure()
+        for idx, log_file in enumerate(log_files):
+            ax = fig.add_subplot(num_log_files, 1, idx + 1)
+            results = parse_file(log_file)
+            title = Path(log_file).name[len("benchmark_"):-len(".log")]
+            title = title.replace("_", " ")
+            xs = [result["num_threads"] for result in results]
+            ys = [result["gmean"] for result in results]
+            ax.plot(xs, ys, 'b-')
+            ax.plot(xs, ys, 'b*')
+            for x, y in zip(xs, ys):
+                ax.annotate(f"{y:.2f}", xy=(x, y))
+            ax.set_ylim(ymin=0)
+            ax.set_title(title)
+            ax.set_xticks(np.arange(min(xs), max(xs) + 1, 1.0))
+            ax.set_xlabel("# of threads")
+            ax.set_ylabel("Runtime gmean (ms)")
+        fig.tight_layout()
+
     plt.show()
