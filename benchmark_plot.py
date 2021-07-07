@@ -26,8 +26,6 @@ def match_num_thread(line):
     pattern = r"^# OMP_NUM_THREADS: ([0-9]+)$"
     match = re.match(pattern, line)
     if match:
-        # print(line)
-        # print(int(match.group(1)))
         return int(match.group(1))
     else:
         return None
@@ -46,9 +44,6 @@ def match_runtime(line):
     pattern = r"^.* +(\d+(?:\.\d+)?) ms +.*ms +([0-9]+)$"
     match = re.match(pattern, line)
     if match:
-        print(line)
-        print("total time:", float(match.group(1)))
-        print("num iters :", float(match.group(2)))
         return float(match.group(1)) / float(match.group(2))
     else:
         return None
