@@ -34,8 +34,8 @@ function run_benchmark {
 
     # BenchmarkRegistrationICP
     echo "Running benchmarks from 1 to ${NPROC} threads."
-    # for (( i = ${NPROC} ; i >= 1 ; i-- ));
-    for (( i = 1 ; i <= ${NPROC} ; i++ ));
+    for (( i = ${NPROC} ; i >= 1 ; i-- ));
+    # for (( i = 1 ; i <= ${NPROC} ; i++ ));
     do
         echo "######################################" >> ${OUT_FILE}
 
