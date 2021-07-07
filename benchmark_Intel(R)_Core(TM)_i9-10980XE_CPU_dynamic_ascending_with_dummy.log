@@ -1,0 +1,1008 @@
+######################################
+# OMP_NUM_THREADS: 1
+2021-07-07 00:57:22
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 18.95, 12.96, 10.33
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        56.4 ms         56.4 ms           11
+Reduction/CPU                                        7392 ms         7392 ms            1
+Zeros/CPU                                             340 ms          340 ms            2
+FromLegacyPointCloud/CPU                             82.1 ms         82.1 ms            8
+ToLegacyPointCloud/CPU                                178 ms          178 ms            4
+VoxelDownSample/core::HashmapBackend::TBB_0_01        192 ms          192 ms            4
+ComputeOdometryResultPointToPlane/CPU                 259 ms          259 ms            3
+RGBDOdometryMultiScale/Hybrid_CPU                     140 ms          140 ms            5
+RGBDOdometryMultiScale/Intensity_CPU                  108 ms          108 ms            6
+RGBDOdometryMultiScale/PointToPlane_CPU               101 ms          101 ms            7
+BenchmarkRegistrationICP/PointToPlane / CPU          7.99 ms         7.99 ms           88
+BenchmarkRegistrationICP/PointToPoint / CPU          8.26 ms         8.26 ms           81
+######################################
+######################################
+# OMP_NUM_THREADS: 2
+2021-07-07 00:57:50
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 12.27, 11.91, 10.07
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        55.7 ms         55.7 ms           11
+Reduction/CPU                                        4422 ms         4422 ms            1
+Zeros/CPU                                             341 ms          341 ms            2
+FromLegacyPointCloud/CPU                             82.2 ms         82.2 ms            8
+ToLegacyPointCloud/CPU                                177 ms          177 ms            4
+VoxelDownSample/core::HashmapBackend::TBB_0_01        193 ms          193 ms            4
+ComputeOdometryResultPointToPlane/CPU                 258 ms          258 ms            3
+RGBDOdometryMultiScale/Hybrid_CPU                     140 ms          140 ms            5
+RGBDOdometryMultiScale/Intensity_CPU                  108 ms          108 ms            6
+RGBDOdometryMultiScale/PointToPlane_CPU               101 ms          101 ms            7
+BenchmarkRegistrationICP/PointToPlane / CPU          8.15 ms         8.15 ms           89
+BenchmarkRegistrationICP/PointToPoint / CPU          8.18 ms         8.18 ms           88
+######################################
+######################################
+# OMP_NUM_THREADS: 3
+2021-07-07 00:58:13
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 9.35, 11.27, 9.89
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        56.1 ms         56.1 ms           11
+Reduction/CPU                                        4418 ms         4418 ms            1
+Zeros/CPU                                             341 ms          341 ms            2
+FromLegacyPointCloud/CPU                             82.1 ms         82.1 ms            8
+ToLegacyPointCloud/CPU                                177 ms          177 ms            4
+VoxelDownSample/core::HashmapBackend::TBB_0_01        192 ms          192 ms            4
+ComputeOdometryResultPointToPlane/CPU                 258 ms          258 ms            3
+RGBDOdometryMultiScale/Hybrid_CPU                     140 ms          140 ms            5
+RGBDOdometryMultiScale/Intensity_CPU                  108 ms          108 ms            6
+RGBDOdometryMultiScale/PointToPlane_CPU               101 ms          101 ms            7
+BenchmarkRegistrationICP/PointToPlane / CPU          8.05 ms         8.05 ms           88
+BenchmarkRegistrationICP/PointToPoint / CPU          8.05 ms         8.05 ms           85
+######################################
+######################################
+# OMP_NUM_THREADS: 4
+2021-07-07 00:58:35
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 6.84, 10.53, 9.68
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        55.9 ms         55.9 ms           10
+Reduction/CPU                                        4418 ms         4418 ms            1
+Zeros/CPU                                             342 ms          342 ms            2
+FromLegacyPointCloud/CPU                             82.4 ms         82.4 ms            8
+ToLegacyPointCloud/CPU                                178 ms          178 ms            4
+VoxelDownSample/core::HashmapBackend::TBB_0_01        193 ms          193 ms            4
+ComputeOdometryResultPointToPlane/CPU                 258 ms          258 ms            3
+RGBDOdometryMultiScale/Hybrid_CPU                     140 ms          140 ms            5
+RGBDOdometryMultiScale/Intensity_CPU                  108 ms          108 ms            7
+RGBDOdometryMultiScale/PointToPlane_CPU               101 ms          101 ms            7
+BenchmarkRegistrationICP/PointToPlane / CPU          8.12 ms         8.12 ms           88
+BenchmarkRegistrationICP/PointToPoint / CPU          7.99 ms         7.98 ms           88
+######################################
+######################################
+# OMP_NUM_THREADS: 5
+2021-07-07 00:58:58
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 5.47, 9.97, 9.52
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        56.2 ms         56.2 ms           11
+Reduction/CPU                                        4415 ms         4415 ms            1
+Zeros/CPU                                             341 ms          341 ms            2
+FromLegacyPointCloud/CPU                             82.0 ms         82.0 ms            8
+ToLegacyPointCloud/CPU                                178 ms          178 ms            4
+VoxelDownSample/core::HashmapBackend::TBB_0_01        193 ms          193 ms            4
+ComputeOdometryResultPointToPlane/CPU                 259 ms          259 ms            3
+RGBDOdometryMultiScale/Hybrid_CPU                     140 ms          140 ms            5
+RGBDOdometryMultiScale/Intensity_CPU                  108 ms          108 ms            6
+RGBDOdometryMultiScale/PointToPlane_CPU               101 ms          101 ms            7
+BenchmarkRegistrationICP/PointToPlane / CPU          8.11 ms         8.11 ms           89
+BenchmarkRegistrationICP/PointToPoint / CPU          8.11 ms         8.10 ms           86
+######################################
+######################################
+# OMP_NUM_THREADS: 6
+2021-07-07 00:59:21
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 6.29, 9.87, 9.50
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        56.2 ms         56.2 ms           11
+Reduction/CPU                                        4424 ms         4424 ms            1
+Zeros/CPU                                             341 ms          341 ms            2
+FromLegacyPointCloud/CPU                             82.3 ms         82.3 ms            8
+ToLegacyPointCloud/CPU                                179 ms          179 ms            4
+VoxelDownSample/core::HashmapBackend::TBB_0_01        193 ms          193 ms            4
+ComputeOdometryResultPointToPlane/CPU                 259 ms          259 ms            3
+RGBDOdometryMultiScale/Hybrid_CPU                     140 ms          140 ms            5
+RGBDOdometryMultiScale/Intensity_CPU                  108 ms          108 ms            6
+RGBDOdometryMultiScale/PointToPlane_CPU               101 ms          101 ms            7
+BenchmarkRegistrationICP/PointToPlane / CPU          8.09 ms         8.09 ms           88
+BenchmarkRegistrationICP/PointToPoint / CPU          8.16 ms         8.16 ms           86
+######################################
+######################################
+# OMP_NUM_THREADS: 7
+2021-07-07 00:59:43
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 7.55, 9.81, 9.49
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        55.7 ms         55.7 ms           11
+Reduction/CPU                                        4423 ms         4423 ms            1
+Zeros/CPU                                             342 ms          342 ms            2
+FromLegacyPointCloud/CPU                             82.3 ms         82.3 ms            8
+ToLegacyPointCloud/CPU                                178 ms          178 ms            4
+VoxelDownSample/core::HashmapBackend::TBB_0_01        192 ms          192 ms            4
+ComputeOdometryResultPointToPlane/CPU                 258 ms          258 ms            3
+RGBDOdometryMultiScale/Hybrid_CPU                     140 ms          140 ms            5
+RGBDOdometryMultiScale/Intensity_CPU                  108 ms          108 ms            6
+RGBDOdometryMultiScale/PointToPlane_CPU               101 ms          101 ms            7
+BenchmarkRegistrationICP/PointToPlane / CPU          8.04 ms         8.03 ms           87
+BenchmarkRegistrationICP/PointToPoint / CPU          8.14 ms         8.14 ms           88
+######################################
+######################################
+# OMP_NUM_THREADS: 8
+2021-07-07 01:00:06
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 5.97, 9.30, 9.33
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        56.3 ms         56.3 ms           11
+Reduction/CPU                                        4417 ms         4417 ms            1
+Zeros/CPU                                             342 ms          342 ms            2
+FromLegacyPointCloud/CPU                             82.3 ms         82.3 ms            8
+ToLegacyPointCloud/CPU                                178 ms          178 ms            4
+VoxelDownSample/core::HashmapBackend::TBB_0_01        193 ms          193 ms            4
+ComputeOdometryResultPointToPlane/CPU                 258 ms          258 ms            3
+RGBDOdometryMultiScale/Hybrid_CPU                     140 ms          140 ms            5
+RGBDOdometryMultiScale/Intensity_CPU                  108 ms          108 ms            6
+RGBDOdometryMultiScale/PointToPlane_CPU               101 ms          101 ms            7
+BenchmarkRegistrationICP/PointToPlane / CPU          8.07 ms         8.07 ms           87
+BenchmarkRegistrationICP/PointToPoint / CPU          8.05 ms         8.05 ms           83
+######################################
+######################################
+# OMP_NUM_THREADS: 9
+2021-07-07 01:00:28
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 7.42, 9.29, 9.32
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        53.9 ms         53.9 ms           12
+Reduction/CPU                                        4418 ms         4418 ms            1
+Zeros/CPU                                             339 ms          338 ms            2
+FromLegacyPointCloud/CPU                             82.0 ms         82.0 ms            8
+ToLegacyPointCloud/CPU                                177 ms          177 ms            4
+VoxelDownSample/core::HashmapBackend::TBB_0_01        193 ms          193 ms            4
+ComputeOdometryResultPointToPlane/CPU                 257 ms          257 ms            3
+RGBDOdometryMultiScale/Hybrid_CPU                     140 ms          140 ms            5
+RGBDOdometryMultiScale/Intensity_CPU                  108 ms          108 ms            6
+RGBDOdometryMultiScale/PointToPlane_CPU               101 ms          101 ms            7
+BenchmarkRegistrationICP/PointToPlane / CPU          8.01 ms         8.01 ms           89
+BenchmarkRegistrationICP/PointToPoint / CPU          8.21 ms         8.20 ms           85
+######################################
+######################################
+# OMP_NUM_THREADS: 10
+2021-07-07 01:00:51
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 5.88, 8.82, 9.16
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        54.2 ms         54.2 ms           12
+Reduction/CPU                                        4418 ms         4418 ms            1
+Zeros/CPU                                             337 ms          337 ms            2
+FromLegacyPointCloud/CPU                             81.8 ms         81.8 ms            8
+ToLegacyPointCloud/CPU                                178 ms          178 ms            4
+VoxelDownSample/core::HashmapBackend::TBB_0_01        193 ms          193 ms            4
+ComputeOdometryResultPointToPlane/CPU                 257 ms          257 ms            3
+RGBDOdometryMultiScale/Hybrid_CPU                     140 ms          140 ms            5
+RGBDOdometryMultiScale/Intensity_CPU                  108 ms          108 ms            6
+RGBDOdometryMultiScale/PointToPlane_CPU               101 ms          101 ms            7
+BenchmarkRegistrationICP/PointToPlane / CPU          7.98 ms         7.98 ms           85
+BenchmarkRegistrationICP/PointToPoint / CPU          8.16 ms         8.16 ms           88
+######################################
+######################################
+# OMP_NUM_THREADS: 11
+2021-07-07 01:01:13
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 4.55, 8.27, 8.97
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        34.6 ms         34.6 ms           20
+Reduction/CPU                                        2788 ms         2788 ms            1
+Zeros/CPU                                             210 ms          208 ms            3
+FromLegacyPointCloud/CPU                             41.7 ms         41.7 ms           17
+ToLegacyPointCloud/CPU                               93.7 ms         93.6 ms            7
+VoxelDownSample/core::HashmapBackend::TBB_0_01        122 ms          121 ms            6
+ComputeOdometryResultPointToPlane/CPU                 133 ms          133 ms            5
+RGBDOdometryMultiScale/Hybrid_CPU                    74.0 ms         73.9 ms            9
+RGBDOdometryMultiScale/Intensity_CPU                 57.3 ms         57.3 ms           12
+RGBDOdometryMultiScale/PointToPlane_CPU              39.5 ms         39.5 ms           18
+BenchmarkRegistrationICP/PointToPlane / CPU          5.96 ms         5.96 ms          121
+BenchmarkRegistrationICP/PointToPoint / CPU          6.28 ms         6.28 ms          118
+######################################
+######################################
+# OMP_NUM_THREADS: 12
+2021-07-07 01:01:32
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 4.21, 8.01, 8.87
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        21.4 ms         21.2 ms           31
+Reduction/CPU                                        2782 ms         2782 ms            1
+Zeros/CPU                                             135 ms          133 ms            5
+FromLegacyPointCloud/CPU                             21.0 ms         21.0 ms           25
+ToLegacyPointCloud/CPU                               50.7 ms         50.7 ms           14
+VoxelDownSample/core::HashmapBackend::TBB_0_01       76.3 ms         76.2 ms            9
+ComputeOdometryResultPointToPlane/CPU                71.8 ms         71.8 ms           10
+RGBDOdometryMultiScale/Hybrid_CPU                    41.0 ms         41.0 ms           17
+RGBDOdometryMultiScale/Intensity_CPU                 31.9 ms         31.9 ms           22
+RGBDOdometryMultiScale/PointToPlane_CPU              31.2 ms         31.1 ms           22
+BenchmarkRegistrationICP/PointToPlane / CPU          5.47 ms         5.47 ms          120
+BenchmarkRegistrationICP/PointToPoint / CPU          5.76 ms         5.76 ms          125
+######################################
+######################################
+# OMP_NUM_THREADS: 13
+2021-07-07 01:01:49
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 4.25, 7.77, 8.77
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        19.4 ms         19.1 ms           39
+Reduction/CPU                                        2804 ms         2707 ms            1
+Zeros/CPU                                             122 ms          119 ms            6
+FromLegacyPointCloud/CPU                             18.8 ms         18.8 ms           37
+ToLegacyPointCloud/CPU                               46.5 ms         43.8 ms           14
+VoxelDownSample/core::HashmapBackend::TBB_0_01       68.6 ms         68.4 ms           10
+ComputeOdometryResultPointToPlane/CPU                58.0 ms         58.0 ms           12
+RGBDOdometryMultiScale/Hybrid_CPU                    34.1 ms         34.1 ms           21
+RGBDOdometryMultiScale/Intensity_CPU                 26.5 ms         26.4 ms           27
+RGBDOdometryMultiScale/PointToPlane_CPU              26.3 ms         26.3 ms           27
+BenchmarkRegistrationICP/PointToPlane / CPU          5.34 ms         5.33 ms          125
+BenchmarkRegistrationICP/PointToPoint / CPU          5.49 ms         5.49 ms          130
+######################################
+######################################
+# OMP_NUM_THREADS: 14
+2021-07-07 01:02:07
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 4.52, 7.65, 8.72
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        16.4 ms         16.4 ms           40
+Reduction/CPU                                        2822 ms         2735 ms            1
+Zeros/CPU                                             123 ms          110 ms            6
+FromLegacyPointCloud/CPU                             15.8 ms         15.8 ms           44
+ToLegacyPointCloud/CPU                               35.9 ms         35.9 ms           19
+VoxelDownSample/core::HashmapBackend::TBB_0_01       61.5 ms         61.5 ms           11
+ComputeOdometryResultPointToPlane/CPU                49.5 ms         49.5 ms           14
+RGBDOdometryMultiScale/Hybrid_CPU                    29.3 ms         29.3 ms           24
+RGBDOdometryMultiScale/Intensity_CPU                 23.0 ms         23.0 ms           31
+RGBDOdometryMultiScale/PointToPlane_CPU              23.7 ms         23.6 ms           31
+BenchmarkRegistrationICP/PointToPlane / CPU          5.17 ms         5.16 ms          138
+BenchmarkRegistrationICP/PointToPoint / CPU          5.57 ms         5.57 ms          131
+######################################
+######################################
+# OMP_NUM_THREADS: 15
+2021-07-07 01:02:25
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 4.65, 7.48, 8.64
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        16.2 ms         16.2 ms           40
+Reduction/CPU                                        2805 ms         2756 ms            1
+Zeros/CPU                                             108 ms          102 ms            6
+FromLegacyPointCloud/CPU                             13.7 ms         13.7 ms           51
+ToLegacyPointCloud/CPU                               32.1 ms         32.1 ms           22
+VoxelDownSample/core::HashmapBackend::TBB_0_01       56.7 ms         55.9 ms           12
+ComputeOdometryResultPointToPlane/CPU                42.6 ms         42.6 ms           16
+RGBDOdometryMultiScale/Hybrid_CPU                    25.9 ms         25.9 ms           27
+RGBDOdometryMultiScale/Intensity_CPU                 20.4 ms         20.4 ms           32
+RGBDOdometryMultiScale/PointToPlane_CPU              20.5 ms         20.5 ms           34
+BenchmarkRegistrationICP/PointToPlane / CPU          4.92 ms         4.92 ms          113
+BenchmarkRegistrationICP/PointToPoint / CPU          5.13 ms         5.13 ms          128
+######################################
+######################################
+# OMP_NUM_THREADS: 16
+2021-07-07 01:02:43
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 5.12, 7.44, 8.61
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        15.7 ms         15.6 ms           45
+Reduction/CPU                                        2802 ms         2802 ms            1
+Zeros/CPU                                             106 ms         97.2 ms            7
+FromLegacyPointCloud/CPU                             12.2 ms         12.2 ms           57
+ToLegacyPointCloud/CPU                               28.6 ms         28.6 ms           24
+VoxelDownSample/core::HashmapBackend::TBB_0_01       54.0 ms         53.9 ms           13
+ComputeOdometryResultPointToPlane/CPU                38.5 ms         38.5 ms           19
+RGBDOdometryMultiScale/Hybrid_CPU                    23.7 ms         23.7 ms           30
+RGBDOdometryMultiScale/Intensity_CPU                 18.6 ms         18.6 ms           37
+RGBDOdometryMultiScale/PointToPlane_CPU              18.9 ms         18.9 ms           37
+BenchmarkRegistrationICP/PointToPlane / CPU          4.95 ms         4.95 ms          138
+BenchmarkRegistrationICP/PointToPoint / CPU          5.11 ms         5.11 ms          128
+######################################
+######################################
+# OMP_NUM_THREADS: 17
+2021-07-07 01:03:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 4.82, 7.22, 8.51
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        15.5 ms         15.3 ms           44
+Reduction/CPU                                        2787 ms         2787 ms            1
+Zeros/CPU                                             102 ms         95.8 ms            7
+FromLegacyPointCloud/CPU                             9.62 ms         9.62 ms           71
+ToLegacyPointCloud/CPU                               26.7 ms         26.7 ms           26
+VoxelDownSample/core::HashmapBackend::TBB_0_01       54.1 ms         53.7 ms           13
+ComputeOdometryResultPointToPlane/CPU                35.0 ms         35.0 ms           20
+RGBDOdometryMultiScale/Hybrid_CPU                    22.2 ms         22.2 ms           32
+RGBDOdometryMultiScale/Intensity_CPU                 17.6 ms         17.6 ms           40
+RGBDOdometryMultiScale/PointToPlane_CPU              18.0 ms         18.0 ms           39
+BenchmarkRegistrationICP/PointToPlane / CPU          4.98 ms         4.98 ms          126
+BenchmarkRegistrationICP/PointToPoint / CPU          5.03 ms         5.03 ms          110
+######################################
+######################################
+# OMP_NUM_THREADS: 18
+2021-07-07 01:03:17
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 5.57, 7.26, 8.50
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        14.4 ms         14.4 ms           48
+Reduction/CPU                                        2749 ms         2749 ms            1
+Zeros/CPU                                             102 ms         94.8 ms            7
+FromLegacyPointCloud/CPU                             10.3 ms         10.3 ms           68
+ToLegacyPointCloud/CPU                               25.2 ms         25.2 ms           28
+VoxelDownSample/core::HashmapBackend::TBB_0_01       54.5 ms         53.5 ms           14
+ComputeOdometryResultPointToPlane/CPU                32.6 ms         32.6 ms           22
+RGBDOdometryMultiScale/Hybrid_CPU                    20.9 ms         20.9 ms           34
+RGBDOdometryMultiScale/Intensity_CPU                 16.3 ms         16.3 ms           43
+RGBDOdometryMultiScale/PointToPlane_CPU              16.7 ms         16.7 ms           42
+BenchmarkRegistrationICP/PointToPlane / CPU          4.72 ms         4.71 ms          144
+BenchmarkRegistrationICP/PointToPoint / CPU          4.93 ms         4.92 ms          137
+######################################
+######################################
+# OMP_NUM_THREADS: 19
+2021-07-07 01:03:35
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 5.91, 7.24, 8.47
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        14.5 ms         14.5 ms           48
+Reduction/CPU                                        2792 ms         2754 ms            1
+Zeros/CPU                                            96.8 ms         93.1 ms            8
+FromLegacyPointCloud/CPU                             9.76 ms         9.72 ms           73
+ToLegacyPointCloud/CPU                               23.8 ms         23.8 ms           29
+VoxelDownSample/core::HashmapBackend::TBB_0_01       51.2 ms         51.1 ms           14
+ComputeOdometryResultPointToPlane/CPU                30.3 ms         30.3 ms           23
+RGBDOdometryMultiScale/Hybrid_CPU                    19.9 ms         19.9 ms           36
+RGBDOdometryMultiScale/Intensity_CPU                 15.8 ms         15.8 ms           45
+RGBDOdometryMultiScale/PointToPlane_CPU              16.4 ms         16.4 ms           43
+BenchmarkRegistrationICP/PointToPlane / CPU          4.60 ms         4.60 ms          152
+BenchmarkRegistrationICP/PointToPoint / CPU          4.81 ms         4.81 ms          148
+######################################
+######################################
+# OMP_NUM_THREADS: 20
+2021-07-07 01:03:53
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 7.08, 7.40, 8.50
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        14.4 ms         14.4 ms           45
+Reduction/CPU                                        2803 ms         2700 ms            1
+Zeros/CPU                                            99.8 ms         93.1 ms            8
+FromLegacyPointCloud/CPU                             9.21 ms         9.21 ms           76
+ToLegacyPointCloud/CPU                               22.9 ms         22.9 ms           31
+VoxelDownSample/core::HashmapBackend::TBB_0_01       56.4 ms         56.1 ms           13
+ComputeOdometryResultPointToPlane/CPU                28.6 ms         28.6 ms           24
+RGBDOdometryMultiScale/Hybrid_CPU                    19.1 ms         19.1 ms           37
+RGBDOdometryMultiScale/Intensity_CPU                 15.2 ms         15.2 ms           46
+RGBDOdometryMultiScale/PointToPlane_CPU              16.4 ms         16.4 ms           43
+BenchmarkRegistrationICP/PointToPlane / CPU          4.66 ms         4.65 ms          154
+BenchmarkRegistrationICP/PointToPoint / CPU          4.71 ms         4.70 ms          149
+######################################
+######################################
+# OMP_NUM_THREADS: 21
+2021-07-07 01:04:12
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 6.10, 7.17, 8.40
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        14.2 ms         14.2 ms           49
+Reduction/CPU                                        2798 ms         2798 ms            1
+Zeros/CPU                                             102 ms         95.3 ms            8
+FromLegacyPointCloud/CPU                             8.71 ms         8.70 ms           81
+ToLegacyPointCloud/CPU                               21.9 ms         21.9 ms           32
+VoxelDownSample/core::HashmapBackend::TBB_0_01       50.3 ms         49.9 ms           14
+ComputeOdometryResultPointToPlane/CPU                26.7 ms         26.7 ms           26
+RGBDOdometryMultiScale/Hybrid_CPU                    18.1 ms         18.1 ms           38
+RGBDOdometryMultiScale/Intensity_CPU                 14.5 ms         14.5 ms           47
+RGBDOdometryMultiScale/PointToPlane_CPU              15.3 ms         15.3 ms           46
+BenchmarkRegistrationICP/PointToPlane / CPU          4.53 ms         4.53 ms          156
+BenchmarkRegistrationICP/PointToPoint / CPU          4.64 ms         4.64 ms          150
+######################################
+######################################
+# OMP_NUM_THREADS: 22
+2021-07-07 01:04:30
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 9.79, 7.86, 8.60
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        15.5 ms         15.5 ms           42
+Reduction/CPU                                        2822 ms         2742 ms            1
+Zeros/CPU                                            99.8 ms         96.3 ms            8
+FromLegacyPointCloud/CPU                             6.83 ms         6.83 ms          101
+ToLegacyPointCloud/CPU                               20.9 ms         20.9 ms           34
+VoxelDownSample/core::HashmapBackend::TBB_0_01       50.6 ms         50.4 ms           10
+ComputeOdometryResultPointToPlane/CPU                25.2 ms         25.2 ms           28
+RGBDOdometryMultiScale/Hybrid_CPU                    17.4 ms         17.4 ms           39
+RGBDOdometryMultiScale/Intensity_CPU                 14.0 ms         14.0 ms           50
+RGBDOdometryMultiScale/PointToPlane_CPU              14.9 ms         14.9 ms           47
+BenchmarkRegistrationICP/PointToPlane / CPU          4.47 ms         4.46 ms          156
+BenchmarkRegistrationICP/PointToPoint / CPU          4.53 ms         4.52 ms          155
+######################################
+######################################
+# OMP_NUM_THREADS: 23
+2021-07-07 01:04:48
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 10.21, 8.03, 8.64
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        14.2 ms         14.2 ms           45
+Reduction/CPU                                        2790 ms         2765 ms            1
+Zeros/CPU                                            96.1 ms         91.1 ms            7
+FromLegacyPointCloud/CPU                             7.75 ms         7.75 ms           91
+ToLegacyPointCloud/CPU                               20.0 ms         20.0 ms           35
+VoxelDownSample/core::HashmapBackend::TBB_0_01       48.2 ms         48.0 ms           15
+ComputeOdometryResultPointToPlane/CPU                23.9 ms         23.8 ms           29
+RGBDOdometryMultiScale/Hybrid_CPU                    16.6 ms         16.6 ms           42
+RGBDOdometryMultiScale/Intensity_CPU                 13.4 ms         13.4 ms           52
+RGBDOdometryMultiScale/PointToPlane_CPU              14.4 ms         14.4 ms           49
+BenchmarkRegistrationICP/PointToPlane / CPU          4.46 ms         4.45 ms          159
+BenchmarkRegistrationICP/PointToPoint / CPU          4.65 ms         4.65 ms          156
+######################################
+######################################
+# OMP_NUM_THREADS: 24
+2021-07-07 01:05:06
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 13.85, 8.94, 8.92
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        14.2 ms         14.2 ms           47
+Reduction/CPU                                        2821 ms         2764 ms            1
+Zeros/CPU                                             101 ms         96.8 ms            8
+FromLegacyPointCloud/CPU                             7.41 ms         7.41 ms           95
+ToLegacyPointCloud/CPU                               19.5 ms         19.5 ms           36
+VoxelDownSample/core::HashmapBackend::TBB_0_01       48.7 ms         48.5 ms           13
+ComputeOdometryResultPointToPlane/CPU                22.7 ms         22.7 ms           31
+RGBDOdometryMultiScale/Hybrid_CPU                    16.3 ms         16.2 ms           44
+RGBDOdometryMultiScale/Intensity_CPU                 13.4 ms         13.4 ms           53
+RGBDOdometryMultiScale/PointToPlane_CPU              14.3 ms         14.3 ms           49
+BenchmarkRegistrationICP/PointToPlane / CPU          4.36 ms         4.36 ms          160
+BenchmarkRegistrationICP/PointToPoint / CPU          4.52 ms         4.51 ms          154
+######################################
+######################################
+# OMP_NUM_THREADS: 25
+2021-07-07 01:05:24
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 12.77, 8.98, 8.94
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        14.4 ms         14.4 ms           48
+Reduction/CPU                                        2807 ms         2724 ms            1
+Zeros/CPU                                            98.7 ms         95.2 ms            8
+FromLegacyPointCloud/CPU                             7.64 ms         7.64 ms           91
+ToLegacyPointCloud/CPU                               19.4 ms         19.4 ms           36
+VoxelDownSample/core::HashmapBackend::TBB_0_01       50.4 ms         50.3 ms           15
+ComputeOdometryResultPointToPlane/CPU                22.8 ms         22.8 ms           31
+RGBDOdometryMultiScale/Hybrid_CPU                    16.2 ms         16.2 ms           44
+RGBDOdometryMultiScale/Intensity_CPU                 13.1 ms         13.1 ms           54
+RGBDOdometryMultiScale/PointToPlane_CPU              14.0 ms         14.0 ms           50
+BenchmarkRegistrationICP/PointToPlane / CPU          4.31 ms         4.31 ms          139
+BenchmarkRegistrationICP/PointToPoint / CPU          4.51 ms         4.51 ms          159
+######################################
+######################################
+# OMP_NUM_THREADS: 26
+2021-07-07 01:05:42
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 12.83, 9.17, 9.00
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        12.7 ms         12.7 ms           50
+Reduction/CPU                                        2839 ms         2749 ms            1
+Zeros/CPU                                            99.8 ms         96.6 ms            8
+FromLegacyPointCloud/CPU                             7.12 ms         7.12 ms           98
+ToLegacyPointCloud/CPU                               18.6 ms         18.6 ms           38
+VoxelDownSample/core::HashmapBackend::TBB_0_01       48.0 ms         47.9 ms           15
+ComputeOdometryResultPointToPlane/CPU                21.8 ms         21.8 ms           32
+RGBDOdometryMultiScale/Hybrid_CPU                    15.7 ms         15.7 ms           44
+RGBDOdometryMultiScale/Intensity_CPU                 12.6 ms         12.6 ms           55
+RGBDOdometryMultiScale/PointToPlane_CPU              13.9 ms         13.9 ms           51
+BenchmarkRegistrationICP/PointToPlane / CPU          4.23 ms         4.23 ms          165
+BenchmarkRegistrationICP/PointToPoint / CPU          4.35 ms         4.34 ms          161
+######################################
+######################################
+# OMP_NUM_THREADS: 27
+2021-07-07 01:06:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 15.15, 9.84, 9.22
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        15.4 ms         15.4 ms           45
+Reduction/CPU                                        2824 ms         2719 ms            1
+Zeros/CPU                                             104 ms         96.1 ms            7
+FromLegacyPointCloud/CPU                             8.08 ms         8.08 ms           86
+ToLegacyPointCloud/CPU                               23.7 ms         23.7 ms           29
+VoxelDownSample/core::HashmapBackend::TBB_0_01       51.3 ms         51.3 ms           13
+ComputeOdometryResultPointToPlane/CPU                28.4 ms         28.4 ms           25
+RGBDOdometryMultiScale/Hybrid_CPU                    19.2 ms         19.2 ms           37
+RGBDOdometryMultiScale/Intensity_CPU                 15.3 ms         15.3 ms           45
+RGBDOdometryMultiScale/PointToPlane_CPU              17.2 ms         17.2 ms           43
+BenchmarkRegistrationICP/PointToPlane / CPU          4.39 ms         4.38 ms          132
+BenchmarkRegistrationICP/PointToPoint / CPU          4.81 ms         4.81 ms          134
+######################################
+######################################
+# OMP_NUM_THREADS: 28
+2021-07-07 01:06:17
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 14.92, 10.04, 9.29
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        15.2 ms         15.2 ms           45
+Reduction/CPU                                        2813 ms         2813 ms            1
+Zeros/CPU                                             103 ms         98.2 ms            8
+FromLegacyPointCloud/CPU                             8.96 ms         8.96 ms           78
+ToLegacyPointCloud/CPU                               23.5 ms         23.5 ms           30
+VoxelDownSample/core::HashmapBackend::TBB_0_01       52.0 ms         52.0 ms           12
+ComputeOdometryResultPointToPlane/CPU                27.8 ms         27.8 ms           25
+RGBDOdometryMultiScale/Hybrid_CPU                    18.5 ms         18.5 ms           38
+RGBDOdometryMultiScale/Intensity_CPU                 16.3 ms         16.2 ms           46
+RGBDOdometryMultiScale/PointToPlane_CPU              16.0 ms         16.0 ms           38
+BenchmarkRegistrationICP/PointToPlane / CPU          4.50 ms         4.50 ms          154
+BenchmarkRegistrationICP/PointToPoint / CPU          4.56 ms         4.56 ms          145
+######################################
+######################################
+# OMP_NUM_THREADS: 29
+2021-07-07 01:06:35
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 14.15, 10.14, 9.34
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        15.5 ms         15.5 ms           41
+Reduction/CPU                                        2836 ms         2826 ms            1
+Zeros/CPU                                             100 ms         95.7 ms            8
+FromLegacyPointCloud/CPU                             8.94 ms         8.94 ms           78
+ToLegacyPointCloud/CPU                               22.7 ms         22.7 ms           31
+VoxelDownSample/core::HashmapBackend::TBB_0_01       50.4 ms         50.3 ms           14
+ComputeOdometryResultPointToPlane/CPU                27.7 ms         27.7 ms           26
+RGBDOdometryMultiScale/Hybrid_CPU                    19.6 ms         19.6 ms           36
+RGBDOdometryMultiScale/Intensity_CPU                 16.0 ms         16.0 ms           44
+RGBDOdometryMultiScale/PointToPlane_CPU              15.5 ms         15.4 ms           44
+BenchmarkRegistrationICP/PointToPlane / CPU          4.76 ms         4.76 ms          157
+BenchmarkRegistrationICP/PointToPoint / CPU          4.98 ms         4.98 ms          134
+######################################
+######################################
+# OMP_NUM_THREADS: 30
+2021-07-07 01:06:53
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 14.52, 10.40, 9.43
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        15.6 ms         15.6 ms           46
+Reduction/CPU                                        2814 ms         2741 ms            1
+Zeros/CPU                                            99.8 ms         96.1 ms            7
+FromLegacyPointCloud/CPU                             8.29 ms         8.26 ms           85
+ToLegacyPointCloud/CPU                               21.5 ms         21.5 ms           32
+VoxelDownSample/core::HashmapBackend::TBB_0_01       49.4 ms         49.1 ms           14
+ComputeOdometryResultPointToPlane/CPU                25.8 ms         25.8 ms           27
+RGBDOdometryMultiScale/Hybrid_CPU                    18.0 ms         18.0 ms           41
+RGBDOdometryMultiScale/Intensity_CPU                 15.2 ms         15.1 ms           46
+RGBDOdometryMultiScale/PointToPlane_CPU              16.1 ms         16.1 ms           40
+BenchmarkRegistrationICP/PointToPlane / CPU          4.97 ms         4.97 ms          137
+BenchmarkRegistrationICP/PointToPoint / CPU          4.80 ms         4.79 ms          132
+######################################
+######################################
+# OMP_NUM_THREADS: 31
+2021-07-07 01:07:10
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 15.43, 10.86, 9.61
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        15.1 ms         15.1 ms           45
+Reduction/CPU                                        2817 ms         2790 ms            1
+Zeros/CPU                                            97.9 ms         91.8 ms            8
+FromLegacyPointCloud/CPU                             8.25 ms         8.25 ms           85
+ToLegacyPointCloud/CPU                               21.0 ms         21.0 ms           33
+VoxelDownSample/core::HashmapBackend::TBB_0_01       49.4 ms         49.4 ms           14
+ComputeOdometryResultPointToPlane/CPU                25.7 ms         25.7 ms           28
+RGBDOdometryMultiScale/Hybrid_CPU                    17.2 ms         17.2 ms           41
+RGBDOdometryMultiScale/Intensity_CPU                 15.0 ms         15.0 ms           50
+RGBDOdometryMultiScale/PointToPlane_CPU              15.3 ms         15.3 ms           48
+BenchmarkRegistrationICP/PointToPlane / CPU          5.17 ms         5.16 ms          133
+BenchmarkRegistrationICP/PointToPoint / CPU          4.99 ms         4.98 ms          131
+######################################
+######################################
+# OMP_NUM_THREADS: 32
+2021-07-07 01:07:27
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 15.75, 11.14, 9.72
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        15.0 ms         15.0 ms           43
+Reduction/CPU                                        2825 ms         2747 ms            1
+Zeros/CPU                                            96.1 ms         90.1 ms            8
+FromLegacyPointCloud/CPU                             8.02 ms         8.02 ms           87
+ToLegacyPointCloud/CPU                               20.4 ms         20.4 ms           34
+VoxelDownSample/core::HashmapBackend::TBB_0_01       51.0 ms         51.0 ms           10
+ComputeOdometryResultPointToPlane/CPU                25.0 ms         25.0 ms           30
+RGBDOdometryMultiScale/Hybrid_CPU                    18.0 ms         18.0 ms           39
+RGBDOdometryMultiScale/Intensity_CPU                 14.6 ms         14.6 ms           48
+RGBDOdometryMultiScale/PointToPlane_CPU              14.6 ms         14.5 ms           44
+BenchmarkRegistrationICP/PointToPlane / CPU          5.13 ms         5.13 ms          119
+BenchmarkRegistrationICP/PointToPoint / CPU          5.12 ms         5.12 ms          107
+######################################
+######################################
+# OMP_NUM_THREADS: 33
+2021-07-07 01:07:43
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 14.69, 11.10, 9.73
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        15.8 ms         15.8 ms           45
+Reduction/CPU                                        2826 ms         2826 ms            1
+Zeros/CPU                                             101 ms         98.1 ms            8
+FromLegacyPointCloud/CPU                             6.12 ms         6.12 ms          109
+ToLegacyPointCloud/CPU                               20.1 ms         20.1 ms           34
+VoxelDownSample/core::HashmapBackend::TBB_0_01       46.2 ms         45.9 ms           14
+ComputeOdometryResultPointToPlane/CPU                23.2 ms         23.2 ms           31
+RGBDOdometryMultiScale/Hybrid_CPU                    17.6 ms         17.6 ms           40
+RGBDOdometryMultiScale/Intensity_CPU                 14.4 ms         14.4 ms           49
+RGBDOdometryMultiScale/PointToPlane_CPU              15.3 ms         15.3 ms           42
+BenchmarkRegistrationICP/PointToPlane / CPU          5.78 ms         5.78 ms          117
+BenchmarkRegistrationICP/PointToPoint / CPU          5.80 ms         5.79 ms          122
+######################################
+######################################
+# OMP_NUM_THREADS: 34
+2021-07-07 01:08:01
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 13.00, 10.91, 9.69
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        15.0 ms         15.0 ms           45
+Reduction/CPU                                        2821 ms         2821 ms            1
+Zeros/CPU                                            97.5 ms         89.8 ms            8
+FromLegacyPointCloud/CPU                             7.46 ms         7.46 ms           94
+ToLegacyPointCloud/CPU                               19.5 ms         19.5 ms           36
+VoxelDownSample/core::HashmapBackend::TBB_0_01       47.2 ms         47.2 ms           15
+ComputeOdometryResultPointToPlane/CPU                22.9 ms         22.9 ms           32
+RGBDOdometryMultiScale/Hybrid_CPU                    17.4 ms         17.3 ms           40
+RGBDOdometryMultiScale/Intensity_CPU                 14.1 ms         14.1 ms           50
+RGBDOdometryMultiScale/PointToPlane_CPU              14.0 ms         14.0 ms           50
+BenchmarkRegistrationICP/PointToPlane / CPU          5.72 ms         5.72 ms          113
+BenchmarkRegistrationICP/PointToPoint / CPU          5.72 ms         5.71 ms          109
+######################################
+######################################
+# OMP_NUM_THREADS: 35
+2021-07-07 01:08:18
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 14.46, 11.31, 9.84
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        14.7 ms         14.7 ms           45
+Reduction/CPU                                        2829 ms         2782 ms            1
+Zeros/CPU                                            96.6 ms         89.8 ms            8
+FromLegacyPointCloud/CPU                             7.45 ms         7.45 ms           94
+ToLegacyPointCloud/CPU                               19.5 ms         19.4 ms           36
+VoxelDownSample/core::HashmapBackend::TBB_0_01       48.8 ms         48.7 ms           14
+ComputeOdometryResultPointToPlane/CPU                23.8 ms         23.7 ms           31
+RGBDOdometryMultiScale/Hybrid_CPU                    17.4 ms         17.4 ms           41
+RGBDOdometryMultiScale/Intensity_CPU                 14.1 ms         14.1 ms           50
+RGBDOdometryMultiScale/PointToPlane_CPU              14.1 ms         14.1 ms           42
+BenchmarkRegistrationICP/PointToPlane / CPU          5.89 ms         5.88 ms          114
+BenchmarkRegistrationICP/PointToPoint / CPU          5.95 ms         5.95 ms          117
+######################################
+######################################
+# OMP_NUM_THREADS: 36
+2021-07-07 01:08:35
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 14.52, 11.56, 9.95
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        14.0 ms         14.0 ms           47
+Reduction/CPU                                        2816 ms         2727 ms            1
+Zeros/CPU                                            98.1 ms         95.2 ms            9
+FromLegacyPointCloud/CPU                             7.08 ms         7.08 ms           99
+ToLegacyPointCloud/CPU                               18.3 ms         18.3 ms           36
+VoxelDownSample/core::HashmapBackend::TBB_0_01       45.5 ms         45.4 ms           16
+ComputeOdometryResultPointToPlane/CPU                21.2 ms         21.2 ms           34
+RGBDOdometryMultiScale/Hybrid_CPU                    16.9 ms         16.9 ms           42
+RGBDOdometryMultiScale/Intensity_CPU                 13.9 ms         13.9 ms           50
+RGBDOdometryMultiScale/PointToPlane_CPU              14.4 ms         14.4 ms           42
+BenchmarkRegistrationICP/PointToPlane / CPU          6.12 ms         6.12 ms          112
+BenchmarkRegistrationICP/PointToPoint / CPU          6.29 ms         6.29 ms          115
+######################################
