@@ -97,7 +97,7 @@ def read_poses_from_log(traj_log):
         # Load .log file.
         for i in range(0, len(content), 5):
             # format %d (src) %d (tgt) %f (fitness)
-            data = list(map(float, content[i].strip().split(' ')))
+            data = list(map(float, content[i].strip().split('\t')))
             ids = (int(data[0]), int(data[1]))
             fitness = data[2]
 

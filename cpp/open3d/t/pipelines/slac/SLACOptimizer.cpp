@@ -154,6 +154,7 @@ static core::Tensor GetCorrespondenceSetForPointCloudPair(
         float distance_threshold,
         float fitness_threshold,
         bool debug) {
+    utility::LogInfo("{} {} -> {}", i, j, T_ij.ToString());
     core::Device device = tpcd_i.GetDevice();
     core::Dtype dtype = tpcd_i.GetPoints().GetDtype();
 
@@ -165,8 +166,12 @@ static core::Tensor GetCorrespondenceSetForPointCloudPair(
     T_j.AssertShape({4, 4});
     T_ij.AssertShape({4, 4});
 
+    auto result = pipelines::registration::RegistrationICP(
+            tpcd_i, tpcd_j, distance_threshold, T_ij);
+    core::Tensor T_ij_refined = result.transformation_;
+
     PointCloud tpcd_i_transformed_Tij = tpcd_i.Clone();
-    tpcd_i_transformed_Tij.Transform(T_ij.To(device, dtype));
+    tpcd_i_transformed_Tij.Transform(T_ij_refined.To(device, dtype));
 
     // Obtain correspondence via nns, between tpcd_i_transformed_Tij and tpcd_j.
     core::nns::NearestNeighborSearch tpcd_j_nns(tpcd_j.GetPoints());
@@ -184,33 +189,18 @@ static core::Tensor GetCorrespondenceSetForPointCloudPair(
     core::Tensor correspondence_set =
             ConvertCorrespondencesTargetIndexedToCx2Form(target_indices);
 
-    // Get correspondence indexed pointcloud.
-    PointCloud tpcd_i_indexed(
-            tpcd_i.GetPoints().IndexGet({correspondence_set.T()[0]}));
-    PointCloud tpcd_j_indexed(
-            tpcd_j.GetPoints().IndexGet({correspondence_set.T()[1]}));
+    int64_t num_corres = correspondence_set.GetLength();
+    int64_t num_pcd_i = tpcd_i.GetPoints().GetLength();
+    int64_t num_pcd_j = tpcd_j.GetPoints().GetLength();
 
-    // Inlier Ratio is calculated on pointclouds transformed by their pose in
-    // model frame, to reject any suspicious pair.
-    tpcd_i_indexed.Transform(T_i.To(device, dtype));
-    tpcd_j_indexed.Transform(T_j.To(device, dtype));
+    double inlier_ratio_i = num_pcd_i / double(num_corres);
+    double inlier_ratio_j = num_pcd_j / double(num_corres);
 
-    core::Tensor residual =
-            (tpcd_i_indexed.GetPoints() - tpcd_j_indexed.GetPoints());
-    core::Tensor square_residual = (residual * residual).Sum({1});
-    core::Tensor inliers =
-            square_residual.Le(distance_threshold * distance_threshold);
+    utility::LogDebug("Inlier ratio = {} ({}) and {} ({}).", inlier_ratio_i, i,
+                      inlier_ratio_j, j);
 
-    int64_t num_inliers =
-            inliers.To(core::Dtype::Int64).Sum({0}).Item<int64_t>();
-
-    float inlier_ratio = static_cast<float>(num_inliers) /
-                         static_cast<float>(inliers.GetLength());
-
-    utility::LogDebug("Tij and (Ti, Tj) compatibility ratio = {}.",
-                      inlier_ratio);
-
-    if (j != i + 1 && inlier_ratio < fitness_threshold) {
+    if (j != i + 1 && inlier_ratio_i < fitness_threshold &&
+        inlier_ratio_j < fitness_threshold) {
         if (debug) {
             VisualizePointCloudCorrespondences(
                     tpcd_i, tpcd_j, correspondence_set,
