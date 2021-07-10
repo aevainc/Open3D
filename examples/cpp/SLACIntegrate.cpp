@@ -75,7 +75,6 @@ int main(int argc, char* argv[]) {
     std::string dataset_folder = std::string(argv[1]);
     std::string color_folder = dataset_folder + "/" + color_subfolder;
     std::string depth_folder = dataset_folder + "/" + depth_subfolder;
-    std::string fragment_folder = dataset_folder + "/fragments";
     std::vector<std::string> color_filenames;
     utility::filesystem::ListFilesInDirectory(color_folder, color_filenames);
     std::sort(color_filenames.begin(), color_filenames.end());
@@ -91,6 +90,7 @@ int main(int argc, char* argv[]) {
 
     // Optimized fragment pose graph
     std::string slac_folder = std::string(argv[2]);
+    std::string fragment_folder = slac_folder + "/../../fragments";
     std::string posegraph_path =
             std::string(slac_folder + "/optimized_posegraph_slac.json");
     auto posegraph = io::CreatePoseGraphFromFile(posegraph_path);
@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
     float depth_scale = static_cast<float>(utility::GetProgramOptionAsDouble(
             argc, argv, "--depth_scale", 1000.f));
     float max_depth = static_cast<float>(
-            utility::GetProgramOptionAsDouble(argc, argv, "--max_depth", 3.f));
+            utility::GetProgramOptionAsDouble(argc, argv, "--max_depth", 5.f));
     float sdf_trunc = static_cast<float>(utility::GetProgramOptionAsDouble(
             argc, argv, "--sdf_trunc", 0.04f));
     t::geometry::TSDFVoxelGrid voxel_grid({{"tsdf", core::Dtype::Float32},
@@ -152,6 +152,7 @@ int main(int argc, char* argv[]) {
                                              device);
 
     int k = 0;
+
     double total_time = 0.0;
     utility::SingletonAccumulativeTimer::GetInstance().Reset();
     int num_rgbd_frames = 0;
