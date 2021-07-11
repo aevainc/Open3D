@@ -1,0 +1,4 @@
+*.npz
+*.npy
+*.png
+*.ply

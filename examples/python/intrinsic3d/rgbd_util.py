@@ -87,7 +87,7 @@ def load_keyframes(path_dataset, check=True):
 
         color = o3d.io.read_image(f'{path_dataset}/color/{color_kfname}')
         color_np = np.asarray(color)
-        color_rgb = srgb_to_rgb(color_np)
+        color_rgb = color_np #srgb_to_rgb(color_np)
         color_rgb = o3d.geometry.Image(color_rgb)
         colors.append(color_rgb)
 
