@@ -5,7 +5,7 @@ from tsdf_util import *
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('path_tsdf')
+    parser.add_argument('path')
     parser.add_argument('--spatial', default='voxels_spatial.npz')
     parser.add_argument('--input', default='colored_voxels_fine.npz')
     args = parser.parse_args()
@@ -19,7 +19,7 @@ if __name__ == '__main__':
     voxel_tsdf_refined = input_data['voxel_tsdf']
     voxel_color = input_data['voxel_color']
 
-    keys, values = load_tsdf_kv(args.path_tsdf)
+    keys, values = load_tsdf_kv(args.path + '/tsdf.json')
     tsdf = values[:, :, :, :, 0]
     weight = values[:, :, :, :, 1]
     color = np.zeros((*tsdf.shape, 3))

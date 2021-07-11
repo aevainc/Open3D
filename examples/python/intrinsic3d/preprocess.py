@@ -6,13 +6,13 @@ from voxel_util import *
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('path_tsdf')
+    parser.add_argument('path')
     parser.add_argument('--spatial', default='voxels_spatial.npz')
     parser.add_argument('--output', default='voxels_init.npz')
     args = parser.parse_args()
 
     # Load
-    keys, values = load_tsdf_kv(args.path_tsdf)
+    keys, values = load_tsdf_kv(args.path + '/tsdf.json')
 
     # Separate
     tsdf = values[:, :, :, :, 0]
