@@ -10,7 +10,10 @@ if __name__ == '__main__':
     parser.add_argument('mask')
     parser.add_argument('src')
     parser.add_argument('ref')
+    parser.add_argument('output')
+
     args = parser.parse_args()
+    os.makedirs(args.output, exist_ok=True)
 
     mask_files = os.listdir(args.mask)
     src_files = os.listdir(args.src)
@@ -23,12 +26,11 @@ if __name__ == '__main__':
 
         im_src = cv2.cvtColor(cv2.imread('{}/{}'.format(args.src, s)), cv2.COLOR_BGR2GRAY)
         im_ref = cv2.cvtColor(cv2.imread('{}/frame-{:06d}.color.png'.format(args.ref, idx)), cv2.COLOR_BGR2GRAY)
-        # plt.imshow(im_src - im_ref)
-        # plt.show()
 
         diff = mask * ((im_src - im_ref) / 255.0)
         diff = diff ** 2
-        plt.imshow(diff)
+
+        plt.imsave('{}/{:03d}.png'.format(args.output, idx), diff)
 
         result = np.sqrt(np.mean(diff[mask]))
         rmse.append(result)
