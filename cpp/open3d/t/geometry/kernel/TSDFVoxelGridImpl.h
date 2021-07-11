@@ -1545,14 +1545,14 @@ void UpsampleCPU
     int64_t n_blocks = block_indices.GetLength();
     int64_t n = n_blocks * resolution_upsampled3;
 #if defined(__CUDACC__)
-    core::kernel::CUDALauncher launcher;
+    namespace launcher = core::kernel::cuda_launcher;
 #else
-    core::kernel::CPULauncher launcher;
+    namespace launcher = core::kernel::cpu_launcher;
 #endif
     DISPATCH_BYTESIZE_TO_VOXEL(
             block_voxels_upsampled_indexer.ElementByteSize(), [&]() {
-                launcher.LaunchGeneralKernel(n, [=] OPEN3D_DEVICE(
-                                                        int64_t workload_idx) {
+                launcher::ParallelFor(n, [=] OPEN3D_DEVICE(
+                                                 int64_t workload_idx) {
                     /// Get voxel from original coordinate
                     auto GetVoxelAt = [&] OPEN3D_DEVICE(
                                               int xo, int yo, int zo,
