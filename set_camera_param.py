@@ -2,7 +2,6 @@ import open3d as o3d
 import os
 import numpy as np
 from pathlib import Path
-from matplotlib import pyplot as plt
 
 pwd = Path(os.path.dirname(os.path.realpath(__file__)))
 
