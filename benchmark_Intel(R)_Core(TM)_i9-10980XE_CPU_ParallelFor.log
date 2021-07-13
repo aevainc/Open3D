@@ -1,0 +1,26 @@
+[Open3D INFO] CPUInfo: 18 cores, 36 threads.
+2021-07-12T21:01:08-07:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 5.16, 2.12, 1.22
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+-----------------------------------------------------------------------------------------
+Benchmark                                               Time             CPU   Iterations
+-----------------------------------------------------------------------------------------
+HashInsertInt3/HashmapBackend::TBB_1000000_32        14.6 ms         14.6 ms           50
+Reduction/CPU                                        2812 ms         2812 ms            1
+Zeros/CPU                                            95.8 ms         92.6 ms            8
+FromLegacyPointCloud/CPU                             5.50 ms         5.50 ms          124
+ToLegacyPointCloud/CPU                               24.8 ms         24.3 ms           32
+VoxelDownSample/core::HashmapBackend::TBB_0_01       54.5 ms         53.6 ms           13
+ComputeOdometryResultPointToPlane/CPU                29.9 ms         29.9 ms           22
+RGBDOdometryMultiScale/Hybrid_CPU                    17.5 ms         17.5 ms           36
+RGBDOdometryMultiScale/Intensity_CPU                 13.6 ms         13.6 ms           56
+RGBDOdometryMultiScale/PointToPlane_CPU              14.1 ms         14.1 ms           44
+BenchmarkRegistrationICP/PointToPlane / CPU          6.30 ms         6.30 ms          105
+BenchmarkRegistrationICP/PointToPoint / CPU          6.46 ms         6.46 ms          105
