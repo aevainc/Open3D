@@ -134,6 +134,10 @@ if __name__ == '__main__':
     ax.set_ylim(ymin=0)
     ax.set_title(title)
     ax.set_xticks(np.arange(min(xs), max(xs) + 1, 1.0))
+    ax.hlines(results_parallel_for[0]['gmean'],
+              np.min(xs),
+              np.max(xs),
+              colors='r')
     ax.set_xlabel("# of threads")
     ax.set_ylabel("Runtime gmean (ms)")
 
@@ -148,6 +152,10 @@ if __name__ == '__main__':
     ax.set_ylim(ymin=0)
     ax.set_title(title)
     ax.set_xticks(np.arange(min(xs), max(xs) + 1, 1.0))
+    ax.hlines(results_parallel_for_with_dummy[0]['gmean'],
+              np.min(xs),
+              np.max(xs),
+              colors='r')
     ax.set_xlabel("# of threads")
     ax.set_ylabel("Runtime gmean (ms)")
 
