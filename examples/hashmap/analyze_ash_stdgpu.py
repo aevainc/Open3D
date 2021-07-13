@@ -130,7 +130,7 @@ if __name__ == '__main__':
                     color=colors[i])
             ax.set_title(r'Density = ${}$, Operation {}'.format(di, opi), fontsize=20)
         ax.set_xlabel('Hashmap value size (byte)', fontsize=15)
-        ax.set_xscale('log')
+        ax.set_xscale('log', basex=2)
 
         ax.set_ylabel('Time (ms)', fontsize=15)
         ax.set_yscale('log')
@@ -186,7 +186,7 @@ if __name__ == '__main__':
                     color=colors[i])
             ax.set_title(r'Density = ${}$, Operation activate vs insert'.format(di), fontsize=20)
         ax.set_xlabel('Hashmap value size (byte)', fontsize=15)
-        ax.set_xscale('log')
+        ax.set_xscale('log', basex=2)
 
         ax.set_ylabel('Time (ms)', fontsize=15)
         ax.set_yscale('log')
