@@ -24,35 +24,54 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include "open3d/core/Dispatch.h"
-#include "open3d/core/Tensor.h"
-#include "open3d/core/kernel/Arange.h"
-#include "open3d/core/kernel/CPULauncher.h"
+#include "open3d/utility/Parallel.h"
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+#include <cstdlib>
+#include <string>
+
+#include "open3d/utility/CPUInfo.h"
+#include "open3d/utility/Logging.h"
 
 namespace open3d {
-namespace core {
-namespace kernel {
+namespace utility {
 
-void ArangeCPU(const Tensor& start,
-               const Tensor& stop,
-               const Tensor& step,
-               Tensor& dst) {
-    Dtype dtype = start.GetDtype();
-    DISPATCH_DTYPE_TO_TEMPLATE(dtype, [&]() {
-        scalar_t sstart = start.Item<scalar_t>();
-        scalar_t sstep = step.Item<scalar_t>();
-        scalar_t* dst_ptr = dst.GetDataPtr<scalar_t>();
-        int64_t n = dst.GetLength();
-        cpu_launcher::ParallelFor(
-                n, cpu_launcher::SMALL_OP_GRAIN_SIZE,
-                [&](int64_t workload_idx) {
-                    dst_ptr[workload_idx] =
-                            sstart +
-                            static_cast<scalar_t>(sstep * workload_idx);
-                });
-    });
+static std::string GetEnvVar(const std::string& name) {
+    if (const char* value = std::getenv(name.c_str())) {
+        return std::string(value);
+    } else {
+        return "";
+    }
 }
 
-}  // namespace kernel
-}  // namespace core
+int EstimateMaxThreads() {
+#ifdef _OPENMP
+    if (!GetEnvVar("OMP_NUM_THREADS").empty() ||
+        !GetEnvVar("OMP_DYNAMIC").empty()) {
+        // See the full list of OpenMP environment variables at:
+        // https://www.openmp.org/spec-html/5.0/openmpch6.html
+        return omp_get_max_threads();
+    } else {
+        // Returns the number of physical cores.
+        return utility::CPUInfo::GetInstance().NumCores();
+    }
+#else
+    (void)GetEnvVar;  // Avoids compiler warning.
+    return 1;
+#endif
+}
+
+bool InParallel() {
+    // TODO: when we add TBB/Parallel STL support to ParallelFor, update this.
+#ifdef _OPENMP
+    return omp_in_parallel();
+#else
+    return false;
+#endif
+}
+
+}  // namespace utility
 }  // namespace open3d
