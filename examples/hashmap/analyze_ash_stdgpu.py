@@ -137,7 +137,7 @@ if __name__ == '__main__':
         ax.grid()
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    plt.savefig('stdgpu_int3.pdf')
 
     # Ablation for insertion vs activation
     fig, axes = plt.subplots(1, 2, figsize=(16, 5))
@@ -193,4 +193,4 @@ if __name__ == '__main__':
         ax.grid()
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    plt.savefig('stdgpu_int3_act.pdf')

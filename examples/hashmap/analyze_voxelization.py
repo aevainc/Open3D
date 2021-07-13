@@ -60,5 +60,5 @@ plt.xlabel('Voxel size (mm)')
 plt.grid()
 plt.tight_layout()
 plt.legend()
-plt.show()
+plt.savefig('profile.pdf')
 

@@ -101,4 +101,4 @@ for i in range(2):
 
 plt.legend()
 plt.tight_layout()
-plt.show()
+plt.savefig('profile.pdf')

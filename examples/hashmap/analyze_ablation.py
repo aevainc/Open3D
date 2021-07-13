@@ -154,7 +154,7 @@ if __name__ == '__main__':
         ax.grid()
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    plt.savefig('backend_ablation.pdf')
 
     # Ablation for insertion vs activation
     fig, axes = plt.subplots(1, 2, figsize=(16, 5))
