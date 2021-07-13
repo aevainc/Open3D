@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 
-export OMP_DYNAMIC=TRUE
+# export OMP_DYNAMIC=TRUE
 
 function run_benchmark {
     options="$(echo "$@" | tr ' ' '|')"
