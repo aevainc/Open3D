@@ -906,7 +906,7 @@ TEST_P(TensorPermuteDevicePairs, IndexGet) {
     indices = {core::Tensor::Init<bool>(false, idx_device)};
     dst_t = src_t.IndexGet(indices);
     EXPECT_TRUE(
-            dst_t.AllClose(core::Tensor({0}, core::Dtype::Int32, src_device)));
+            dst_t.AllClose(core::Tensor({0}, core::kInt32, src_device)));
     EXPECT_EQ(src_t.GetDtype(), dst_t.GetDtype());
 }
 
