@@ -209,7 +209,7 @@ Hashmap Hashmap::To(const Device& device, bool copy) const {
 
     core::Tensor active_addrs;
     GetActiveIndices(active_addrs);
-    core::Tensor active_indices = active_addrs.To(core::Dtype::Int64);
+    core::Tensor active_indices = active_addrs.To(core::kInt64);
 
     core::Tensor addrs, masks;
     new_hashmap.Insert(keys.IndexGet({active_indices}),

@@ -84,7 +84,7 @@ public:
     /// \param inlier_rmse RMSE of the inliers.
     /// \param fitness Ratio between #inliers and #pixels.
     OdometryResult(const core::Tensor& transformation = core::Tensor::Eye(
-                           4, core::Dtype::Float64, core::Device("CPU:0")),
+                           4, core::kFloat64, core::Device("CPU:0")),
                    double inlier_rmse = 0.0,
                    double fitness = 0.0)
         : transformation_(transformation),
@@ -165,8 +165,8 @@ OdometryResult RGBDOdometryMultiScale(
         const t::geometry::RGBDImage& source,
         const t::geometry::RGBDImage& target,
         const core::Tensor& intrinsics,
-        const core::Tensor& init_source_to_target = core::Tensor::Eye(
-                4, core::Dtype::Float64, core::Device("CPU:0")),
+        const core::Tensor& init_source_to_target =
+                core::Tensor::Eye(4, core::kFloat64, core::Device("CPU:0")),
         const float depth_scale = 1000.0f,
         const float depth_max = 3.0f,
         const std::vector<OdometryConvergenceCriteria>& criteria_list = {10, 5,

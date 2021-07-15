@@ -28,18 +28,18 @@ if __name__ == '__main__':
     file_paths = sorted(file_paths)
 
     srcs_dsts = [
-        ("core::Dtype::Undefined", "core::Undefined"),
-        ("core::Dtype::Float32", "core::Float32"),
-        ("core::Dtype::Float64", "core::Float64"),
-        ("core::Dtype::Int8", "core::Int8"),
-        ("core::Dtype::Int16", "core::Int16"),
-        ("core::Dtype::Int32", "core::Int32"),
-        ("core::Dtype::Int64", "core::Int64"),
-        ("core::Dtype::UInt8", "core::UInt8"),
-        ("core::Dtype::UInt16", "core::UInt16"),
-        ("core::Dtype::UInt32", "core::UInt32"),
-        ("core::Dtype::UInt64", "core::UInt64"),
-        ("core::Dtype::Bool", "core::Bool"),
+        ("core::Dtype::Undefined", "core::kUndefined"),
+        ("core::Dtype::Float32", "core::kFloat32"),
+        ("core::Dtype::Float64", "core::kFloat64"),
+        ("core::Dtype::Int8", "core::kInt8"),
+        ("core::Dtype::Int16", "core::kInt16"),
+        ("core::Dtype::Int32", "core::kInt32"),
+        ("core::Dtype::Int64", "core::kInt64"),
+        ("core::Dtype::UInt8", "core::kUInt8"),
+        ("core::Dtype::UInt16", "core::kUInt16"),
+        ("core::Dtype::UInt32", "core::kUInt32"),
+        ("core::Dtype::UInt64", "core::kUInt64"),
+        ("core::Dtype::Bool", "core::kBool"),
     ]
 
     for src, dst in srcs_dsts:

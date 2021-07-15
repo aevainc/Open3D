@@ -150,7 +150,7 @@ std::tuple<Tensor, Tensor, Tensor> FaissIndex::SearchHybrid(
 
     Tensor invalid = distances.Gt(radius);
 
-    Tensor counts = max_knn - invalid.To(core::Dtype::Int64).Sum({0});
+    Tensor counts = max_knn - invalid.To(core::kInt64).Sum({0});
 
     Tensor invalid_indices = Tensor(std::vector<int64_t>({-1}), {1},
                                     Dtype::Int64, indices.GetDevice());
