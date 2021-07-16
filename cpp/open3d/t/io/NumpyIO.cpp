@@ -311,7 +311,7 @@ public:
         return t;
     }
 
-    static NumpyArray Load(const std::string& filename) {
+    static NumpyArray CreateFromFile(const std::string& filename) {
         FILE* fp = fopen(filename.c_str(), "rb");
         if (!fp) {
             utility::LogError("Load: Unable to open file {}.", filename);
@@ -357,7 +357,7 @@ private:
 };
 
 core::Tensor ReadNpy(const std::string& filename) {
-    return NumpyArray::Load(filename).ToTensor();
+    return NumpyArray::CreateFromFile(filename).ToTensor();
 }
 
 void WriteNpy(const std::string& filename, const core::Tensor& tensor) {
