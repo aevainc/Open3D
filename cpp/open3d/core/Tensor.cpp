@@ -1534,11 +1534,11 @@ Tensor Tensor::FromDLPack(const DLManagedTensor* src) {
 }
 
 void Tensor::Save(const std::string& file_name) const {
-    t::io::NumpyArray(*this).Save(file_name);
+    t::io::WriteNpy(file_name, *this);
 }
 
 Tensor Tensor::Load(const std::string& file_name) {
-    return t::io::NumpyArray::Load(file_name).ToTensor();
+    return t::io::ReadNpy(file_name);
 }
 
 bool Tensor::AllClose(const Tensor& other, double rtol, double atol) const {

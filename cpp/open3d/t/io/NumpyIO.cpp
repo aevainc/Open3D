@@ -57,7 +57,10 @@
 #include <string>
 #include <vector>
 
+#include "open3d/core/Blob.h"
 #include "open3d/core/Dispatch.h"
+#include "open3d/core/Dtype.h"
+#include "open3d/core/SizeVector.h"
 #include "open3d/utility/Logging.h"
 
 namespace open3d {
@@ -232,6 +235,50 @@ static std::tuple<char, int64_t, core::SizeVector, bool> ParseNumpyHeader(
     return std::make_tuple(type, word_size, shape, fortran_order);
 }
 
+class NumpyArray {
+public:
+    NumpyArray() = delete;
+
+    NumpyArray(const core::Tensor& t);
+
+    NumpyArray(const core::SizeVector& shape,
+               char type,
+               int64_t word_size,
+               bool fortran_order);
+
+    template <typename T>
+    T* GetDataPtr() {
+        return reinterpret_cast<T*>(blob_->GetDataPtr());
+    }
+
+    template <typename T>
+    const T* GetDataPtr() const {
+        return reinterpret_cast<const T*>(blob_->GetDataPtr());
+    }
+
+    core::Dtype GetDtype() const;
+
+    core::SizeVector GetShape() const { return shape_; }
+
+    bool IsFortranOrder() const { return fortran_order_; }
+
+    int64_t NumBytes() const { return num_elements_ * word_size_; }
+
+    core::Tensor ToTensor() const;
+
+    static NumpyArray Load(const std::string& file_name);
+
+    void Save(std::string file_name) const;
+
+private:
+    std::shared_ptr<core::Blob> blob_ = nullptr;
+    core::SizeVector shape_;
+    char type_;
+    int64_t word_size_;
+    bool fortran_order_;
+    int64_t num_elements_;
+};
+
 NumpyArray::NumpyArray(const core::SizeVector& shape,
                        char type,
                        int64_t word_size,
@@ -323,6 +370,14 @@ void NumpyArray::Save(std::string file_name) const {
     fwrite(GetDataPtr<void>(), static_cast<size_t>(GetDtype().ByteSize()),
            static_cast<size_t>(shape_.NumElements()), fp);
     fclose(fp);
+}
+
+core::Tensor ReadNpy(const std::string& filename) {
+    return NumpyArray::Load(filename).ToTensor();
+}
+
+void WriteNpy(const std::string& filename, const core::Tensor& tensor) {
+    NumpyArray(tensor).Save(filename);
 }
 
 }  // namespace io

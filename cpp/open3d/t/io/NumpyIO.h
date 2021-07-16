@@ -26,58 +26,17 @@
 
 #pragma once
 
-#include "open3d/core/Blob.h"
-#include "open3d/core/Dtype.h"
-#include "open3d/core/SizeVector.h"
+#include <string>
+
 #include "open3d/core/Tensor.h"
 
 namespace open3d {
 namespace t {
 namespace io {
 
-class NumpyArray {
-public:
-    NumpyArray() = delete;
+core::Tensor ReadNpy(const std::string& filename);
 
-    NumpyArray(const core::Tensor& t);
-
-    NumpyArray(const core::SizeVector& shape,
-               char type,
-               int64_t word_size,
-               bool fortran_order);
-
-    template <typename T>
-    T* GetDataPtr() {
-        return reinterpret_cast<T*>(blob_->GetDataPtr());
-    }
-
-    template <typename T>
-    const T* GetDataPtr() const {
-        return reinterpret_cast<const T*>(blob_->GetDataPtr());
-    }
-
-    core::Dtype GetDtype() const;
-
-    core::SizeVector GetShape() const { return shape_; }
-
-    bool IsFortranOrder() const { return fortran_order_; }
-
-    int64_t NumBytes() const { return num_elements_ * word_size_; }
-
-    core::Tensor ToTensor() const;
-
-    static NumpyArray Load(const std::string& file_name);
-
-    void Save(std::string file_name) const;
-
-private:
-    std::shared_ptr<core::Blob> blob_ = nullptr;
-    core::SizeVector shape_;
-    char type_;
-    int64_t word_size_;
-    bool fortran_order_;
-    int64_t num_elements_;
-};
+void WriteNpy(const std::string& filename, const core::Tensor& tensor);
 
 }  // namespace io
 }  // namespace t
