@@ -32,15 +32,16 @@
 #include "open3d/core/Tensor.h"
 
 namespace open3d {
-namespace core {
+namespace t {
+namespace io {
 
 class NumpyArray {
 public:
     NumpyArray() = delete;
 
-    NumpyArray(const Tensor& t);
+    NumpyArray(const core::Tensor& t);
 
-    NumpyArray(const SizeVector& shape,
+    NumpyArray(const core::SizeVector& shape,
                char type,
                int64_t word_size,
                bool fortran_order);
@@ -55,28 +56,29 @@ public:
         return reinterpret_cast<const T*>(blob_->GetDataPtr());
     }
 
-    Dtype GetDtype() const;
+    core::Dtype GetDtype() const;
 
-    SizeVector GetShape() const { return shape_; }
+    core::SizeVector GetShape() const { return shape_; }
 
     bool IsFortranOrder() const { return fortran_order_; }
 
     int64_t NumBytes() const { return num_elements_ * word_size_; }
 
-    Tensor ToTensor() const;
+    core::Tensor ToTensor() const;
 
     static NumpyArray Load(const std::string& file_name);
 
     void Save(std::string file_name) const;
 
 private:
-    std::shared_ptr<Blob> blob_ = nullptr;
-    SizeVector shape_;
+    std::shared_ptr<core::Blob> blob_ = nullptr;
+    core::SizeVector shape_;
     char type_;
     int64_t word_size_;
     bool fortran_order_;
     int64_t num_elements_;
 };
 
-}  // namespace core
+}  // namespace io
+}  // namespace t
 }  // namespace open3d
