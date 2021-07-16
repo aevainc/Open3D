@@ -142,9 +142,14 @@ TEST_P(ImagePermuteDevices, ConstructorFromTensor) {
 }
 
 TEST_P(ImagePermuteDevicePairs, CopyDevice) {
+    utility::LogInfo("Test begins!!!!!");
+    core::MemoryManagerStatistic::GetInstance().SetPrintAtMallocFree(true);
+
     core::Device dst_device;
     core::Device src_device;
     std::tie(dst_device, src_device) = GetParam();
+    utility::LogInfo("dst_device {}", dst_device.ToString());
+    utility::LogInfo("src_device {}", src_device.ToString());
 
     core::Tensor data =
             core::Tensor::Ones({2, 3}, core::Dtype::Float32, src_device);
@@ -155,6 +160,7 @@ TEST_P(ImagePermuteDevicePairs, CopyDevice) {
 
     EXPECT_EQ(im_copy.GetDevice(), dst_device);
     EXPECT_EQ(im_copy.GetDtype(), im.GetDtype());
+    utility::LogInfo("Test done!!!!!");
 }
 
 TEST_P(ImagePermuteDevices, Copy) {

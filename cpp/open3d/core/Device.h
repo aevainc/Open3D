@@ -39,10 +39,10 @@ namespace core {
 class Device {
 public:
     /// Type for device.
-    enum class DeviceType { CPU = 0, CUDA = 1 };
+    enum class DeviceType { Undefined = 0, CPU = 1, CUDA = 2 };
 
     /// Default constructor.
-    Device() : device_type_(DeviceType::CPU), device_id_(0) {
+    Device() : device_type_(DeviceType::Undefined), device_id_(0) {
         AssertCPUDeviceIDIsZero();
     }
 

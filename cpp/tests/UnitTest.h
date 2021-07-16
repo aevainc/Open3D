@@ -39,7 +39,7 @@
 #include <string>
 #include <vector>
 
-#include "open3d/Macro.h"
+#include "open3d/Open3D.h"
 #include "tests/test_utility/Compare.h"
 #include "tests/test_utility/Print.h"
 #include "tests/test_utility/Rand.h"
