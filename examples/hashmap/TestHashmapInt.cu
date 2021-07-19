@@ -80,12 +80,13 @@ int main(int argc, char** argv) {
     // Slabhash setup
     uint32_t num_keys = n;
     uint32_t num_queries = n;
-    float expected_chain = 0.6f;
-    uint32_t num_elements_per_unit = 15;
-    uint32_t expected_elements_per_bucket =
-            expected_chain * num_elements_per_unit;
-    uint32_t num_buckets = (num_keys + expected_elements_per_bucket - 1) /
-                           expected_elements_per_bucket;
+    // float expected_chain = 0.6f;
+    // uint32_t num_elements_per_unit = 15;
+    // uint32_t expected_elements_per_bucket =
+    //         expected_chain * num_elements_per_unit;
+    // uint32_t num_buckets = (num_keys + expected_elements_per_bucket - 1) /
+    //                        expected_elements_per_bucket;
+    uint32_t num_buckets = n * 2;
 
     int runs = utility::GetProgramOptionAsInt(argc, argv, "--runs", 10);
     double density =

@@ -110,7 +110,7 @@ if __name__ == '__main__':
             #         color=colors[i])
             ax.set_title(r'Operation {}'.format(opi), fontsize=20)
 
-        ax.set_xlabel('Hashmap density', fontsize=15)
+        ax.set_xlabel('Hashmap key uniqueness', fontsize=15)
         # ax.set_xscale('log')
 
         ax.set_ylabel('Time (ms)', fontsize=15)

@@ -128,7 +128,7 @@ if __name__ == '__main__':
             ax.fill(np.append(x, x[::-1]),
                     np.append(stdgpu_curve, ours_curve[::-1]),
                     color=colors[i])
-            ax.set_title(r'Density = ${}$, Operation {}'.format(di, opi), fontsize=20)
+            ax.set_title(r'Uniqueness = ${}$, Operation {}'.format(di, opi), fontsize=20)
         ax.set_xlabel('Hashmap value size (byte)', fontsize=15)
         ax.set_xscale('log', basex=2)
 
@@ -184,7 +184,7 @@ if __name__ == '__main__':
             ax.fill(np.append(x, x[::-1]),
                     np.append(insert_curve, activate_curve[::-1]),
                     color=colors[i])
-            ax.set_title(r'Density = ${}$, Operation activate vs insert'.format(di), fontsize=20)
+            ax.set_title(r'Uniqueness = ${}$, Operation activate vs insert'.format(di), fontsize=20)
         ax.set_xlabel('Hashmap value size (byte)', fontsize=15)
         ax.set_xscale('log', basex=2)
 
