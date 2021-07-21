@@ -24,35 +24,47 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include "open3d/core/Dispatch.h"
+#include <benchmark/benchmark.h>
+
+#include "open3d/core/AdvancedIndexing.h"
+#include "open3d/core/Dtype.h"
+#include "open3d/core/MemoryManager.h"
+#include "open3d/core/SizeVector.h"
 #include "open3d/core/Tensor.h"
-#include "open3d/core/kernel/Arange.h"
 #include "open3d/core/kernel/CPULauncher.h"
+#include "open3d/core/kernel/Kernel.h"
 
 namespace open3d {
 namespace core {
-namespace kernel {
 
-void ArangeCPU(const Tensor& start,
-               const Tensor& stop,
-               const Tensor& step,
-               Tensor& dst) {
-    Dtype dtype = start.GetDtype();
-    DISPATCH_DTYPE_TO_TEMPLATE(dtype, [&]() {
-        scalar_t sstart = start.Item<scalar_t>();
-        scalar_t sstep = step.Item<scalar_t>();
-        scalar_t* dst_ptr = dst.GetDataPtr<scalar_t>();
-        int64_t n = dst.GetLength();
-        cpu_launcher::ParallelFor(
-                n, cpu_launcher::GetSmallOpGrainSize(),
-                [&](int64_t workload_idx) {
-                    dst_ptr[workload_idx] =
-                            sstart +
-                            static_cast<scalar_t>(sstep * workload_idx);
-                });
-    });
+void SimpleOpGrained(benchmark::State& state) {
+    core::Device device("CPU:0");
+    core::kernel::cpu_launcher::SetSmallOpGrainSize(32767);
+
+    SizeVector shape{32766};
+    Tensor ones = Tensor::Ones(shape, core::Float64, device);
+    Tensor zeros = Tensor::Zeros(shape, core::Float64, device);
+    Tensor warm_up = ones + zeros;
+    for (auto _ : state) {
+        Tensor dst = ones + zeros;
+    }
 }
 
-}  // namespace kernel
+void SimpleOp(benchmark::State& state) {
+    core::Device device("CPU:0");
+    core::kernel::cpu_launcher::SetSmallOpGrainSize(1);
+
+    SizeVector shape{32766};
+    Tensor ones = Tensor::Ones(shape, core::Float64, device);
+    Tensor zeros = Tensor::Zeros(shape, core::Float64, device);
+    Tensor warm_up = ones + zeros;
+    for (auto _ : state) {
+        Tensor dst = ones + zeros;
+    }
+}
+
+BENCHMARK(SimpleOpGrained)->Unit(benchmark::kMillisecond);
+BENCHMARK(SimpleOp)->Unit(benchmark::kMillisecond);
+
 }  // namespace core
 }  // namespace open3d

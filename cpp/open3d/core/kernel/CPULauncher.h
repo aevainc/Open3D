@@ -37,9 +37,29 @@ namespace kernel {
 namespace cpu_launcher {
 
 /// The value is chosen heuristically for small element-wise ops. When the
-/// number of workloads is smaller or equal to SMALL_OP_GRAIN_SIZE, the
+/// number of workloads is smaller or equal to GetSmallOpGrainSize(), the
 /// workloads are executed in serial, otherwise they are executed in parallel.
-static constexpr int64_t SMALL_OP_GRAIN_SIZE = 32767;
+class GrainSizeManager {
+public:
+    static GrainSizeManager& GetInstance() {
+        static GrainSizeManager instance;
+        return instance;
+    }
+    void Set(int64_t grain_size) { grain_size_ = grain_size; }
+    int64_t Get() const { return grain_size_; }
+
+private:
+    GrainSizeManager() : grain_size_(32767){};
+    int grain_size_;
+};
+
+inline int64_t GetSmallOpGrainSize() {
+    return GrainSizeManager::GetInstance().Get();
+}
+
+inline void SetSmallOpGrainSize(int64_t grain_size) {
+    GrainSizeManager::GetInstance().Set(grain_size);
+}
 
 /// \brief Run a function in parallel on CPU.
 ///

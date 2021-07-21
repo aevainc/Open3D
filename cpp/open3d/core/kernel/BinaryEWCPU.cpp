@@ -41,7 +41,7 @@ namespace kernel {
 template <typename func_t>
 static void LaunchBinaryEWKernel(const Indexer& indexer, const func_t& func) {
     cpu_launcher::ParallelFor(
-            indexer.NumWorkloads(), cpu_launcher::SMALL_OP_GRAIN_SIZE,
+            indexer.NumWorkloads(), cpu_launcher::GetSmallOpGrainSize(),
             [&indexer, &func](int64_t i) {
                 func(indexer.GetInputPtr(0, i), indexer.GetInputPtr(1, i),
                      indexer.GetOutputPtr(i));
