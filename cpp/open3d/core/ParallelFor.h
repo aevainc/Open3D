@@ -48,6 +48,28 @@ namespace core {
 static constexpr int64_t OPEN3D_PARFOR_BLOCK = 128;
 static constexpr int64_t OPEN3D_PARFOR_THREAD = 4;
 
+/// The value is chosen heuristically for small element-wise ops. When the
+/// number of workloads is smaller or equal to GetSmallOpGrainSize(), the
+/// workloads are executed in serial, otherwise they are executed in parallel.
+class ParallelForManager {
+public:
+    static ParallelForManager& GetInstance() {
+        static ParallelForManager instance;
+        return instance;
+    }
+
+    void SetBlockSize(int64_t block_size) { block_size_ = block_size; }
+    int64_t GetBlockSize() const { return block_size_; }
+
+    void SetThreadSize(int64_t thread_size) { thread_size_ = thread_size; }
+    int64_t GetThreadSize() const { return thread_size_; }
+
+private:
+    ParallelForManager() : block_size_(128), thread_size_(4) {}
+    int64_t block_size_;
+    int64_t thread_size_;
+};
+
 /// Calls f(n) with the "grid-stride loops" pattern.
 template <int64_t block_size, int64_t thread_size, typename func_t>
 __global__ void __ElementWiseKernel(int64_t n, func_t f) {
