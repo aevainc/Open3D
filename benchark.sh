@@ -18,8 +18,10 @@ function run_benchmark {
     BENCHMARK_FILTER="${BENCHMARK_FILTER}|Registration.*CUDA"
 
     for OPEN3D_PARFOR_BLOCK in {1,2,4,8,16,32,64,128,256}
+    # for OPEN3D_PARFOR_BLOCK in {1,2,4}
     do
         for OPEN3D_PARFOR_THREAD in {1,2,4,8,16,32,64,128,256}
+        # for OPEN3D_PARFOR_THREAD in {1,2,4}
         do
             echo "######################################" >> ${OUT_FILE}
 

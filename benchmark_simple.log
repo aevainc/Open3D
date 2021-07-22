@@ -1,0 +1,216 @@
+######################################
+# OPEN3D_PARFOR_BLOCK: 1, OPEN3D_PARFOR_THREAD: 1
+[Open3D INFO] CPUInfo: 18 cores, 36 threads.
+2021-07-21T23:57:56-07:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 6.40, 5.82, 5.10
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+---------------------------------------------------------------------------------------
+Benchmark                                             Time             CPU   Iterations
+---------------------------------------------------------------------------------------
+Reduction/CUDA                                     6.07 ms         6.07 ms          115
+[Open3D INFO] [ParallelForManager] block_size: 1, thread_size: 1
+RGBDOdometryMultiScale/Hybrid_CUDA                 12.1 ms         12.1 ms           62
+RGBDOdometryMultiScale/Intensity_CUDA              11.0 ms         11.0 ms           64
+RGBDOdometryMultiScale/PointToPlane_CUDA           9.45 ms         9.45 ms           75
+BenchmarkRegistrationICP/PointToPlane / CUDA       2.65 ms         2.65 ms          262
+BenchmarkRegistrationICP/PointToPoint / CUDA       3.13 ms         3.13 ms          224
+######################################
+######################################
+# OPEN3D_PARFOR_BLOCK: 1, OPEN3D_PARFOR_THREAD: 2
+[Open3D INFO] CPUInfo: 18 cores, 36 threads.
+2021-07-21T23:58:03-07:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 8.72, 6.34, 5.28
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+---------------------------------------------------------------------------------------
+Benchmark                                             Time             CPU   Iterations
+---------------------------------------------------------------------------------------
+Reduction/CUDA                                     6.06 ms         6.06 ms          115
+[Open3D INFO] [ParallelForManager] block_size: 1, thread_size: 2
+RGBDOdometryMultiScale/Hybrid_CUDA                 11.4 ms         11.4 ms           59
+RGBDOdometryMultiScale/Intensity_CUDA              10.8 ms         10.7 ms           66
+RGBDOdometryMultiScale/PointToPlane_CUDA           8.45 ms         8.38 ms           85
+BenchmarkRegistrationICP/PointToPlane / CUDA       2.66 ms         2.65 ms          266
+BenchmarkRegistrationICP/PointToPoint / CUDA       3.14 ms         3.14 ms          223
+######################################
+######################################
+# OPEN3D_PARFOR_BLOCK: 1, OPEN3D_PARFOR_THREAD: 4
+[Open3D INFO] CPUInfo: 18 cores, 36 threads.
+2021-07-21T23:58:10-07:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 8.34, 6.30, 5.27
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+---------------------------------------------------------------------------------------
+Benchmark                                             Time             CPU   Iterations
+---------------------------------------------------------------------------------------
+Reduction/CUDA                                     6.08 ms         6.08 ms          115
+[Open3D INFO] [ParallelForManager] block_size: 1, thread_size: 4
+RGBDOdometryMultiScale/Hybrid_CUDA                 11.0 ms         11.0 ms           54
+RGBDOdometryMultiScale/Intensity_CUDA              12.2 ms         12.2 ms           67
+RGBDOdometryMultiScale/PointToPlane_CUDA           8.83 ms         8.70 ms           85
+BenchmarkRegistrationICP/PointToPlane / CUDA       2.65 ms         2.65 ms          250
+BenchmarkRegistrationICP/PointToPoint / CUDA       3.17 ms         3.17 ms          218
+######################################
+######################################
+# OPEN3D_PARFOR_BLOCK: 2, OPEN3D_PARFOR_THREAD: 1
+[Open3D INFO] CPUInfo: 18 cores, 36 threads.
+2021-07-21T23:58:17-07:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 9.00, 6.52, 5.35
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+---------------------------------------------------------------------------------------
+Benchmark                                             Time             CPU   Iterations
+---------------------------------------------------------------------------------------
+Reduction/CUDA                                     6.06 ms         6.06 ms          115
+[Open3D INFO] [ParallelForManager] block_size: 2, thread_size: 1
+RGBDOdometryMultiScale/Hybrid_CUDA                 10.4 ms         10.4 ms           67
+RGBDOdometryMultiScale/Intensity_CUDA              9.86 ms         9.84 ms           73
+RGBDOdometryMultiScale/PointToPlane_CUDA           7.35 ms         7.31 ms          102
+BenchmarkRegistrationICP/PointToPlane / CUDA       2.74 ms         2.74 ms          259
+BenchmarkRegistrationICP/PointToPoint / CUDA       3.02 ms         3.02 ms          221
+######################################
+######################################
+# OPEN3D_PARFOR_BLOCK: 2, OPEN3D_PARFOR_THREAD: 2
+[Open3D INFO] CPUInfo: 18 cores, 36 threads.
+2021-07-21T23:58:24-07:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 9.96, 6.76, 5.44
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+---------------------------------------------------------------------------------------
+Benchmark                                             Time             CPU   Iterations
+---------------------------------------------------------------------------------------
+Reduction/CUDA                                     6.06 ms         6.06 ms          115
+[Open3D INFO] [ParallelForManager] block_size: 2, thread_size: 2
+RGBDOdometryMultiScale/Hybrid_CUDA                 10.3 ms         10.2 ms           57
+RGBDOdometryMultiScale/Intensity_CUDA              11.7 ms         11.5 ms           70
+RGBDOdometryMultiScale/PointToPlane_CUDA           7.14 ms         7.09 ms           85
+BenchmarkRegistrationICP/PointToPlane / CUDA       2.62 ms         2.62 ms          270
+BenchmarkRegistrationICP/PointToPoint / CUDA       3.44 ms         3.42 ms          208
+######################################
+######################################
+# OPEN3D_PARFOR_BLOCK: 2, OPEN3D_PARFOR_THREAD: 4
+[Open3D INFO] CPUInfo: 18 cores, 36 threads.
+2021-07-21T23:58:31-07:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 10.85, 6.99, 5.52
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+---------------------------------------------------------------------------------------
+Benchmark                                             Time             CPU   Iterations
+---------------------------------------------------------------------------------------
+Reduction/CUDA                                     6.04 ms         6.04 ms          116
+[Open3D INFO] [ParallelForManager] block_size: 2, thread_size: 4
+RGBDOdometryMultiScale/Hybrid_CUDA                 10.2 ms         10.1 ms           58
+RGBDOdometryMultiScale/Intensity_CUDA              11.2 ms         11.2 ms           74
+RGBDOdometryMultiScale/PointToPlane_CUDA           6.96 ms         6.94 ms           93
+BenchmarkRegistrationICP/PointToPlane / CUDA       2.71 ms         2.70 ms          268
+BenchmarkRegistrationICP/PointToPoint / CUDA       3.19 ms         3.19 ms          230
+######################################
+######################################
+# OPEN3D_PARFOR_BLOCK: 4, OPEN3D_PARFOR_THREAD: 1
+[Open3D INFO] CPUInfo: 18 cores, 36 threads.
+2021-07-21T23:58:39-07:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 9.95, 6.93, 5.52
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+---------------------------------------------------------------------------------------
+Benchmark                                             Time             CPU   Iterations
+---------------------------------------------------------------------------------------
+Reduction/CUDA                                     6.08 ms         6.08 ms          115
+[Open3D INFO] [ParallelForManager] block_size: 4, thread_size: 1
+RGBDOdometryMultiScale/Hybrid_CUDA                 10.1 ms         10.1 ms           58
+RGBDOdometryMultiScale/Intensity_CUDA              10.3 ms         10.2 ms           63
+RGBDOdometryMultiScale/PointToPlane_CUDA           5.88 ms         5.88 ms          122
+BenchmarkRegistrationICP/PointToPlane / CUDA       2.57 ms         2.57 ms          272
+BenchmarkRegistrationICP/PointToPoint / CUDA       2.95 ms         2.95 ms          236
+######################################
+######################################
+# OPEN3D_PARFOR_BLOCK: 4, OPEN3D_PARFOR_THREAD: 2
+[Open3D INFO] CPUInfo: 18 cores, 36 threads.
+2021-07-21T23:58:46-07:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 10.83, 7.16, 5.60
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+---------------------------------------------------------------------------------------
+Benchmark                                             Time             CPU   Iterations
+---------------------------------------------------------------------------------------
+Reduction/CUDA                                     6.06 ms         6.06 ms          116
+[Open3D INFO] [ParallelForManager] block_size: 4, thread_size: 2
+RGBDOdometryMultiScale/Hybrid_CUDA                 9.69 ms         9.67 ms           58
+RGBDOdometryMultiScale/Intensity_CUDA              11.0 ms         11.0 ms           63
+RGBDOdometryMultiScale/PointToPlane_CUDA           6.71 ms         6.70 ms          100
+BenchmarkRegistrationICP/PointToPlane / CUDA       2.64 ms         2.64 ms          221
+BenchmarkRegistrationICP/PointToPoint / CUDA       3.00 ms         3.00 ms          232
+######################################
+######################################
+# OPEN3D_PARFOR_BLOCK: 4, OPEN3D_PARFOR_THREAD: 4
+[Open3D INFO] CPUInfo: 18 cores, 36 threads.
+2021-07-21T23:58:52-07:00
+Running ./bin/benchmarks
+Run on (36 X 4600 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x18)
+  L1 Instruction 32 KiB (x18)
+  L2 Unified 1024 KiB (x18)
+  L3 Unified 25344 KiB (x1)
+Load Average: 12.39, 7.62, 5.77
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+---------------------------------------------------------------------------------------
+Benchmark                                             Time             CPU   Iterations
+---------------------------------------------------------------------------------------
+Reduction/CUDA                                     6.06 ms         6.06 ms          115
+[Open3D INFO] [ParallelForManager] block_size: 4, thread_size: 4
+RGBDOdometryMultiScale/Hybrid_CUDA                 11.0 ms         11.0 ms           72
+RGBDOdometryMultiScale/Intensity_CUDA              9.24 ms         9.23 ms           77
+RGBDOdometryMultiScale/PointToPlane_CUDA           5.62 ms         5.62 ms          112
+BenchmarkRegistrationICP/PointToPlane / CUDA       2.61 ms         2.61 ms          268
+BenchmarkRegistrationICP/PointToPoint / CUDA       2.99 ms         2.99 ms          233
+######################################
