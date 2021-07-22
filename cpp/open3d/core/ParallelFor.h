@@ -87,9 +87,20 @@ private:
     int64_t thread_size_;
 };
 
+inline int GetParForBlockSize() {
+    return ParallelForManager::GetInstance().GetBlockSize();
+}
+
+inline int GetParForThreadSize() {
+    return ParallelForManager::GetInstance().GetThreadSize();
+}
+
 /// Calls f(n) with the "grid-stride loops" pattern.
-template <int64_t block_size, int64_t thread_size, typename func_t>
-__global__ void __ElementWiseKernel(int64_t n, func_t f) {
+template <typename func_t>
+__global__ void __ElementWiseKernel(int64_t n,
+                                    func_t f,
+                                    int block_size,
+                                    int thread_size) {
     int64_t items_per_block = block_size * thread_size;
     int64_t idx = blockIdx.x * items_per_block + threadIdx.x;
 #pragma unroll
@@ -124,12 +135,12 @@ void ParallelFor(const Device& device, int64_t n, const func_t& func) {
     }
 
     CUDAScopedDevice scoped_device(device);
-    int64_t items_per_block = OPEN3D_PARFOR_BLOCK * OPEN3D_PARFOR_THREAD;
+    int64_t items_per_block = GetParForBlockSize() * GetParForThreadSize();
     int64_t grid_size = (n + items_per_block - 1) / items_per_block;
 
-    __ElementWiseKernel<OPEN3D_PARFOR_BLOCK, OPEN3D_PARFOR_THREAD>
-            <<<grid_size, OPEN3D_PARFOR_BLOCK, 0, core::cuda::GetStream()>>>(
-                    n, func);
+    __ElementWiseKernel<<<grid_size, GetParForBlockSize(), 0,
+                          core::cuda::GetStream()>>>(
+            n, func, GetParForBlockSize(), GetParForThreadSize());
     OPEN3D_GET_LAST_CUDA_ERROR("ParallelFor failed.");
 }
 
