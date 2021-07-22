@@ -45,8 +45,21 @@ namespace core {
 
 #ifdef __CUDACC__
 
-static constexpr int64_t OPEN3D_PARFOR_BLOCK = 128;
-static constexpr int64_t OPEN3D_PARFOR_THREAD = 4;
+static int GetEnvBlockSize() {
+    if (const char* env_p = std::getenv("OPEN3D_PARFOR_BLOCK")) {
+        return std::stoi(env_p);
+    } else {
+        return 128;
+    }
+}
+
+static int GetEnvThreadSize() {
+    if (const char* env_p = std::getenv("OPEN3D_PARFOR_THREAD")) {
+        return std::stoi(env_p);
+    } else {
+        return 4;
+    }
+}
 
 /// The value is chosen heuristically for small element-wise ops. When the
 /// number of workloads is smaller or equal to GetSmallOpGrainSize(), the
@@ -65,7 +78,11 @@ public:
     int64_t GetThreadSize() const { return thread_size_; }
 
 private:
-    ParallelForManager() : block_size_(128), thread_size_(4) {}
+    ParallelForManager()
+        : block_size_(GetEnvBlockSize()), thread_size_(GetEnvThreadSize()) {
+        utility::LogInfo("[ParallelForManager] block_size: {}, thread_size: {}",
+                         block_size_, thread_size_);
+    }
     int64_t block_size_;
     int64_t thread_size_;
 };
