@@ -134,23 +134,16 @@ if __name__ == '__main__':
     # plt.show()
 
     # Y-axis
-    block_sizes = [
-        "cucumber", "tomato", "lettuce", "asparagus", "potato", "wheat",
-        "barley"
-    ]
-    # X-axis
-    thread_sizes = [
-        "Farmer Joe", "Upland Bros.", "Smith Gardening", "Agrifun",
-        "Organiculture", "BioGoods Ltd.", "Cornylee Corp."
-    ]
+    block_sizes = [1, 2, 4]
 
-    runtimes = np.array([[0.8, 2.4, 2.5, 3.9, 0.0, 4.0, 0.0],
-                         [2.4, 0.0, 4.0, 1.0, 2.7, 0.0, 0.0],
-                         [1.1, 2.4, 0.8, 4.3, 1.9, 4.4, 0.0],
-                         [0.6, 0.0, 0.3, 0.0, 3.1, 0.0, 0.0],
-                         [0.7, 1.7, 0.6, 2.6, 2.2, 6.2, 0.0],
-                         [1.3, 1.2, 0.0, 0.0, 0.0, 3.2, 5.1],
-                         [0.1, 2.0, 0.0, 1.4, 0.0, 1.9, 6.3]])
+    # X-axis
+    thread_sizes = [1, 2, 4]
+
+    runtimes = np.array([
+        [0.8, 2.4, 2.5],
+        [2.4, 0.0, 4.0],
+        [0.1, 2.0, 0.0],
+    ])
 
     fig, ax = plt.subplots()
     im = ax.imshow(runtimes)
@@ -164,7 +157,7 @@ if __name__ == '__main__':
 
     # Rotate the tick labels and set their alignment.
     plt.setp(ax.get_xticklabels(),
-             rotation=45,
+             rotation=0,
              ha="right",
              rotation_mode="anchor")
 
@@ -179,6 +172,7 @@ if __name__ == '__main__':
                            color="w")
 
     ax.set_title("Geometric-mean runtime v.s. block/thread size")
+    ax.set_xlabel("thread_sizes")
     ax.set_xlabel("block_sizes")
     fig.tight_layout()
     plt.show()
