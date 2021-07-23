@@ -9,11 +9,11 @@ function run_benchmark {
     rm -rf ${OUT_FILE}
     touch ${OUT_FILE}
 
-    # for OPEN3D_PARFOR_BLOCK in {1,2,4,8,16,32,64,128,256}
-    for OPEN3D_PARFOR_BLOCK in {1,2,4}
+    for OPEN3D_PARFOR_BLOCK in {1,2,4,8,16,32,64,128,256}
+    # for OPEN3D_PARFOR_BLOCK in {1,2,4}
     do
-        # for OPEN3D_PARFOR_THREAD in {1,2,4,8,16,32,64,128,256}
-        for OPEN3D_PARFOR_THREAD in {1,2,4}
+        for OPEN3D_PARFOR_THREAD in {1,2,4,8,16,32,64,128,256}
+        # for OPEN3D_PARFOR_THREAD in {1,2,4}
         do
             echo "######################################" >> ${OUT_FILE}
 

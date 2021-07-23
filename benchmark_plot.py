@@ -13,7 +13,7 @@ def geo_mean(iterable):
     return a.prod()**(1.0 / len(a))
 
 
-def match_num_thread(line):
+def match_block_thread_size(line):
     """
     Args:
         line: a line of text.
@@ -23,10 +23,10 @@ def match_num_thread(line):
     Ref:
         https://www.tutorialspoint.com/python/python_reg_expressions.htm
     """
-    pattern = r"^# OMP_NUM_THREADS: ([0-9]+)$"
+    pattern = r"^# OPEN3D_PARFOR_BLOCK: ([0-9]+), OPEN3D_PARFOR_THREAD: ([0-9]+)"
     match = re.match(pattern, line)
     if match:
-        return int(match.group(1))
+        return int(match.group(1)), int(match.group(2))
     else:
         return None
 
@@ -76,71 +76,59 @@ def parse_file(log_file):
     with open(log_file) as f:
         lines = [line.strip() for line in f.readlines()]
 
-        current_num_thread = None
+        current_block_thread_size = None
         current_runtimes = []
         for line in lines:
             # Parse current line
-            num_thread = match_num_thread(line)
+            num_thread = match_block_thread_size(line)
             runtime = match_runtime(line)
+            print(runtime)
 
             if num_thread:
                 # If we already collected, save
-                if current_num_thread:
+                if current_block_thread_size:
                     results.append({
-                        "num_threads": current_num_thread,
+                        "block_size": current_block_thread_size[0],
+                        "thread_size": current_block_thread_size[1],
                         "gmean": gmean(current_runtimes)
                     })
                 # Reset to fresh
-                current_num_thread = num_thread
+                current_block_thread_size = num_thread
                 current_runtimes = []
             elif runtime:
                 current_runtimes.append(runtime)
 
         # Save the last set of data
-        if current_num_thread:
+        if current_block_thread_size:
             results.append({
-                "num_threads": current_num_thread,
+                "block_size": current_block_thread_size[0],
+                "thread_size": current_block_thread_size[1],
                 "gmean": gmean(current_runtimes)
             })
     return results
 
 
 if __name__ == '__main__':
-    log_files = sorted(list(pwd.glob('benchmark_*.log')))
-    log_files = [str(log_file) for log_file in log_files]
 
-    cpu_prefixes = set([extract_cpu_prefix(log_file) for log_file in log_files])
-    map_cpu_prefix_to_log_files = dict()
-    for cpu_prefix in cpu_prefixes:
-        map_cpu_prefix_to_log_files[cpu_prefix] = []
-        for log_file in log_files:
-            if log_file.startswith(cpu_prefix):
-                map_cpu_prefix_to_log_files[cpu_prefix].append(log_file)
-        map_cpu_prefix_to_log_files[cpu_prefix] = sorted(
-            map_cpu_prefix_to_log_files[cpu_prefix])
-    print(map_cpu_prefix_to_log_files)
+    log_file = pwd / "benchmark_simple.log"
+    results = parse_file(log_file)
+    print(results)
 
-    for cpu_prefix in map_cpu_prefix_to_log_files:
-        log_files = map_cpu_prefix_to_log_files[cpu_prefix]
-        num_log_files = len(log_files)
-        fig = plt.figure()
-        for idx, log_file in enumerate(log_files):
-            ax = fig.add_subplot(num_log_files, 1, idx + 1)
-            results = parse_file(log_file)
-            title = Path(log_file).name[len("benchmark_"):-len(".log")]
-            title = title.replace("_", " ")
-            xs = [result["num_threads"] for result in results]
-            ys = [result["gmean"] for result in results]
-            ax.plot(xs, ys, 'b-')
-            ax.plot(xs, ys, 'b*')
-            for x, y in zip(xs, ys):
-                ax.annotate(f"{y:.2f}", xy=(x, y))
-            ax.set_ylim(ymin=0)
-            ax.set_title(title)
-            ax.set_xticks(np.arange(min(xs), max(xs) + 1, 1.0))
-            # ax.set_xlabel("# of threads")
-            ax.set_ylabel("Runtime gmean (ms)")
-        fig.tight_layout()
+    # fig = plt.figure()
+    # ax = fig.add_subplot(num_log_files, 1, idx + 1)
+    # title = Path(log_file).name[len("benchmark_"):-len(".log")]
+    # title = title.replace("_", " ")
+    # xs = [result["num_threads"] for result in results]
+    # ys = [result["gmean"] for result in results]
+    # ax.plot(xs, ys, 'b-')
+    # ax.plot(xs, ys, 'b*')
+    # for x, y in zip(xs, ys):
+    #     ax.annotate(f"{y:.2f}", xy=(x, y))
+    # ax.set_ylim(ymin=0)
+    # ax.set_title(title)
+    # ax.set_xticks(np.arange(min(xs), max(xs) + 1, 1.0))
+    # # ax.set_xlabel("# of threads")
+    # ax.set_ylabel("Runtime gmean (ms)")
+    # fig.tight_layout()
 
-    plt.show()
-{"mode": "full", "isActive": false}
+    # plt.show()
