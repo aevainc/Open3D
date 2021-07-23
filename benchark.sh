@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -eu
 
-# export OMP_DYNAMIC=TRUE
-
 function run_benchmark {
     options="$(echo "$@" | tr ' ' '|')"
 
@@ -11,17 +9,11 @@ function run_benchmark {
     rm -rf ${OUT_FILE}
     touch ${OUT_FILE}
 
-    # Pick tensor-related benchmarks
-    # If one benchmark used multiple times with different parameters, pick only one of them
-    BENCHMARK_FILTER="Reduction.*CUDA"
-    BENCHMARK_FILTER="${BENCHMARK_FILTER}|RGBDOdometry.*CUDA"
-    BENCHMARK_FILTER="${BENCHMARK_FILTER}|Registration.*CUDA"
-
-    for OPEN3D_PARFOR_BLOCK in {1,2,4,8,16,32,64,128,256}
-    # for OPEN3D_PARFOR_BLOCK in {1,2,4}
+    # for OPEN3D_PARFOR_BLOCK in {1,2,4,8,16,32,64,128,256}
+    for OPEN3D_PARFOR_BLOCK in {1,2,4}
     do
-        for OPEN3D_PARFOR_THREAD in {1,2,4,8,16,32,64,128,256}
-        # for OPEN3D_PARFOR_THREAD in {1,2,4}
+        # for OPEN3D_PARFOR_THREAD in {1,2,4,8,16,32,64,128,256}
+        for OPEN3D_PARFOR_THREAD in {1,2,4}
         do
             echo "######################################" >> ${OUT_FILE}
 
@@ -31,7 +23,10 @@ function run_benchmark {
             echo "# OPEN3D_PARFOR_BLOCK: ${OPEN3D_PARFOR_BLOCK}, OPEN3D_PARFOR_THREAD: ${OPEN3D_PARFOR_THREAD}"
             echo "# OPEN3D_PARFOR_BLOCK: ${OPEN3D_PARFOR_BLOCK}, OPEN3D_PARFOR_THREAD: ${OPEN3D_PARFOR_THREAD}"  >> ${OUT_FILE}
 
-            ./bin/benchmarks --benchmark_filter=${BENCHMARK_FILTER} >> ${OUT_FILE} 2>&1
+            # If we run them together, we get "singular 6x6 linear system detected, tracking failed"
+            ./bin/benchmarks --benchmark_filter="Reduction.*CUDA" >> ${OUT_FILE} 2>&1
+            ./bin/benchmarks --benchmark_filter="RGBDOdometry.*CUDA" >> ${OUT_FILE} 2>&1
+            ./bin/benchmarks --benchmark_filter="Registration.*CUDA" >> ${OUT_FILE} 2>&1
 
             echo "######################################" >> ${OUT_FILE}
         done
