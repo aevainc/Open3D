@@ -82,7 +82,6 @@ def parse_file(log_file):
             # Parse current line
             num_thread = match_block_thread_size(line)
             runtime = match_runtime(line)
-            print(runtime)
 
             if num_thread:
                 # If we already collected, save
@@ -110,9 +109,9 @@ def parse_file(log_file):
 
 if __name__ == '__main__':
 
-    log_file = pwd / "benchmark_simple.log"
+    log_file = pwd / "benchmark_full.log"
     results = parse_file(log_file)
-    print(results)
+    # print(results)
 
     # fig = plt.figure()
     # ax = fig.add_subplot(num_log_files, 1, idx + 1)
@@ -134,16 +133,28 @@ if __name__ == '__main__':
     # plt.show()
 
     # Y-axis
-    block_sizes = [1, 2, 4]
+    block_sizes = [1, 2, 4, 8, 16, 32, 64, 128, 256]
 
     # X-axis
-    thread_sizes = [1, 2, 4]
+    thread_sizes = [1, 2, 4, 8, 16, 32, 64, 128, 256]
 
-    runtimes = np.array([
-        [0.8, 2.4, 2.5],
-        [2.4, 0.0, 4.0],
-        [0.1, 2.0, 0.0],
-    ])
+    # Fill runtimes
+    runtimes = np.ones((len(block_sizes), len(thread_sizes))) * -1
+    for result in results:
+        block_size = result['block_size']
+        thread_size = result['thread_size']
+        runtime = float("{:.2f}".format(result['gmean']))
+
+        y = block_sizes.index(block_size)
+        x = thread_sizes.index(thread_size)
+        print(block_size, thread_size, y, x)
+        runtimes[y, x] = runtime
+
+    # runtimes = np.array([
+    #     [0.8, 2.4, 2.5],
+    #     [2.4, 0.0, 4.0],
+    #     [0.1, 2.0, 0.0],
+    # ])
 
     fig, ax = plt.subplots()
     im = ax.imshow(runtimes)
@@ -171,8 +182,8 @@ if __name__ == '__main__':
                            va="center",
                            color="w")
 
-    ax.set_title("Geometric-mean runtime v.s. block/thread size")
-    ax.set_xlabel("thread_sizes")
-    ax.set_xlabel("block_sizes")
+    ax.set_title("Geometric-mean runtime (the smaller the better)")
+    ax.set_xlabel("thread size")
+    ax.set_ylabel("block size")
     fig.tight_layout()
     plt.show()
