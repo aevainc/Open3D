@@ -158,63 +158,6 @@ template <>
 std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs);
 
 template <typename T>
-void npy_save(std::string fname,
-              const T* data,
-              const std::vector<size_t> shape,
-              std::string mode = "w") {
-    FILE* fp = NULL;
-    std::vector<size_t>
-            true_data_shape;  // if appending, the shape of existing + new data
-
-    if (mode == "a") fp = fopen(fname.c_str(), "r+b");
-
-    if (fp) {
-        // file exists. we need to append to it. read the header, modify the
-        // array size
-        size_t word_size;
-        bool fortran_order;
-        parse_npy_header(fp, word_size, true_data_shape, fortran_order);
-        assert(!fortran_order);
-
-        if (word_size != sizeof(T)) {
-            std::cout << "libnpy error: " << fname << " has word size "
-                      << word_size << " but npy_save appending data sized "
-                      << sizeof(T) << "\n";
-            assert(word_size == sizeof(T));
-        }
-        if (true_data_shape.size() != shape.size()) {
-            std::cout << "libnpy error: npy_save attempting to append "
-                         "misdimensioned data to "
-                      << fname << "\n";
-            assert(true_data_shape.size() != shape.size());
-        }
-
-        for (size_t i = 1; i < shape.size(); i++) {
-            if (shape[i] != true_data_shape[i]) {
-                std::cout << "libnpy error: npy_save attempting to append "
-                             "misshaped data to "
-                          << fname << "\n";
-                assert(shape[i] == true_data_shape[i]);
-            }
-        }
-        true_data_shape[0] += shape[0];
-    } else {
-        fp = fopen(fname.c_str(), "wb");
-        true_data_shape = shape;
-    }
-
-    std::vector<char> header = create_npy_header<T>(true_data_shape);
-    size_t nels = std::accumulate(shape.begin(), shape.end(), 1,
-                                  std::multiplies<size_t>());
-
-    fseek(fp, 0, SEEK_SET);
-    fwrite(&header[0], sizeof(char), header.size(), fp);
-    fseek(fp, 0, SEEK_END);
-    fwrite(data, sizeof(T), nels, fp);
-    fclose(fp);
-}
-
-template <typename T>
 void npz_save(std::string zipname,
               std::string fname,
               const T* data,
@@ -317,15 +260,6 @@ void npz_save(std::string zipname,
     fwrite(&global_header[0], sizeof(char), global_header.size(), fp);
     fwrite(&footer[0], sizeof(char), footer.size(), fp);
     fclose(fp);
-}
-
-template <typename T>
-void npy_save(std::string fname,
-              const std::vector<T> data,
-              std::string mode = "w") {
-    std::vector<size_t> shape;
-    shape.push_back(data.size());
-    npy_save(fname, &data[0], shape, mode);
 }
 
 template <typename T>
