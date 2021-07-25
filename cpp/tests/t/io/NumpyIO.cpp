@@ -141,7 +141,7 @@ TEST_P(NumpyIOPermuteDevices, NpzIO) {
     // utility::filesystem::RemoveFile(filename);
 }
 
-TEST_P(NumpyIOPermuteDevices, MigrateCode) { cnpy::CnpyIOTest(); }
+TEST_P(NumpyIOPermuteDevices, MigrateCode) { t::io::cnpy::CnpyIOTest(); }
 
 }  // namespace tests
 }  // namespace open3d
