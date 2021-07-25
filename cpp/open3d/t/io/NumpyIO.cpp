@@ -522,38 +522,6 @@ std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
     return lhs;
 }
 
-template <typename T>
-std::vector<char> create_npy_header(const std::vector<size_t>& shape) {
-    std::vector<char> dict;
-    dict += "{'descr': '";
-    dict += BigEndianTest();
-    dict += map_type(typeid(T));
-    dict += std::to_string(sizeof(T));
-    dict += "', 'fortran_order': False, 'shape': (";
-    dict += std::to_string(shape[0]);
-    for (size_t i = 1; i < shape.size(); i++) {
-        dict += ", ";
-        dict += std::to_string(shape[i]);
-    }
-    if (shape.size() == 1) dict += ",";
-    dict += "), }";
-    // pad with spaces so that preamble+dict is modulo 16 bytes. preamble is 10
-    // bytes. dict needs to end with \n
-    int remainder = 16 - (10 + dict.size()) % 16;
-    dict.insert(dict.end(), remainder, ' ');
-    dict.back() = '\n';
-
-    std::vector<char> header;
-    header += (char)0x93;
-    header += "NUMPY";
-    header += (char)0x01;  // major version of numpy format
-    header += (char)0x00;  // minor version of numpy format
-    header += (uint16_t)dict.size();
-    header.insert(header.end(), dict.begin(), dict.end());
-
-    return header;
-}
-
 void npz_save(std::string zipname,
               std::string fname,
               const core::Tensor& tensor,
