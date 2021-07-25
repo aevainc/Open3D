@@ -947,6 +947,11 @@ void CnpyIOTest() {
     // load a single var from the npz file
     NpyArray t0_loaded = npz_load("out.npz", "t0");
 
+    const double* t0_loaded_data = t0_loaded.data<double>();
+    utility::LogInfo("t0_loaded shape: {}", t0_loaded.shape);
+    utility::LogInfo("t0_loaded data: {}, {}", t0_loaded_data[0],
+                     t0_loaded_data[1]);
+
     // load the entire npz file
     std::map<std::string, NpyArray> npz_loaded = npz_load("out.npz");
 
