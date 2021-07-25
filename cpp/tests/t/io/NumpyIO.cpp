@@ -29,6 +29,7 @@
 #include <cmath>
 #include <limits>
 
+#include "open3d/t/io/NumpyIO.h"
 #include "open3d/utility/FileSystem.h"
 #include "open3d/utility/Logging.h"
 #include "tests/UnitTest.h"
@@ -100,58 +101,44 @@ TEST_P(NumpyIOPermuteDevices, NpyIO) {
 
 TEST_P(NumpyIOPermuteDevices, NpzIO) {
     const core::Device &device = GetParam();
-    const std::string filename = "tensor.npy";
+    const std::string filename = "tensors.npz";
 
     core::Tensor t;
     core::Tensor t_load;
 
     // 2x2 tensor.
-    t = core::Tensor::Init<float>({{1, 2}, {3, 4}}, device);
-    t.Save(filename);
-    t_load = core::Tensor::Load(filename);
-    EXPECT_TRUE(t.AllClose(t_load.To(device)));
+    core::Tensor t0 = core::Tensor::Init<float>({{1, 2}, {3, 4}}, device);
 
     // Non-contiguous tensor will be stored as contiguous tensor.
-    t = core::Tensor::Init<float>(
+    // t1 sliced with [0:2:1, 0:3:2, 0:4:2].
+    core::Tensor t1 = core::Tensor::Init<float>(
             {{{0, 1, 2, 3}, {4, 5, 6, 7}, {8, 9, 10, 11}},
              {{12, 13, 14, 15}, {16, 17, 18, 19}, {20, 21, 22, 23}}},
             device);
-    // t[0:2:1, 0:3:2, 0:4:2]
-    t = t.Slice(0, 0, 2, 1).Slice(1, 0, 3, 2).Slice(2, 0, 4, 2);
-    t.Save(filename);
-    EXPECT_FALSE(t.IsContiguous());
-    t_load = core::Tensor::Load(filename);
-    EXPECT_TRUE(t_load.IsContiguous());
-    EXPECT_EQ(t_load.GetShape(), core::SizeVector({2, 2, 2}));
-    EXPECT_EQ(t_load.ToFlatVector<float>(),
-              std::vector<float>({0, 2, 8, 10, 12, 14, 20, 22}));
+    t1 = t1.Slice(0, 0, 2, 1).Slice(1, 0, 3, 2).Slice(2, 0, 4, 2);
 
     // {} tensor (scalar).
-    t = core::Tensor::Init<float>(3.14, device);
-    t.Save(filename);
-    t_load = core::Tensor::Load(filename);
-    EXPECT_TRUE(t.AllClose(t_load.To(device)));
+    core::Tensor t2 = core::Tensor::Init<float>(3.14, device);
 
     // {0} tensor.
-    t = core::Tensor::Ones({0}, core::Float32, device);
-    t.Save(filename);
-    t_load = core::Tensor::Load(filename);
-    EXPECT_TRUE(t.AllClose(t_load.To(device)));
+    core::Tensor t3 = core::Tensor::Ones({0}, core::Float32, device);
 
     // {0, 0} tensor.
-    t = core::Tensor::Ones({0, 0}, core::Float32, device);
-    t.Save(filename);
-    t_load = core::Tensor::Load(filename);
-    EXPECT_TRUE(t.AllClose(t_load.To(device)));
+    core::Tensor t4 = core::Tensor::Ones({0, 0}, core::Float32, device);
 
     // {0, 1, 0} tensor.
-    t = core::Tensor::Ones({0, 1, 0}, core::Float32, device);
-    t.Save(filename);
-    t_load = core::Tensor::Load(filename);
-    EXPECT_TRUE(t.AllClose(t_load.To(device)));
+    core::Tensor t5 = core::Tensor::Ones({0, 1, 0}, core::Float32, device);
+
+    // Wrtie t0 to t5.
+    t::io::WriteNpy(filename, {{"tensor0", t0},
+                               {"tensor1", t1},
+                               {"tensor2", t2},
+                               {"tensor3", t3},
+                               {"tensor4", t4},
+                               {"tensor5", t5}});
 
     // Clean up.
-    utility::filesystem::RemoveFile(filename);
+    // utility::filesystem::RemoveFile(filename);
 }
 
 }  // namespace tests
