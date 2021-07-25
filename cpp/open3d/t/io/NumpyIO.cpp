@@ -938,16 +938,13 @@ NpyArray npz_load(std::string fname, std::string varname) {
 }
 
 void CnpyIOTest() {
-    const int Nx = 128;
-    const int Ny = 64;
-    const int Nz = 32;
+    const int Nx = 2;
+    const int Ny = 3;
+    const int Nz = 4;
 
-    // set random seed so that result is reproducible (for testing)
-    srand(0);
-    // create random data
     std::vector<std::complex<double>> data(Nx * Ny * Nz);
     for (int i = 0; i < Nx * Ny * Nz; i++)
-        data[i] = std::complex<double>(rand(), rand());
+        data[i] = std::complex<double>(1, -1);
 
     // now write to an npz file
     // non-array variables are treated as 1D arrays with 1 element
