@@ -438,31 +438,66 @@ struct NpyArray {
     size_t num_vals;
 };
 
-char BigEndianTest();
-
-char map_type(const std::type_info& t);
-
-template <typename T>
-std::vector<char> create_npy_header(const std::vector<size_t>& shape);
-
-void parse_npy_header(FILE* fp,
-                      size_t& word_size,
-                      std::vector<size_t>& shape,
-                      bool& fortran_order);
-
-void parse_npy_header(unsigned char* buffer,
-                      size_t& word_size,
-                      std::vector<size_t>& shape,
-                      bool& fortran_order);
+char BigEndianTest() {
+    int x = 1;
+    return (((char*)&x)[0]) ? '<' : '>';
+}
 
 void parse_zip_footer(FILE* fp,
                       uint16_t& nrecs,
                       size_t& global_header_size,
-                      size_t& global_header_offset);
+                      size_t& global_header_offset) {
+    std::vector<char> footer(22);
+    fseek(fp, -22, SEEK_END);
+    size_t res = fread(&footer[0], sizeof(char), 22, fp);
+    if (res != 22) throw std::runtime_error("parse_zip_footer: failed fread");
 
-std::map<std::string, NpyArray> npz_load(std::string fname);
+    uint16_t disk_no, disk_start, nrecs_on_disk, comment_len;
+    disk_no = *(uint16_t*)&footer[4];
+    disk_start = *(uint16_t*)&footer[6];
+    nrecs_on_disk = *(uint16_t*)&footer[8];
+    nrecs = *(uint16_t*)&footer[10];
+    global_header_size = *(uint32_t*)&footer[12];
+    global_header_offset = *(uint32_t*)&footer[16];
+    comment_len = *(uint16_t*)&footer[20];
 
-NpyArray npz_load(std::string fname, std::string varname);
+    assert(disk_no == 0);
+    assert(disk_start == 0);
+    assert(nrecs_on_disk == nrecs);
+    assert(comment_len == 0);
+    (void)disk_no;
+    (void)disk_start;
+    (void)nrecs_on_disk;
+    (void)comment_len;
+}
+
+char map_type(const std::type_info& t) {
+    if (t == typeid(float)) return 'f';
+    if (t == typeid(double)) return 'f';
+    if (t == typeid(long double)) return 'f';
+
+    if (t == typeid(int)) return 'i';
+    if (t == typeid(char)) return 'i';
+    if (t == typeid(short)) return 'i';
+    if (t == typeid(long)) return 'i';
+    if (t == typeid(long long)) return 'i';
+
+    if (t == typeid(unsigned char)) return 'u';
+    if (t == typeid(unsigned short)) return 'u';
+    if (t == typeid(unsigned long)) return 'u';
+    if (t == typeid(unsigned long long)) return 'u';
+    if (t == typeid(unsigned int)) return 'u';
+
+    if (t == typeid(bool)) return 'b';
+
+    if (t == typeid(std::complex<float>)) return 'c';
+    if (t == typeid(std::complex<double>)) return 'c';
+    if (t == typeid(std::complex<long double>))
+        return 'c';
+
+    else
+        return '?';
+}
 
 template <typename T>
 std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs) {
@@ -475,10 +510,53 @@ std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs) {
 }
 
 template <>
-std::vector<char>& operator+=(std::vector<char>& lhs, const std::string rhs);
+std::vector<char>& operator+=(std::vector<char>& lhs, const std::string rhs) {
+    lhs.insert(lhs.end(), rhs.begin(), rhs.end());
+    return lhs;
+}
 
 template <>
-std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs);
+std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
+    // write in little endian
+    size_t len = strlen(rhs);
+    lhs.reserve(len);
+    for (size_t byte = 0; byte < len; byte++) {
+        lhs.push_back(rhs[byte]);
+    }
+    return lhs;
+}
+
+template <typename T>
+std::vector<char> create_npy_header(const std::vector<size_t>& shape) {
+    std::vector<char> dict;
+    dict += "{'descr': '";
+    dict += BigEndianTest();
+    dict += map_type(typeid(T));
+    dict += std::to_string(sizeof(T));
+    dict += "', 'fortran_order': False, 'shape': (";
+    dict += std::to_string(shape[0]);
+    for (size_t i = 1; i < shape.size(); i++) {
+        dict += ", ";
+        dict += std::to_string(shape[i]);
+    }
+    if (shape.size() == 1) dict += ",";
+    dict += "), }";
+    // pad with spaces so that preamble+dict is modulo 16 bytes. preamble is 10
+    // bytes. dict needs to end with \n
+    int remainder = 16 - (10 + dict.size()) % 16;
+    dict.insert(dict.end(), remainder, ' ');
+    dict.back() = '\n';
+
+    std::vector<char> header;
+    header += (char)0x93;
+    header += "NUMPY";
+    header += (char)0x01;  // major version of numpy format
+    header += (char)0x00;  // minor version of numpy format
+    header += (uint16_t)dict.size();
+    header.insert(header.end(), dict.begin(), dict.end());
+
+    return header;
+}
 
 template <typename T>
 void npz_save(std::string zipname,
@@ -595,88 +673,6 @@ void npz_save(std::string zipname,
     npz_save(zipname, fname, &data[0], shape, mode);
 }
 
-template <typename T>
-std::vector<char> create_npy_header(const std::vector<size_t>& shape) {
-    std::vector<char> dict;
-    dict += "{'descr': '";
-    dict += BigEndianTest();
-    dict += map_type(typeid(T));
-    dict += std::to_string(sizeof(T));
-    dict += "', 'fortran_order': False, 'shape': (";
-    dict += std::to_string(shape[0]);
-    for (size_t i = 1; i < shape.size(); i++) {
-        dict += ", ";
-        dict += std::to_string(shape[i]);
-    }
-    if (shape.size() == 1) dict += ",";
-    dict += "), }";
-    // pad with spaces so that preamble+dict is modulo 16 bytes. preamble is 10
-    // bytes. dict needs to end with \n
-    int remainder = 16 - (10 + dict.size()) % 16;
-    dict.insert(dict.end(), remainder, ' ');
-    dict.back() = '\n';
-
-    std::vector<char> header;
-    header += (char)0x93;
-    header += "NUMPY";
-    header += (char)0x01;  // major version of numpy format
-    header += (char)0x00;  // minor version of numpy format
-    header += (uint16_t)dict.size();
-    header.insert(header.end(), dict.begin(), dict.end());
-
-    return header;
-}
-
-char BigEndianTest() {
-    int x = 1;
-    return (((char*)&x)[0]) ? '<' : '>';
-}
-
-char map_type(const std::type_info& t) {
-    if (t == typeid(float)) return 'f';
-    if (t == typeid(double)) return 'f';
-    if (t == typeid(long double)) return 'f';
-
-    if (t == typeid(int)) return 'i';
-    if (t == typeid(char)) return 'i';
-    if (t == typeid(short)) return 'i';
-    if (t == typeid(long)) return 'i';
-    if (t == typeid(long long)) return 'i';
-
-    if (t == typeid(unsigned char)) return 'u';
-    if (t == typeid(unsigned short)) return 'u';
-    if (t == typeid(unsigned long)) return 'u';
-    if (t == typeid(unsigned long long)) return 'u';
-    if (t == typeid(unsigned int)) return 'u';
-
-    if (t == typeid(bool)) return 'b';
-
-    if (t == typeid(std::complex<float>)) return 'c';
-    if (t == typeid(std::complex<double>)) return 'c';
-    if (t == typeid(std::complex<long double>))
-        return 'c';
-
-    else
-        return '?';
-}
-
-template <>
-std::vector<char>& operator+=(std::vector<char>& lhs, const std::string rhs) {
-    lhs.insert(lhs.end(), rhs.begin(), rhs.end());
-    return lhs;
-}
-
-template <>
-std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
-    // write in little endian
-    size_t len = strlen(rhs);
-    lhs.reserve(len);
-    for (size_t byte = 0; byte < len; byte++) {
-        lhs.push_back(rhs[byte]);
-    }
-    return lhs;
-}
-
 void parse_npy_header(unsigned char* buffer,
                       size_t& word_size,
                       std::vector<size_t>& shape,
@@ -783,34 +779,6 @@ void parse_npy_header(FILE* fp,
     std::string str_ws = header.substr(loc1 + 2);
     loc2 = str_ws.find("'");
     word_size = atoi(str_ws.substr(0, loc2).c_str());
-}
-
-void parse_zip_footer(FILE* fp,
-                      uint16_t& nrecs,
-                      size_t& global_header_size,
-                      size_t& global_header_offset) {
-    std::vector<char> footer(22);
-    fseek(fp, -22, SEEK_END);
-    size_t res = fread(&footer[0], sizeof(char), 22, fp);
-    if (res != 22) throw std::runtime_error("parse_zip_footer: failed fread");
-
-    uint16_t disk_no, disk_start, nrecs_on_disk, comment_len;
-    disk_no = *(uint16_t*)&footer[4];
-    disk_start = *(uint16_t*)&footer[6];
-    nrecs_on_disk = *(uint16_t*)&footer[8];
-    nrecs = *(uint16_t*)&footer[10];
-    global_header_size = *(uint32_t*)&footer[12];
-    global_header_offset = *(uint32_t*)&footer[16];
-    comment_len = *(uint16_t*)&footer[20];
-
-    assert(disk_no == 0);
-    assert(disk_start == 0);
-    assert(nrecs_on_disk == nrecs);
-    assert(comment_len == 0);
-    (void)disk_no;
-    (void)disk_start;
-    (void)nrecs_on_disk;
-    (void)comment_len;
 }
 
 NpyArray load_the_npy_file(FILE* fp) {
