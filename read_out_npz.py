@@ -10,7 +10,7 @@ if __name__ == '__main__':
         for key in data:
             print(key, data[key])
 
-    npz_file = pwd / "build" / "tensor.npz"
+    npz_file = pwd / "build" / "tensors.npz"
     if npz_file.exists():
         with np.load(npz_file) as data:
             for key in data:
