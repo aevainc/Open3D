@@ -741,17 +741,6 @@ cnpy::NpyArray cnpy::npz_load(std::string fname, std::string varname) {
                              " not found in " + fname);
 }
 
-cnpy::NpyArray cnpy::npy_load(std::string fname) {
-    FILE* fp = fopen(fname.c_str(), "rb");
-
-    if (!fp) throw std::runtime_error("npy_load: Unable to open file " + fname);
-
-    NpyArray arr = load_the_npy_file(fp);
-
-    fclose(fp);
-    return arr;
-}
-
 void cnpy::CnpyIOTest() {
     const int Nx = 128;
     const int Ny = 64;
