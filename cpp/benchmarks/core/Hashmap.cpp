@@ -89,12 +89,12 @@ void HashInsertInt(benchmark::State& state,
                         backend);
         Tensor addrs, masks;
 
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
         state.ResumeTiming();
 
         hashmap.Insert(keys, values, addrs, masks);
 
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
         state.PauseTiming();
 
         int64_t s = hashmap.Size();
@@ -130,12 +130,12 @@ void HashEraseInt(benchmark::State& state,
         Tensor addrs, masks;
         hashmap.Insert(keys, values, addrs, masks);
 
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
         state.ResumeTiming();
 
         hashmap.Erase(keys, masks);
 
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
         state.PauseTiming();
 
         int64_t s = hashmap.Size();
@@ -167,7 +167,7 @@ void HashFindInt(benchmark::State& state,
 
     for (auto _ : state) {
         hashmap.Find(keys, addrs, masks);
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
     }
 }
 
@@ -202,12 +202,12 @@ void HashClearInt(benchmark::State& state,
                     slots, s);
         }
 
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
         state.ResumeTiming();
 
         hashmap.Clear();
 
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
         state.PauseTiming();
 
         s = hashmap.Size();
@@ -257,12 +257,12 @@ void HashInsertInt3(benchmark::State& state,
                         backend);
         Tensor addrs, masks;
 
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
         state.ResumeTiming();
 
         hashmap.Insert(keys, values, addrs, masks);
 
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
         state.PauseTiming();
 
         int64_t s = hashmap.Size();
@@ -301,12 +301,12 @@ void HashEraseInt3(benchmark::State& state,
         Tensor addrs, masks;
         hashmap.Insert(keys, values, addrs, masks);
 
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
         state.ResumeTiming();
 
         hashmap.Erase(keys, masks);
 
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
         state.PauseTiming();
 
         int64_t s = hashmap.Size();
@@ -340,7 +340,7 @@ void HashFindInt3(benchmark::State& state,
 
     for (auto _ : state) {
         hashmap.Find(keys, addrs, masks);
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
     }
 }
 
@@ -378,13 +378,13 @@ void HashClearInt3(benchmark::State& state,
                     slots, s);
         }
 
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
         state.ResumeTiming();
 
         hashmap.Clear();
 
         state.PauseTiming();
-        core::cuda::Synchronize(device);
+        cuda::Synchronize(device);
 
         s = hashmap.Size();
         if (s != 0) {
