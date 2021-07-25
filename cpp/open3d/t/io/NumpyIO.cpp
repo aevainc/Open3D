@@ -942,9 +942,10 @@ void CnpyIOTest() {
     const int Ny = 3;
     const int Nz = 1;
 
-    std::vector<std::complex<double>> data(Nx * Ny * Nz);
-    for (int i = 0; i < Nx * Ny * Nz; i++)
-        data[i] = std::complex<double>(1, -1);
+    std::vector<double> data(Nx * Ny * Nz);
+    for (int i = 0; i < Nx * Ny * Nz; i++) {
+        data[i] = double(i);
+    }
 
     // now write to an npz file
     // non-array variables are treated as 1D arrays with 1 element
