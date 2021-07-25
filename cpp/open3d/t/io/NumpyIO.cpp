@@ -768,25 +768,22 @@ void parse_npy_header(FILE* fp,
 }
 
 void CnpyIOTest() {
-    const int Nx = 2;
-    const int Ny = 3;
-    const int Nz = 1;
-
-    std::vector<double> data(Nx * Ny * Nz);
-    for (int i = 0; i < Nx * Ny * Nz; i++) {
-        data[i] = double(i);
-    }
-
     // now write to an npz file
     // non-array variables are treated as 1D arrays with 1 element
+
+    //"w" overwrites any existing file
     double myVar1 = 1.2;
+    npz_save("out.npz", "myVar1", &myVar1, {1}, "w");
+
+    //"a" appends to the file we created above
     char myVar2 = 'a';
-    npz_save("out.npz", "myVar1", &myVar1, {1},
-             "w");  //"w" overwrites any existing file
-    npz_save("out.npz", "myVar2", &myVar2, {1},
-             "a");  //"a" appends to the file we created above
-    npz_save("out.npz", "arr1", &data[0], {Nz, Ny, Nx},
-             "a");  //"a" appends to the file we created above
+    npz_save("out.npz", "myVar2", &myVar2, {1}, "a");
+
+    //"a" appends to the file we created above
+    core::Device device("CPU:0");
+    core::Tensor tensor =
+            core::Tensor::Init<double>({{0, 1, 2}, {3, 4, 5}}, device);
+    npz_save("out.npz", "arr1", tensor.GetDataPtr<double>(), {2, 3}, "a");
 
     // // load a single var from the npz file
     // NpyArray arr2 = npz_load("out.npz", "arr1");
