@@ -554,12 +554,15 @@ std::vector<char> create_npy_header(const std::vector<size_t>& shape) {
     return header;
 }
 
-template <typename T>
 void npz_save(std::string zipname,
               std::string fname,
-              const T* data,
-              const std::vector<size_t>& shape,
+              const core::Tensor& tensor,
               std::string mode = "w") {
+    const void* data = tensor.GetDataPtr();
+    const core::SizeVector shape = tensor.GetShape();
+    const core::Dtype dtype = tensor.GetDtype();
+    const int64_t element_byte_size = dtype.ByteSize();
+
     // first, append a .npy to the fname
     fname += ".npy";
 
@@ -592,15 +595,15 @@ void npz_save(std::string zipname,
         fp = fopen(zipname.c_str(), "wb");
     }
 
-    std::vector<char> npy_header = create_npy_header<T>(shape);
+    std::vector<char> npy_header = CreateNumpyHeader(shape, dtype);
 
     size_t nels = std::accumulate(shape.begin(), shape.end(), 1,
                                   std::multiplies<size_t>());
-    size_t nbytes = nels * sizeof(T) + npy_header.size();
+    size_t nbytes = nels * element_byte_size + npy_header.size();
 
     // get the CRC of the data to be added
     uint32_t crc = crc32(0L, (uint8_t*)&npy_header[0], npy_header.size());
-    crc = crc32(crc, (uint8_t*)data, nels * sizeof(T));
+    crc = crc32(crc, (uint8_t*)data, nels * element_byte_size);
 
     // build the local header
     std::vector<char> local_header;
@@ -653,7 +656,7 @@ void npz_save(std::string zipname,
     // write everything
     fwrite(&local_header[0], sizeof(char), local_header.size(), fp);
     fwrite(&npy_header[0], sizeof(char), npy_header.size(), fp);
-    fwrite(data, sizeof(T), nels, fp);
+    fwrite(data, element_byte_size, nels, fp);
     fwrite(&global_header[0], sizeof(char), global_header.size(), fp);
     fwrite(&footer[0], sizeof(char), footer.size(), fp);
     fclose(fp);
@@ -938,11 +941,11 @@ void CnpyIOTest() {
 
     //"w" overwrites any existing file
     auto t0 = core::Tensor::Init<int32_t>({100, 200}, device);
-    npz_save("out.npz", "t0", t0.GetDataPtr<int32_t>(), {2}, "w");
+    npz_save("out.npz", "t0", t0, "w");
 
     //"a" appends to the file we created above
     auto t1 = core::Tensor::Init<double>({{0, 1, 2}, {3, 4, 5}}, device);
-    npz_save("out.npz", "t1", t1.GetDataPtr<double>(), {2, 3}, "a");
+    npz_save("out.npz", "t1", t1, "a");
 
     // load a single var from the npz file
     NpyArray t0_loaded = npz_load("out.npz", "t0");
