@@ -663,16 +663,6 @@ void npz_save(std::string zipname,
     fclose(fp);
 }
 
-template <typename T>
-void npz_save(std::string zipname,
-              std::string fname,
-              const std::vector<T> data,
-              std::string mode = "w") {
-    std::vector<size_t> shape;
-    shape.push_back(data.size());
-    npz_save(zipname, fname, &data[0], shape, mode);
-}
-
 void parse_npy_header(unsigned char* buffer,
                       size_t& word_size,
                       std::vector<size_t>& shape,
