@@ -768,22 +768,16 @@ void parse_npy_header(FILE* fp,
 }
 
 void CnpyIOTest() {
-    // now write to an npz file
-    // non-array variables are treated as 1D arrays with 1 element
+    core::Device device("CPU:0");
 
     //"w" overwrites any existing file
     double myVar1 = 1.2;
-    npz_save("out.npz", "myVar1", &myVar1, {1}, "w");
+    auto t0 = core::Tensor::Init<int32_t>({100, 200}, device);
+    npz_save("out.npz", "myVar1", t0.GetDataPtr<int32_t>(), {2}, "w");
 
     //"a" appends to the file we created above
-    char myVar2 = 'a';
-    npz_save("out.npz", "myVar2", &myVar2, {1}, "a");
-
-    //"a" appends to the file we created above
-    core::Device device("CPU:0");
-    core::Tensor t2 =
-            core::Tensor::Init<double>({{0, 1, 2}, {3, 4, 5}}, device);
-    npz_save("out.npz", "t2", t2.GetDataPtr<double>(), {2, 3}, "a");
+    auto t1 = core::Tensor::Init<double>({{0, 1, 2}, {3, 4, 5}}, device);
+    npz_save("out.npz", "t1", t1.GetDataPtr<double>(), {2, 3}, "a");
 
     // // load a single var from the npz file
     // NpyArray arr2 = npz_load("out.npz", "arr1");
