@@ -109,7 +109,7 @@ def parse_file(log_file):
 
 if __name__ == '__main__':
 
-    log_file = pwd / "benchmark_full.log"
+    log_file = pwd / "benchmark_full_synchronized.log"
     results = parse_file(log_file)
     # print(results)
 
