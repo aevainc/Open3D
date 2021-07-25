@@ -44,7 +44,7 @@ INSTANTIATE_TEST_SUITE_P(Tensor,
                          testing::ValuesIn(PermuteDevices::TestCases()));
 
 TEST_P(NumpyIOPermuteDevices, NpyIO) {
-    const core::Device &device = GetParam();
+    const core::Device& device = GetParam();
     const std::string filename = "tensor.npy";
 
     core::Tensor t;
@@ -100,7 +100,7 @@ TEST_P(NumpyIOPermuteDevices, NpyIO) {
 }
 
 TEST_P(NumpyIOPermuteDevices, NpzIO) {
-    const core::Device &device = GetParam();
+    const core::Device& device = GetParam();
     const std::string filename = "tensors.npz";
 
     core::Tensor t;
@@ -140,6 +140,8 @@ TEST_P(NumpyIOPermuteDevices, NpzIO) {
     // Clean up.
     // utility::filesystem::RemoveFile(filename);
 }
+
+TEST_P(NumpyIOPermuteDevices, MigrateCode) { cnpy::CnpyIOTest(); }
 
 }  // namespace tests
 }  // namespace open3d
