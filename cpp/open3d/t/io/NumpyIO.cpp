@@ -764,26 +764,6 @@ void cnpy::CnpyIOTest() {
     for (int i = 0; i < Nx * Ny * Nz; i++)
         data[i] = std::complex<double>(rand(), rand());
 
-    // save it to file
-    cnpy::npy_save("arr1.npy", &data[0], {Nz, Ny, Nx}, "w");
-
-    // load it into a new array
-    cnpy::NpyArray arr = cnpy::npy_load("arr1.npy");
-    std::complex<double>* loaded_data = arr.data<std::complex<double>>();
-    (void)loaded_data;
-
-    // make sure the loaded data matches the saved data
-    assert(arr.word_size == sizeof(std::complex<double>));
-    assert(arr.shape.size() == 3 && arr.shape[0] == Nz && arr.shape[1] == Ny &&
-           arr.shape[2] == Nx);
-    for (int i = 0; i < Nx * Ny * Nz; i++) {
-        assert(data[i] == loaded_data[i]);
-    }
-
-    // append the same data to file
-    // npy array on file now has shape (Nz+Nz,Ny,Nx)
-    cnpy::npy_save("arr1.npy", &data[0], {Nz, Ny, Nx}, "a");
-
     // now write to an npz file
     // non-array variables are treated as 1D arrays with 1 element
     double myVar1 = 1.2;
