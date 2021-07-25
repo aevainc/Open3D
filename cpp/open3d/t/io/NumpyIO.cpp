@@ -940,7 +940,7 @@ NpyArray npz_load(std::string fname, std::string varname) {
 void CnpyIOTest() {
     const int Nx = 2;
     const int Ny = 3;
-    const int Nz = 4;
+    const int Nz = 1;
 
     std::vector<std::complex<double>> data(Nx * Ny * Nz);
     for (int i = 0; i < Nx * Ny * Nz; i++)
