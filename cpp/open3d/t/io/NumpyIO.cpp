@@ -380,7 +380,7 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
     return {};
 }
 
-void WriteNpy(const std::string& filename,
+void WriteNpz(const std::string& filename,
               const std::unordered_map<std::string, core::Tensor>& tensor_map) {
 }
 

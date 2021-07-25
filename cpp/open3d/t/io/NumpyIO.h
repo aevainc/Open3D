@@ -73,7 +73,7 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
 ///
 /// \param filename The file name to write to.
 /// \param tensor_map The tensor map to save.
-void WriteNpy(const std::string& filename,
+void WriteNpz(const std::string& filename,
               const std::unordered_map<std::string, core::Tensor>& tensor_map);
 
 }  // namespace io
