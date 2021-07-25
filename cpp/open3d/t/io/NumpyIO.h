@@ -27,6 +27,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
 #include "open3d/core/Tensor.h"
 
@@ -36,14 +37,27 @@ namespace io {
 
 /// Read Numpy .npy file to a tensor.
 ///
-/// \param filename File name to read from.
+/// \param filename The file name to read from.
 core::Tensor ReadNpy(const std::string& filename);
 
 /// Save a tensor to a Numpy .npy file.
 ///
-/// \param filename File name to write to.
-/// \param tensor Tensor to save.
+/// \param filename The file name to write to.
+/// \param tensor The tensor to save.
 void WriteNpy(const std::string& filename, const core::Tensor& tensor);
+
+/// Read Numpy .npz file to an unordered_map from string to tensor.
+///
+/// \param filename The file name to read from.
+std::unordered_map<std::string, core::Tensor> ReadNpz(
+        const std::string& filename);
+
+/// Save a string to tensor map as Numpy .npz file.
+///
+/// \param filename The file name to write to.
+/// \param tensor_map The tensor map to save.
+void WriteNpy(const std::string& filename,
+              const std::unordered_map<std::string, core::Tensor>& tensor_map);
 
 }  // namespace io
 }  // namespace t

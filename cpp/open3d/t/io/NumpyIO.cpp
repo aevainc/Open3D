@@ -363,6 +363,15 @@ void WriteNpy(const std::string& filename, const core::Tensor& tensor) {
     NumpyArray(tensor).Save(filename);
 }
 
+std::unordered_map<std::string, core::Tensor> ReadNpz(
+        const std::string& filename) {
+    return {};
+}
+
+void WriteNpy(const std::string& filename,
+              const std::unordered_map<std::string, core::Tensor>& tensor_map) {
+}
+
 }  // namespace io
 }  // namespace t
 }  // namespace open3d
