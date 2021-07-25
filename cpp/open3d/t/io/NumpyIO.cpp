@@ -630,7 +630,7 @@ cnpy::NpyArray load_the_npz_array(FILE* fp,
     return array;
 }
 
-cnpy::npz_t cnpy::npz_load(std::string fname) {
+std::map<std::string, cnpy::NpyArray> cnpy::npz_load(std::string fname) {
     FILE* fp = fopen(fname.c_str(), "rb");
 
     if (!fp) {
@@ -638,7 +638,7 @@ cnpy::npz_t cnpy::npz_load(std::string fname) {
                                  fname + "!");
     }
 
-    cnpy::npz_t arrays;
+    std::map<std::string, cnpy::NpyArray> arrays;
 
     while (1) {
         std::vector<char> local_header(30);
@@ -768,7 +768,7 @@ void cnpy::CnpyIOTest() {
     cnpy::NpyArray arr2 = cnpy::npz_load("out.npz", "arr1");
 
     // load the entire npz file
-    cnpy::npz_t my_npz = cnpy::npz_load("out.npz");
+    std::map<std::string, cnpy::NpyArray> my_npz = cnpy::npz_load("out.npz");
 
     // check that the loaded myVar1 matches myVar1
     cnpy::NpyArray arr_mv1 = my_npz["myVar1"];

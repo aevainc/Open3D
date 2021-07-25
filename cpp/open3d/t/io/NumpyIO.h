@@ -120,8 +120,6 @@ struct NpyArray {
     size_t num_vals;
 };
 
-using npz_t = std::map<std::string, NpyArray>;
-
 char BigEndianTest();
 char map_type(const std::type_info& t);
 template <typename T>
@@ -138,7 +136,7 @@ void parse_zip_footer(FILE* fp,
                       uint16_t& nrecs,
                       size_t& global_header_size,
                       size_t& global_header_offset);
-npz_t npz_load(std::string fname);
+std::map<std::string, cnpy::NpyArray> npz_load(std::string fname);
 NpyArray npz_load(std::string fname, std::string varname);
 
 template <typename T>
