@@ -771,9 +771,8 @@ void CnpyIOTest() {
     core::Device device("CPU:0");
 
     //"w" overwrites any existing file
-    double myVar1 = 1.2;
     auto t0 = core::Tensor::Init<int32_t>({100, 200}, device);
-    npz_save("out.npz", "myVar1", t0.GetDataPtr<int32_t>(), {2}, "w");
+    npz_save("out.npz", "t0", t0.GetDataPtr<int32_t>(), {2}, "w");
 
     //"a" appends to the file we created above
     auto t1 = core::Tensor::Init<double>({{0, 1, 2}, {3, 4, 5}}, device);
