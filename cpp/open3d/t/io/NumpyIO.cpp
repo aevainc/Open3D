@@ -944,18 +944,19 @@ void CnpyIOTest() {
     auto t1 = core::Tensor::Init<double>({{0, 1, 2}, {3, 4, 5}}, device);
     npz_save("out.npz", "t1", t1.GetDataPtr<double>(), {2, 3}, "a");
 
-    // // load a single var from the npz file
-    // NpyArray arr2 = npz_load("out.npz", "arr1");
+    // load a single var from the npz file
+    NpyArray t0_loaded = npz_load("out.npz", "t0");
 
-    // // load the entire npz file
-    // std::map<std::string, NpyArray> my_npz = npz_load("out.npz");
+    // load the entire npz file
+    std::map<std::string, NpyArray> npz_loaded = npz_load("out.npz");
 
-    // // check that the loaded myVar1 matches myVar1
-    // NpyArray arr_mv1 = my_npz["myVar1"];
-    // double* mv1 = arr_mv1.data<double>();
-    // (void)mv1;
-    // assert(arr_mv1.shape.size() == 1 && arr_mv1.shape[0] == 1);
-    // assert(mv1[0] == myVar1);
+    // check that the loaded myVar1 matches myVar1
+    NpyArray t1_loaded = npz_loaded["t1"];
+    const double* t1_loaded_data = t1_loaded.data<double>();
+    utility::LogInfo("t1_loaded shape: {}", t1_loaded.shape);
+    utility::LogInfo("t1_loaded data: {}, {}, {}, {}, {}, {}",
+                     t1_loaded_data[0], t1_loaded_data[1], t1_loaded_data[2],
+                     t1_loaded_data[3], t1_loaded_data[4], t1_loaded_data[5]);
 }
 
 }  // namespace cnpy
