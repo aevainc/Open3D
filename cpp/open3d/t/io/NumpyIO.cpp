@@ -781,9 +781,9 @@ void CnpyIOTest() {
 
     //"a" appends to the file we created above
     core::Device device("CPU:0");
-    core::Tensor tensor =
+    core::Tensor t2 =
             core::Tensor::Init<double>({{0, 1, 2}, {3, 4, 5}}, device);
-    npz_save("out.npz", "arr1", tensor.GetDataPtr<double>(), {2, 3}, "a");
+    npz_save("out.npz", "t2", t2.GetDataPtr<double>(), {2, 3}, "a");
 
     // // load a single var from the npz file
     // NpyArray arr2 = npz_load("out.npz", "arr1");
