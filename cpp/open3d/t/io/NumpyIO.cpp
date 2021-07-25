@@ -434,11 +434,6 @@ struct NpyArray {
     size_t num_vals;
 };
 
-char BigEndianTest() {
-    int x = 1;
-    return (((char*)&x)[0]) ? '<' : '>';
-}
-
 void parse_zip_footer(FILE* fp,
                       uint16_t& nrecs,
                       size_t& global_header_size,
@@ -535,7 +530,7 @@ void npz_save(std::string zipname,
     fname += ".npy";
 
     // now, on with the show
-    FILE* fp = NULL;
+    FILE* fp = nullptr;
     uint16_t nrecs = 0;
     size_t global_header_offset = 0;
     std::vector<char> global_header;
