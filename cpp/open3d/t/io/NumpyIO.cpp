@@ -120,12 +120,11 @@ static char DtypeToChar(const core::Dtype& dtype) {
     return '\0';
 }
 
-template <typename DstType, typename SrcType>
-static std::string IntToBytes(const SrcType& rhs) {
-    DstType rhs_casted = static_cast<DstType>(rhs);
+template <typename T>
+static std::string ToByteString(const T& rhs) {
     std::stringstream ss;
-    for (size_t i = 0; i < sizeof(DstType); i++) {
-        char val = *(reinterpret_cast<const char*>(&rhs_casted) + i);
+    for (size_t i = 0; i < sizeof(T); i++) {
+        char val = *(reinterpret_cast<const char*>(&rhs) + i);
         ss << val;
     }
     return ss.str();
@@ -168,14 +167,14 @@ static std::vector<char> CreateNumpyHeader(const core::SizeVector& shape,
 
     std::stringstream ss;
     // "Magic" values.
-    ss << static_cast<char>(0x93);
+    ss << (char)0x93;
     ss << "NUMPY";
     // Major version of numpy format.
-    ss << static_cast<char>(0x01);
+    ss << (char)0x01;
     // Minor version of numpy format.
-    ss << static_cast<char>(0x00);
+    ss << (char)0x00;
     // Header dict size (full header size - 10).
-    ss << IntToBytes<uint16_t>(dict.size());
+    ss << ToByteString((uint16_t)dict.size());
     // Header dict.
     ss << dict;
 
@@ -516,7 +515,7 @@ static std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
 
 template <typename T>
 std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs) {
-    // write in little endian
+    // Write in little endian.
     for (size_t byte = 0; byte < sizeof(T); byte++) {
         char val = *((char*)&rhs + byte);
         lhs.push_back(val);
