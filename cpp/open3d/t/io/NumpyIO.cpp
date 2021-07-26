@@ -561,14 +561,21 @@ static void WriteNpzOneTensor(std::string file_name,
     tensor_name += ".npy";
 
     // now, on with the show
-    FILE* fp = nullptr;
     uint16_t nrecs = 0;
     size_t global_header_offset = 0;
     std::vector<char> global_header;
 
-    if (append) fp = fopen(file_name.c_str(), "r+b");
+    FILE* fp = nullptr;
+    if (append) {
+        fp = fopen(file_name.c_str(), "r+b");
+    } else {
+        fp = fopen(file_name.c_str(), "wb");
+    }
+    if (!fp) {
+        utility::LogError("Unable to open file {}.", file_name);
+    }
 
-    if (fp) {
+    if (append) {
         // zip file exists. we need to add a new npy file to it.
         // first read the footer. this gives us the offset and size of the
         // global header then read and store the global header. below, we will
@@ -586,8 +593,6 @@ static void WriteNpzOneTensor(std::string file_name,
                     "npz_save: header read error while adding to existing zip");
         }
         fseek(fp, global_header_offset, SEEK_SET);
-    } else {
-        fp = fopen(file_name.c_str(), "wb");
     }
 
     std::vector<char> npy_header = CreateNumpyHeader(shape, dtype);
@@ -744,6 +749,7 @@ void WriteNpz(const std::string& file_name,
     // TODO: WriteNpzOneTensor is called multiple times inorder to write
     // multiple tensors. This reqruies opening/closing files multiple times,
     // which is not optimal.
+    // TODO: Support writing in compressed mode: np.savez_compressed().
     bool is_first_tensor = true;
     for (auto it = tensor_map.begin(); it != tensor_map.end(); ++it) {
         core::Tensor tensor = it->second.To(core::Device("CPU:0")).Contiguous();
