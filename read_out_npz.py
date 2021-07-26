@@ -5,6 +5,17 @@ import os
 pwd = Path(os.path.dirname(os.path.realpath(__file__)))
 
 if __name__ == '__main__':
+    npz_file = pwd / "build" / "out_compressed.npz"
+    np.savez_compressed(
+        npz_file,
+        t0=np.array([100, 200], dtype=np.int32),
+        t1=np.array([[0, 1, 2], [3, 4, 5]], dtype=np.float64),
+        t3=3.14,
+        t4=np.ones((0,)),
+        t5=np.ones((0, 0)),
+        t6=np.ones((0, 1, 0)),
+    )
+
     npz_file = pwd / "build" / "out.npz"
     with np.load(npz_file) as data:
         for key in data:
@@ -21,7 +32,7 @@ if __name__ == '__main__':
                 print(key, data[key])
 
             np.testing.assert_equal(data["t0"], [[1, 2], [3, 4]])
-            assert data["t0"].dtype == np.float32
+            assert data["t0"].dtype == np.int32
 
             np.testing.assert_equal(
                 data["t1"],

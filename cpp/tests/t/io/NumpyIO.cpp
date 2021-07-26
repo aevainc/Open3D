@@ -107,7 +107,7 @@ TEST_P(NumpyIOPermuteDevices, NpzIO) {
     core::Tensor t_load;
 
     // 2x2 tensor.
-    core::Tensor t0 = core::Tensor::Init<float>({{1, 2}, {3, 4}}, device);
+    core::Tensor t0 = core::Tensor::Init<int32_t>({{1, 2}, {3, 4}}, device);
 
     // Non-contiguous tensor will be stored as contiguous tensor.
     // t1 sliced with [0:2:1, 0:3:2, 0:4:2].
