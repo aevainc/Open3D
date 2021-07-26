@@ -551,7 +551,7 @@ std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
 static void WriteNpzOneTensor(std::string file_name,
                               std::string tensor_name,
                               const core::Tensor& tensor,
-                              std::string mode = "w") {
+                              bool append) {
     const void* data = tensor.GetDataPtr();
     const core::SizeVector shape = tensor.GetShape();
     const core::Dtype dtype = tensor.GetDtype();
@@ -566,7 +566,7 @@ static void WriteNpzOneTensor(std::string file_name,
     size_t global_header_offset = 0;
     std::vector<char> global_header;
 
-    if (mode == "a") fp = fopen(file_name.c_str(), "r+b");
+    if (append) fp = fopen(file_name.c_str(), "r+b");
 
     if (fp) {
         // zip file exists. we need to add a new npy file to it.
@@ -748,10 +748,10 @@ void WriteNpz(const std::string& file_name,
     for (auto it = tensor_map.begin(); it != tensor_map.end(); ++it) {
         core::Tensor tensor = it->second.To(core::Device("CPU:0")).Contiguous();
         if (is_first_tensor) {
-            WriteNpzOneTensor(file_name, it->first, tensor, "w");
+            WriteNpzOneTensor(file_name, it->first, tensor, /*append=*/false);
             is_first_tensor = false;
         } else {
-            WriteNpzOneTensor(file_name, it->first, tensor, "a");
+            WriteNpzOneTensor(file_name, it->first, tensor, /*append=*/true);
         }
     }
 }
