@@ -513,11 +513,11 @@ void ParseZipFooter(FILE* fp,
                     uint16_t& nrecs,
                     size_t& global_header_size,
                     size_t& global_header_offset) {
-    std::vector<char> footer(22);
-    fseek(fp, -22, SEEK_END);
-    size_t res = fread(&footer[0], sizeof(char), 22, fp);
-    if (res != 22) {
-        throw std::runtime_error("ParseZipFooter: failed fread");
+    const size_t footer_len = 22;
+    std::vector<char> footer(footer_len);
+    fseek(fp, -footer_len, SEEK_END);
+    if (fread(&footer[0], sizeof(char), footer_len, fp) != footer_len) {
+        utility::LogError("Footer fread failed.");
     }
 
     uint16_t disk_no, disk_start, nrecs_on_disk, comment_len;
