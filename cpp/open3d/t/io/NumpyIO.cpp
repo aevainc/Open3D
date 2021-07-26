@@ -269,6 +269,14 @@ public:
         blob_ = std::make_shared<core::Blob>(NumBytes(), core::Device("CPU:0"));
     }
 
+    // TODO: remove me
+    NumpyArray()
+        : blob_(nullptr),
+          shape_(0),
+          type_(0),
+          word_size_(0),
+          fortran_order_(0) {}
+
     template <typename T>
     T* GetDataPtr() {
         return reinterpret_cast<T*>(blob_->GetDataPtr());
