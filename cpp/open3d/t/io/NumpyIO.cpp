@@ -315,7 +315,7 @@ static std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
 }
 
 template <typename T>
-std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs) {
+static std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs) {
     // Write in little endian.
     for (size_t byte = 0; byte < sizeof(T); byte++) {
         char val = *((char*)&rhs + byte);
