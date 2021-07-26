@@ -493,24 +493,6 @@ private:
     bool fortran_order_;
 };
 
-core::Tensor ReadNpy(const std::string& file_name) {
-    return NumpyArray::CreateFromFile(file_name).ToTensor();
-}
-
-void WriteNpy(const std::string& file_name, const core::Tensor& tensor) {
-    NumpyArray(tensor).Save(file_name);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 static std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
     const size_t footer_len = 22;
     std::vector<char> footer(footer_len);
@@ -566,10 +548,10 @@ std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
     return lhs;
 }
 
-void WriteNpzOneTensor(std::string file_name,
-                       std::string tensor_name,
-                       const core::Tensor& tensor,
-                       std::string mode = "w") {
+static void WriteNpzOneTensor(std::string file_name,
+                              std::string tensor_name,
+                              const core::Tensor& tensor,
+                              std::string mode = "w") {
     const void* data = tensor.GetDataPtr();
     const core::SizeVector shape = tensor.GetShape();
     const core::Dtype dtype = tensor.GetDtype();
@@ -673,6 +655,14 @@ void WriteNpzOneTensor(std::string file_name,
     fwrite(&global_header[0], sizeof(char), global_header.size(), fp);
     fwrite(&footer[0], sizeof(char), footer.size(), fp);
     fclose(fp);
+}
+
+core::Tensor ReadNpy(const std::string& file_name) {
+    return NumpyArray::CreateFromFile(file_name).ToTensor();
+}
+
+void WriteNpy(const std::string& file_name, const core::Tensor& tensor) {
+    NumpyArray(tensor).Save(file_name);
 }
 
 std::unordered_map<std::string, core::Tensor> ReadNpz(
