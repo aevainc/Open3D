@@ -631,12 +631,12 @@ void parse_npy_header(unsigned char* buffer,
 }
 
 NumpyArray load_the_npz_array(FILE* fp,
-                              uint32_t compressed_bytes,
-                              uint32_t uncompressed_bytes) {
-    std::vector<unsigned char> buffer_compr(compressed_bytes);
-    std::vector<unsigned char> buffer_uncompr(uncompressed_bytes);
-    size_t nread = fread(&buffer_compr[0], 1, compressed_bytes, fp);
-    if (nread != compressed_bytes) {
+                              uint32_t num_compressed_bytes,
+                              uint32_t num_uncompressed_bytes) {
+    std::vector<unsigned char> buffer_compr(num_compressed_bytes);
+    std::vector<unsigned char> buffer_uncompr(num_uncompressed_bytes);
+    size_t nread = fread(&buffer_compr[0], 1, num_compressed_bytes, fp);
+    if (nread != num_compressed_bytes) {
         throw std::runtime_error("failed fread");
     }
 
@@ -650,9 +650,9 @@ NumpyArray load_the_npz_array(FILE* fp,
     d_stream.next_in = Z_NULL;
     err = inflateInit2(&d_stream, -MAX_WBITS);
 
-    d_stream.avail_in = compressed_bytes;
+    d_stream.avail_in = num_compressed_bytes;
     d_stream.next_in = &buffer_compr[0];
-    d_stream.avail_out = uncompressed_bytes;
+    d_stream.avail_out = num_uncompressed_bytes;
     d_stream.next_out = &buffer_uncompr[0];
 
     err = inflate(&d_stream, Z_FINISH);
@@ -668,7 +668,7 @@ NumpyArray load_the_npz_array(FILE* fp,
     core::SizeVector o3d_shape(shape.begin(), shape.end());
     NumpyArray array(o3d_shape, type, word_size, fortran_order);
 
-    size_t offset = uncompressed_bytes - array.NumBytes();
+    size_t offset = num_uncompressed_bytes - array.NumBytes();
     memcpy(array.GetDataPtr<unsigned char>(), &buffer_uncompr[0] + offset,
            array.NumBytes());
 
@@ -721,9 +721,9 @@ std::map<std::string, NumpyArray> npz_load(std::string fname) {
 
         uint16_t compressed_method =
                 *reinterpret_cast<uint16_t*>(&local_header[0] + 8);
-        uint32_t compressed_bytes =
+        uint32_t num_compressed_bytes =
                 *reinterpret_cast<uint32_t*>(&local_header[0] + 18);
-        uint32_t uncompressed_bytes =
+        uint32_t num_uncompressed_bytes =
                 *reinterpret_cast<uint32_t*>(&local_header[0] + 22);
 
         // It's possible to check varname and only load the selected numpy
@@ -731,8 +731,8 @@ std::map<std::string, NumpyArray> npz_load(std::string fname) {
         if (compressed_method == 0) {
             arrays[varname] = NumpyArray::CreateFromFilePtr(fp);
         } else {
-            arrays[varname] = load_the_npz_array(fp, compressed_bytes,
-                                                 uncompressed_bytes);
+            arrays[varname] = load_the_npz_array(fp, num_compressed_bytes,
+                                                 num_uncompressed_bytes);
         }
     }
 
