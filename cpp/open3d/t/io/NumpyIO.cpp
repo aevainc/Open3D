@@ -682,6 +682,8 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
 
     std::unordered_map<std::string, core::Tensor> tensor_map;
 
+    // It's possible to check tensor_name and only one selected numpy array,
+    // here we load all of them.
     while (1) {
         std::vector<char> local_header(30);
         size_t headerres = fread(&local_header[0], sizeof(char), 30, fp);
@@ -724,8 +726,6 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
         uint32_t num_uncompressed_bytes =
                 *reinterpret_cast<uint32_t*>(&local_header[22]);
 
-        // It's possible to check tensor_name and only load the selected numpy
-        // array(s), here we load all of them with the while (1).
         if (compressed_method == 0) {
             tensor_map[tensor_name] =
                     NumpyArray::CreateFromFilePtr(fp).ToTensor();
