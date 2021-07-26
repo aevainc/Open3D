@@ -259,6 +259,55 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNumpyHeader(
     return std::make_tuple(shape, type, word_size, fortran_order);
 }
 
+void parse_npy_header(unsigned char* buffer,
+                      std::vector<size_t>& shape,
+                      char& type,
+                      size_t& word_size,
+                      bool& fortran_order) {
+    // std::string magic_string(buffer,6);
+    uint8_t major_version = *reinterpret_cast<uint8_t*>(buffer + 6);
+    (void)major_version;
+    uint8_t minor_version = *reinterpret_cast<uint8_t*>(buffer + 7);
+    (void)minor_version;
+    uint16_t header_len = *reinterpret_cast<uint16_t*>(buffer + 8);
+    std::string header(reinterpret_cast<char*>(buffer + 9), header_len);
+
+    size_t loc1, loc2;
+
+    // fortran order
+    loc1 = header.find("fortran_order") + 16;
+    fortran_order = (header.substr(loc1, 4) == "True" ? true : false);
+
+    // shape
+    loc1 = header.find("(");
+    loc2 = header.find(")");
+
+    std::regex num_regex("[0-9][0-9]*");
+    std::smatch sm;
+    shape.clear();
+
+    std::string str_shape = header.substr(loc1 + 1, loc2 - loc1 - 1);
+    while (std::regex_search(str_shape, sm, num_regex)) {
+        shape.push_back(std::stoi(sm[0].str()));
+        str_shape = sm.suffix().str();
+    }
+
+    // endian, word size, data type
+    // byte order code | stands for not applicable.
+    // not sure when this applies except for byte array
+    loc1 = header.find("descr") + 9;
+    bool littleEndian =
+            (header[loc1] == '<' || header[loc1] == '|' ? true : false);
+    assert(littleEndian);
+    (void)littleEndian;
+
+    type = header[loc1 + 1];
+
+    std::string str_ws = header.substr(loc1 + 2);
+    loc2 = str_ws.find("'");
+    word_size = atoi(str_ws.substr(0, loc2).c_str());
+}
+
 class NumpyArray {
 public:
     NumpyArray(const core::Tensor& t)
@@ -368,6 +417,54 @@ public:
             utility::LogError("Load: failed fread");
         }
         return arr;
+    }
+
+    // Create from compressed file. This function won't call fclose.
+    static NumpyArray CreateFromCompressedFilePtr(
+            FILE* fp,
+            uint32_t num_compressed_bytes,
+            uint32_t num_uncompressed_bytes) {
+        std::vector<unsigned char> buffer_compr(num_compressed_bytes);
+        std::vector<unsigned char> buffer_uncompr(num_uncompressed_bytes);
+        size_t nread = fread(&buffer_compr[0], 1, num_compressed_bytes, fp);
+        if (nread != num_compressed_bytes) {
+            throw std::runtime_error("failed fread");
+        }
+
+        int err;
+        z_stream d_stream;
+
+        d_stream.zalloc = Z_NULL;
+        d_stream.zfree = Z_NULL;
+        d_stream.opaque = Z_NULL;
+        d_stream.avail_in = 0;
+        d_stream.next_in = Z_NULL;
+        err = inflateInit2(&d_stream, -MAX_WBITS);
+
+        d_stream.avail_in = num_compressed_bytes;
+        d_stream.next_in = &buffer_compr[0];
+        d_stream.avail_out = num_uncompressed_bytes;
+        d_stream.next_out = &buffer_uncompr[0];
+
+        err = inflate(&d_stream, Z_FINISH);
+        err = inflateEnd(&d_stream);
+        (void)err;
+
+        std::vector<size_t> shape;
+        size_t word_size;
+        bool fortran_order;
+        char type;
+        parse_npy_header(&buffer_uncompr[0], shape, type, word_size,
+                         fortran_order);
+
+        core::SizeVector o3d_shape(shape.begin(), shape.end());
+        NumpyArray array(o3d_shape, type, word_size, fortran_order);
+
+        size_t offset = num_uncompressed_bytes - array.NumBytes();
+        memcpy(array.GetDataPtr<unsigned char>(), &buffer_uncompr[0] + offset,
+               array.NumBytes());
+
+        return array;
     }
 
     void Save(std::string file_name) const {
@@ -581,100 +678,6 @@ void npz_save(std::string npz_name,
     fclose(fp);
 }
 
-void parse_npy_header(unsigned char* buffer,
-                      std::vector<size_t>& shape,
-                      char& type,
-                      size_t& word_size,
-                      bool& fortran_order) {
-    // std::string magic_string(buffer,6);
-    uint8_t major_version = *reinterpret_cast<uint8_t*>(buffer + 6);
-    (void)major_version;
-    uint8_t minor_version = *reinterpret_cast<uint8_t*>(buffer + 7);
-    (void)minor_version;
-    uint16_t header_len = *reinterpret_cast<uint16_t*>(buffer + 8);
-    std::string header(reinterpret_cast<char*>(buffer + 9), header_len);
-
-    size_t loc1, loc2;
-
-    // fortran order
-    loc1 = header.find("fortran_order") + 16;
-    fortran_order = (header.substr(loc1, 4) == "True" ? true : false);
-
-    // shape
-    loc1 = header.find("(");
-    loc2 = header.find(")");
-
-    std::regex num_regex("[0-9][0-9]*");
-    std::smatch sm;
-    shape.clear();
-
-    std::string str_shape = header.substr(loc1 + 1, loc2 - loc1 - 1);
-    while (std::regex_search(str_shape, sm, num_regex)) {
-        shape.push_back(std::stoi(sm[0].str()));
-        str_shape = sm.suffix().str();
-    }
-
-    // endian, word size, data type
-    // byte order code | stands for not applicable.
-    // not sure when this applies except for byte array
-    loc1 = header.find("descr") + 9;
-    bool littleEndian =
-            (header[loc1] == '<' || header[loc1] == '|' ? true : false);
-    assert(littleEndian);
-    (void)littleEndian;
-
-    type = header[loc1 + 1];
-
-    std::string str_ws = header.substr(loc1 + 2);
-    loc2 = str_ws.find("'");
-    word_size = atoi(str_ws.substr(0, loc2).c_str());
-}
-
-NumpyArray load_the_npz_array(FILE* fp,
-                              uint32_t num_compressed_bytes,
-                              uint32_t num_uncompressed_bytes) {
-    std::vector<unsigned char> buffer_compr(num_compressed_bytes);
-    std::vector<unsigned char> buffer_uncompr(num_uncompressed_bytes);
-    size_t nread = fread(&buffer_compr[0], 1, num_compressed_bytes, fp);
-    if (nread != num_compressed_bytes) {
-        throw std::runtime_error("failed fread");
-    }
-
-    int err;
-    z_stream d_stream;
-
-    d_stream.zalloc = Z_NULL;
-    d_stream.zfree = Z_NULL;
-    d_stream.opaque = Z_NULL;
-    d_stream.avail_in = 0;
-    d_stream.next_in = Z_NULL;
-    err = inflateInit2(&d_stream, -MAX_WBITS);
-
-    d_stream.avail_in = num_compressed_bytes;
-    d_stream.next_in = &buffer_compr[0];
-    d_stream.avail_out = num_uncompressed_bytes;
-    d_stream.next_out = &buffer_uncompr[0];
-
-    err = inflate(&d_stream, Z_FINISH);
-    err = inflateEnd(&d_stream);
-    (void)err;
-
-    std::vector<size_t> shape;
-    size_t word_size;
-    bool fortran_order;
-    char type;
-    parse_npy_header(&buffer_uncompr[0], shape, type, word_size, fortran_order);
-
-    core::SizeVector o3d_shape(shape.begin(), shape.end());
-    NumpyArray array(o3d_shape, type, word_size, fortran_order);
-
-    size_t offset = num_uncompressed_bytes - array.NumBytes();
-    memcpy(array.GetDataPtr<unsigned char>(), &buffer_uncompr[0] + offset,
-           array.NumBytes());
-
-    return array;
-}
-
 std::map<std::string, NumpyArray> npz_load(std::string fname) {
     FILE* fp = fopen(fname.c_str(), "rb");
 
@@ -731,8 +734,8 @@ std::map<std::string, NumpyArray> npz_load(std::string fname) {
         if (compressed_method == 0) {
             arrays[varname] = NumpyArray::CreateFromFilePtr(fp);
         } else {
-            arrays[varname] = load_the_npz_array(fp, num_compressed_bytes,
-                                                 num_uncompressed_bytes);
+            arrays[varname] = NumpyArray::CreateFromCompressedFilePtr(
+                    fp, num_compressed_bytes, num_uncompressed_bytes);
         }
     }
 
