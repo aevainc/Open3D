@@ -621,33 +621,36 @@ static void WriteNpzOneTensor(std::string file_name,
     local_header += tensor_name;
 
     // Build global header.
-    global_header += "PK";              // First part of sig
-    global_header += (uint16_t)0x0201;  // Second part of sig
-    global_header += (uint16_t)20;      // Version made by
+    global_header += "PK";                           // First part of sig
+    global_header += static_cast<uint16_t>(0x0201);  // Second part of sig
+    global_header += static_cast<uint16_t>(20);      // Version made by
     global_header.insert(global_header.end(), local_header.begin() + 4,
                          local_header.begin() + 30);
-    global_header += (uint16_t)0;  // File comment length
-    global_header += (uint16_t)0;  // Disk number where file starts
-    global_header += (uint16_t)0;  // Internal file attributes
-    global_header += (uint32_t)0;  // External file attributes
+    global_header += static_cast<uint16_t>(0);  // File comment length
+    global_header += static_cast<uint16_t>(0);  // Disk number where file starts
+    global_header += static_cast<uint16_t>(0);  // Internal file attributes
+    global_header += static_cast<uint32_t>(0);  // External file attributes
     // Relative offset of local file header, since it begins where the global
     // header used to begin.
-    global_header += (uint32_t)global_header_offset;
+    global_header += static_cast<uint32_t>(global_header_offset);
     global_header += tensor_name;
 
     // Build footer.
     std::vector<char> footer;
-    footer += "PK";                            // First part of sig
-    footer += (uint16_t)0x0605;                // Second part of sig
-    footer += (uint16_t)0;                     // Number of this disk
-    footer += (uint16_t)0;                     // Disk where footer starts
-    footer += (uint16_t)(nrecs + 1);           // Number of records on this disk
-    footer += (uint16_t)(nrecs + 1);           // Total number of records
-    footer += (uint32_t)global_header.size();  // Nbytes of global headers
+    footer += "PK";                           // First part of sig
+    footer += static_cast<uint16_t>(0x0605);  // Second part of sig
+    footer += static_cast<uint16_t>(0);       // Number of this disk
+    footer += static_cast<uint16_t>(0);       // Disk where footer starts
+    footer +=
+            static_cast<uint16_t>(nrecs + 1);  // Number of records on this disk
+    footer += static_cast<uint16_t>(nrecs + 1);  // Total number of records
+    footer += static_cast<uint32_t>(
+            global_header.size());  // Nbytes of global headers
     // Offset of start of global headers, since global header now starts after
     // newly written array.
-    footer += (uint32_t)(global_header_offset + nbytes + local_header.size());
-    footer += (uint16_t)0;  // Zip file comment length.
+    footer += static_cast<uint32_t>(global_header_offset + nbytes +
+                                    local_header.size());
+    footer += static_cast<uint16_t>(0);  // Zip file comment length.
 
     // Write everything.
     fwrite(&local_header[0], sizeof(char), local_header.size(), fp);
