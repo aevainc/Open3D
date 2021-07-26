@@ -670,11 +670,6 @@ void parse_npy_header(unsigned char* buffer,
 }
 
 NpyArray load_the_npy_file(FILE* fp) {
-    // std::vector<size_t> shape;
-    // size_t word_size;
-    // bool fortran_order;
-    // parse_npy_header(fp, word_size, shape, fortran_order);
-
     core::SizeVector o3d_shape;
     int64_t word_size;
     bool fortran_order;
