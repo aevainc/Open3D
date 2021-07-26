@@ -182,7 +182,7 @@ static std::vector<char> CreateNumpyHeader(const core::SizeVector& shape,
     return std::vector<char>(s.begin(), s.end());
 }
 
-static std::tuple<core::SizeVector, char, int64_t, bool> DecodeNpyHeader(
+static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeaderDict(
         const std::string& header) {
     core::SizeVector shape;
     char type;
@@ -246,12 +246,13 @@ static std::tuple<core::SizeVector, char, int64_t, bool> DecodeNpyHeader(
 static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
         FILE* fp) {
     // Ref: https://numpy.org/devdocs/reference/generated/numpy.lib.format.html
-    // - bytes[0]  to bytes[5             : \x93NUMPY # Magic string
+    // - bytes[0]  to bytes[5]            : \x93NUMPY # Magic string
     // - bytes[6]                         : \x01      # Major version number
     // - bytes[7]                         : \x00      # Minor version number
     // - bytes[8]  to bytes[9]            : HEADER_LEN little-endian uint16_t
     // - bytes[10] to bytes[10+HEADER_LEN]: Dict, padded, terminated by '\n'
     // - (10 + HEADER_LEN) % 64 == 0      : Guranteed
+
     char buffer[256];
     size_t res = fread(buffer, sizeof(char), 10, fp);
     if (res != 10) {
@@ -269,7 +270,7 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
         utility::LogError("The last char must be '\n'.");
     }
     utility::LogInfo("Got header: {}", header);
-    return DecodeNpyHeader(header);
+    return ParseNpyHeaderDict(header);
 }
 
 static std::tuple<core::SizeVector, char, int64_t, bool>
@@ -282,7 +283,7 @@ ParseNpyHeaderFromBuffer(unsigned char* buffer) {
     uint16_t header_len = *reinterpret_cast<uint16_t*>(buffer + 8);
     std::string header(reinterpret_cast<char*>(buffer + 9), header_len);
 
-    return DecodeNpyHeader(header);
+    return ParseNpyHeaderDict(header);
 }
 
 class NumpyArray {
