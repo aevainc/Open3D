@@ -182,30 +182,12 @@ static std::vector<char> CreateNumpyHeader(const core::SizeVector& shape,
     return std::vector<char>(s.begin(), s.end());
 }
 
-// Retruns {shape, type(char), word_size, fortran_order}.
-static std::tuple<core::SizeVector, char, int64_t, bool> ParseNumpyHeader(
-        FILE* fp) {
+static std::tuple<core::SizeVector, char, int64_t, bool> DecodeNumpyHeader(
+        const std::string& header) {
     core::SizeVector shape;
     char type;
     int64_t word_size;
     bool fortran_order;
-
-    char buffer[256];
-    size_t res = fread(buffer, sizeof(char), 11, fp);
-    if (res != 11) {
-        utility::LogError("Failed fread.");
-    }
-    std::string header;
-    if (const char* header_chars = fgets(buffer, 256, fp)) {
-        header = std::string(header_chars);
-    } else {
-        utility::LogError(
-                "Numpy file header could not be read. "
-                "Possibly the file is corrupted.");
-    }
-    if (header[header.size() - 1] != '\n') {
-        utility::LogError("The last char must be '\n'.");
-    }
 
     size_t loc1, loc2;
 
@@ -258,13 +240,31 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNumpyHeader(
     return std::make_tuple(shape, type, word_size, fortran_order);
 }
 
-static std::tuple<core::SizeVector, char, int64_t, bool> parse_npy_header(
-        unsigned char* buffer) {
-    core::SizeVector shape;
-    char type;
-    int64_t word_size;
-    bool fortran_order;
+// Retruns {shape, type(char), word_size, fortran_order}.
+static std::tuple<core::SizeVector, char, int64_t, bool> ParseNumpyHeader(
+        FILE* fp) {
+    // Ref: https://numpy.org/devdocs/reference/generated/numpy.lib.format.html
+    char buffer[256];
+    size_t res = fread(buffer, sizeof(char), 11, fp);
+    if (res != 11) {
+        utility::LogError("Failed fread.");
+    }
+    std::string header;
+    if (const char* header_chars = fgets(buffer, 256, fp)) {
+        header = std::string(header_chars);
+    } else {
+        utility::LogError(
+                "Numpy file header could not be read. "
+                "Possibly the file is corrupted.");
+    }
+    if (header[header.size() - 1] != '\n') {
+        utility::LogError("The last char must be '\n'.");
+    }
+    return DecodeNumpyHeader(header);
+}
 
+static std::tuple<core::SizeVector, char, int64_t, bool>
+ParseNumpyHeaderFromBuffer(unsigned char* buffer) {
     // std::string magic_string(buffer,6);
     uint8_t major_version = *reinterpret_cast<uint8_t*>(buffer + 6);
     (void)major_version;
@@ -273,55 +273,7 @@ static std::tuple<core::SizeVector, char, int64_t, bool> parse_npy_header(
     uint16_t header_len = *reinterpret_cast<uint16_t*>(buffer + 8);
     std::string header(reinterpret_cast<char*>(buffer + 9), header_len);
 
-    size_t loc1, loc2;
-
-    // Fortran order.
-    loc1 = header.find("fortran_order");
-    if (loc1 == std::string::npos) {
-        utility::LogError("Failed to find header keyword: 'fortran_order'");
-    }
-    loc1 += 16;
-    fortran_order = (header.substr(loc1, 4) == "True" ? true : false);
-
-    // Shape.
-    loc1 = header.find("(");
-    loc2 = header.find(")");
-    if (loc1 == std::string::npos || loc2 == std::string::npos) {
-        utility::LogError("Failed to find header keyword: '(' or ')'");
-    }
-
-    std::regex num_regex("[0-9][0-9]*");
-    std::smatch sm;
-    shape.clear();
-
-    std::string str_shape = header.substr(loc1 + 1, loc2 - loc1 - 1);
-    while (std::regex_search(str_shape, sm, num_regex)) {
-        shape.push_back(std::stoi(sm[0].str()));
-        str_shape = sm.suffix().str();
-    }
-
-    // Endian, word size, data type.
-    // byte order code | stands for not applicable.
-    // not sure when this applies except for byte array.
-    loc1 = header.find("descr");
-    if (loc1 == std::string::npos) {
-        utility::LogError("Failed to find header keyword: 'descr'");
-    }
-
-    loc1 += 9;
-    bool little_endian =
-            (header[loc1] == '<' || header[loc1] == '|' ? true : false);
-    if (!little_endian) {
-        utility::LogError("Only big endian is supported.");
-    }
-
-    type = header[loc1 + 1];
-
-    std::string str_ws = header.substr(loc1 + 2);
-    loc2 = str_ws.find("'");
-    word_size = atoi(str_ws.substr(0, loc2).c_str());
-
-    return std::make_tuple(shape, type, word_size, fortran_order);
+    return DecodeNumpyHeader(header);
 }
 
 class NumpyArray {
@@ -472,7 +424,7 @@ public:
         size_t word_size;
         bool fortran_order;
         std::tie(shape, type, word_size, fortran_order) =
-                parse_npy_header(&buffer_uncompr[0]);
+                ParseNumpyHeaderFromBuffer(&buffer_uncompr[0]);
 
         NumpyArray array(shape, type, word_size, fortran_order);
 
