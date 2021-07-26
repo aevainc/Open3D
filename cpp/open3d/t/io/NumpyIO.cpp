@@ -342,8 +342,8 @@ std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
     return lhs;
 }
 
-static void WriteNpzOneTensor(std::string file_name,
-                              std::string tensor_name,
+static void WriteNpzOneTensor(const std::string& file_name,
+                              const std::string& tensor_name_,
                               const core::Tensor& tensor,
                               bool append) {
     const void* data = tensor.GetDataPtr();
@@ -352,7 +352,7 @@ static void WriteNpzOneTensor(std::string file_name,
     const int64_t element_byte_size = dtype.ByteSize();
 
     // The ".npy" suffix will be removed when npz is read.
-    tensor_name += ".npy";
+    std::string var_name = tensor_name_ + ".npy";
 
     // now, on with the show
     uint16_t nrecs = 0;
@@ -413,9 +413,9 @@ static void WriteNpzOneTensor(std::string file_name,
     local_header += static_cast<uint32_t>(nbytes);  // Compressed size
     local_header += static_cast<uint32_t>(nbytes);  // Uncompressed size
     local_header +=
-            static_cast<uint16_t>(tensor_name.size());  // Tensor_name length
-    local_header += static_cast<uint16_t>(0);           // Extra field length
-    local_header += tensor_name;
+            static_cast<uint16_t>(var_name.size());  // Varaible's name length
+    local_header += static_cast<uint16_t>(0);        // Extra field length
+    local_header += var_name;
 
     // Build global header.
     global_header += "PK";                           // First part of sig
@@ -430,7 +430,7 @@ static void WriteNpzOneTensor(std::string file_name,
     // Relative offset of local file header, since it begins where the global
     // header used to begin.
     global_header += static_cast<uint32_t>(global_header_offset);
-    global_header += tensor_name;
+    global_header += var_name;
 
     // Build footer.
     std::vector<char> footer;
