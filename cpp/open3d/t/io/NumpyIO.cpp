@@ -742,49 +742,6 @@ std::map<std::string, NumpyArray> npz_load(std::string fname) {
     return arrays;
 }
 
-static void CnpyIOTestUncompressed() {
-    core::Device device("CPU:0");
-
-    //"w" overwrites any existing file
-    auto t0 = core::Tensor::Init<int32_t>({100, 200}, device);
-    auto t1 = core::Tensor::Init<double>({{0, 1, 2}, {3, 4, 5}}, device);
-    WriteNpz("out.npz", {{"t0", t0}, {"t1", t1}});
-
-    // load the entire npz file
-    std::map<std::string, NumpyArray> npz_loaded = npz_load("out.npz");
-    NumpyArray t0_loaded = npz_loaded["t0"];
-    NumpyArray t1_loaded = npz_loaded["t1"];
-
-    const int32_t* t0_loaded_data = t0_loaded.GetDataPtr<int32_t>();
-    utility::LogInfo("t0_loaded shape: {}", t0_loaded.GetShape());
-    utility::LogInfo("t0_loaded data: {}, {}", t0_loaded_data[0],
-                     t0_loaded_data[1]);
-
-    const double* t1_loaded_data = t1_loaded.GetDataPtr<double>();
-    utility::LogInfo("t1_loaded shape: {}", t1_loaded.GetShape());
-    utility::LogInfo("t1_loaded data: {}, {}, {}, {}, {}, {}",
-                     t1_loaded_data[0], t1_loaded_data[1], t1_loaded_data[2],
-                     t1_loaded_data[3], t1_loaded_data[4], t1_loaded_data[5]);
-}
-
-static void CnpyIOTestCompressed() {
-    core::Device device("CPU:0");
-
-    std::unordered_map<std::string, core::Tensor> tensor_map =
-            ReadNpz("out_compressed.npz");
-
-    for (const auto& kv : tensor_map) {
-        utility::LogInfo("Loaded compressed {}: {}", kv.first,
-                         kv.second.ToString());
-    }
-}
-
-void CnpyIOTest() {
-    CnpyIOTestUncompressed();
-    CnpyIOTestCompressed();
-    (void)CnpyIOTestCompressed;
-}
-
 std::unordered_map<std::string, core::Tensor> ReadNpz(
         const std::string& file_name) {
     std::map<std::string, NumpyArray> npz_loaded = npz_load(file_name);

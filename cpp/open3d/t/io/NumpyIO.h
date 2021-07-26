@@ -59,8 +59,6 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
 void WriteNpz(const std::string& file_name,
               const std::unordered_map<std::string, core::Tensor>& tensor_map);
 
-void CnpyIOTest();
-
 }  // namespace io
 }  // namespace t
 }  // namespace open3d

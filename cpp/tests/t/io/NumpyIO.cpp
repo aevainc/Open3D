@@ -230,7 +230,5 @@ TEST_P(NumpyIOPermuteDevices, NpzReadCompressed) {
     EXPECT_EQ(t5_load.GetDtype(), t5.GetDtype());
 }
 
-TEST_P(NumpyIOPermuteDevices, MigrateCode) { t::io::CnpyIOTest(); }
-
 }  // namespace tests
 }  // namespace open3d
