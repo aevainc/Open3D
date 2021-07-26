@@ -436,34 +436,6 @@ void parse_zip_footer(FILE* fp,
     (void)comment_len;
 }
 
-char map_type(const std::type_info& t) {
-    if (t == typeid(float)) return 'f';
-    if (t == typeid(double)) return 'f';
-    if (t == typeid(long double)) return 'f';
-
-    if (t == typeid(int)) return 'i';
-    if (t == typeid(char)) return 'i';
-    if (t == typeid(short)) return 'i';
-    if (t == typeid(long)) return 'i';
-    if (t == typeid(long long)) return 'i';
-
-    if (t == typeid(unsigned char)) return 'u';
-    if (t == typeid(unsigned short)) return 'u';
-    if (t == typeid(unsigned long)) return 'u';
-    if (t == typeid(unsigned long long)) return 'u';
-    if (t == typeid(unsigned int)) return 'u';
-
-    if (t == typeid(bool)) return 'b';
-
-    if (t == typeid(std::complex<float>)) return 'c';
-    if (t == typeid(std::complex<double>)) return 'c';
-    if (t == typeid(std::complex<long double>))
-        return 'c';
-
-    else
-        return '?';
-}
-
 template <typename T>
 std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs) {
     // write in little endian
@@ -642,7 +614,6 @@ void parse_npy_header(unsigned char* buffer,
     (void)littleEndian;
 
     type = header[loc1 + 1];
-    // assert(type == map_type(T));
 
     std::string str_ws = header.substr(loc1 + 2);
     loc2 = str_ws.find("'");
