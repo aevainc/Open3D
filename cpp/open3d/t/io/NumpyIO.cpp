@@ -620,10 +620,10 @@ void npz_save(std::string npz_name,
 }
 
 void parse_npy_header(unsigned char* buffer,
-                      size_t& word_size,
                       std::vector<size_t>& shape,
-                      bool& fortran_order,
-                      char& type) {
+                      char& type,
+                      size_t& word_size,
+                      bool& fortran_order) {
     // std::string magic_string(buffer,6);
     uint8_t major_version = *reinterpret_cast<uint8_t*>(buffer + 6);
     (void)major_version;
@@ -718,7 +718,7 @@ NpyArray load_the_npz_array(FILE* fp,
     size_t word_size;
     bool fortran_order;
     char type;
-    parse_npy_header(&buffer_uncompr[0], word_size, shape, fortran_order, type);
+    parse_npy_header(&buffer_uncompr[0], shape, type, word_size, fortran_order);
 
     core::SizeVector o3d_shape(shape.begin(), shape.end());
     NpyArray array(o3d_shape, type, word_size, fortran_order);
