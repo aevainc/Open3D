@@ -750,6 +750,10 @@ void WriteNpz(const std::string& file_name,
         contiguous_tensor_map[it->first] =
                 it->second.To(core::Device("CPU:0")).Contiguous();
     }
+
+    // TODO: WriteNpzOneTensor is called multiple times inorder to write
+    // multiple tensors. This reqruies opening/closing files multiple times,
+    // which is not optimal.
     bool is_first_tensor = true;
     for (auto it = tensor_map.begin(); it != tensor_map.end(); ++it) {
         core::Tensor tensor = it->second.To(core::Device("CPU:0")).Contiguous();
