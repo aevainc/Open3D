@@ -341,8 +341,19 @@ public:
 
     static NumpyArray CreateFromFile(const std::string& file_name) {
         FILE* fp = fopen(file_name.c_str(), "rb");
+        if (fp) {
+            NumpyArray arr = CreateFromFilePtr(fp);
+            fclose(fp);
+            return arr;
+        } else {
+            utility::LogError("Unable to open file {}.", file_name);
+        }
+    }
+
+    // This function won't call fclose.
+    static NumpyArray CreateFromFilePtr(FILE* fp) {
         if (!fp) {
-            utility::LogError("Load: Unable to open file {}.", file_name);
+            utility::LogError("Unable to open file ptr.");
         }
         core::SizeVector shape;
         char type;
@@ -356,7 +367,6 @@ public:
         if (nread != static_cast<size_t>(arr.NumBytes())) {
             utility::LogError("Load: failed fread");
         }
-        fclose(fp);
         return arr;
     }
 
