@@ -424,7 +424,7 @@ public:
         return std::vector<T>(p, p + num_elements_);
     }
 
-    int64_t NumBytes() const { return data_holder_->size(); }
+    int64_t NumBytes() const { return num_elements_ * word_size_; }
 
     std::vector<int64_t> GetShape() const { return shape_; }
 
