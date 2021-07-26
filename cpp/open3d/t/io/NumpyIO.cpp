@@ -390,8 +390,6 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace cnpy {
-
 struct NpyArray {
     NpyArray(const std::vector<size_t>& _shape,
              size_t _word_size,
@@ -922,8 +920,6 @@ void CnpyIOTest() {
                      t1_loaded_data[3], t1_loaded_data[4], t1_loaded_data[5]);
 }
 
-}  // namespace cnpy
-
 void WriteNpz(const std::string& filename,
               const std::unordered_map<std::string, core::Tensor>& tensor_map) {
     std::unordered_map<std::string, core::Tensor> contiguous_tensor_map;
@@ -935,10 +931,10 @@ void WriteNpz(const std::string& filename,
     for (auto it = tensor_map.begin(); it != tensor_map.end(); ++it) {
         core::Tensor tensor = it->second.To(core::Device("CPU:0")).Contiguous();
         if (is_first_tensor) {
-            cnpy::npz_save(filename, it->first, tensor, "w");
+            npz_save(filename, it->first, tensor, "w");
             is_first_tensor = false;
         } else {
-            cnpy::npz_save(filename, it->first, tensor, "a");
+            npz_save(filename, it->first, tensor, "a");
         }
     }
 }
