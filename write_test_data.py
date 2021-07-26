@@ -5,7 +5,7 @@ import os
 pwd = Path(os.path.dirname(os.path.realpath(__file__)))
 
 if __name__ == '__main__':
-    npz_file = pwd / "build" / "tensors_compressed.npz"
+    npz_file = pwd / "examples" / "test_data" / "tensors_compressed.npz"
     np.savez_compressed(
         npz_file,
         t0=np.array([[1, 2], [3, 4]], dtype=np.int32),
