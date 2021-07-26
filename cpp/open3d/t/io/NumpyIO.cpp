@@ -380,10 +380,6 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
     return {};
 }
 
-void WriteNpz(const std::string& filename,
-              const std::unordered_map<std::string, core::Tensor>& tensor_map) {
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -930,6 +926,25 @@ void CnpyIOTest() {
 }
 
 }  // namespace cnpy
+
+void WriteNpz(const std::string& filename,
+              const std::unordered_map<std::string, core::Tensor>& tensor_map) {
+    std::unordered_map<std::string, core::Tensor> contiguous_tensor_map;
+    for (auto it = tensor_map.begin(); it != tensor_map.end(); ++it) {
+        contiguous_tensor_map[it->first] =
+                it->second.To(core::Device("CPU:0")).Contiguous();
+    }
+    bool is_first_tensor = true;
+    for (auto it = tensor_map.begin(); it != tensor_map.end(); ++it) {
+        core::Tensor tensor = it->second.To(core::Device("CPU:0")).Contiguous();
+        if (is_first_tensor) {
+            cnpy::npz_save(filename, it->first, tensor, "w");
+            is_first_tensor = false;
+        } else {
+            cnpy::npz_save(filename, it->first, tensor, "a");
+        }
+    }
+}
 
 }  // namespace io
 }  // namespace t
