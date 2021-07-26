@@ -260,7 +260,7 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNumpyHeader(
 }
 
 static void parse_npy_header(unsigned char* buffer,
-                             std::vector<size_t>& shape,
+                             core::SizeVector& shape,
                              char& type,
                              size_t& word_size,
                              bool& fortran_order) {
@@ -450,15 +450,14 @@ public:
         err = inflateEnd(&d_stream);
         (void)err;
 
-        std::vector<size_t> shape;
+        core::SizeVector shape;
         size_t word_size;
         bool fortran_order;
         char type;
         parse_npy_header(&buffer_uncompr[0], shape, type, word_size,
                          fortran_order);
 
-        core::SizeVector o3d_shape(shape.begin(), shape.end());
-        NumpyArray array(o3d_shape, type, word_size, fortran_order);
+        NumpyArray array(shape, type, word_size, fortran_order);
 
         size_t offset = num_uncompressed_bytes - array.NumBytes();
         memcpy(array.GetDataPtr<unsigned char>(), &buffer_uncompr[0] + offset,
