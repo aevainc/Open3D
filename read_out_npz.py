@@ -43,4 +43,5 @@ if __name__ == '__main__':
                                     np.ones((0, 1, 0), dtype=np.float32))
             assert data["t5"].dtype == np.float32
     else:
-        print(f"{npz_file} not found")
+        # print(f"{npz_file} not found")
+        pass

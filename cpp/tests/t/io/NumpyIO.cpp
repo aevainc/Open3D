@@ -43,7 +43,7 @@ INSTANTIATE_TEST_SUITE_P(Tensor,
                          NumpyIOPermuteDevices,
                          testing::ValuesIn(PermuteDevices::TestCases()));
 
-TEST_P(NumpyIOPermuteDevices, NpyIO) {
+TEST_P(NumpyIOPermuteDevices, NpyWriteRead) {
     const core::Device& device = GetParam();
     const std::string file_name = "tensor.npy";
 
@@ -99,7 +99,7 @@ TEST_P(NumpyIOPermuteDevices, NpyIO) {
     utility::filesystem::RemoveFile(file_name);
 }
 
-TEST_P(NumpyIOPermuteDevices, NpzIO) {
+TEST_P(NumpyIOPermuteDevices, NpzWriteRead) {
     const core::Device& device = GetParam();
     const std::string file_name = "tensors.npz";
 
@@ -168,6 +168,66 @@ TEST_P(NumpyIOPermuteDevices, NpzIO) {
 
     // Clean up.
     // utility::filesystem::RemoveFile(file_name);
+}
+
+TEST_P(NumpyIOPermuteDevices, NpzReadCompressed) {
+    const core::Device& device = GetParam();
+    const std::string file_name = "tensors_compressed.npz";
+
+    core::Tensor t;
+    core::Tensor t_load;
+
+    // t0: 2x2 tensor.
+    core::Tensor t0 = core::Tensor::Init<int32_t>({{1, 2}, {3, 4}}, device);
+
+    // t1: Non-contiguous tensor will be stored as contiguous tensor.
+    // t1 sliced with [0:2:1, 0:3:2, 0:4:2].
+    core::Tensor t1 = core::Tensor::Init<float>(
+            {{{0, 1, 2, 3}, {4, 5, 6, 7}, {8, 9, 10, 11}},
+             {{12, 13, 14, 15}, {16, 17, 18, 19}, {20, 21, 22, 23}}},
+            device);
+    t1 = t1.Slice(0, 0, 2, 1).Slice(1, 0, 3, 2).Slice(2, 0, 4, 2);
+
+    // t2: {} tensor (scalar).
+    core::Tensor t2 = core::Tensor::Init<float>(3.14, device);
+
+    // t3: {0} tensor.
+    core::Tensor t3 = core::Tensor::Ones({0}, core::Float32, device);
+
+    // t4: {0, 0} tensor.
+    core::Tensor t4 = core::Tensor::Ones({0, 0}, core::Float32, device);
+
+    // t5: {0, 1, 0} tensor.
+    core::Tensor t5 = core::Tensor::Ones({0, 1, 0}, core::Float32, device);
+
+    // Read from npz
+    std::unordered_map<std::string, core::Tensor> tensor_map =
+            t::io::ReadNpz(file_name);
+    EXPECT_EQ(tensor_map.size(), 6);
+
+    core::Tensor t0_load = tensor_map.at("t0");
+    EXPECT_TRUE(t0_load.AllClose(t0.To(device)));
+    EXPECT_EQ(t0_load.GetDtype(), t0.GetDtype());
+
+    core::Tensor t1_load = tensor_map.at("t1");
+    EXPECT_TRUE(t1_load.AllClose(t1.To(device)));
+    EXPECT_EQ(t1_load.GetDtype(), t1.GetDtype());
+
+    core::Tensor t2_load = tensor_map.at("t2");
+    EXPECT_TRUE(t2_load.AllClose(t2.To(device)));
+    EXPECT_EQ(t2_load.GetDtype(), t2.GetDtype());
+
+    core::Tensor t3_load = tensor_map.at("t3");
+    EXPECT_TRUE(t3_load.AllClose(t3.To(device)));
+    EXPECT_EQ(t3_load.GetDtype(), t3.GetDtype());
+
+    core::Tensor t4_load = tensor_map.at("t4");
+    EXPECT_TRUE(t4_load.AllClose(t4.To(device)));
+    EXPECT_EQ(t4_load.GetDtype(), t4.GetDtype());
+
+    core::Tensor t5_load = tensor_map.at("t5");
+    EXPECT_TRUE(t5_load.AllClose(t5.To(device)));
+    EXPECT_EQ(t5_load.GetDtype(), t5.GetDtype());
 }
 
 TEST_P(NumpyIOPermuteDevices, MigrateCode) { t::io::CnpyIOTest(); }
