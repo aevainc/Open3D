@@ -630,22 +630,6 @@ void parse_npy_header(unsigned char* buffer,
     word_size = atoi(str_ws.substr(0, loc2).c_str());
 }
 
-NumpyArray load_the_npy_file(FILE* fp) {
-    core::SizeVector shape;
-    char type;
-    int64_t word_size;
-    bool fortran_order;
-    std::tie(shape, type, word_size, fortran_order) = ParseNumpyHeader(fp);
-
-    NumpyArray arr(shape, type, word_size, fortran_order);
-    size_t nread = fread(arr.GetDataPtr<char>(), 1, arr.NumBytes(), fp);
-    if (nread != static_cast<size_t>(arr.NumBytes())) {
-        utility::LogError("Load: failed fread");
-    }
-
-    return arr;
-}
-
 NumpyArray load_the_npz_array(FILE* fp,
                               uint32_t compr_bytes,
                               uint32_t uncompr_bytes) {
@@ -653,7 +637,7 @@ NumpyArray load_the_npz_array(FILE* fp,
     std::vector<unsigned char> buffer_uncompr(uncompr_bytes);
     size_t nread = fread(&buffer_compr[0], 1, compr_bytes, fp);
     if (nread != compr_bytes) {
-        throw std::runtime_error("load_the_npy_file: failed fread");
+        throw std::runtime_error("failed fread");
     }
 
     int err;
@@ -745,7 +729,7 @@ std::map<std::string, NumpyArray> npz_load(std::string fname) {
         // It's possible to check varname and only load the selected numpy
         // array(s), here we load all of them with the while (1).
         if (compr_method == 0) {
-            arrays[varname] = load_the_npy_file(fp);
+            arrays[varname] = NumpyArray::CreateFromFilePtr(fp);
         } else {
             arrays[varname] =
                     load_the_npz_array(fp, compr_bytes, uncompr_bytes);
