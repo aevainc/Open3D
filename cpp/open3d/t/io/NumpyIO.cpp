@@ -317,9 +317,9 @@ static std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
     }
 
     // clang-format off
-    uint16_t disk_no              = *reinterpret_cast<uint16_t*>(&footer[4]);
-    uint16_t disk_start           = *reinterpret_cast<uint16_t*>(&footer[6]);
-    uint16_t nrecs_on_disk        = *reinterpret_cast<uint16_t*>(&footer[8]);
+    uint16_t disk_no              = *reinterpret_cast<uint16_t*>(&footer[4 ]);
+    uint16_t disk_start           = *reinterpret_cast<uint16_t*>(&footer[6 ]);
+    uint16_t nrecs_on_disk        = *reinterpret_cast<uint16_t*>(&footer[8 ]);
     uint16_t nrecs                = *reinterpret_cast<uint16_t*>(&footer[10]);
     uint32_t global_header_size   = *reinterpret_cast<uint32_t*>(&footer[12]);
     uint32_t global_header_offset = *reinterpret_cast<uint32_t*>(&footer[16]);
@@ -416,7 +416,8 @@ static void WriteNpzOneTensor(std::string file_name,
     size_t nbytes = nels * element_byte_size + npy_header.size();
 
     // Get the CRC of the data to be added.
-    uint32_t crc = crc32(0L, (uint8_t*)&npy_header[0], npy_header.size());
+    uint32_t crc = crc32(0L, reinterpret_cast<uint8_t*>(npy_header.data()),
+                         npy_header.size());
     crc = crc32(crc, static_cast<const uint8_t*>(data),
                 nels * element_byte_size);
 
