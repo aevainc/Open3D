@@ -576,21 +576,20 @@ static void WriteNpzOneTensor(std::string file_name,
     }
 
     if (append) {
-        // zip file exists. we need to add a new npy file to it.
-        // first read the footer. this gives us the offset and size of the
-        // global header then read and store the global header. below, we will
-        // write the the new data at the start of the global header then append
-        // the global header and footer below it
+        // Zip file exists. we need to add a new npy file to it. First read the
+        // footer. This gives us the offset and size of the global header then
+        // read and store the global header. Below, we will write the the new
+        // data at the start of the global header then append the global header
+        // and footer below it.
         size_t global_header_size;
         std::tie(nrecs, global_header_size, global_header_offset) =
                 ParseZipFooter(fp);
         fseek(fp, global_header_offset, SEEK_SET);
         global_header.resize(global_header_size);
-        size_t res =
-                fread(&global_header[0], sizeof(char), global_header_size, fp);
+        size_t res = fread(global_header.data(), sizeof(char),
+                           global_header_size, fp);
         if (res != global_header_size) {
-            throw std::runtime_error(
-                    "npz_save: header read error while adding to existing zip");
+            utility::LogError("Header read error while saving to npz.");
         }
         fseek(fp, global_header_offset, SEEK_SET);
     }
@@ -601,59 +600,56 @@ static void WriteNpzOneTensor(std::string file_name,
                                   std::multiplies<size_t>());
     size_t nbytes = nels * element_byte_size + npy_header.size();
 
-    // get the CRC of the data to be added
+    // Get the CRC of the data to be added.
     uint32_t crc = crc32(0L, (uint8_t*)&npy_header[0], npy_header.size());
     crc = crc32(crc, (uint8_t*)data, nels * element_byte_size);
 
-    // build the local header
+    // Build the local header.
     std::vector<char> local_header;
-    local_header += "PK";                          // first part of sig
-    local_header += (uint16_t)0x0403;              // second part of sig
-    local_header += (uint16_t)20;                  // min version to extract
-    local_header += (uint16_t)0;                   // general purpose bit flag
-    local_header += (uint16_t)0;                   // compression method
-    local_header += (uint16_t)0;                   // file last mod time
-    local_header += (uint16_t)0;                   // file last mod date
-    local_header += (uint32_t)crc;                 // crc
-    local_header += (uint32_t)nbytes;              // compressed size
-    local_header += (uint32_t)nbytes;              // uncompressed size
-    local_header += (uint16_t)tensor_name.size();  // tensor_name length
-    local_header += (uint16_t)0;                   // extra field length
+    local_header += "PK";                          // First part of sig
+    local_header += (uint16_t)0x0403;              // Second part of sig
+    local_header += (uint16_t)20;                  // Min version to extract
+    local_header += (uint16_t)0;                   // General purpose bit flag
+    local_header += (uint16_t)0;                   // Compression method
+    local_header += (uint16_t)0;                   // File last mod time
+    local_header += (uint16_t)0;                   // File last mod date
+    local_header += (uint32_t)crc;                 // CRC
+    local_header += (uint32_t)nbytes;              // Compressed size
+    local_header += (uint32_t)nbytes;              // Uncompressed size
+    local_header += (uint16_t)tensor_name.size();  // Tensor_name length
+    local_header += (uint16_t)0;                   // Extra field length
     local_header += tensor_name;
 
-    // build global header
-    global_header += "PK";              // first part of sig
-    global_header += (uint16_t)0x0201;  // second part of sig
-    global_header += (uint16_t)20;      // version made by
+    // Build global header.
+    global_header += "PK";              // First part of sig
+    global_header += (uint16_t)0x0201;  // Second part of sig
+    global_header += (uint16_t)20;      // Version made by
     global_header.insert(global_header.end(), local_header.begin() + 4,
                          local_header.begin() + 30);
-    global_header += (uint16_t)0;  // file comment length
-    global_header += (uint16_t)0;  // disk number where file starts
-    global_header += (uint16_t)0;  // internal file attributes
-    global_header += (uint32_t)0;  // external file attributes
-    global_header +=
-            (uint32_t)global_header_offset;  // relative offset of local file
-                                             // header, since it begins where
-                                             // the global header used to begin
+    global_header += (uint16_t)0;  // File comment length
+    global_header += (uint16_t)0;  // Disk number where file starts
+    global_header += (uint16_t)0;  // Internal file attributes
+    global_header += (uint32_t)0;  // External file attributes
+    // Relative offset of local file header, since it begins where the global
+    // header used to begin.
+    global_header += (uint32_t)global_header_offset;
     global_header += tensor_name;
 
-    // build footer
+    // Build footer.
     std::vector<char> footer;
-    footer += "PK";                            // first part of sig
-    footer += (uint16_t)0x0605;                // second part of sig
-    footer += (uint16_t)0;                     // number of this disk
-    footer += (uint16_t)0;                     // disk where footer starts
-    footer += (uint16_t)(nrecs + 1);           // number of records on this disk
-    footer += (uint16_t)(nrecs + 1);           // total number of records
-    footer += (uint32_t)global_header.size();  // nbytes of global headers
-    footer += (uint32_t)(
-            global_header_offset + nbytes +
-            local_header.size());  // offset of start of global
-                                   // headers, since global header now
-                                   // starts after newly written array
-    footer += (uint16_t)0;         // zip file comment length
+    footer += "PK";                            // First part of sig
+    footer += (uint16_t)0x0605;                // Second part of sig
+    footer += (uint16_t)0;                     // Number of this disk
+    footer += (uint16_t)0;                     // Disk where footer starts
+    footer += (uint16_t)(nrecs + 1);           // Number of records on this disk
+    footer += (uint16_t)(nrecs + 1);           // Total number of records
+    footer += (uint32_t)global_header.size();  // Nbytes of global headers
+    // Offset of start of global headers, since global header now starts after
+    // newly written array.
+    footer += (uint32_t)(global_header_offset + nbytes + local_header.size());
+    footer += (uint16_t)0;  // Zip file comment length.
 
-    // write everything
+    // Write everything.
     fwrite(&local_header[0], sizeof(char), local_header.size(), fp);
     fwrite(&npy_header[0], sizeof(char), npy_header.size(), fp);
     fwrite(data, element_byte_size, nels, fp);
