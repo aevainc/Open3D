@@ -673,7 +673,7 @@ void npz_save(std::string npz_name,
     fclose(fp);
 }
 
-std::map<std::string, NumpyArray> npz_load(std::string npz_name) {
+std::unordered_map<std::string, NumpyArray> npz_load(std::string npz_name) {
     FILE* fp = fopen(npz_name.c_str(), "rb");
 
     if (!fp) {
@@ -681,7 +681,7 @@ std::map<std::string, NumpyArray> npz_load(std::string npz_name) {
                                  npz_name + "!");
     }
 
-    std::map<std::string, NumpyArray> arrays;
+    std::unordered_map<std::string, NumpyArray> arrays;
 
     while (1) {
         std::vector<char> local_header(30);
@@ -740,7 +740,8 @@ std::map<std::string, NumpyArray> npz_load(std::string npz_name) {
 
 std::unordered_map<std::string, core::Tensor> ReadNpz(
         const std::string& file_name) {
-    std::map<std::string, NumpyArray> npz_loaded = npz_load(file_name);
+    std::unordered_map<std::string, NumpyArray> npz_loaded =
+            npz_load(file_name);
     std::unordered_map<std::string, core::Tensor> tensor_map;
     for (const auto& kv : npz_loaded) {
         tensor_map[kv.first] = kv.second.ToTensor();
