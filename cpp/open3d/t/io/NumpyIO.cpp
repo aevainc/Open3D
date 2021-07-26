@@ -516,15 +516,15 @@ std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
     if (fread(&footer[0], sizeof(char), footer_len, fp) != footer_len) {
         utility::LogError("Footer fread failed.");
     }
-
-    uint16_t disk_no = *reinterpret_cast<uint16_t*>(&footer[4]);
-    uint16_t disk_start = *reinterpret_cast<uint16_t*>(&footer[6]);
-    uint16_t nrecs_on_disk = *reinterpret_cast<uint16_t*>(&footer[8]);
-    uint16_t nrecs = *reinterpret_cast<uint16_t*>(&footer[10]);
-    size_t global_header_size = *(uint32_t*)&footer[12];
-    size_t global_header_offset = *(uint32_t*)&footer[16];
-
-    uint16_t comment_len = *reinterpret_cast<uint16_t*>(&footer[20]);
+    // clang-format off
+    uint16_t disk_no              = *reinterpret_cast<uint16_t*>(&footer[4]);
+    uint16_t disk_start           = *reinterpret_cast<uint16_t*>(&footer[6]);
+    uint16_t nrecs_on_disk        = *reinterpret_cast<uint16_t*>(&footer[8]);
+    uint16_t nrecs                = *reinterpret_cast<uint16_t*>(&footer[10]);
+    size_t   global_header_size   = *reinterpret_cast<uint32_t*>(&footer[12]);
+    size_t   global_header_offset = *reinterpret_cast<uint32_t*>(&footer[16]);
+    uint16_t comment_len          = *reinterpret_cast<uint16_t*>(&footer[20]);
+    // clang-format on
 
     assert(disk_no == 0);
     assert(disk_start == 0);
