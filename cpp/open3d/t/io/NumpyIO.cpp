@@ -407,12 +407,6 @@ public:
         return reinterpret_cast<const T*>(blob_->GetDataPtr());
     }
 
-    template <typename T>
-    std::vector<T> as_vec() const {
-        const T* p = GetDataPtr<T>();
-        return std::vector<T>(p, p + NumElements());
-    }
-
     int64_t NumBytes() const { return NumElements() * word_size_; }
 
     int64_t NumElements() const { return shape_.NumElements(); }
