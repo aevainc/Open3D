@@ -44,7 +44,7 @@ INSTANTIATE_TEST_SUITE_P(Tensor,
                          testing::ValuesIn(PermuteDevices::TestCases()));
 
 TEST_P(NumpyIOPermuteDevices, NpyWriteRead) {
-    const core::Device& device = GetParam();
+    const core::Device device = GetParam();
     const std::string file_name = "tensor.npy";
 
     core::Tensor t;
@@ -100,7 +100,7 @@ TEST_P(NumpyIOPermuteDevices, NpyWriteRead) {
 }
 
 TEST_P(NumpyIOPermuteDevices, NpzWriteRead) {
-    const core::Device& device = GetParam();
+    const core::Device device = GetParam();
     const std::string file_name = "tensors.npz";
 
     core::Tensor t;
@@ -171,7 +171,7 @@ TEST_P(NumpyIOPermuteDevices, NpzWriteRead) {
 }
 
 TEST_P(NumpyIOPermuteDevices, NpzReadCompressed) {
-    const core::Device& device = GetParam();
+    const core::Device device = GetParam();
     const std::string file_name =
             std::string(TEST_DATA_DIR) + "/tensors_compressed.npz";
 
