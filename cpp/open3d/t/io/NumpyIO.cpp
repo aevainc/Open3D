@@ -409,22 +409,22 @@ public:
         : shape_(0), word_size_(0), fortran_order_(0), num_elements_(0) {}
 
     template <typename T>
-    T* data() {
+    T* GetDataPtr() {
         return reinterpret_cast<T*>(&(*data_holder_)[0]);
     }
 
     template <typename T>
-    const T* data() const {
+    const T* GetDataPtr() const {
         return reinterpret_cast<T*>(&(*data_holder_)[0]);
     }
 
     template <typename T>
     std::vector<T> as_vec() const {
-        const T* p = data<T>();
+        const T* p = GetDataPtr<T>();
         return std::vector<T>(p, p + num_elements_);
     }
 
-    int64_t num_bytes() const { return data_holder_->size(); }
+    int64_t NumBytes() const { return data_holder_->size(); }
 
     std::vector<int64_t> GetShape() const { return shape_; }
 
@@ -686,8 +686,8 @@ NpyArray load_the_npy_file(FILE* fp) {
     std::tie(type, word_size, shape, fortran_order) = ParseNumpyHeader(fp);
 
     NpyArray arr(shape, word_size, fortran_order);
-    size_t nread = fread(arr.data<char>(), 1, arr.num_bytes(), fp);
-    if (nread != static_cast<size_t>(arr.num_bytes())) {
+    size_t nread = fread(arr.GetDataPtr<char>(), 1, arr.NumBytes(), fp);
+    if (nread != static_cast<size_t>(arr.NumBytes())) {
         utility::LogError("Load: failed fread");
     }
 
@@ -731,9 +731,9 @@ NpyArray load_the_npz_array(FILE* fp,
     core::SizeVector o3d_shape(shape.begin(), shape.end());
     NpyArray array(o3d_shape, word_size, fortran_order);
 
-    size_t offset = uncompr_bytes - array.num_bytes();
-    memcpy(array.data<unsigned char>(), &buffer_uncompr[0] + offset,
-           array.num_bytes());
+    size_t offset = uncompr_bytes - array.NumBytes();
+    memcpy(array.GetDataPtr<unsigned char>(), &buffer_uncompr[0] + offset,
+           array.NumBytes());
 
     return array;
 }
@@ -876,12 +876,12 @@ void CnpyIOTest() {
     std::map<std::string, NpyArray> npz_loaded = npz_load("out.npz");
     NpyArray t1_loaded = npz_loaded["t1"];
 
-    const int32_t* t0_loaded_data = t0_loaded.data<int32_t>();
+    const int32_t* t0_loaded_data = t0_loaded.GetDataPtr<int32_t>();
     utility::LogInfo("t0_loaded shape: {}", t0_loaded.GetShape());
     utility::LogInfo("t0_loaded data: {}, {}", t0_loaded_data[0],
                      t0_loaded_data[1]);
 
-    const double* t1_loaded_data = t1_loaded.data<double>();
+    const double* t1_loaded_data = t1_loaded.GetDataPtr<double>();
     utility::LogInfo("t1_loaded shape: {}", t1_loaded.GetShape());
     utility::LogInfo("t1_loaded data: {}, {}, {}, {}, {}, {}",
                      t1_loaded_data[0], t1_loaded_data[1], t1_loaded_data[2],
