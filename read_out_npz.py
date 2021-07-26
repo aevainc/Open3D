@@ -8,12 +8,13 @@ if __name__ == '__main__':
     npz_file = pwd / "build" / "out_compressed.npz"
     np.savez_compressed(
         npz_file,
-        t0=np.array([100, 200], dtype=np.int32),
-        t1=np.array([[0, 1, 2], [3, 4, 5]], dtype=np.float64),
-        t3=3.14,
-        t4=np.ones((0,)),
-        t5=np.ones((0, 0)),
-        t6=np.ones((0, 1, 0)),
+        t0=np.array([[1, 2], [3, 4]], dtype=np.int32),
+        t1=np.array([0, 2, 8, 10, 12, 14, 20, 22], dtype=np.float32).reshape(
+            (2, 2, 2)),
+        t3=np.array(3.14, dtype=np.float32),
+        t4=np.ones((0,), dtype=np.float32),
+        t5=np.ones((0, 0), dtype=np.float32),
+        t6=np.ones((0, 1, 0), dtype=np.float32),
     )
 
     npz_file = pwd / "build" / "out.npz"
@@ -39,16 +40,19 @@ if __name__ == '__main__':
                 np.array([0, 2, 8, 10, 12, 14, 20, 22]).reshape((2, 2, 2)))
             assert data["t1"].dtype == np.float32
 
-            np.testing.assert_allclose(data["t2"], 3.14)
+            np.testing.assert_allclose(data["t2"],
+                                       np.array(3.14, dtype=np.float32))
             assert data["t2"].dtype == np.float32
 
-            np.testing.assert_equal(data["t3"], np.ones((0,)))
+            np.testing.assert_equal(data["t3"], np.ones((0,), dtype=np.float32))
             assert data["t3"].dtype == np.float32
 
-            np.testing.assert_equal(data["t4"], np.ones((0, 0)))
+            np.testing.assert_equal(data["t4"], np.ones((0, 0),
+                                                        dtype=np.float32))
             assert data["t4"].dtype == np.float32
 
-            np.testing.assert_equal(data["t5"], np.ones((0, 1, 0)))
+            np.testing.assert_equal(data["t5"],
+                                    np.ones((0, 1, 0), dtype=np.float32))
             assert data["t5"].dtype == np.float32
     else:
         print(f"{npz_file} not found")
