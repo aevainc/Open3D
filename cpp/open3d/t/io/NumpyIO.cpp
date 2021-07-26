@@ -259,11 +259,13 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNumpyHeader(
     return std::make_tuple(shape, type, word_size, fortran_order);
 }
 
-static void parse_npy_header(unsigned char* buffer,
-                             core::SizeVector& shape,
-                             char& type,
-                             size_t& word_size,
-                             bool& fortran_order) {
+static std::tuple<core::SizeVector, char, int64_t, bool> parse_npy_header(
+        unsigned char* buffer) {
+    core::SizeVector shape;
+    char type;
+    int64_t word_size;
+    bool fortran_order;
+
     // std::string magic_string(buffer,6);
     uint8_t major_version = *reinterpret_cast<uint8_t*>(buffer + 6);
     (void)major_version;
@@ -306,6 +308,8 @@ static void parse_npy_header(unsigned char* buffer,
     std::string str_ws = header.substr(loc1 + 2);
     loc2 = str_ws.find("'");
     word_size = atoi(str_ws.substr(0, loc2).c_str());
+
+    return std::make_tuple(shape, type, word_size, fortran_order);
 }
 
 class NumpyArray {
@@ -404,12 +408,13 @@ public:
         if (!fp) {
             utility::LogError("Unable to open file ptr.");
         }
+
         core::SizeVector shape;
         char type;
         int64_t word_size;
         bool fortran_order;
-
         std::tie(shape, type, word_size, fortran_order) = ParseNumpyHeader(fp);
+
         NumpyArray arr(shape, type, word_size, fortran_order);
         size_t nread = fread(arr.GetDataPtr<char>(), 1,
                              static_cast<size_t>(arr.NumBytes()), fp);
@@ -451,11 +456,11 @@ public:
         (void)err;
 
         core::SizeVector shape;
+        char type;
         size_t word_size;
         bool fortran_order;
-        char type;
-        parse_npy_header(&buffer_uncompr[0], shape, type, word_size,
-                         fortran_order);
+        std::tie(shape, type, word_size, fortran_order) =
+                parse_npy_header(&buffer_uncompr[0]);
 
         NumpyArray array(shape, type, word_size, fortran_order);
 
