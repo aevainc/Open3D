@@ -214,7 +214,6 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNumpyHeader(
     if (loc1 == std::string::npos) {
         utility::LogError("Failed to find header keyword: 'fortran_order'");
     }
-
     loc1 += 16;
     fortran_order = (header.substr(loc1, 4) == "True" ? true : false);
 
@@ -276,13 +275,20 @@ static std::tuple<core::SizeVector, char, int64_t, bool> parse_npy_header(
 
     size_t loc1, loc2;
 
-    // fortran order
-    loc1 = header.find("fortran_order") + 16;
+    // Fortran order.
+    loc1 = header.find("fortran_order");
+    if (loc1 == std::string::npos) {
+        utility::LogError("Failed to find header keyword: 'fortran_order'");
+    }
+    loc1 += 16;
     fortran_order = (header.substr(loc1, 4) == "True" ? true : false);
 
-    // shape
+    // Shape.
     loc1 = header.find("(");
     loc2 = header.find(")");
+    if (loc1 == std::string::npos || loc2 == std::string::npos) {
+        utility::LogError("Failed to find header keyword: '(' or ')'");
+    }
 
     std::regex num_regex("[0-9][0-9]*");
     std::smatch sm;
@@ -294,14 +300,20 @@ static std::tuple<core::SizeVector, char, int64_t, bool> parse_npy_header(
         str_shape = sm.suffix().str();
     }
 
-    // endian, word size, data type
+    // Endian, word size, data type.
     // byte order code | stands for not applicable.
-    // not sure when this applies except for byte array
-    loc1 = header.find("descr") + 9;
-    bool littleEndian =
+    // not sure when this applies except for byte array.
+    loc1 = header.find("descr");
+    if (loc1 == std::string::npos) {
+        utility::LogError("Failed to find header keyword: 'descr'");
+    }
+
+    loc1 += 9;
+    bool little_endian =
             (header[loc1] == '<' || header[loc1] == '|' ? true : false);
-    assert(littleEndian);
-    (void)littleEndian;
+    if (!little_endian) {
+        utility::LogError("Only big endian is supported.");
+    }
 
     type = header[loc1 + 1];
 
