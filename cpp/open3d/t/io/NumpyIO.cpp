@@ -391,7 +391,8 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-struct NpyArray {
+class NpyArray {
+public:
     NpyArray(const std::vector<size_t>& _shape,
              size_t _word_size,
              bool _fortran_order)
@@ -422,8 +423,11 @@ struct NpyArray {
 
     size_t num_bytes() const { return data_holder->size(); }
 
-    std::shared_ptr<std::vector<char>> data_holder;
     std::vector<size_t> shape;
+
+private:
+    std::shared_ptr<std::vector<char>> data_holder;
+
     size_t word_size;
     bool fortran_order;
     size_t num_vals;
