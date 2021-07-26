@@ -45,15 +45,15 @@ INSTANTIATE_TEST_SUITE_P(Tensor,
 
 TEST_P(NumpyIOPermuteDevices, NpyIO) {
     const core::Device& device = GetParam();
-    const std::string filename = "tensor.npy";
+    const std::string file_name = "tensor.npy";
 
     core::Tensor t;
     core::Tensor t_load;
 
     // 2x2 tensor.
     t = core::Tensor::Init<float>({{1, 2}, {3, 4}}, device);
-    t.Save(filename);
-    t_load = core::Tensor::Load(filename);
+    t.Save(file_name);
+    t_load = core::Tensor::Load(file_name);
     EXPECT_TRUE(t.AllClose(t_load.To(device)));
 
     // Non-contiguous tensor will be stored as contiguous tensor.
@@ -63,9 +63,9 @@ TEST_P(NumpyIOPermuteDevices, NpyIO) {
             device);
     // t[0:2:1, 0:3:2, 0:4:2]
     t = t.Slice(0, 0, 2, 1).Slice(1, 0, 3, 2).Slice(2, 0, 4, 2);
-    t.Save(filename);
+    t.Save(file_name);
     EXPECT_FALSE(t.IsContiguous());
-    t_load = core::Tensor::Load(filename);
+    t_load = core::Tensor::Load(file_name);
     EXPECT_TRUE(t_load.IsContiguous());
     EXPECT_EQ(t_load.GetShape(), core::SizeVector({2, 2, 2}));
     EXPECT_EQ(t_load.ToFlatVector<float>(),
@@ -73,35 +73,35 @@ TEST_P(NumpyIOPermuteDevices, NpyIO) {
 
     // {} tensor (scalar).
     t = core::Tensor::Init<float>(3.14, device);
-    t.Save(filename);
-    t_load = core::Tensor::Load(filename);
+    t.Save(file_name);
+    t_load = core::Tensor::Load(file_name);
     EXPECT_TRUE(t.AllClose(t_load.To(device)));
 
     // {0} tensor.
     t = core::Tensor::Ones({0}, core::Float32, device);
-    t.Save(filename);
-    t_load = core::Tensor::Load(filename);
+    t.Save(file_name);
+    t_load = core::Tensor::Load(file_name);
     EXPECT_TRUE(t.AllClose(t_load.To(device)));
 
     // {0, 0} tensor.
     t = core::Tensor::Ones({0, 0}, core::Float32, device);
-    t.Save(filename);
-    t_load = core::Tensor::Load(filename);
+    t.Save(file_name);
+    t_load = core::Tensor::Load(file_name);
     EXPECT_TRUE(t.AllClose(t_load.To(device)));
 
     // {0, 1, 0} tensor.
     t = core::Tensor::Ones({0, 1, 0}, core::Float32, device);
-    t.Save(filename);
-    t_load = core::Tensor::Load(filename);
+    t.Save(file_name);
+    t_load = core::Tensor::Load(file_name);
     EXPECT_TRUE(t.AllClose(t_load.To(device)));
 
     // Clean up.
-    utility::filesystem::RemoveFile(filename);
+    utility::filesystem::RemoveFile(file_name);
 }
 
 TEST_P(NumpyIOPermuteDevices, NpzIO) {
     const core::Device& device = GetParam();
-    const std::string filename = "tensors.npz";
+    const std::string file_name = "tensors.npz";
 
     core::Tensor t;
     core::Tensor t_load;
@@ -130,15 +130,15 @@ TEST_P(NumpyIOPermuteDevices, NpzIO) {
     core::Tensor t5 = core::Tensor::Ones({0, 1, 0}, core::Float32, device);
 
     // Wrtie t0 to t5.
-    t::io::WriteNpz(filename, {{"t0", t0},
-                               {"t1", t1},
-                               {"t2", t2},
-                               {"t3", t3},
-                               {"t4", t4},
-                               {"t5", t5}});
+    t::io::WriteNpz(file_name, {{"t0", t0},
+                                {"t1", t1},
+                                {"t2", t2},
+                                {"t3", t3},
+                                {"t4", t4},
+                                {"t5", t5}});
 
     // Clean up.
-    // utility::filesystem::RemoveFile(filename);
+    // utility::filesystem::RemoveFile(file_name);
 }
 
 TEST_P(NumpyIOPermuteDevices, MigrateCode) { t::io::CnpyIOTest(); }

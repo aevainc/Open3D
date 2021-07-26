@@ -54,26 +54,26 @@ namespace io {
 
 /// Read Numpy .npy file to a tensor.
 ///
-/// \param filename The file name to read from.
-core::Tensor ReadNpy(const std::string& filename);
+/// \param file_name The file name to read from.
+core::Tensor ReadNpy(const std::string& file_name);
 
 /// Save a tensor to a Numpy .npy file.
 ///
-/// \param filename The file name to write to.
+/// \param file_name The file name to write to.
 /// \param tensor The tensor to save.
-void WriteNpy(const std::string& filename, const core::Tensor& tensor);
+void WriteNpy(const std::string& file_name, const core::Tensor& tensor);
 
 /// Read Numpy .npz file to an unordered_map from string to tensor.
 ///
-/// \param filename The file name to read from.
+/// \param file_name The file name to read from.
 std::unordered_map<std::string, core::Tensor> ReadNpz(
-        const std::string& filename);
+        const std::string& file_name);
 
 /// Save a string to tensor map as Numpy .npz file.
 ///
-/// \param filename The file name to write to.
+/// \param file_name The file name to write to.
 /// \param tensor_map The tensor map to save.
-void WriteNpz(const std::string& filename,
+void WriteNpz(const std::string& file_name,
               const std::unordered_map<std::string, core::Tensor>& tensor_map);
 
 void CnpyIOTest();

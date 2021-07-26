@@ -323,10 +323,10 @@ public:
         return t;
     }
 
-    static NumpyArray CreateFromFile(const std::string& filename) {
-        FILE* fp = fopen(filename.c_str(), "rb");
+    static NumpyArray CreateFromFile(const std::string& file_name) {
+        FILE* fp = fopen(file_name.c_str(), "rb");
         if (!fp) {
-            utility::LogError("Load: Unable to open file {}.", filename);
+            utility::LogError("Load: Unable to open file {}.", file_name);
         }
         core::SizeVector shape;
         int64_t word_size;
@@ -343,10 +343,10 @@ public:
         return arr;
     }
 
-    void Save(std::string filename) const {
-        FILE* fp = fopen(filename.c_str(), "wb");
+    void Save(std::string file_name) const {
+        FILE* fp = fopen(file_name.c_str(), "wb");
         if (!fp) {
-            utility::LogError("Save: Unable to open file {}.", filename);
+            utility::LogError("Save: Unable to open file {}.", file_name);
             return;
         }
         std::vector<char> header = CreateNumpyHeader(shape_, GetDtype());
@@ -367,16 +367,16 @@ private:
     int64_t num_elements_;
 };
 
-core::Tensor ReadNpy(const std::string& filename) {
-    return NumpyArray::CreateFromFile(filename).ToTensor();
+core::Tensor ReadNpy(const std::string& file_name) {
+    return NumpyArray::CreateFromFile(file_name).ToTensor();
 }
 
-void WriteNpy(const std::string& filename, const core::Tensor& tensor) {
-    NumpyArray(tensor).Save(filename);
+void WriteNpy(const std::string& file_name, const core::Tensor& tensor) {
+    NumpyArray(tensor).Save(file_name);
 }
 
 std::unordered_map<std::string, core::Tensor> ReadNpz(
-        const std::string& filename) {
+        const std::string& file_name) {
     return {};
 }
 
@@ -920,7 +920,7 @@ void CnpyIOTest() {
                      t1_loaded_data[3], t1_loaded_data[4], t1_loaded_data[5]);
 }
 
-void WriteNpz(const std::string& filename,
+void WriteNpz(const std::string& file_name,
               const std::unordered_map<std::string, core::Tensor>& tensor_map) {
     std::unordered_map<std::string, core::Tensor> contiguous_tensor_map;
     for (auto it = tensor_map.begin(); it != tensor_map.end(); ++it) {
@@ -931,10 +931,10 @@ void WriteNpz(const std::string& filename,
     for (auto it = tensor_map.begin(); it != tensor_map.end(); ++it) {
         core::Tensor tensor = it->second.To(core::Device("CPU:0")).Contiguous();
         if (is_first_tensor) {
-            npz_save(filename, it->first, tensor, "w");
+            npz_save(file_name, it->first, tensor, "w");
             is_first_tensor = false;
         } else {
-            npz_save(filename, it->first, tensor, "a");
+            npz_save(file_name, it->first, tensor, "a");
         }
     }
 }
