@@ -564,7 +564,7 @@ std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
     return lhs;
 }
 
-void npz_save(std::string npz_name,
+void npz_save(std::string file_name,
               std::string tensor_name,
               const core::Tensor& tensor,
               std::string mode = "w") {
@@ -582,7 +582,7 @@ void npz_save(std::string npz_name,
     size_t global_header_offset = 0;
     std::vector<char> global_header;
 
-    if (mode == "a") fp = fopen(npz_name.c_str(), "r+b");
+    if (mode == "a") fp = fopen(file_name.c_str(), "r+b");
 
     if (fp) {
         // zip file exists. we need to add a new npy file to it.
@@ -603,7 +603,7 @@ void npz_save(std::string npz_name,
         }
         fseek(fp, global_header_offset, SEEK_SET);
     } else {
-        fp = fopen(npz_name.c_str(), "wb");
+        fp = fopen(file_name.c_str(), "wb");
     }
 
     std::vector<char> npy_header = CreateNumpyHeader(shape, dtype);
@@ -673,10 +673,10 @@ void npz_save(std::string npz_name,
     fclose(fp);
 }
 
-std::unordered_map<std::string, NumpyArray> npz_load(std::string npz_name) {
-    FILE* fp = fopen(npz_name.c_str(), "rb");
+std::unordered_map<std::string, NumpyArray> npz_load(std::string file_name) {
+    FILE* fp = fopen(file_name.c_str(), "rb");
     if (!fp) {
-        utility::LogError("Unable to open {}.", npz_name);
+        utility::LogError("Unable to open {}.", file_name);
     }
 
     std::unordered_map<std::string, NumpyArray> arrays;
