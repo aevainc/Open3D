@@ -182,7 +182,7 @@ static std::vector<char> CreateNumpyHeader(const core::SizeVector& shape,
     return std::vector<char>(s.begin(), s.end());
 }
 
-static std::tuple<core::SizeVector, char, int64_t, bool> DecodeNumpyHeader(
+static std::tuple<core::SizeVector, char, int64_t, bool> DecodeNpyHeader(
         const std::string& header) {
     core::SizeVector shape;
     char type;
@@ -241,7 +241,7 @@ static std::tuple<core::SizeVector, char, int64_t, bool> DecodeNumpyHeader(
 }
 
 // Retruns {shape, type(char), word_size, fortran_order}.
-static std::tuple<core::SizeVector, char, int64_t, bool> ParseNumpyHeader(
+static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
         FILE* fp) {
     // Ref: https://numpy.org/devdocs/reference/generated/numpy.lib.format.html
     char buffer[256];
@@ -260,11 +260,11 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNumpyHeader(
     if (header[header.size() - 1] != '\n') {
         utility::LogError("The last char must be '\n'.");
     }
-    return DecodeNumpyHeader(header);
+    return DecodeNpyHeader(header);
 }
 
 static std::tuple<core::SizeVector, char, int64_t, bool>
-ParseNumpyHeaderFromBuffer(unsigned char* buffer) {
+ParseNpyHeaderFromBuffer(unsigned char* buffer) {
     // std::string magic_string(buffer,6);
     uint8_t major_version = *reinterpret_cast<uint8_t*>(buffer + 6);
     (void)major_version;
@@ -273,7 +273,7 @@ ParseNumpyHeaderFromBuffer(unsigned char* buffer) {
     uint16_t header_len = *reinterpret_cast<uint16_t*>(buffer + 8);
     std::string header(reinterpret_cast<char*>(buffer + 9), header_len);
 
-    return DecodeNumpyHeader(header);
+    return DecodeNpyHeader(header);
 }
 
 class NumpyArray {
@@ -377,7 +377,7 @@ public:
         char type;
         int64_t word_size;
         bool fortran_order;
-        std::tie(shape, type, word_size, fortran_order) = ParseNumpyHeader(fp);
+        std::tie(shape, type, word_size, fortran_order) = ParseNpyHeader(fp);
 
         NumpyArray arr(shape, type, word_size, fortran_order);
         size_t nread = fread(arr.GetDataPtr<char>(), 1,
@@ -424,7 +424,7 @@ public:
         size_t word_size;
         bool fortran_order;
         std::tie(shape, type, word_size, fortran_order) =
-                ParseNumpyHeaderFromBuffer(&buffer_uncompr[0]);
+                ParseNpyHeaderFromBuffer(&buffer_uncompr[0]);
 
         NumpyArray array(shape, type, word_size, fortran_order);
 
