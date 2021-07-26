@@ -167,7 +167,7 @@ TEST_P(NumpyIOPermuteDevices, NpzWriteRead) {
     EXPECT_EQ(t5.GetDtype(), t5_load.GetDtype());
 
     // Clean up.
-    // utility::filesystem::RemoveFile(file_name);
+    utility::filesystem::RemoveFile(file_name);
 }
 
 TEST_P(NumpyIOPermuteDevices, NpzReadCompressed) {
