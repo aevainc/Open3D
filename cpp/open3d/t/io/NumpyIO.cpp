@@ -242,7 +242,8 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParsePropertyDict(
 }
 
 // Returns header length, which is the length of the string of property dict.
-static uint16_t ParseNpyPreamble(const std::vector<char>& preamble) {
+// The preamble must be at least 10 bytes.
+static uint16_t ParseNpyPreamble(const char* preamble) {
     if (preamble[0] != static_cast<char>(0x93) || preamble[1] != 'N' ||
         preamble[2] != 'U' || preamble[3] != 'M' || preamble[4] != 'P' ||
         preamble[5] != 'Y') {
@@ -283,7 +284,7 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
         preamble_len) {
         utility::LogError("Header preamble cannot be read.");
     }
-    uint16_t header_len = ParseNpyPreamble(preamble);
+    uint16_t header_len = ParseNpyPreamble(preamble.data());
 
     std::vector<char> header_chars(header_len, 0);
     if (fread(header_chars.data(), sizeof(char), header_len, fp) !=
