@@ -29,23 +29,6 @@
 #include <string>
 #include <unordered_map>
 
-/////////////////
-#include <stdint.h>
-#include <zlib.h>
-
-#include <cassert>
-#include <cstdio>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <numeric>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <typeinfo>
-#include <vector>
-/////////////////
-
 #include "open3d/core/Tensor.h"
 
 namespace open3d {
