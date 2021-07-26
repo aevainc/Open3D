@@ -171,12 +171,12 @@ static std::vector<char> CreateNumpyHeader(const core::SizeVector& shape,
     return std::vector<char>(s.begin(), s.end());
 }
 
-// Retruns {type(char), word_size, shape, fortran_order}.
-static std::tuple<char, int64_t, core::SizeVector, bool> ParseNumpyHeader(
+// Retruns {shape, type(char), word_size, fortran_order}.
+static std::tuple<core::SizeVector, char, int64_t, bool> ParseNumpyHeader(
         FILE* fp) {
+    core::SizeVector shape;
     char type;
     int64_t word_size;
-    core::SizeVector shape;
     bool fortran_order;
 
     char buffer[256];
@@ -245,7 +245,7 @@ static std::tuple<char, int64_t, core::SizeVector, bool> ParseNumpyHeader(
     loc2 = str_ws.find("'");
     word_size = atoi(str_ws.substr(0, loc2).c_str());
 
-    return std::make_tuple(type, word_size, shape, fortran_order);
+    return std::make_tuple(shape, type, word_size, fortran_order);
 }
 
 class NumpyArray {
@@ -326,10 +326,11 @@ public:
             utility::LogError("Load: Unable to open file {}.", file_name);
         }
         core::SizeVector shape;
+        char type;
         int64_t word_size;
         bool fortran_order;
-        char type;
-        std::tie(type, word_size, shape, fortran_order) = ParseNumpyHeader(fp);
+
+        std::tie(shape, type, word_size, fortran_order) = ParseNumpyHeader(fp);
         NumpyArray arr(shape, type, word_size, fortran_order);
         size_t nread = fread(arr.GetDataPtr<char>(), 1,
                              static_cast<size_t>(arr.NumBytes()), fp);
@@ -670,10 +671,10 @@ void parse_npy_header(unsigned char* buffer,
 
 NpyArray load_the_npy_file(FILE* fp) {
     core::SizeVector shape;
+    char type;
     int64_t word_size;
     bool fortran_order;
-    char type;
-    std::tie(type, word_size, shape, fortran_order) = ParseNumpyHeader(fp);
+    std::tie(shape, type, word_size, fortran_order) = ParseNumpyHeader(fp);
 
     NpyArray arr(shape, type, word_size, fortran_order);
     size_t nread = fread(arr.GetDataPtr<char>(), 1, arr.NumBytes(), fp);
