@@ -761,6 +761,8 @@ std::map<std::string, NumpyArray> npz_load(std::string fname) {
         uint32_t uncompr_bytes =
                 *reinterpret_cast<uint32_t*>(&local_header[0] + 22);
 
+        // It's possible to check varname and only load the selected numpy
+        // array(s), here we load all of them with the while (1).
         if (compr_method == 0) {
             arrays[varname] = load_the_npy_file(fp);
         } else {
@@ -773,66 +775,6 @@ std::map<std::string, NumpyArray> npz_load(std::string fname) {
     return arrays;
 }
 
-NumpyArray npz_load(std::string fname, std::string varname) {
-    FILE* fp = fopen(fname.c_str(), "rb");
-
-    if (!fp) {
-        throw std::runtime_error("npz_load: Unable to open file " + fname);
-    }
-
-    while (1) {
-        std::vector<char> local_header(30);
-        size_t header_res = fread(&local_header[0], sizeof(char), 30, fp);
-        if (header_res != 30) {
-            throw std::runtime_error("npz_load: failed fread");
-        }
-
-        // if we've reached the global header, stop reading
-        if (local_header[2] != 0x03 || local_header[3] != 0x04) {
-            break;
-        }
-
-        // read in the variable name
-        uint16_t name_len = *(uint16_t*)&local_header[26];
-        std::string vname(name_len, ' ');
-        size_t vname_res = fread(&vname[0], sizeof(char), name_len, fp);
-        if (vname_res != name_len) {
-            throw std::runtime_error("npz_load: failed fread");
-        }
-        vname.erase(vname.end() - 4, vname.end());  // erase the lagging .npy
-
-        // read in the extra field
-        uint16_t extra_field_len = *(uint16_t*)&local_header[28];
-        fseek(fp, extra_field_len, SEEK_CUR);  // skip past the extra field
-
-        uint16_t compr_method =
-                *reinterpret_cast<uint16_t*>(&local_header[0] + 8);
-        uint32_t compr_bytes =
-                *reinterpret_cast<uint32_t*>(&local_header[0] + 18);
-        uint32_t uncompr_bytes =
-                *reinterpret_cast<uint32_t*>(&local_header[0] + 22);
-
-        if (vname == varname) {
-            NumpyArray array = (compr_method == 0)
-                                       ? load_the_npy_file(fp)
-                                       : load_the_npz_array(fp, compr_bytes,
-                                                            uncompr_bytes);
-            fclose(fp);
-            return array;
-        } else {
-            // skip past the data
-            uint32_t size = *(uint32_t*)&local_header[22];
-            fseek(fp, size, SEEK_CUR);
-        }
-    }
-
-    fclose(fp);
-
-    // if we get here, we haven't found the variable in the file
-    throw std::runtime_error("npz_load: Variable name " + varname +
-                             " not found in " + fname);
-}
-
 void CnpyIOTest() {
     core::Device device("CPU:0");
 
@@ -841,11 +783,9 @@ void CnpyIOTest() {
     auto t1 = core::Tensor::Init<double>({{0, 1, 2}, {3, 4, 5}}, device);
     WriteNpz("out.npz", {{"t0", t0}, {"t1", t1}});
 
-    // load a single var from the npz file
-    NumpyArray t0_loaded = npz_load("out.npz", "t0");
-
     // load the entire npz file
     std::map<std::string, NumpyArray> npz_loaded = npz_load("out.npz");
+    NumpyArray t0_loaded = npz_loaded["t0"];
     NumpyArray t1_loaded = npz_loaded["t1"];
 
     const int32_t* t0_loaded_data = t0_loaded.GetDataPtr<int32_t>();
