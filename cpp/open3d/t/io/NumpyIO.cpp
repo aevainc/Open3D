@@ -252,6 +252,11 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
     // - bytes[8]  to bytes[9]            : HEADER_LEN little-endian uint16_t
     // - bytes[10] to bytes[10+HEADER_LEN]: Dict, padded, terminated by '\n'
     // - (10 + HEADER_LEN) % 64 == 0      : Guranteed
+    //
+    // - We only support Version 1.0 for now.
+    // - Version 2.0+ supports up to 4GiB HEADER_LEN and the HEADER_LEN is
+    //   replaced from uint16_t to uint32_t.
+    // - Version 3.0 uses utf8-encoded header string.
 
     char buffer[256];
     size_t res = fread(buffer, sizeof(char), 10, fp);
