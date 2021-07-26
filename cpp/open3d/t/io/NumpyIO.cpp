@@ -393,10 +393,10 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
 
 class NpyArray {
 public:
-    NpyArray(const std::vector<size_t>& _shape,
-             size_t _word_size,
-             bool _fortran_order)
-        : shape(_shape), word_size(_word_size), fortran_order(_fortran_order) {
+    NpyArray(const std::vector<size_t>& shape,
+             size_t word_size,
+             bool fortran_order)
+        : shape(shape), word_size(word_size), fortran_order(fortran_order) {
         num_elements_ = 1;
         for (size_t i = 0; i < shape.size(); i++) num_elements_ *= shape[i];
         data_holder = std::shared_ptr<std::vector<char>>(
