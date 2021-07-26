@@ -174,7 +174,7 @@ static std::vector<char> CreateNumpyHeader(const core::SizeVector& shape,
     // Minor version of numpy format.
     ss << (char)0x00;
     // Header dict size (full header size - 10).
-    ss << ToByteString((uint16_t)dict.size());
+    ss << ToByteString(static_cast<uint16_t>(dict.size()));
     // Header dict.
     ss << dict;
 
