@@ -396,14 +396,17 @@ public:
     NpyArray(const std::vector<size_t>& shape,
              size_t word_size,
              bool fortran_order)
-        : shape(shape), word_size_(word_size), fortran_order_(fortran_order) {
+        : shape_(shape), word_size_(word_size), fortran_order_(fortran_order) {
         num_elements_ = 1;
-        for (size_t i = 0; i < shape.size(); i++) num_elements_ *= shape[i];
+        for (size_t i = 0; i < shape_.size(); i++) {
+            num_elements_ *= shape_[i];
+        }
         data_holder_ = std::shared_ptr<std::vector<char>>(
                 new std::vector<char>(num_elements_ * word_size));
     }
 
-    NpyArray() : shape(0), word_size_(0), fortran_order_(0), num_elements_(0) {}
+    NpyArray()
+        : shape_(0), word_size_(0), fortran_order_(0), num_elements_(0) {}
 
     template <typename T>
     T* data() {
@@ -423,12 +426,11 @@ public:
 
     size_t num_bytes() const { return data_holder_->size(); }
 
-    std::vector<size_t> GetShape() const { return shape; }
+    std::vector<size_t> GetShape() const { return shape_; }
 
 private:
     std::shared_ptr<std::vector<char>> data_holder_;
-    std::vector<size_t> shape;
-
+    std::vector<size_t> shape_;
     size_t word_size_;
     bool fortran_order_;
     size_t num_elements_;
