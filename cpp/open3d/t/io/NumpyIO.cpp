@@ -516,6 +516,7 @@ std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
     if (fread(&footer[0], sizeof(char), footer_len, fp) != footer_len) {
         utility::LogError("Footer fread failed.");
     }
+
     // clang-format off
     uint16_t disk_no              = *reinterpret_cast<uint16_t*>(&footer[4]);
     uint16_t disk_start           = *reinterpret_cast<uint16_t*>(&footer[6]);
@@ -526,14 +527,12 @@ std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
     uint16_t comment_len          = *reinterpret_cast<uint16_t*>(&footer[20]);
     // clang-format on
 
-    assert(disk_no == 0);
-    assert(disk_start == 0);
-    assert(nrecs_on_disk == nrecs);
-    assert(comment_len == 0);
-    (void)disk_no;
-    (void)disk_start;
-    (void)nrecs_on_disk;
-    (void)comment_len;
+    if (disk_no != 0 || disk_start != 0 || comment_len != 0) {
+        utility::LogError("Unsupported zip footer.");
+    }
+    if (nrecs_on_disk != nrecs) {
+        utility::LogError("Unsupported zip footer.");
+    }
 
     return std::make_tuple(nrecs, global_header_size, global_header_offset);
 }
