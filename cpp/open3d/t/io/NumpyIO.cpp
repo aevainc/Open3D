@@ -686,27 +686,27 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
         std::vector<char> local_header(30);
         size_t headerres = fread(&local_header[0], sizeof(char), 30, fp);
         if (headerres != 30) {
-            throw std::runtime_error("npz_load: failed fread");
+            utility::LogError("Failed to read local header in npz.");
         }
 
-        // if we've reached the global header, stop reading
+        // If we've reached the global header, stop reading.
         if (local_header[2] != 0x03 || local_header[3] != 0x04) {
             break;
         }
 
-        // read in the variable name
-        uint16_t name_len = *(uint16_t*)&local_header[26];
+        // Read tensor name.
+        uint16_t name_len = *reinterpret_cast<uint16_t*>(&local_header[26]);
         std::string tensor_name(name_len, ' ');
-        size_t vname_res = fread(&tensor_name[0], sizeof(char), name_len, fp);
-        if (vname_res != name_len) {
-            throw std::runtime_error("npz_load: failed fread");
+        if (fread(&tensor_name[0], sizeof(char), name_len, fp) != name_len) {
+            utility::LogError("Failed to read tensor name in npz.");
         }
 
         // erase the lagging .npy
         tensor_name.erase(tensor_name.end() - 4, tensor_name.end());
 
         // read in the extra field
-        uint16_t extra_field_len = *(uint16_t*)&local_header[28];
+        uint16_t extra_field_len =
+                *reinterpret_cast<uint16_t*>(&local_header[28]);
         if (extra_field_len > 0) {
             std::vector<char> buff(extra_field_len);
             size_t efield_res =
