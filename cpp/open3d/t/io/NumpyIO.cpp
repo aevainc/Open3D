@@ -267,12 +267,8 @@ public:
           type_(type),
           word_size_(word_size),
           fortran_order_(fortran_order) {
-        num_elements_ = 1;
-        for (size_t i = 0; i < shape_.size(); i++) {
-            num_elements_ *= shape_[i];
-        }
-        blob_ = std::make_shared<core::Blob>(num_elements_ * word_size_,
-                                             core::Device("CPU:0"));
+        num_elements_ = shape_.NumElements();
+        blob_ = std::make_shared<core::Blob>(NumBytes(), core::Device("CPU:0"));
     }
 
     template <typename T>
@@ -393,16 +389,12 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
 
 class NpyArray {
 public:
-    NpyArray(const std::vector<int64_t>& shape,
+    NpyArray(const core::SizeVector& shape,
              int64_t word_size,
              bool fortran_order)
         : shape_(shape), word_size_(word_size), fortran_order_(fortran_order) {
-        num_elements_ = 1;
-        for (size_t i = 0; i < shape_.size(); i++) {
-            num_elements_ *= shape_[i];
-        }
-        data_holder_ = std::shared_ptr<std::vector<char>>(
-                new std::vector<char>(num_elements_ * word_size));
+        num_elements_ = shape_.NumElements();
+        blob_ = std::make_shared<core::Blob>(NumBytes(), core::Device("CPU:0"));
     }
 
     NpyArray()
@@ -410,12 +402,12 @@ public:
 
     template <typename T>
     T* GetDataPtr() {
-        return reinterpret_cast<T*>(&(*data_holder_)[0]);
+        return reinterpret_cast<T*>(blob_->GetDataPtr());
     }
 
     template <typename T>
     const T* GetDataPtr() const {
-        return reinterpret_cast<T*>(&(*data_holder_)[0]);
+        return reinterpret_cast<const T*>(blob_->GetDataPtr());
     }
 
     template <typename T>
@@ -426,11 +418,11 @@ public:
 
     int64_t NumBytes() const { return num_elements_ * word_size_; }
 
-    std::vector<int64_t> GetShape() const { return shape_; }
+    core::SizeVector GetShape() const { return shape_; }
 
 private:
-    std::shared_ptr<std::vector<char>> data_holder_;
-    std::vector<int64_t> shape_;
+    std::shared_ptr<core::Blob> blob_ = nullptr;
+    core::SizeVector shape_;
     int64_t word_size_;
     bool fortran_order_;
     int64_t num_elements_;
