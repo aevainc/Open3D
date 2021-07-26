@@ -68,13 +68,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
-#include <iostream>
-#include <memory>
-#include <numeric>
-#include <regex>
-#include <sstream>
-#include <string>
-#include <vector>
 //////////////////
 
 #include "open3d/core/Blob.h"
@@ -564,7 +557,7 @@ public:
         size_t nread = fread(arr.GetDataPtr<char>(), 1,
                              static_cast<size_t>(arr.NumBytes()), fp);
         if (nread != static_cast<size_t>(arr.NumBytes())) {
-            utility::LogError("Load: failed fread");
+            utility::LogError("Failed to read array data.");
         }
         return arr;
     }
@@ -579,7 +572,7 @@ public:
         size_t nread =
                 fread(buffer_compressed.data(), 1, num_compressed_bytes, fp);
         if (nread != num_compressed_bytes) {
-            throw std::runtime_error("failed fread");
+            utility::LogError("Failed to read compressed data.");
         }
 
         int err;
