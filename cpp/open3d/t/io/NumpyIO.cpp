@@ -784,9 +784,9 @@ static void CnpyIOTestCompressed() {
     const int32_t* t0_loaded_data = t0_loaded.GetDataPtr<int32_t>();
     utility::LogInfo("compressed t0_loaded shape: {}", t0_loaded.GetShape());
     utility::LogInfo("compressed t0_loaded data: {}, {}", t0_loaded_data[0],
-                     t0_loaded_data[1]);
+                     t0_loaded_data[1], t0_loaded_data[2], t0_loaded_data[3]);
 
-    const double* t1_loaded_data = t1_loaded.GetDataPtr<double>();
+    const float* t1_loaded_data = t1_loaded.GetDataPtr<float>();
     utility::LogInfo("compressed t1_loaded shape: {}", t1_loaded.GetShape());
     utility::LogInfo("compressed t1_loaded data: {}, {}, {}, {}, {}, {}",
                      t1_loaded_data[0], t1_loaded_data[1], t1_loaded_data[2],
