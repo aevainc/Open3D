@@ -795,7 +795,7 @@ static void CnpyIOTestCompressed() {
 
 void CnpyIOTest() {
     CnpyIOTestUncompressed();
-    // CnpyIOTestCompressed();
+    CnpyIOTestCompressed();
     (void)CnpyIOTestCompressed;
 }
 
