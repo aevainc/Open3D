@@ -189,7 +189,8 @@ static std::tuple<core::SizeVector, char, int64_t, bool> DecodeNpyHeader(
     int64_t word_size;
     bool fortran_order;
 
-    size_t loc1, loc2;
+    size_t loc1;
+    size_t loc2;
 
     // Fortran order.
     loc1 = header.find("fortran_order");
