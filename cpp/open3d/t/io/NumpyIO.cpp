@@ -259,11 +259,11 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNumpyHeader(
     return std::make_tuple(shape, type, word_size, fortran_order);
 }
 
-void parse_npy_header(unsigned char* buffer,
-                      std::vector<size_t>& shape,
-                      char& type,
-                      size_t& word_size,
-                      bool& fortran_order) {
+static void parse_npy_header(unsigned char* buffer,
+                             std::vector<size_t>& shape,
+                             char& type,
+                             size_t& word_size,
+                             bool& fortran_order) {
     // std::string magic_string(buffer,6);
     uint8_t major_version = *reinterpret_cast<uint8_t*>(buffer + 6);
     (void)major_version;
