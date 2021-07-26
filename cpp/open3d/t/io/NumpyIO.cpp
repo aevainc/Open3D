@@ -389,9 +389,13 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
 class NpyArray {
 public:
     NpyArray(const core::SizeVector& shape,
+             char type,
              int64_t word_size,
              bool fortran_order)
-        : shape_(shape), word_size_(word_size), fortran_order_(fortran_order) {
+        : shape_(shape),
+          type_(type),
+          word_size_(word_size),
+          fortran_order_(fortran_order) {
         blob_ = std::make_shared<core::Blob>(NumBytes(), core::Device("CPU:0"));
     }
 
@@ -416,6 +420,7 @@ public:
 private:
     std::shared_ptr<core::Blob> blob_ = nullptr;
     core::SizeVector shape_;
+    char type_;
     int64_t word_size_;
     bool fortran_order_;
 };
@@ -616,7 +621,8 @@ void npz_save(std::string npz_name,
 void parse_npy_header(unsigned char* buffer,
                       size_t& word_size,
                       std::vector<size_t>& shape,
-                      bool& fortran_order) {
+                      bool& fortran_order,
+                      char& type) {
     // std::string magic_string(buffer,6);
     uint8_t major_version = *reinterpret_cast<uint8_t*>(buffer + 6);
     (void)major_version;
@@ -654,7 +660,7 @@ void parse_npy_header(unsigned char* buffer,
     assert(littleEndian);
     (void)littleEndian;
 
-    // char type = header[loc1+1];
+    type = header[loc1 + 1];
     // assert(type == map_type(T));
 
     std::string str_ws = header.substr(loc1 + 2);
@@ -669,7 +675,7 @@ NpyArray load_the_npy_file(FILE* fp) {
     char type;
     std::tie(type, word_size, shape, fortran_order) = ParseNumpyHeader(fp);
 
-    NpyArray arr(shape, word_size, fortran_order);
+    NpyArray arr(shape, type, word_size, fortran_order);
     size_t nread = fread(arr.GetDataPtr<char>(), 1, arr.NumBytes(), fp);
     if (nread != static_cast<size_t>(arr.NumBytes())) {
         utility::LogError("Load: failed fread");
@@ -710,10 +716,11 @@ NpyArray load_the_npz_array(FILE* fp,
     std::vector<size_t> shape;
     size_t word_size;
     bool fortran_order;
-    parse_npy_header(&buffer_uncompr[0], word_size, shape, fortran_order);
+    char type;
+    parse_npy_header(&buffer_uncompr[0], word_size, shape, fortran_order, type);
 
     core::SizeVector o3d_shape(shape.begin(), shape.end());
-    NpyArray array(o3d_shape, word_size, fortran_order);
+    NpyArray array(o3d_shape, type, word_size, fortran_order);
 
     size_t offset = uncompr_bytes - array.NumBytes();
     memcpy(array.GetDataPtr<unsigned char>(), &buffer_uncompr[0] + offset,
