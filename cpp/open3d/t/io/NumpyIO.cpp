@@ -246,6 +246,7 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeaderDict(
 static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
         FILE* fp) {
     // Ref: https://numpy.org/devdocs/reference/generated/numpy.lib.format.html
+    //
     // - bytes[0]  to bytes[5]            : \x93NUMPY # Magic string
     // - bytes[6]                         : \x01      # Major version number
     // - bytes[7]                         : \x00      # Minor version number
@@ -258,22 +259,35 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
     //   replaced from uint16_t to uint32_t.
     // - Version 3.0 uses utf8-encoded header string.
 
-    char buffer[256];
-    size_t res = fread(buffer, sizeof(char), 10, fp);
-    if (res != 10) {
-        utility::LogError("Failed fread.");
+    const size_t preamble_len = 10;  // Version 1.0 assumed.
+    char preamble[preamble_len];
+    if (fread(preamble, sizeof(char), preamble_len, fp) != preamble_len) {
+        utility::LogError("Header preamble cannot be read.");
     }
-    std::string header;
-    if (const char* header_chars = fgets(buffer, 256, fp)) {
-        header = std::string(header_chars);
-    } else {
-        utility::LogError(
-                "Numpy file header could not be read. "
-                "Possibly the file is corrupted.");
+    if (preamble[0] != static_cast<char>(0x93) || preamble[1] != 'N' ||
+        preamble[2] != 'U' || preamble[3] != 'M' || preamble[4] != 'P' ||
+        preamble[5] != 'Y') {
+        utility::LogError("Invalid Numpy preamble {}{}{}{}{}{}.", preamble[0],
+                          preamble[1], preamble[2], preamble[3], preamble[4],
+                          preamble[5]);
     }
-    if (header[header.size() - 1] != '\n') {
-        utility::LogError("The last char must be '\n'.");
+    if (preamble[6] != static_cast<char>(0x01) ||
+        preamble[7] != static_cast<char>(0x00)) {
+        utility::LogError("Not supported Numpy format version: {}.{}",
+                          preamble[6], preamble[7]);
     }
+    uint16_t header_len = *reinterpret_cast<uint16_t*>(&preamble[8]);
+
+    std::vector<char> header_chars(header_len, 0);
+    if (fread(header_chars.data(), sizeof(char), header_len, fp) !=
+        header_len) {
+        utility::LogError("Failed to read header dictionary.");
+    }
+    if (header_chars[header_len - 1] != '\n') {
+        utility::LogError("Numpy header not terminated by null character.");
+    }
+    std::string header(header_chars.data(), header_len);
+
     utility::LogInfo("Got header: {}", header);
     return ParseNpyHeaderDict(header);
 }
