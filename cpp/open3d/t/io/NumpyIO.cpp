@@ -243,6 +243,19 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParsePropertyDict(
 
 // Returns header length, which is the length of the string of property dict.
 // The preamble must be at least 10 bytes.
+// Ref: https://numpy.org/devdocs/reference/generated/numpy.lib.format.html
+//
+// - bytes[0]  to bytes[5]            : \x93NUMPY # Magic string
+// - bytes[6]                         : \x01      # Major version number
+// - bytes[7]                         : \x00      # Minor version number
+// - bytes[8]  to bytes[9]            : HEADER_LEN little-endian uint16_t
+// - bytes[10] to bytes[10+HEADER_LEN]: Dict, padded, terminated by '\n'
+// - (10 + HEADER_LEN) % 64 == 0      : Guranteed
+//
+// - We only support Version 1.0 for now.
+// - Version 2.0+ supports up to 4GiB HEADER_LEN and the HEADER_LEN is
+//   replaced from uint16_t to uint32_t.
+// - Version 3.0 uses utf8-encoded header string.
 static uint16_t ParseNpyPreamble(const char* preamble) {
     if (preamble[0] != static_cast<char>(0x93) || preamble[1] != 'N' ||
         preamble[2] != 'U' || preamble[3] != 'M' || preamble[4] != 'P' ||
@@ -253,8 +266,10 @@ static uint16_t ParseNpyPreamble(const char* preamble) {
     }
     if (preamble[6] != static_cast<char>(0x01) ||
         preamble[7] != static_cast<char>(0x00)) {
-        utility::LogError("Not supported Numpy format version: {}.{}",
-                          preamble[6], preamble[7]);
+        utility::LogError(
+                "Not supported Numpy format version: {}.{}. Only version 1.0 "
+                "is supported.",
+                preamble[6], preamble[7]);
     }
     uint16_t header_len = *reinterpret_cast<const uint16_t*>(&preamble[8]);
     return header_len;
@@ -264,20 +279,6 @@ static uint16_t ParseNpyPreamble(const char* preamble) {
 // This will advance the file pointer to the end of the header.
 static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
         FILE* fp) {
-    // Ref: https://numpy.org/devdocs/reference/generated/numpy.lib.format.html
-    //
-    // - bytes[0]  to bytes[5]            : \x93NUMPY # Magic string
-    // - bytes[6]                         : \x01      # Major version number
-    // - bytes[7]                         : \x00      # Minor version number
-    // - bytes[8]  to bytes[9]            : HEADER_LEN little-endian uint16_t
-    // - bytes[10] to bytes[10+HEADER_LEN]: Dict, padded, terminated by '\n'
-    // - (10 + HEADER_LEN) % 64 == 0      : Guranteed
-    //
-    // - We only support Version 1.0 for now.
-    // - Version 2.0+ supports up to 4GiB HEADER_LEN and the HEADER_LEN is
-    //   replaced from uint16_t to uint32_t.
-    // - Version 3.0 uses utf8-encoded header string.
-
     const size_t preamble_len = 10;  // Version 1.0 assumed.
     std::vector<char> preamble(preamble_len);
     if (fread(preamble.data(), sizeof(char), preamble_len, fp) !=
