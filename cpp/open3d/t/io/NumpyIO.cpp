@@ -594,7 +594,9 @@ public:
 
         err = inflate(&d_stream, Z_FINISH);
         err = inflateEnd(&d_stream);
-        (void)err;
+        if (err != Z_OK) {
+            utility::LogError("Failed to decompress data.");
+        }
 
         core::SizeVector shape;
         char type;
