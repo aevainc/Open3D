@@ -241,6 +241,8 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParsePropertyDict(
     return std::make_tuple(shape, type, word_size, fortran_order);
 }
 
+// static uint16_t ParsePreamble(const std::vector<char>& preamble) {}
+
 // Retruns {shape, type(char), word_size, fortran_order}.
 // This will advance the file pointer to the end of the header.
 static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
@@ -260,8 +262,9 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
     // - Version 3.0 uses utf8-encoded header string.
 
     const size_t preamble_len = 10;  // Version 1.0 assumed.
-    char preamble[preamble_len];
-    if (fread(preamble, sizeof(char), preamble_len, fp) != preamble_len) {
+    std::vector<char> preamble(preamble_len);
+    if (fread(preamble.data(), sizeof(char), preamble_len, fp) !=
+        preamble_len) {
         utility::LogError("Header preamble cannot be read.");
     }
     if (preamble[0] != static_cast<char>(0x93) || preamble[1] != 'N' ||
