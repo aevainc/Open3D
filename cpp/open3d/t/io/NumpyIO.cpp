@@ -120,11 +120,12 @@ static char DtypeToChar(const core::Dtype& dtype) {
     return '\0';
 }
 
-template <typename T>
-static std::string ToByteString(const T& rhs) {
+template <typename DstType, typename SrcType>
+static std::string IntToBytes(const SrcType& rhs) {
+    DstType rhs_casted = static_cast<DstType>(rhs);
     std::stringstream ss;
-    for (size_t i = 0; i < sizeof(T); i++) {
-        char val = *(reinterpret_cast<const char*>(&rhs) + i);
+    for (size_t i = 0; i < sizeof(DstType); i++) {
+        char val = *(reinterpret_cast<const char*>(&rhs_casted) + i);
         ss << val;
     }
     return ss.str();
@@ -174,7 +175,7 @@ static std::vector<char> CreateNumpyHeader(const core::SizeVector& shape,
     // Minor version of numpy format.
     ss << (char)0x00;
     // Header dict size (full header size - 10).
-    ss << ToByteString(static_cast<uint16_t>(dict.size()));
+    ss << IntToBytes<uint16_t>(dict.size());
     // Header dict.
     ss << dict;
 
