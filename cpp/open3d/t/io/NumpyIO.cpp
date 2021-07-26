@@ -301,7 +301,7 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
 }
 
 static std::tuple<core::SizeVector, char, int64_t, bool>
-ParseNpyHeaderFromBuffer(unsigned char* buffer) {
+ParseNpyHeaderFromBuffer(char* buffer) {
     // std::string magic_string(buffer,6);
     uint8_t major_version = *reinterpret_cast<uint8_t*>(buffer + 6);
     (void)major_version;
@@ -430,8 +430,8 @@ public:
             FILE* fp,
             uint32_t num_compressed_bytes,
             uint32_t num_uncompressed_bytes) {
-        std::vector<unsigned char> buffer_compr(num_compressed_bytes);
-        std::vector<unsigned char> buffer_uncompr(num_uncompressed_bytes);
+        std::vector<char> buffer_compr(num_compressed_bytes);
+        std::vector<char> buffer_uncompr(num_uncompressed_bytes);
         size_t nread = fread(&buffer_compr[0], 1, num_compressed_bytes, fp);
         if (nread != num_compressed_bytes) {
             throw std::runtime_error("failed fread");
@@ -448,9 +448,10 @@ public:
         err = inflateInit2(&d_stream, -MAX_WBITS);
 
         d_stream.avail_in = num_compressed_bytes;
-        d_stream.next_in = &buffer_compr[0];
+        d_stream.next_in = reinterpret_cast<unsigned char*>(&buffer_compr[0]);
         d_stream.avail_out = num_uncompressed_bytes;
-        d_stream.next_out = &buffer_uncompr[0];
+        d_stream.next_out =
+                reinterpret_cast<unsigned char*>(&buffer_uncompr[0]);
 
         err = inflate(&d_stream, Z_FINISH);
         err = inflateEnd(&d_stream);
@@ -466,7 +467,7 @@ public:
         NumpyArray array(shape, type, word_size, fortran_order);
 
         size_t offset = num_uncompressed_bytes - array.NumBytes();
-        memcpy(array.GetDataPtr<unsigned char>(), &buffer_uncompr[0] + offset,
+        memcpy(array.GetDataPtr<char>(), &buffer_uncompr[0] + offset,
                array.NumBytes());
 
         return array;
