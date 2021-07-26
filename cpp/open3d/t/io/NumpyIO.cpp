@@ -343,7 +343,7 @@ std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
 }
 
 static void WriteNpzOneTensor(const std::string& file_name,
-                              const std::string& tensor_name_,
+                              const std::string& tensor_name,
                               const core::Tensor& tensor,
                               bool append) {
     const void* data = tensor.GetDataPtr();
@@ -352,7 +352,7 @@ static void WriteNpzOneTensor(const std::string& file_name,
     const int64_t element_byte_size = dtype.ByteSize();
 
     // The ".npy" suffix will be removed when npz is read.
-    std::string var_name = tensor_name_ + ".npy";
+    std::string var_name = tensor_name + ".npy";
 
     // now, on with the show
     uint16_t nrecs = 0;
