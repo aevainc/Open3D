@@ -395,50 +395,6 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class NpyArray {
-public:
-    NpyArray(const core::SizeVector& shape,
-             char type,
-             int64_t word_size,
-             bool fortran_order)
-        : shape_(shape),
-          type_(type),
-          word_size_(word_size),
-          fortran_order_(fortran_order) {
-        blob_ = std::make_shared<core::Blob>(NumBytes(), core::Device("CPU:0"));
-    }
-
-    NpyArray()
-        : blob_(nullptr),
-          shape_(0),
-          type_(0),
-          word_size_(0),
-          fortran_order_(0) {}
-
-    template <typename T>
-    T* GetDataPtr() {
-        return reinterpret_cast<T*>(blob_->GetDataPtr());
-    }
-
-    template <typename T>
-    const T* GetDataPtr() const {
-        return reinterpret_cast<const T*>(blob_->GetDataPtr());
-    }
-
-    int64_t NumBytes() const { return NumElements() * word_size_; }
-
-    int64_t NumElements() const { return shape_.NumElements(); }
-
-    core::SizeVector GetShape() const { return shape_; }
-
-private:
-    std::shared_ptr<core::Blob> blob_ = nullptr;
-    core::SizeVector shape_;
-    char type_;
-    int64_t word_size_;
-    bool fortran_order_;
-};
-
 void parse_zip_footer(FILE* fp,
                       uint16_t& nrecs,
                       size_t& global_header_size,
@@ -682,14 +638,14 @@ void parse_npy_header(unsigned char* buffer,
     word_size = atoi(str_ws.substr(0, loc2).c_str());
 }
 
-NpyArray load_the_npy_file(FILE* fp) {
+NumpyArray load_the_npy_file(FILE* fp) {
     core::SizeVector shape;
     char type;
     int64_t word_size;
     bool fortran_order;
     std::tie(shape, type, word_size, fortran_order) = ParseNumpyHeader(fp);
 
-    NpyArray arr(shape, type, word_size, fortran_order);
+    NumpyArray arr(shape, type, word_size, fortran_order);
     size_t nread = fread(arr.GetDataPtr<char>(), 1, arr.NumBytes(), fp);
     if (nread != static_cast<size_t>(arr.NumBytes())) {
         utility::LogError("Load: failed fread");
@@ -698,9 +654,9 @@ NpyArray load_the_npy_file(FILE* fp) {
     return arr;
 }
 
-NpyArray load_the_npz_array(FILE* fp,
-                            uint32_t compr_bytes,
-                            uint32_t uncompr_bytes) {
+NumpyArray load_the_npz_array(FILE* fp,
+                              uint32_t compr_bytes,
+                              uint32_t uncompr_bytes) {
     std::vector<unsigned char> buffer_compr(compr_bytes);
     std::vector<unsigned char> buffer_uncompr(uncompr_bytes);
     size_t nread = fread(&buffer_compr[0], 1, compr_bytes, fp);
@@ -734,7 +690,7 @@ NpyArray load_the_npz_array(FILE* fp,
     parse_npy_header(&buffer_uncompr[0], shape, type, word_size, fortran_order);
 
     core::SizeVector o3d_shape(shape.begin(), shape.end());
-    NpyArray array(o3d_shape, type, word_size, fortran_order);
+    NumpyArray array(o3d_shape, type, word_size, fortran_order);
 
     size_t offset = uncompr_bytes - array.NumBytes();
     memcpy(array.GetDataPtr<unsigned char>(), &buffer_uncompr[0] + offset,
@@ -743,7 +699,7 @@ NpyArray load_the_npz_array(FILE* fp,
     return array;
 }
 
-std::map<std::string, NpyArray> npz_load(std::string fname) {
+std::map<std::string, NumpyArray> npz_load(std::string fname) {
     FILE* fp = fopen(fname.c_str(), "rb");
 
     if (!fp) {
@@ -751,7 +707,7 @@ std::map<std::string, NpyArray> npz_load(std::string fname) {
                                  fname + "!");
     }
 
-    std::map<std::string, NpyArray> arrays;
+    std::map<std::string, NumpyArray> arrays;
 
     while (1) {
         std::vector<char> local_header(30);
@@ -806,7 +762,7 @@ std::map<std::string, NpyArray> npz_load(std::string fname) {
     return arrays;
 }
 
-NpyArray npz_load(std::string fname, std::string varname) {
+NumpyArray npz_load(std::string fname, std::string varname) {
     FILE* fp = fopen(fname.c_str(), "rb");
 
     if (!fp) {
@@ -846,10 +802,10 @@ NpyArray npz_load(std::string fname, std::string varname) {
                 *reinterpret_cast<uint32_t*>(&local_header[0] + 22);
 
         if (vname == varname) {
-            NpyArray array = (compr_method == 0)
-                                     ? load_the_npy_file(fp)
-                                     : load_the_npz_array(fp, compr_bytes,
-                                                          uncompr_bytes);
+            NumpyArray array = (compr_method == 0)
+                                       ? load_the_npy_file(fp)
+                                       : load_the_npz_array(fp, compr_bytes,
+                                                            uncompr_bytes);
             fclose(fp);
             return array;
         } else {
@@ -875,11 +831,11 @@ void CnpyIOTest() {
     WriteNpz("out.npz", {{"t0", t0}, {"t1", t1}});
 
     // load a single var from the npz file
-    NpyArray t0_loaded = npz_load("out.npz", "t0");
+    NumpyArray t0_loaded = npz_load("out.npz", "t0");
 
     // load the entire npz file
-    std::map<std::string, NpyArray> npz_loaded = npz_load("out.npz");
-    NpyArray t1_loaded = npz_loaded["t1"];
+    std::map<std::string, NumpyArray> npz_loaded = npz_load("out.npz");
+    NumpyArray t1_loaded = npz_loaded["t1"];
 
     const int32_t* t0_loaded_data = t0_loaded.GetDataPtr<int32_t>();
     utility::LogInfo("t0_loaded shape: {}", t0_loaded.GetShape());
