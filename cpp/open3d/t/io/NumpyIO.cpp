@@ -301,9 +301,9 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
 }
 
 static std::tuple<core::SizeVector, char, int64_t, bool>
-ParseNpyHeaderFromBuffer(char* buffer) {
-    uint16_t header_len = ParseNpyPreamble(buffer);
-    std::string header(reinterpret_cast<char*>(buffer + 10), header_len);
+ParseNpyHeaderFromBuffer(const char* buffer) {
+    const uint16_t header_len = ParseNpyPreamble(buffer);
+    std::string header(reinterpret_cast<const char*>(buffer + 10), header_len);
     return ParsePropertyDict(header);
 }
 
