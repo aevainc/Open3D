@@ -511,7 +511,7 @@ void WriteNpy(const std::string& file_name, const core::Tensor& tensor) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
+static std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
     const size_t footer_len = 22;
     std::vector<char> footer(footer_len);
     fseek(fp, -footer_len, SEEK_END);
@@ -557,7 +557,7 @@ std::vector<char>& operator+=(std::vector<char>& lhs, const std::string rhs) {
 
 template <>
 std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
-    // write in little endian
+    // Write in little endian.
     size_t len = strlen(rhs);
     lhs.reserve(len);
     for (size_t byte = 0; byte < len; byte++) {
@@ -566,10 +566,10 @@ std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
     return lhs;
 }
 
-void npz_save(std::string file_name,
-              std::string tensor_name,
-              const core::Tensor& tensor,
-              std::string mode = "w") {
+void WriteNpzOneTensor(std::string file_name,
+                       std::string tensor_name,
+                       const core::Tensor& tensor,
+                       std::string mode = "w") {
     const void* data = tensor.GetDataPtr();
     const core::SizeVector shape = tensor.GetShape();
     const core::Dtype dtype = tensor.GetDtype();
@@ -754,10 +754,10 @@ void WriteNpz(const std::string& file_name,
     for (auto it = tensor_map.begin(); it != tensor_map.end(); ++it) {
         core::Tensor tensor = it->second.To(core::Device("CPU:0")).Contiguous();
         if (is_first_tensor) {
-            npz_save(file_name, it->first, tensor, "w");
+            WriteNpzOneTensor(file_name, it->first, tensor, "w");
             is_first_tensor = false;
         } else {
-            npz_save(file_name, it->first, tensor, "a");
+            WriteNpzOneTensor(file_name, it->first, tensor, "a");
         }
     }
 }
