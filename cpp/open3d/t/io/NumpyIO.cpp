@@ -606,18 +606,18 @@ static void WriteNpzOneTensor(std::string file_name,
 
     // Build the local header.
     std::vector<char> local_header;
-    local_header += "PK";                          // First part of sig
-    local_header += (uint16_t)0x0403;              // Second part of sig
-    local_header += (uint16_t)20;                  // Min version to extract
-    local_header += (uint16_t)0;                   // General purpose bit flag
-    local_header += (uint16_t)0;                   // Compression method
-    local_header += (uint16_t)0;                   // File last mod time
-    local_header += (uint16_t)0;                   // File last mod date
-    local_header += (uint32_t)crc;                 // CRC
-    local_header += (uint32_t)nbytes;              // Compressed size
-    local_header += (uint32_t)nbytes;              // Uncompressed size
-    local_header += (uint16_t)tensor_name.size();  // Tensor_name length
-    local_header += (uint16_t)0;                   // Extra field length
+    local_header += "PK";                           // First part of sig
+    local_header += static_cast<uint16_t>(0x0403);  // Second part of sig
+    local_header += static_cast<uint16_t>(20);      // Min version to extract
+    local_header += static_cast<uint16_t>(0);       // General purpose bit flag
+    local_header += static_cast<uint16_t>(0);       // Compression method
+    local_header += static_cast<uint16_t>(0);       // File last mod time
+    local_header += static_cast<uint16_t>(0);       // File last mod date
+    local_header += static_cast<uint32_t>(crc);     // CRC
+    local_header += static_cast<uint32_t>(nbytes);  // Compressed size
+    local_header += static_cast<uint32_t>(nbytes);  // Uncompressed size
+    local_header += (uint16_t)tensor_name.size();   // Tensor_name length
+    local_header += (uint16_t)0;                    // Extra field length
     local_header += tensor_name;
 
     // Build global header.
