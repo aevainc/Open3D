@@ -509,10 +509,7 @@ void WriteNpy(const std::string& file_name, const core::Tensor& tensor) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void ParseZipFooter(FILE* fp,
-                    uint16_t& nrecs,
-                    size_t& global_header_size,
-                    size_t& global_header_offset) {
+std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
     const size_t footer_len = 22;
     std::vector<char> footer(footer_len);
     fseek(fp, -footer_len, SEEK_END);
@@ -520,14 +517,14 @@ void ParseZipFooter(FILE* fp,
         utility::LogError("Footer fread failed.");
     }
 
-    uint16_t disk_no, disk_start, nrecs_on_disk, comment_len;
-    disk_no = *(uint16_t*)&footer[4];
-    disk_start = *(uint16_t*)&footer[6];
-    nrecs_on_disk = *(uint16_t*)&footer[8];
-    nrecs = *(uint16_t*)&footer[10];
-    global_header_size = *(uint32_t*)&footer[12];
-    global_header_offset = *(uint32_t*)&footer[16];
-    comment_len = *(uint16_t*)&footer[20];
+    uint16_t disk_no = *(uint16_t*)&footer[4];
+    uint16_t disk_start = *(uint16_t*)&footer[6];
+    uint16_t nrecs_on_disk = *(uint16_t*)&footer[8];
+    uint16_t nrecs = *(uint16_t*)&footer[10];
+    size_t global_header_size = *(uint32_t*)&footer[12];
+    size_t global_header_offset = *(uint32_t*)&footer[16];
+
+    uint16_t comment_len = *(uint16_t*)&footer[20];
 
     assert(disk_no == 0);
     assert(disk_start == 0);
@@ -537,6 +534,8 @@ void ParseZipFooter(FILE* fp,
     (void)disk_start;
     (void)nrecs_on_disk;
     (void)comment_len;
+
+    return std::make_tuple(nrecs, global_header_size, global_header_offset);
 }
 
 template <typename T>
@@ -593,7 +592,8 @@ void npz_save(std::string npz_name,
         // write the the new data at the start of the global header then append
         // the global header and footer below it
         size_t global_header_size;
-        ParseZipFooter(fp, nrecs, global_header_size, global_header_offset);
+        std::tie(nrecs, global_header_size, global_header_offset) =
+                ParseZipFooter(fp);
         fseek(fp, global_header_offset, SEEK_SET);
         global_header.resize(global_header_size);
         size_t res =
