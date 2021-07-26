@@ -557,7 +557,7 @@ static void WriteNpzOneTensor(std::string file_name,
     const core::Dtype dtype = tensor.GetDtype();
     const int64_t element_byte_size = dtype.ByteSize();
 
-    // first, append a .npy to the tensor_name
+    // The ".npy" suffix will be removed when npz is read.
     tensor_name += ".npy";
 
     // now, on with the show
