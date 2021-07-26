@@ -551,17 +551,6 @@ public:
         return t;
     }
 
-    static NumpyArray CreateFromFile(const std::string& file_name) {
-        FILE* fp = fopen(file_name.c_str(), "rb");
-        if (fp) {
-            NumpyArray arr = CreateFromFilePtr(fp);
-            fclose(fp);
-            return arr;
-        } else {
-            utility::LogError("Unable to open file {}.", file_name);
-        }
-    }
-
     // This function won't call fclose.
     static NumpyArray CreateFromFilePtr(FILE* fp) {
         if (!fp) {
@@ -657,7 +646,14 @@ private:
 };
 
 core::Tensor ReadNpy(const std::string& file_name) {
-    return NumpyArray::CreateFromFile(file_name).ToTensor();
+    FILE* fp = fopen(file_name.c_str(), "rb");
+    if (fp) {
+        NumpyArray arr = NumpyArray::CreateFromFilePtr(fp);
+        fclose(fp);
+        return arr.ToTensor();
+    } else {
+        utility::LogError("Unable to open file {}.", file_name);
+    }
 }
 
 void WriteNpy(const std::string& file_name, const core::Tensor& tensor) {
