@@ -254,8 +254,7 @@ public:
         : shape_(t.GetShape()),
           type_(DtypeToChar(t.GetDtype())),
           word_size_(t.GetDtype().ByteSize()),
-          fortran_order_(false),
-          num_elements_(t.GetShape().NumElements()) {
+          fortran_order_(false) {
         blob_ = t.To(core::Device("CPU:0")).Contiguous().GetBlob();
     }
 
@@ -267,7 +266,6 @@ public:
           type_(type),
           word_size_(word_size),
           fortran_order_(fortran_order) {
-        num_elements_ = shape_.NumElements();
         blob_ = std::make_shared<core::Blob>(NumBytes(), core::Device("CPU:0"));
     }
 
@@ -301,7 +299,9 @@ public:
 
     bool IsFortranOrder() const { return fortran_order_; }
 
-    int64_t NumBytes() const { return num_elements_ * word_size_; }
+    int64_t NumBytes() const { return NumElements() * word_size_; }
+
+    int64_t NumElements() const { return shape_.NumElements(); }
 
     core::Tensor ToTensor() const {
         if (fortran_order_) {
@@ -361,7 +361,6 @@ private:
     char type_;
     int64_t word_size_;
     bool fortran_order_;
-    int64_t num_elements_;
 };
 
 core::Tensor ReadNpy(const std::string& file_name) {
@@ -393,12 +392,10 @@ public:
              int64_t word_size,
              bool fortran_order)
         : shape_(shape), word_size_(word_size), fortran_order_(fortran_order) {
-        num_elements_ = shape_.NumElements();
         blob_ = std::make_shared<core::Blob>(NumBytes(), core::Device("CPU:0"));
     }
 
-    NpyArray()
-        : shape_(0), word_size_(0), fortran_order_(0), num_elements_(0) {}
+    NpyArray() : shape_(0), word_size_(0), fortran_order_(0) {}
 
     template <typename T>
     T* GetDataPtr() {
@@ -413,10 +410,12 @@ public:
     template <typename T>
     std::vector<T> as_vec() const {
         const T* p = GetDataPtr<T>();
-        return std::vector<T>(p, p + num_elements_);
+        return std::vector<T>(p, p + NumElements());
     }
 
-    int64_t NumBytes() const { return num_elements_ * word_size_; }
+    int64_t NumBytes() const { return NumElements() * word_size_; }
+
+    int64_t NumElements() const { return shape_.NumElements(); }
 
     core::SizeVector GetShape() const { return shape_; }
 
@@ -425,7 +424,6 @@ private:
     core::SizeVector shape_;
     int64_t word_size_;
     bool fortran_order_;
-    int64_t num_elements_;
 };
 
 void parse_zip_footer(FILE* fp,
