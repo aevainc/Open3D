@@ -616,8 +616,9 @@ static void WriteNpzOneTensor(std::string file_name,
     local_header += static_cast<uint32_t>(crc);     // CRC
     local_header += static_cast<uint32_t>(nbytes);  // Compressed size
     local_header += static_cast<uint32_t>(nbytes);  // Uncompressed size
-    local_header += (uint16_t)tensor_name.size();   // Tensor_name length
-    local_header += (uint16_t)0;                    // Extra field length
+    local_header +=
+            static_cast<uint16_t>(tensor_name.size());  // Tensor_name length
+    local_header += static_cast<uint16_t>(0);           // Extra field length
     local_header += tensor_name;
 
     // Build global header.
