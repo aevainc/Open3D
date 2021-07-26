@@ -541,79 +541,6 @@ public:
         return t;
     }
 
-    // This function won't call fclose.
-    static NumpyArray CreateFromFilePtr(FILE* fp) {
-        if (!fp) {
-            utility::LogError("Unable to open file ptr.");
-        }
-
-        core::SizeVector shape;
-        char type;
-        int64_t word_size;
-        bool fortran_order;
-        std::tie(shape, type, word_size, fortran_order) = ParseNpyHeader(fp);
-
-        NumpyArray arr(shape, type, word_size, fortran_order);
-        size_t nread = fread(arr.GetDataPtr<char>(), 1,
-                             static_cast<size_t>(arr.NumBytes()), fp);
-        if (nread != static_cast<size_t>(arr.NumBytes())) {
-            utility::LogError("Failed to read array data.");
-        }
-        return arr;
-    }
-
-    // Create from compressed file. This function won't call fclose.
-    static NumpyArray CreateFromCompressedFilePtr(
-            FILE* fp,
-            uint32_t num_compressed_bytes,
-            uint32_t num_uncompressed_bytes) {
-        std::vector<char> buffer_compressed(num_compressed_bytes);
-        std::vector<char> buffer_uncompressed(num_uncompressed_bytes);
-        size_t nread =
-                fread(buffer_compressed.data(), 1, num_compressed_bytes, fp);
-        if (nread != num_compressed_bytes) {
-            utility::LogError("Failed to read compressed data.");
-        }
-
-        int err;
-        z_stream d_stream;
-
-        d_stream.zalloc = Z_NULL;
-        d_stream.zfree = Z_NULL;
-        d_stream.opaque = Z_NULL;
-        d_stream.avail_in = 0;
-        d_stream.next_in = Z_NULL;
-        err = inflateInit2(&d_stream, -MAX_WBITS);
-
-        d_stream.avail_in = num_compressed_bytes;
-        d_stream.next_in =
-                reinterpret_cast<unsigned char*>(buffer_compressed.data());
-        d_stream.avail_out = num_uncompressed_bytes;
-        d_stream.next_out =
-                reinterpret_cast<unsigned char*>(buffer_uncompressed.data());
-
-        err = inflate(&d_stream, Z_FINISH);
-        err = inflateEnd(&d_stream);
-        if (err != Z_OK) {
-            utility::LogError("Failed to decompress data.");
-        }
-
-        core::SizeVector shape;
-        char type;
-        size_t word_size;
-        bool fortran_order;
-        std::tie(shape, type, word_size, fortran_order) =
-                ParseNpyHeaderFromBuffer(buffer_uncompressed.data());
-
-        NumpyArray array(shape, type, word_size, fortran_order);
-
-        size_t offset = num_uncompressed_bytes - array.NumBytes();
-        memcpy(array.GetDataPtr<char>(), buffer_uncompressed.data() + offset,
-               array.NumBytes());
-
-        return array;
-    }
-
     void Save(std::string file_name) const {
         FILE* fp = fopen(file_name.c_str(), "wb");
         if (!fp) {
@@ -637,10 +564,80 @@ private:
     bool fortran_order_;
 };
 
+static NumpyArray CreateNumpyArrayFromFile(FILE* fp) {
+    if (!fp) {
+        utility::LogError("Unable to open file ptr.");
+    }
+
+    core::SizeVector shape;
+    char type;
+    int64_t word_size;
+    bool fortran_order;
+    std::tie(shape, type, word_size, fortran_order) = ParseNpyHeader(fp);
+
+    NumpyArray arr(shape, type, word_size, fortran_order);
+    size_t nread = fread(arr.GetDataPtr<char>(), 1,
+                         static_cast<size_t>(arr.NumBytes()), fp);
+    if (nread != static_cast<size_t>(arr.NumBytes())) {
+        utility::LogError("Failed to read array data.");
+    }
+    return arr;
+}
+
+static NumpyArray CreateNumpyArrayFromCompressedFile(
+        FILE* fp,
+        uint32_t num_compressed_bytes,
+        uint32_t num_uncompressed_bytes) {
+    std::vector<char> buffer_compressed(num_compressed_bytes);
+    std::vector<char> buffer_uncompressed(num_uncompressed_bytes);
+    size_t nread = fread(buffer_compressed.data(), 1, num_compressed_bytes, fp);
+    if (nread != num_compressed_bytes) {
+        utility::LogError("Failed to read compressed data.");
+    }
+
+    int err;
+    z_stream d_stream;
+
+    d_stream.zalloc = Z_NULL;
+    d_stream.zfree = Z_NULL;
+    d_stream.opaque = Z_NULL;
+    d_stream.avail_in = 0;
+    d_stream.next_in = Z_NULL;
+    err = inflateInit2(&d_stream, -MAX_WBITS);
+
+    d_stream.avail_in = num_compressed_bytes;
+    d_stream.next_in =
+            reinterpret_cast<unsigned char*>(buffer_compressed.data());
+    d_stream.avail_out = num_uncompressed_bytes;
+    d_stream.next_out =
+            reinterpret_cast<unsigned char*>(buffer_uncompressed.data());
+
+    err = inflate(&d_stream, Z_FINISH);
+    err = inflateEnd(&d_stream);
+    if (err != Z_OK) {
+        utility::LogError("Failed to decompress data.");
+    }
+
+    core::SizeVector shape;
+    char type;
+    size_t word_size;
+    bool fortran_order;
+    std::tie(shape, type, word_size, fortran_order) =
+            ParseNpyHeaderFromBuffer(buffer_uncompressed.data());
+
+    NumpyArray array(shape, type, word_size, fortran_order);
+
+    size_t offset = num_uncompressed_bytes - array.NumBytes();
+    memcpy(array.GetDataPtr<char>(), buffer_uncompressed.data() + offset,
+           array.NumBytes());
+
+    return array;
+}
+
 core::Tensor ReadNpy(const std::string& file_name) {
     FILE* fp = fopen(file_name.c_str(), "rb");
     if (fp) {
-        NumpyArray arr = NumpyArray::CreateFromFilePtr(fp);
+        NumpyArray arr = CreateNumpyArrayFromFile(fp);
         fclose(fp);
         return arr.ToTensor();
     } else {
@@ -707,12 +704,11 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
                 *reinterpret_cast<uint32_t*>(&local_header[22]);
 
         if (compressed_method == 0) {
-            tensor_map[tensor_name] =
-                    NumpyArray::CreateFromFilePtr(fp).ToTensor();
+            tensor_map[tensor_name] = CreateNumpyArrayFromFile(fp).ToTensor();
         } else {
             tensor_map[tensor_name] =
-                    NumpyArray::CreateFromCompressedFilePtr(
-                            fp, num_compressed_bytes, num_uncompressed_bytes)
+                    CreateNumpyArrayFromCompressedFile(fp, num_compressed_bytes,
+                                                       num_uncompressed_bytes)
                             .ToTensor();
         }
     }
