@@ -182,7 +182,7 @@ static std::vector<char> CreateNumpyHeader(const core::SizeVector& shape,
     return std::vector<char>(s.begin(), s.end());
 }
 
-static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeaderDict(
+static std::tuple<core::SizeVector, char, int64_t, bool> ParsePropertyDict(
         const std::string& header) {
     core::SizeVector shape;
     char type;
@@ -289,7 +289,7 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
     std::string header(header_chars.data(), header_len);
 
     utility::LogInfo("Got header: {}", header);
-    return ParseNpyHeaderDict(header);
+    return ParsePropertyDict(header);
 }
 
 static std::tuple<core::SizeVector, char, int64_t, bool>
@@ -302,7 +302,7 @@ ParseNpyHeaderFromBuffer(unsigned char* buffer) {
     uint16_t header_len = *reinterpret_cast<uint16_t*>(buffer + 8);
     std::string header(reinterpret_cast<char*>(buffer + 9), header_len);
 
-    return ParseNpyHeaderDict(header);
+    return ParsePropertyDict(header);
 }
 
 class NumpyArray {
