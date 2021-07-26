@@ -241,7 +241,23 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParsePropertyDict(
     return std::make_tuple(shape, type, word_size, fortran_order);
 }
 
-// static uint16_t ParsePreamble(const std::vector<char>& preamble) {}
+// Returns header length, which is the length of the string of property dict.
+static uint16_t ParseNpyPreamble(const std::vector<char>& preamble) {
+    if (preamble[0] != static_cast<char>(0x93) || preamble[1] != 'N' ||
+        preamble[2] != 'U' || preamble[3] != 'M' || preamble[4] != 'P' ||
+        preamble[5] != 'Y') {
+        utility::LogError("Invalid Numpy preamble {}{}{}{}{}{}.", preamble[0],
+                          preamble[1], preamble[2], preamble[3], preamble[4],
+                          preamble[5]);
+    }
+    if (preamble[6] != static_cast<char>(0x01) ||
+        preamble[7] != static_cast<char>(0x00)) {
+        utility::LogError("Not supported Numpy format version: {}.{}",
+                          preamble[6], preamble[7]);
+    }
+    uint16_t header_len = *reinterpret_cast<const uint16_t*>(&preamble[8]);
+    return header_len;
+}
 
 // Retruns {shape, type(char), word_size, fortran_order}.
 // This will advance the file pointer to the end of the header.
@@ -267,19 +283,7 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
         preamble_len) {
         utility::LogError("Header preamble cannot be read.");
     }
-    if (preamble[0] != static_cast<char>(0x93) || preamble[1] != 'N' ||
-        preamble[2] != 'U' || preamble[3] != 'M' || preamble[4] != 'P' ||
-        preamble[5] != 'Y') {
-        utility::LogError("Invalid Numpy preamble {}{}{}{}{}{}.", preamble[0],
-                          preamble[1], preamble[2], preamble[3], preamble[4],
-                          preamble[5]);
-    }
-    if (preamble[6] != static_cast<char>(0x01) ||
-        preamble[7] != static_cast<char>(0x00)) {
-        utility::LogError("Not supported Numpy format version: {}.{}",
-                          preamble[6], preamble[7]);
-    }
-    uint16_t header_len = *reinterpret_cast<uint16_t*>(&preamble[8]);
+    uint16_t header_len = ParseNpyPreamble(preamble);
 
     std::vector<char> header_chars(header_len, 0);
     if (fread(header_chars.data(), sizeof(char), header_len, fp) !=
