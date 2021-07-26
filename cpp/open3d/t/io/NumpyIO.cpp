@@ -512,7 +512,7 @@ std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
 }
 
 void npz_save(std::string zipname,
-              std::string fname,
+              std::string tensor_name,
               const core::Tensor& tensor,
               std::string mode = "w") {
     const void* data = tensor.GetDataPtr();
@@ -520,8 +520,8 @@ void npz_save(std::string zipname,
     const core::Dtype dtype = tensor.GetDtype();
     const int64_t element_byte_size = dtype.ByteSize();
 
-    // first, append a .npy to the fname
-    fname += ".npy";
+    // first, append a .npy to the tensor_name
+    tensor_name += ".npy";
 
     // now, on with the show
     FILE* fp = nullptr;
@@ -564,19 +564,19 @@ void npz_save(std::string zipname,
 
     // build the local header
     std::vector<char> local_header;
-    local_header += "PK";                    // first part of sig
-    local_header += (uint16_t)0x0403;        // second part of sig
-    local_header += (uint16_t)20;            // min version to extract
-    local_header += (uint16_t)0;             // general purpose bit flag
-    local_header += (uint16_t)0;             // compression method
-    local_header += (uint16_t)0;             // file last mod time
-    local_header += (uint16_t)0;             // file last mod date
-    local_header += (uint32_t)crc;           // crc
-    local_header += (uint32_t)nbytes;        // compressed size
-    local_header += (uint32_t)nbytes;        // uncompressed size
-    local_header += (uint16_t)fname.size();  // fname length
-    local_header += (uint16_t)0;             // extra field length
-    local_header += fname;
+    local_header += "PK";                          // first part of sig
+    local_header += (uint16_t)0x0403;              // second part of sig
+    local_header += (uint16_t)20;                  // min version to extract
+    local_header += (uint16_t)0;                   // general purpose bit flag
+    local_header += (uint16_t)0;                   // compression method
+    local_header += (uint16_t)0;                   // file last mod time
+    local_header += (uint16_t)0;                   // file last mod date
+    local_header += (uint32_t)crc;                 // crc
+    local_header += (uint32_t)nbytes;              // compressed size
+    local_header += (uint32_t)nbytes;              // uncompressed size
+    local_header += (uint16_t)tensor_name.size();  // tensor_name length
+    local_header += (uint16_t)0;                   // extra field length
+    local_header += tensor_name;
 
     // build global header
     global_header += "PK";              // first part of sig
@@ -592,7 +592,7 @@ void npz_save(std::string zipname,
             (uint32_t)global_header_offset;  // relative offset of local file
                                              // header, since it begins where
                                              // the global header used to begin
-    global_header += fname;
+    global_header += tensor_name;
 
     // build footer
     std::vector<char> footer;
