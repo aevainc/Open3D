@@ -242,12 +242,13 @@ static std::tuple<core::SizeVector, char, int64_t, bool> DecodeNpyHeader(
 }
 
 // Retruns {shape, type(char), word_size, fortran_order}.
+// This will advance the file pointer to the end of the header.
 static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
         FILE* fp) {
     // Ref: https://numpy.org/devdocs/reference/generated/numpy.lib.format.html
     char buffer[256];
-    size_t res = fread(buffer, sizeof(char), 11, fp);
-    if (res != 11) {
+    size_t res = fread(buffer, sizeof(char), 10, fp);
+    if (res != 10) {
         utility::LogError("Failed fread.");
     }
     std::string header;
@@ -261,6 +262,7 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
     if (header[header.size() - 1] != '\n') {
         utility::LogError("The last char must be '\n'.");
     }
+    utility::LogInfo("Got header: {}", header);
     return DecodeNpyHeader(header);
 }
 
