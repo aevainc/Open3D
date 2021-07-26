@@ -69,14 +69,11 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
-#include <map>
 #include <memory>
 #include <numeric>
 #include <regex>
 #include <sstream>
-#include <stdexcept>
 #include <string>
-#include <typeinfo>
 #include <vector>
 //////////////////
 
