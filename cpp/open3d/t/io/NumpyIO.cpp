@@ -673,13 +673,14 @@ void npz_save(std::string file_name,
     fclose(fp);
 }
 
-std::unordered_map<std::string, NumpyArray> npz_load(std::string file_name) {
+std::unordered_map<std::string, core::Tensor> ReadNpz(
+        const std::string& file_name) {
     FILE* fp = fopen(file_name.c_str(), "rb");
     if (!fp) {
         utility::LogError("Unable to open {}.", file_name);
     }
 
-    std::unordered_map<std::string, NumpyArray> arrays;
+    std::unordered_map<std::string, core::Tensor> tensor_map;
 
     while (1) {
         std::vector<char> local_header(30);
@@ -725,27 +726,29 @@ std::unordered_map<std::string, NumpyArray> npz_load(std::string file_name) {
         // It's possible to check varname and only load the selected numpy
         // array(s), here we load all of them with the while (1).
         if (compressed_method == 0) {
-            arrays[varname] = NumpyArray::CreateFromFilePtr(fp);
+            tensor_map[varname] = NumpyArray::CreateFromFilePtr(fp).ToTensor();
         } else {
-            arrays[varname] = NumpyArray::CreateFromCompressedFilePtr(
-                    fp, num_compressed_bytes, num_uncompressed_bytes);
+            tensor_map[varname] =
+                    NumpyArray::CreateFromCompressedFilePtr(
+                            fp, num_compressed_bytes, num_uncompressed_bytes)
+                            .ToTensor();
         }
     }
 
     fclose(fp);
-    return arrays;
-}
-
-std::unordered_map<std::string, core::Tensor> ReadNpz(
-        const std::string& file_name) {
-    std::unordered_map<std::string, NumpyArray> npz_loaded =
-            npz_load(file_name);
-    std::unordered_map<std::string, core::Tensor> tensor_map;
-    for (const auto& kv : npz_loaded) {
-        tensor_map[kv.first] = kv.second.ToTensor();
-    }
     return tensor_map;
 }
+
+// std::unordered_map<std::string, core::Tensor> ReadNpz(
+//         const std::string& file_name) {
+//     std::unordered_map<std::string, NumpyArray> npz_loaded =
+//             npz_load(file_name);
+//     std::unordered_map<std::string, core::Tensor> tensor_map;
+//     for (const auto& kv : npz_loaded) {
+//         tensor_map[kv.first] = kv.second.ToTensor();
+//     }
+//     return tensor_map;
+// }
 
 void WriteNpz(const std::string& file_name,
               const std::unordered_map<std::string, core::Tensor>& tensor_map) {
