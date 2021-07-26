@@ -695,24 +695,25 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
         }
 
         // Read tensor name.
-        uint16_t name_len = *reinterpret_cast<uint16_t*>(&local_header[26]);
-        std::string tensor_name(name_len, ' ');
-        if (fread(&tensor_name[0], sizeof(char), name_len, fp) != name_len) {
+        uint16_t tensor_name_len =
+                *reinterpret_cast<uint16_t*>(&local_header[26]);
+        std::string tensor_name(tensor_name_len, ' ');
+        if (fread(&tensor_name[0], sizeof(char), tensor_name_len, fp) !=
+            tensor_name_len) {
             utility::LogError("Failed to read tensor name in npz.");
         }
 
-        // erase the lagging .npy
+        // Erase the trailing ".npy".
         tensor_name.erase(tensor_name.end() - 4, tensor_name.end());
 
-        // read in the extra field
+        // Read extra field.
         uint16_t extra_field_len =
                 *reinterpret_cast<uint16_t*>(&local_header[28]);
         if (extra_field_len > 0) {
             std::vector<char> buff(extra_field_len);
-            size_t efield_res =
-                    fread(&buff[0], sizeof(char), extra_field_len, fp);
-            if (efield_res != extra_field_len) {
-                throw std::runtime_error("npz_load: failed fread");
+            if (fread(&buff[0], sizeof(char), extra_field_len, fp) !=
+                extra_field_len) {
+                utility::LogError("Failed to read extra field in npz.");
             }
         }
 
