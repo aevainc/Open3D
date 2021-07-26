@@ -423,10 +423,11 @@ public:
 
     size_t num_bytes() const { return data_holder_->size(); }
 
-    std::vector<size_t> shape;
+    std::vector<size_t> GetShape() const { return shape; }
 
 private:
     std::shared_ptr<std::vector<char>> data_holder_;
+    std::vector<size_t> shape;
 
     size_t word_size_;
     bool fortran_order_;
@@ -874,12 +875,12 @@ void CnpyIOTest() {
     NpyArray t1_loaded = npz_loaded["t1"];
 
     const int32_t* t0_loaded_data = t0_loaded.data<int32_t>();
-    utility::LogInfo("t0_loaded shape: {}", t0_loaded.shape);
+    utility::LogInfo("t0_loaded shape: {}", t0_loaded.GetShape());
     utility::LogInfo("t0_loaded data: {}, {}", t0_loaded_data[0],
                      t0_loaded_data[1]);
 
     const double* t1_loaded_data = t1_loaded.data<double>();
-    utility::LogInfo("t1_loaded shape: {}", t1_loaded.shape);
+    utility::LogInfo("t1_loaded shape: {}", t1_loaded.GetShape());
     utility::LogInfo("t1_loaded data: {}, {}, {}, {}, {}, {}",
                      t1_loaded_data[0], t1_loaded_data[1], t1_loaded_data[2],
                      t1_loaded_data[3], t1_loaded_data[4], t1_loaded_data[5]);
