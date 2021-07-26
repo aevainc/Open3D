@@ -696,14 +696,14 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
 
         // read in the variable name
         uint16_t name_len = *(uint16_t*)&local_header[26];
-        std::string varname(name_len, ' ');
-        size_t vname_res = fread(&varname[0], sizeof(char), name_len, fp);
+        std::string tensor_name(name_len, ' ');
+        size_t vname_res = fread(&tensor_name[0], sizeof(char), name_len, fp);
         if (vname_res != name_len) {
             throw std::runtime_error("npz_load: failed fread");
         }
 
         // erase the lagging .npy
-        varname.erase(varname.end() - 4, varname.end());
+        tensor_name.erase(tensor_name.end() - 4, tensor_name.end());
 
         // read in the extra field
         uint16_t extra_field_len = *(uint16_t*)&local_header[28];
@@ -723,12 +723,13 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
         uint32_t num_uncompressed_bytes =
                 *reinterpret_cast<uint32_t*>(&local_header[0] + 22);
 
-        // It's possible to check varname and only load the selected numpy
+        // It's possible to check tensor_name and only load the selected numpy
         // array(s), here we load all of them with the while (1).
         if (compressed_method == 0) {
-            tensor_map[varname] = NumpyArray::CreateFromFilePtr(fp).ToTensor();
+            tensor_map[tensor_name] =
+                    NumpyArray::CreateFromFilePtr(fp).ToTensor();
         } else {
-            tensor_map[varname] =
+            tensor_map[tensor_name] =
                     NumpyArray::CreateFromCompressedFilePtr(
                             fp, num_compressed_bytes, num_uncompressed_bytes)
                             .ToTensor();
