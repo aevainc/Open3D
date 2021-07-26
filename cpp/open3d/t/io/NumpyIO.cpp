@@ -256,7 +256,7 @@ static uint16_t ParseNpyPreamble(const char* preamble) {
 
 // Retruns {shape, type(char), word_size, fortran_order}.
 // This will advance the file pointer to the end of the header.
-static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
+static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeaderFromFile(
         FILE* fp) {
     const size_t preamble_len = 10;  // Version 1.0 assumed.
     std::vector<char> preamble(preamble_len);
@@ -561,7 +561,8 @@ static NumpyArray CreateNumpyArrayFromFile(FILE* fp) {
     char type;
     int64_t word_size;
     bool fortran_order;
-    std::tie(shape, type, word_size, fortran_order) = ParseNpyHeader(fp);
+    std::tie(shape, type, word_size, fortran_order) =
+            ParseNpyHeaderFromFile(fp);
 
     NumpyArray arr(shape, type, word_size, fortran_order);
     size_t nread = fread(arr.GetDataPtr<char>(), 1,
