@@ -517,14 +517,14 @@ std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
         utility::LogError("Footer fread failed.");
     }
 
-    uint16_t disk_no = *(uint16_t*)&footer[4];
-    uint16_t disk_start = *(uint16_t*)&footer[6];
-    uint16_t nrecs_on_disk = *(uint16_t*)&footer[8];
-    uint16_t nrecs = *(uint16_t*)&footer[10];
+    uint16_t disk_no = *reinterpret_cast<uint16_t*>(&footer[4]);
+    uint16_t disk_start = *reinterpret_cast<uint16_t*>(&footer[6]);
+    uint16_t nrecs_on_disk = *reinterpret_cast<uint16_t*>(&footer[8]);
+    uint16_t nrecs = *reinterpret_cast<uint16_t*>(&footer[10]);
     size_t global_header_size = *(uint32_t*)&footer[12];
     size_t global_header_offset = *(uint32_t*)&footer[16];
 
-    uint16_t comment_len = *(uint16_t*)&footer[20];
+    uint16_t comment_len = *reinterpret_cast<uint16_t*>(&footer[20]);
 
     assert(disk_no == 0);
     assert(disk_start == 0);
