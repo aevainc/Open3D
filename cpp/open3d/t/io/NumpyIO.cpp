@@ -276,7 +276,6 @@ static std::tuple<core::SizeVector, char, int64_t, bool> ParseNpyHeader(
     }
     std::string header(header_chars.data(), header_len);
 
-    utility::LogInfo("Got header: {}", header);
     return ParsePropertyDict(header);
 }
 
