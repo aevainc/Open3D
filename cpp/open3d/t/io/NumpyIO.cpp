@@ -168,12 +168,12 @@ static std::vector<char> CreateNumpyHeader(const core::SizeVector& shape,
 
     std::stringstream ss;
     // "Magic" values.
-    ss << (char)0x93;
+    ss << static_cast<char>(0x93);
     ss << "NUMPY";
     // Major version of numpy format.
-    ss << (char)0x01;
+    ss << static_cast<char>(0x01);
     // Minor version of numpy format.
-    ss << (char)0x00;
+    ss << static_cast<char>(0x00);
     // Header dict size (full header size - 10).
     ss << IntToBytes<uint16_t>(dict.size());
     // Header dict.
