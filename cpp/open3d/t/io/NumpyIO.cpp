@@ -312,7 +312,7 @@ static std::tuple<uint16_t, size_t, size_t> ParseZipFooter(FILE* fp) {
     const size_t footer_len = 22;
     std::vector<char> footer(footer_len);
     fseek(fp, -footer_len, SEEK_END);
-    if (fread(&footer[0], sizeof(char), footer_len, fp) != footer_len) {
+    if (fread(footer.data(), sizeof(char), footer_len, fp) != footer_len) {
         utility::LogError("Footer fread failed.");
     }
 
@@ -471,11 +471,11 @@ static void WriteNpzOneTensor(std::string file_name,
     footer += static_cast<uint16_t>(0);  // Zip file comment length.
 
     // Write everything.
-    fwrite(&local_header[0], sizeof(char), local_header.size(), fp);
-    fwrite(&npy_header[0], sizeof(char), npy_header.size(), fp);
+    fwrite(local_header.data(), sizeof(char), local_header.size(), fp);
+    fwrite(npy_header.data(), sizeof(char), npy_header.size(), fp);
     fwrite(data, element_byte_size, nels, fp);
-    fwrite(&global_header[0], sizeof(char), global_header.size(), fp);
-    fwrite(&footer[0], sizeof(char), footer.size(), fp);
+    fwrite(global_header.data(), sizeof(char), global_header.size(), fp);
+    fwrite(footer.data(), sizeof(char), footer.size(), fp);
     fclose(fp);
 }
 
@@ -591,7 +591,7 @@ public:
         std::vector<char> buffer_compressed(num_compressed_bytes);
         std::vector<char> buffer_uncompressed(num_uncompressed_bytes);
         size_t nread =
-                fread(&buffer_compressed[0], 1, num_compressed_bytes, fp);
+                fread(buffer_compressed.data(), 1, num_compressed_bytes, fp);
         if (nread != num_compressed_bytes) {
             throw std::runtime_error("failed fread");
         }
@@ -608,10 +608,10 @@ public:
 
         d_stream.avail_in = num_compressed_bytes;
         d_stream.next_in =
-                reinterpret_cast<unsigned char*>(&buffer_compressed[0]);
+                reinterpret_cast<unsigned char*>(buffer_compressed.data());
         d_stream.avail_out = num_uncompressed_bytes;
         d_stream.next_out =
-                reinterpret_cast<unsigned char*>(&buffer_uncompressed[0]);
+                reinterpret_cast<unsigned char*>(buffer_uncompressed.data());
 
         err = inflate(&d_stream, Z_FINISH);
         err = inflateEnd(&d_stream);
@@ -622,12 +622,12 @@ public:
         size_t word_size;
         bool fortran_order;
         std::tie(shape, type, word_size, fortran_order) =
-                ParseNpyHeaderFromBuffer(&buffer_uncompressed[0]);
+                ParseNpyHeaderFromBuffer(buffer_uncompressed.data());
 
         NumpyArray array(shape, type, word_size, fortran_order);
 
         size_t offset = num_uncompressed_bytes - array.NumBytes();
-        memcpy(array.GetDataPtr<char>(), &buffer_uncompressed[0] + offset,
+        memcpy(array.GetDataPtr<char>(), buffer_uncompressed.data() + offset,
                array.NumBytes());
 
         return array;
@@ -641,7 +641,7 @@ public:
         }
         std::vector<char> header = CreateNumpyHeader(shape_, GetDtype());
         fseek(fp, 0, SEEK_SET);
-        fwrite(&header[0], sizeof(char), header.size(), fp);
+        fwrite(header.data(), sizeof(char), header.size(), fp);
         fseek(fp, 0, SEEK_END);
         fwrite(GetDataPtr<void>(), static_cast<size_t>(GetDtype().ByteSize()),
                static_cast<size_t>(shape_.NumElements()), fp);
@@ -677,7 +677,7 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
     // here we load all of them.
     while (1) {
         std::vector<char> local_header(30);
-        size_t headerres = fread(&local_header[0], sizeof(char), 30, fp);
+        size_t headerres = fread(local_header.data(), sizeof(char), 30, fp);
         if (headerres != 30) {
             utility::LogError("Failed to read local header in npz.");
         }
@@ -704,7 +704,7 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
                 *reinterpret_cast<uint16_t*>(&local_header[28]);
         if (extra_field_len > 0) {
             std::vector<char> buff(extra_field_len);
-            if (fread(&buff[0], sizeof(char), extra_field_len, fp) !=
+            if (fread(buff.data(), sizeof(char), extra_field_len, fp) !=
                 extra_field_len) {
                 utility::LogError("Failed to read extra field in npz.");
             }
