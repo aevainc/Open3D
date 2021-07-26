@@ -406,15 +406,15 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void parse_zip_footer(FILE* fp,
-                      uint16_t& nrecs,
-                      size_t& global_header_size,
-                      size_t& global_header_offset) {
+void ParseZipFooter(FILE* fp,
+                    uint16_t& nrecs,
+                    size_t& global_header_size,
+                    size_t& global_header_offset) {
     std::vector<char> footer(22);
     fseek(fp, -22, SEEK_END);
     size_t res = fread(&footer[0], sizeof(char), 22, fp);
     if (res != 22) {
-        throw std::runtime_error("parse_zip_footer: failed fread");
+        throw std::runtime_error("ParseZipFooter: failed fread");
     }
 
     uint16_t disk_no, disk_start, nrecs_on_disk, comment_len;
@@ -490,7 +490,7 @@ void npz_save(std::string npz_name,
         // write the the new data at the start of the global header then append
         // the global header and footer below it
         size_t global_header_size;
-        parse_zip_footer(fp, nrecs, global_header_size, global_header_offset);
+        ParseZipFooter(fp, nrecs, global_header_size, global_header_offset);
         fseek(fp, global_header_offset, SEEK_SET);
         global_header.resize(global_header_size);
         size_t res =
