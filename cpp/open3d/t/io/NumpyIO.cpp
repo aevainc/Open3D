@@ -718,11 +718,11 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
         }
 
         uint16_t compressed_method =
-                *reinterpret_cast<uint16_t*>(&local_header[0] + 8);
+                *reinterpret_cast<uint16_t*>(&local_header[8]);
         uint32_t num_compressed_bytes =
-                *reinterpret_cast<uint32_t*>(&local_header[0] + 18);
+                *reinterpret_cast<uint32_t*>(&local_header[18]);
         uint32_t num_uncompressed_bytes =
-                *reinterpret_cast<uint32_t*>(&local_header[0] + 22);
+                *reinterpret_cast<uint32_t*>(&local_header[22]);
 
         // It's possible to check tensor_name and only load the selected numpy
         // array(s), here we load all of them with the while (1).
