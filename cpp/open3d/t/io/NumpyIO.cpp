@@ -675,10 +675,8 @@ void npz_save(std::string npz_name,
 
 std::unordered_map<std::string, NumpyArray> npz_load(std::string npz_name) {
     FILE* fp = fopen(npz_name.c_str(), "rb");
-
     if (!fp) {
-        throw std::runtime_error("npz_load: Error! Unable to open file " +
-                                 npz_name + "!");
+        utility::LogError("Unable to open {}.", npz_name);
     }
 
     std::unordered_map<std::string, NumpyArray> arrays;
