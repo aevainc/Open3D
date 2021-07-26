@@ -739,17 +739,6 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
     return tensor_map;
 }
 
-// std::unordered_map<std::string, core::Tensor> ReadNpz(
-//         const std::string& file_name) {
-//     std::unordered_map<std::string, NumpyArray> npz_loaded =
-//             npz_load(file_name);
-//     std::unordered_map<std::string, core::Tensor> tensor_map;
-//     for (const auto& kv : npz_loaded) {
-//         tensor_map[kv.first] = kv.second.ToTensor();
-//     }
-//     return tensor_map;
-// }
-
 void WriteNpz(const std::string& file_name,
               const std::unordered_map<std::string, core::Tensor>& tensor_map) {
     std::unordered_map<std::string, core::Tensor> contiguous_tensor_map;
