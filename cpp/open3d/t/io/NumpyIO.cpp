@@ -690,13 +690,14 @@ std::unordered_map<std::string, core::Tensor> ReadNpz(
         // Read tensor name.
         uint16_t tensor_name_len =
                 *reinterpret_cast<uint16_t*>(&local_header[26]);
-        std::string tensor_name(tensor_name_len, ' ');
-        if (fread(&tensor_name[0], sizeof(char), tensor_name_len, fp) !=
+        std::vector<char> tensor_name_buf(tensor_name_len, ' ');
+        if (fread(tensor_name_buf.data(), sizeof(char), tensor_name_len, fp) !=
             tensor_name_len) {
             utility::LogError("Failed to read tensor name in npz.");
         }
 
         // Erase the trailing ".npy".
+        std::string tensor_name(tensor_name_buf.begin(), tensor_name_buf.end());
         tensor_name.erase(tensor_name.end() - 4, tensor_name.end());
 
         // Read extra field.
