@@ -143,28 +143,28 @@ TEST_P(NumpyIOPermuteDevices, NpzWriteRead) {
     EXPECT_EQ(tensor_map.size(), 6);
 
     core::Tensor t0_load = tensor_map.at("t0");
-    EXPECT_TRUE(t0_load.AllClose(t0.To(device)));
-    EXPECT_EQ(t0_load.GetDtype(), t0.GetDtype());
+    EXPECT_TRUE(t0.AllClose(t0_load.To(device)));
+    EXPECT_EQ(t0.GetDtype(), t0_load.GetDtype());
 
     core::Tensor t1_load = tensor_map.at("t1");
-    EXPECT_TRUE(t1_load.AllClose(t1.To(device)));
-    EXPECT_EQ(t1_load.GetDtype(), t1.GetDtype());
+    EXPECT_TRUE(t1.AllClose(t1_load.To(device)));
+    EXPECT_EQ(t1.GetDtype(), t1_load.GetDtype());
 
     core::Tensor t2_load = tensor_map.at("t2");
-    EXPECT_TRUE(t2_load.AllClose(t2.To(device)));
-    EXPECT_EQ(t2_load.GetDtype(), t2.GetDtype());
+    EXPECT_TRUE(t2.AllClose(t2_load.To(device)));
+    EXPECT_EQ(t2.GetDtype(), t2_load.GetDtype());
 
     core::Tensor t3_load = tensor_map.at("t3");
-    EXPECT_TRUE(t3_load.AllClose(t3.To(device)));
-    EXPECT_EQ(t3_load.GetDtype(), t3.GetDtype());
+    EXPECT_TRUE(t3.AllClose(t3_load.To(device)));
+    EXPECT_EQ(t3.GetDtype(), t3_load.GetDtype());
 
     core::Tensor t4_load = tensor_map.at("t4");
-    EXPECT_TRUE(t4_load.AllClose(t4.To(device)));
-    EXPECT_EQ(t4_load.GetDtype(), t4.GetDtype());
+    EXPECT_TRUE(t4.AllClose(t4_load.To(device)));
+    EXPECT_EQ(t4.GetDtype(), t4_load.GetDtype());
 
     core::Tensor t5_load = tensor_map.at("t5");
-    EXPECT_TRUE(t5_load.AllClose(t5.To(device)));
-    EXPECT_EQ(t5_load.GetDtype(), t5.GetDtype());
+    EXPECT_TRUE(t5.AllClose(t5_load.To(device)));
+    EXPECT_EQ(t5.GetDtype(), t5_load.GetDtype());
 
     // Clean up.
     // utility::filesystem::RemoveFile(file_name);
@@ -207,28 +207,28 @@ TEST_P(NumpyIOPermuteDevices, NpzReadCompressed) {
     EXPECT_EQ(tensor_map.size(), 6);
 
     core::Tensor t0_load = tensor_map.at("t0");
-    EXPECT_TRUE(t0_load.AllClose(t0.To(device)));
-    EXPECT_EQ(t0_load.GetDtype(), t0.GetDtype());
+    EXPECT_TRUE(t0.AllClose(t0_load.To(device)));
+    EXPECT_EQ(t0.GetDtype(), t0_load.GetDtype());
 
     core::Tensor t1_load = tensor_map.at("t1");
-    EXPECT_TRUE(t1_load.AllClose(t1.To(device)));
-    EXPECT_EQ(t1_load.GetDtype(), t1.GetDtype());
+    EXPECT_TRUE(t1.AllClose(t1_load.To(device)));
+    EXPECT_EQ(t1.GetDtype(), t1_load.GetDtype());
 
     core::Tensor t2_load = tensor_map.at("t2");
-    EXPECT_TRUE(t2_load.AllClose(t2.To(device)));
-    EXPECT_EQ(t2_load.GetDtype(), t2.GetDtype());
+    EXPECT_TRUE(t2.AllClose(t2_load.To(device)));
+    EXPECT_EQ(t2.GetDtype(), t2_load.GetDtype());
 
     core::Tensor t3_load = tensor_map.at("t3");
-    EXPECT_TRUE(t3_load.AllClose(t3.To(device)));
-    EXPECT_EQ(t3_load.GetDtype(), t3.GetDtype());
+    EXPECT_TRUE(t3.AllClose(t3_load.To(device)));
+    EXPECT_EQ(t3.GetDtype(), t3_load.GetDtype());
 
     core::Tensor t4_load = tensor_map.at("t4");
-    EXPECT_TRUE(t4_load.AllClose(t4.To(device)));
-    EXPECT_EQ(t4_load.GetDtype(), t4.GetDtype());
+    EXPECT_TRUE(t4.AllClose(t4_load.To(device)));
+    EXPECT_EQ(t4.GetDtype(), t4_load.GetDtype());
 
     core::Tensor t5_load = tensor_map.at("t5");
-    EXPECT_TRUE(t5_load.AllClose(t5.To(device)));
-    EXPECT_EQ(t5_load.GetDtype(), t5.GetDtype());
+    EXPECT_TRUE(t5.AllClose(t5_load.To(device)));
+    EXPECT_EQ(t5.GetDtype(), t5_load.GetDtype());
 }
 
 }  // namespace tests
