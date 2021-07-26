@@ -900,11 +900,8 @@ void CnpyIOTest() {
 
     //"w" overwrites any existing file
     auto t0 = core::Tensor::Init<int32_t>({100, 200}, device);
-    npz_save("out.npz", "t0", t0, "w");
-
-    //"a" appends to the file we created above
     auto t1 = core::Tensor::Init<double>({{0, 1, 2}, {3, 4, 5}}, device);
-    npz_save("out.npz", "t1", t1, "a");
+    WriteNpz("out.npz", {{"t0", t0}, {"t1", t1}});
 
     // load a single var from the npz file
     NpyArray t0_loaded = npz_load("out.npz", "t0");
