@@ -171,6 +171,7 @@ static std::vector<char> CreateNumpyHeader(const core::SizeVector& shape,
     return std::vector<char>(s.begin(), s.end());
 }
 
+// Retruns {type(char), word_size, shape, fortran_order}.
 static std::tuple<char, int64_t, core::SizeVector, bool> ParseNumpyHeader(
         FILE* fp) {
     char type;
@@ -511,7 +512,7 @@ std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
     return lhs;
 }
 
-void npz_save(std::string zipname,
+void npz_save(std::string npz_name,
               std::string tensor_name,
               const core::Tensor& tensor,
               std::string mode = "w") {
@@ -529,7 +530,7 @@ void npz_save(std::string zipname,
     size_t global_header_offset = 0;
     std::vector<char> global_header;
 
-    if (mode == "a") fp = fopen(zipname.c_str(), "r+b");
+    if (mode == "a") fp = fopen(npz_name.c_str(), "r+b");
 
     if (fp) {
         // zip file exists. we need to add a new npy file to it.
@@ -549,7 +550,7 @@ void npz_save(std::string zipname,
         }
         fseek(fp, global_header_offset, SEEK_SET);
     } else {
-        fp = fopen(zipname.c_str(), "wb");
+        fp = fopen(npz_name.c_str(), "wb");
     }
 
     std::vector<char> npy_header = CreateNumpyHeader(shape, dtype);
@@ -728,11 +729,18 @@ void parse_npy_header(FILE* fp,
 }
 
 NpyArray load_the_npy_file(FILE* fp) {
-    std::vector<size_t> shape;
-    size_t word_size;
-    bool fortran_order;
-    parse_npy_header(fp, word_size, shape, fortran_order);
+    // std::vector<size_t> shape;
+    // size_t word_size;
+    // bool fortran_order;
+    // parse_npy_header(fp, word_size, shape, fortran_order);
 
+    core::SizeVector o3d_shape;
+    int64_t word_size;
+    bool fortran_order;
+    char type;
+    std::tie(type, word_size, o3d_shape, fortran_order) = ParseNumpyHeader(fp);
+
+    std::vector<size_t> shape(o3d_shape.begin(), o3d_shape.end());
     NpyArray arr(shape, word_size, fortran_order);
     size_t nread = fread(arr.data<char>(), 1, arr.num_bytes(), fp);
     if (nread != arr.num_bytes())
