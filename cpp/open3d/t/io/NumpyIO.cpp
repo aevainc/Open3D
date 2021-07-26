@@ -50,25 +50,14 @@
 
 #include "open3d/t/io/NumpyIO.h"
 
+#include <zlib.h>
+
 #include <memory>
 #include <numeric>
 #include <regex>
 #include <sstream>
 #include <string>
 #include <vector>
-
-/////////////////
-#include <stdint.h>
-#include <zlib.h>
-
-#include <algorithm>
-#include <cassert>
-#include <complex>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <iomanip>
-//////////////////
 
 #include "open3d/core/Blob.h"
 #include "open3d/core/Dispatch.h"
