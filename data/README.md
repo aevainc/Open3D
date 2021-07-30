@@ -4,7 +4,7 @@
 - Option 2: `examples/data/`
 - Option 3: `data/`
 
-## Decision 2:  what should be the name of the local data dir?
+## Decision 2: what should be the name of the local data dir?
 
 - Option 1: `data/common/`
 - Option 2: `data/local/`
