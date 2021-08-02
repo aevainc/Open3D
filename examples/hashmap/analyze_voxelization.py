@@ -29,15 +29,16 @@ x = data_8m[:, 0] * 1000
 
 colors = ['#ff000020', '#00ff0020', '#0000ff20', '#ffff0020']
 
-# Marker label first
-plt.plot(x, data_8m[:, 1], 'xb', label=r'$8\times 10^6$ inputs')
-plt.plot(x, data_500k[:, 1], 'ob', label=r'$5\times 10^5$ inputs')
-
 # Then colors label
-plt.plot(x, data_8m[:, 1], '-b', label='Ours')
+plt.plot([x[0]], [data_8m[:, 1][0]], marker='None', linestyle='None', label=r'\textbf{Method}')
+plt.plot(x, data_8m[:, 1], '-b', label='ASH')
 plt.plot(x, data_8m[:, 2], '-g', label='MinkowskiEngine')
 plt.plot(x, data_8m[:, 3], '-r', label='Open3D')
 
+# Marker label first
+plt.plot([x[0]], [data_8m[:, 1][0]], marker='None', linestyle='None', label=r'\textbf{Input length}')
+plt.plot(x, data_8m[:, 1], 'xk', label=r'$8\times 10^6$')
+plt.plot(x, data_500k[:, 1], 'ok', label=r'$5\times 10^5$')
 
 plt.plot(x, data_8m[:, 1], 'x-b')
 plt.plot(x, data_8m[:, 2], 'x-g')
@@ -54,11 +55,14 @@ plt.fill(np.append(x, x[::-1]),
          np.append(data_500k[:, 1], data_500k[:, 2][::-1]),
          color=colors[3])
 
+normal_fontsize = 12
 plt.yscale('log')
-plt.ylabel('Time (ms)')
-plt.xlabel('Voxel size (mm)')
+plt.ylabel('Time (ms)', fontsize=normal_fontsize)
+plt.xlabel('Voxel size (mm)', fontsize=normal_fontsize)
+plt.xticks(fontsize=normal_fontsize)
+plt.yticks(fontsize=normal_fontsize)
 plt.grid()
 plt.tight_layout()
-plt.legend()
+plt.legend(fontsize=normal_fontsize)
 plt.savefig('profile.pdf')
 

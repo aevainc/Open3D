@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "sans-serif",
-    "font.sans-serif": ["Helvetica"]})
+    "font.sans-serif": ["Helvetica"]
+})
 # for Palatino and other serif fonts use:
 plt.rcParams.update({
     "text.usetex": True,
@@ -79,118 +80,179 @@ if __name__ == '__main__':
     num_ops = [r'$10^3$', r'$10^4$', r'$10^5$', r'$10^6$']
     linestyles = ['solid', 'dotted', 'dashed', 'dashdot']
     markers = ['^', 's', 'x', 'o']
-    fig, axes = plt.subplots(2, 2, figsize=(16, 9))
+    fig, axes = plt.subplots(2, 2, figsize=(24, 10))
 
     densities = [0.1, 0.1, 0.99, 0.99]
     ops = ['insert', 'find', 'insert', 'find']
 
+    title_fontsize = 24
+    normal_fontsize = 22
+
+    #################################################################
     # Main plot
+    handles_backend = []
+    labels_backend = []
+
+    handles_input = []
+    labels_input = []
+
+    # Plot dummy data (to be overrided) with legend
+    ax = axes[0, 0]
+    di = densities[0]
+    opi = ops[0]
+    stdgpu_curve = stats_stdgpu[di][opi][0]
+    ours_curve = stats_ours[di][opi][0]
+    x = np.array(channels) * 4
+
+    # Plot backend legend
+    h, = ax.plot([x[0]], [ours_curve[0]], marker='None', linestyle='None', label='dummy-empty')
+    handles_backend.append(h)
+    labels_backend.append(r'\textbf{Backend}')
+
+    h, = ax.plot(x, ours_curve, color='b', label='ASH-stdgpu')
+    handles_backend.append(h)
+    labels_backend.append('ASH-stdgpu')
+
+    h, = ax.plot(x, stdgpu_curve, color='r', label='stdgpu')
+    handles_backend.append(h)
+    labels_backend.append('stdgpu')
+
+    # Plot input length legend
+    h, = ax.plot([x[0]], [ours_curve[0]], marker='None', linestyle='None', label='dummy-empty')
+    handles_input.append(h)
+    labels_input.append(r'\textbf{Input length}')
+
+    for i in range(4):
+        h, = ax.plot(x, ours_curve, color='k', marker=markers[i], label=num_ops[i])
+        handles_input.append(h)
+        labels_input.append(num_ops[i])
+
+    # Iterate over grids and plot real data
     for k in range(4):
-        label_set = False
         for i in range(len(iters)):
             di = densities[k]
             opi = ops[k]
             ax = axes[k // 2, k % 2]
 
-            if i == 3:
-                limit = -3
-            else:
-                limit = None
+            # Some data are omitted due to memory budget
+            limit = -3 if i == 3 else None
             x = np.array(channels[:limit]) * 4
             stdgpu_curve = stats_stdgpu[di][opi][i][:limit]
             ours_curve = stats_ours[di][opi][i][:limit]
-            print(stdgpu_curve)
 
-            # Color indicator
-            if not label_set:
-                ax.plot(x, ours_curve, color='b', label='ASH-stdgpu')
-                # linestyle=linestyles[i],
-                #marker=markers[i])
-                ax.plot(x, stdgpu_curve, color='r', label='stdgpu')
-                #linestyle=linestyles[i],
-                #marker=markers[i])
-                label_set = True
-
-            ax.plot(
-                x,
-                ours_curve,
-                color='b',
-                #linestyle=linestyles[i],
-                marker=markers[i],
-                label=num_ops[i])
-            ax.plot(
-                x,
-                stdgpu_curve,
-                color='r',
-                #linestyle=linestyles[i],
-                marker=markers[i])
-
+            ax.plot(x, ours_curve, color='b', marker=markers[i])
+            ax.plot(x, stdgpu_curve, color='r', marker=markers[i])
             ax.fill(np.append(x, x[::-1]),
                     np.append(stdgpu_curve, ours_curve[::-1]),
                     color=colors[i])
-            ax.set_title(r'Uniqueness = ${}$, Operation {}'.format(di, opi), fontsize=20)
-        ax.set_xlabel('Hashmap value size (byte)', fontsize=15)
-        ax.set_xscale('log', basex=2)
+            ax.set_title(r'\textbf{{Uniqueness = ${}$, Operation {}}}'.format(di, opi),
+                         fontsize=title_fontsize)
 
-        ax.set_ylabel('Time (ms)', fontsize=15)
+        ax.set_xlabel('Hashmap value size (byte)', fontsize=normal_fontsize)
+        ax.set_xscale('log', base=2)
+        ax.set_ylabel('Time (ms)', fontsize=normal_fontsize)
         ax.set_yscale('log')
+
+        ax.tick_params(axis='x', labelsize=normal_fontsize)
+        ax.tick_params(axis='y', labelsize=normal_fontsize)
         ax.grid()
-    plt.legend()
-    plt.tight_layout()
+
+    plt.tight_layout(rect=[0, 0, 0.86, 1])
+
+    legend_backend = plt.legend(handles=handles_backend,
+                                labels=labels_backend,
+                                bbox_to_anchor=(1.01, 1),
+                                loc='upper left',
+                                fontsize=normal_fontsize,
+                                bbox_transform=axes[0, 1].transAxes)
+    legend_input = plt.legend(handles=handles_input,
+                              labels=labels_input,
+                              bbox_to_anchor=(1.01, 0.55),
+                              loc='upper left',
+                              fontsize=normal_fontsize,
+                              bbox_transform=axes[0, 1].transAxes)
+    plt.gca().add_artist(legend_backend)
     plt.savefig('stdgpu_int3.pdf')
 
     # Ablation for insertion vs activation
-    fig, axes = plt.subplots(1, 2, figsize=(16, 5))
+    handles_backend = []
+    labels_backend = []
+
+    handles_input = []
+    labels_input = []
+
+    fig, axes = plt.subplots(1, 2, figsize=(24, 6))
+    ax = axes[0]
+    di = densities[0]
+    x = np.array(channels) * 4
+    insert_curve = stats_ours[di]['insert'][0]
+    activate_curve = stats_ours[di]['activate'][0]
+
+    # Plot operation legend
+    h, = ax.plot([x[0]], [insert_curve[0]], marker='None', linestyle='None', label='dummy-empty')
+    handles_backend.append(h)
+    labels_backend.append(r'\textbf{Operation}')
+
+    h, = ax.plot(x, insert_curve, color='b', label='ASH-stdgpu')
+    handles_backend.append(h)
+    labels_backend.append('Insert')
+
+    h, = ax.plot(x, activate_curve, color='r', label='stdgpu')
+    handles_backend.append(h)
+    labels_backend.append('Activate')
+
+    # Plot input legend
+    h, = ax.plot([x[0]], [insert_curve[0]], marker='None', linestyle='None', label='dummy-empty')
+    handles_input.append(h)
+    labels_input.append(r'\textbf{Input length}')
+
+    for i in range(4):
+        h, = ax.plot(x, insert_curve, color='k', marker=markers[i], label=num_ops[i])
+        handles_input.append(h)
+        labels_input.append(num_ops[i])
 
     densities = [0.1, 0.99]
     for k in range(2):
-        label_set = False
         for i in range(len(iters)):
             di = densities[k]
-            ax = axes[ k]
+            ax = axes[k]
 
-            if i == 3:
-                limit = -3
-            else:
-                limit = None
+            limit = -3 if i == 3 else None
             x = np.array(channels[:limit]) * 4
             insert_curve = stats_ours[di]['insert'][i][:limit]
             activate_curve = stats_ours[di]['activate'][i][:limit]
 
-            # Color indicator
-            if not label_set:
-                ax.plot(x, insert_curve, color='b', label='insert')
-                # linestyle=linestyles[i],
-                #marker=markers[i])
-                ax.plot(x, activate_curve, color='r', label='activate')
-                #linestyle=linestyles[i],
-                #marker=markers[i])
-                label_set = True
-
-            ax.plot(
-                x,
-                insert_curve,
-                color='b',
-                #linestyle=linestyles[i],
-                marker=markers[i],
-                label=num_ops[i])
-            ax.plot(
-                x,
-                activate_curve,
-                color='r',
-                #linestyle=linestyles[i],
-                marker=markers[i])
+            ax.plot(x, insert_curve, color='b', marker=markers[i], label=num_ops[i])
+            ax.plot(x, activate_curve, color='r', marker=markers[i])
 
             ax.fill(np.append(x, x[::-1]),
                     np.append(insert_curve, activate_curve[::-1]),
                     color=colors[i])
-            ax.set_title(r'Uniqueness = ${}$, Operation activate vs insert'.format(di), fontsize=20)
-        ax.set_xlabel('Hashmap value size (byte)', fontsize=15)
-        ax.set_xscale('log', basex=2)
+            ax.set_title(
+                r'\textbf{{Uniqueness = ${}$, Operation activate vs. insert}}'.format(di),
+                fontsize=title_fontsize)
+        ax.set_xlabel('Hashmap value size (byte)', fontsize=normal_fontsize)
+        ax.set_xscale('log', base=2)
 
-        ax.set_ylabel('Time (ms)', fontsize=15)
+        ax.set_ylabel('Time (ms)', fontsize=normal_fontsize)
         ax.set_yscale('log')
+        ax.tick_params(axis='x', labelsize=normal_fontsize)
+        ax.tick_params(axis='y', labelsize=normal_fontsize)
         ax.grid()
+
     plt.legend()
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 0.86, 1])
+    legend_backend = plt.legend(handles=handles_backend,
+                                labels=labels_backend,
+                                bbox_to_anchor=(1.01, 1),
+                                loc='upper left',
+                                fontsize=normal_fontsize,
+                                bbox_transform=axes[1].transAxes)
+    legend_input = plt.legend(handles=handles_input,
+                              labels=labels_input,
+                              bbox_to_anchor=(1.01, 0.55),
+                              loc='upper left',
+                              fontsize=normal_fontsize,
+                              bbox_transform=axes[1].transAxes)
+    plt.gca().add_artist(legend_backend)
     plt.savefig('stdgpu_int3_act.pdf')

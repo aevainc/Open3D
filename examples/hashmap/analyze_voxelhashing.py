@@ -20,9 +20,9 @@ plt.rcParams.update({
 # Google
 # colors = ['#4285F4f0', '#DB4437f0', '#F4B400f0', '#0F9D58f0']
 colors = cm.Pastel1.colors
-fig, axs = plt.subplots(1, 2, figsize=(16, 5))
-x = np.arange(0, 3)
-width = 0.2
+fig, axs = plt.subplots(1, 2, figsize=(20, 5))
+x = np.arange(0, 3) * 2
+width = 0.4
 
 xticks = x + 1.5 * width
 xlabels = ['Integration', 'Raycasting', 'Meshing']
@@ -43,35 +43,63 @@ voxelhashing = [voxelhashing_time, voxelhashing_loc]
 gpurobust = [gpurobust_time, gpurobust_loc]
 
 ylabels = ['Time (ms)', 'Lines']
-titles = ['Time per Operation', 'Line of Code (LoC)']
+titles = [r'\textbf{Time per Operation}', r'\textbf{Line of Code (LoC)}']
+
+yticks = [[1e-1, 1e0, 1e1, 1e2, 1e3, 1e4, 1e5], [0, 350, 700, 1050, 1400, 1750]]
 for i in range(2):
     # Bar
-    axs[i].bar(x, ours[i], width, color=colors[0], label='Ours')
-    axs[i].bar(x + width, infinitam[i], width, color=colors[1], label='InfiniTAM')
-    axs[i].bar(x + 2 * width, voxelhashing[i], width, color=colors[2], label='VoxelHashing')
-    axs[i].bar(x + 3 * width, gpurobust[i], width, color=colors[3], label='GPU-robust')
+    axs[i].bar(x, ours[i], width, color=colors[0], label='ASH-fast')
+    axs[i].bar(x + width,
+               infinitam[i],
+               width,
+               color=colors[1],
+               label='InfiniTAM')
+    axs[i].bar(x + 2 * width,
+               voxelhashing[i],
+               width,
+               color=colors[2],
+               label='VoxelHashing')
+    axs[i].bar(x + 3 * width,
+               gpurobust[i],
+               width,
+               color=colors[3],
+               label='GPU-robust')
 
     # Text
+    title_fontsize = 20
+    text_fontsize = 15
+    xlabel_fontsize = 18
     for k, xk in enumerate(x):
-        if i == 0:
-            axs[i].text(xk,
-                        ours[i][k],
-                        r'${:.2f}$'.format(ours[i][k]),
-                        fontweight='bold',
-                        bbox=dict(alpha=0, pad=1),
-                        verticalalignment='bottom',
-                        horizontalalignment='center')
-        else:
-            axs[i].text(xk,
-                        ours[i][k],
-                        r'${:d}$'.format(int(ours[i][k])),
-                        fontweight='bold',
-                        bbox=dict(alpha=0, pad=1),
-                        verticalalignment='bottom',
-                        horizontalalignment='center')
+        # if i == 0:
+        #     axs[i].text(xk,
+        #                 ours[i][k],
+        #                 r'${:.2f}$'.format(ours[i][k]),
+        #                 fontweight='bold',
+        #                 bbox=dict(alpha=0, pad=1),
+        #                 verticalalignment='bottom',
+        #                 horizontalalignment='center')
+        # else:
+        #     axs[i].text(xk,
+        #                 ours[i][k],
+        #                 r'${:d}$'.format(int(ours[i][k])),
+        #                 fontweight='bold',
+        #                 bbox=dict(alpha=0, pad=1),
+        #                 verticalalignment='bottom',
+        #                 horizontalalignment='center')
+
+        axs[i].text(xk,
+                    ours[i][k],
+                    r'$1.0\times$'.format(ours[i][k]),
+                    fontsize=text_fontsize,
+                    fontweight='bold',
+                    bbox=dict(alpha=0, pad=1),
+                    verticalalignment='bottom',
+                    horizontalalignment='center')
+
         axs[i].text(xk + width,
                     infinitam[i][k],
                     r'${:.2f}\times$'.format(infinitam[i][k] / ours[i][k]),
+                    fontsize=text_fontsize,
                     fontweight='bold',
                     bbox=dict(alpha=0, pad=1),
                     verticalalignment='bottom',
@@ -79,6 +107,7 @@ for i in range(2):
         axs[i].text(xk + 2 * width,
                     voxelhashing[i][k],
                     r'${:.2f}\times$'.format(voxelhashing[i][k] / ours[i][k]),
+                    fontsize=text_fontsize,
                     fontweight='bold',
                     bbox=dict(alpha=0, pad=1),
                     verticalalignment='bottom',
@@ -86,19 +115,25 @@ for i in range(2):
         axs[i].text(xk + 3 * width,
                     gpurobust[i][k],
                     r'${:.2f}\times$'.format(gpurobust[i][k] / ours[i][k]),
+                    fontsize=text_fontsize,
                     fontweight='bold',
                     bbox=dict(alpha=0, pad=1),
                     verticalalignment='bottom',
                     horizontalalignment='center')
 
+    axs[i].set_title(titles[i], fontsize=title_fontsize)
+
+    axs[i].set_xticks(xticks)
+    axs[i].set_xticklabels(xlabels)
     if i == 0:
         axs[i].set_yscale('log')
-    axs[i].set_ylabel(ylabels[i])
-    axs[i].set_xticks(xticks)
-    axs[i].set_xticklabels(xlabels, fontsize=15)
-    axs[i].set_title(titles[i], fontsize=20)
-    axs[i].yaxis.grid()
 
-plt.legend()
-plt.tight_layout()
+    axs[i].set_yticks(yticks[i])
+    axs[i].set_ylabel(ylabels[i], fontsize=text_fontsize)
+    axs[i].yaxis.grid()
+    axs[i].tick_params(axis='x', labelsize=xlabel_fontsize)
+    axs[i].tick_params(axis='y', labelsize=text_fontsize)
+
+plt.tight_layout(rect=[0, 0, 0.88, 1])
+plt.legend(bbox_to_anchor=(1.01, 1), loc='upper left', fontsize=text_fontsize)
 plt.savefig('profile.pdf')
