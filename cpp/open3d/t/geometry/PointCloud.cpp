@@ -439,7 +439,7 @@ PointCloud PointCloud::FromLegacyPointCloud(
 
 open3d::geometry::PointCloud PointCloud::ToLegacyPointCloud() const {
     open3d::geometry::PointCloud pcd_legacy;
-    if (HasPoints()) {
+    if (HasPointPositions()) {
         pcd_legacy.points_ = core::eigen_converter::TensorToEigenVector3dVector(
                 GetPointPositions());
     }

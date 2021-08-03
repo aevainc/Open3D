@@ -229,7 +229,7 @@ bool WritePointCloudToPTS(const std::string &filename,
         }
 
         // Assert attribute shapes.
-        if (pointcloud.HasPoints()) {
+        if (pointcloud.HasPointPositions()) {
             pointcloud.GetPointPositions().AssertShape(
                     core::SizeVector{num_points, 3});
         }

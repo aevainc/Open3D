@@ -207,7 +207,7 @@ public:
 
     /// Check if the "points" attribute's value has length > 0.
     /// This is a convenience function.
-    bool HasPoints() const { return HasPointAttr("points"); }
+    bool HasPointPositions() const { return HasPointAttr("points"); }
 
     /// Returns true if all of the followings are true:
     /// 1) attribute "colors" exist
@@ -253,8 +253,8 @@ public:
         return *this;
     }
 
-    /// Returns !HasPoints().
-    bool IsEmpty() const override { return !HasPoints(); }
+    /// Returns !HasPointPositions().
+    bool IsEmpty() const override { return !HasPointPositions(); }
 
     /// Returns the min bound for point coordinates.
     core::Tensor GetMinBound() const;
