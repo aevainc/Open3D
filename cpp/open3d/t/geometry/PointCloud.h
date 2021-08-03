@@ -129,7 +129,7 @@ public:
     }
 
     /// Get the value of the "points" attribute. Convenience function.
-    core::Tensor &GetPoints() { return GetPointAttr("points"); }
+    core::Tensor &GetPointPositions() { return GetPointAttr("points"); }
 
     /// Get the value of the "colors" attribute. Convenience function.
     core::Tensor &GetPointColors() { return GetPointAttr("colors"); }
@@ -145,7 +145,9 @@ public:
     }
 
     /// Get the value of the "points" attribute. Convenience function.
-    const core::Tensor &GetPoints() const { return GetPointAttr("points"); }
+    const core::Tensor &GetPointPositions() const {
+        return GetPointAttr("points");
+    }
 
     /// Get the value of the "colors" attribute. Convenience function.
     const core::Tensor &GetPointColors() const {
@@ -194,7 +196,7 @@ public:
     /// 3) attribute's length > 0
     bool HasPointAttr(const std::string &key) const {
         return point_attr_.Contains(key) && GetPointAttr(key).GetLength() > 0 &&
-               GetPointAttr(key).GetLength() == GetPoints().GetLength();
+               GetPointAttr(key).GetLength() == GetPointPositions().GetLength();
     }
 
     /// Removes point attribute by key value. Primary attribute "points" cannot

@@ -92,10 +92,10 @@ LoadTensorPointCloudFromFile(const std::string& source_pointcloud_filename,
 
     geometry::PointCloud source_device(device), target_device(device);
 
-    core::Tensor source_points = source.GetPoints().To(device, dtype);
+    core::Tensor source_points = source.GetPointPositions().To(device, dtype);
     source_device.SetPoints(source_points);
 
-    core::Tensor target_points = target.GetPoints().To(device, dtype);
+    core::Tensor target_points = target.GetPointPositions().To(device, dtype);
     core::Tensor target_normals = target.GetPointNormals().To(device, dtype);
     target_device.SetPoints(target_points);
     target_device.SetPointNormals(target_normals);
@@ -142,8 +142,8 @@ static void BenchmarkRegistrationICP(benchmark::State& state,
     }
 
     utility::LogDebug(" PointCloud Size: Source: {}  Target: {}",
-                      source.GetPoints().GetShape().ToString(),
-                      target.GetPoints().GetShape().ToString());
+                      source.GetPointPositions().GetShape().ToString(),
+                      target.GetPointPositions().GetShape().ToString());
     utility::LogDebug(" Max iterations: {}, Max_correspondence_distance : {}",
                       max_iterations, max_correspondence_distance);
 }
