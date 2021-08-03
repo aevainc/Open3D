@@ -1,0 +1,62 @@
+
+Download Dataset API and workflow:
+-----------------------------------
+
+1) Create a dataset file with following fields: 
+
+Format JSON/TEXT ??
+
+S.NO.   Name            URLs                                                                         License
+1       Fountain        https://storage.googleapis.com/isl-datasets/open3d-dev/fountain.zip             MIT
+
+
+E.g.
+
+{"Fountain" : { 
+      "url": [
+          "https://storage.googleapis.com/isl-datasets/open3d-dev/fountain.zip"
+      ]
+      "license": "license_url"
+      "tags": "tag1", "tag2",
+      "HASH": ["
+      "]},
+ "Redwood-Objects" : {
+      "url" : [
+          "https://github.com/intel-isl/open3d_downloads/releases/download/Redwood-objects/chair.zip",
+          "https://github.com/intel-isl/open3d_downloads/releases/download/Redwood-objects/car.zip" ]
+      "license": "ODC-BY"}
+ }
+
+
+2) A cpp DatasetDownloadManager to download the dataset.
+
+Usage: ./downloadDataset --name fountain --destination <path/to/folder>
+
+
+Go through dataset url list:
+print urls
+print I have read the licence information for the {dataset}
+
+User Input: Yes/No
+No -> end
+Yes,
+
+Dataset is download and if it’s a zip or tar we extract its contents.
+We copy the dataset to the DestinationFolder and delete the original.
+
+
+
+Usage In examples
+———————————————
+
+If the user runs an example without any input, default dataset will be downloaded using the script and used for the example.
+
+Example starts with print:
+
+“Usage: ./run_example  [—-dataset /path/to/dataset/folder]
+
+Using data from path: {defaultDatasetFolder/ inputDatsetFolder}
+
+You may download and use other datasets listed in “DatasetList.json”
+
+
