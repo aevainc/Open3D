@@ -52,7 +52,7 @@ PointCloud::PointCloud(const core::Device &device)
 PointCloud::PointCloud(const core::Tensor &points)
     : PointCloud(points.GetDevice()) {
     points.AssertShapeCompatible({utility::nullopt, 3});
-    SetPoints(points);
+    SetPointPositions(points);
 }
 
 PointCloud::PointCloud(const std::unordered_map<std::string, core::Tensor>
@@ -420,8 +420,9 @@ PointCloud PointCloud::FromLegacyPointCloud(
         const core::Device &device) {
     geometry::PointCloud pcd(device);
     if (pcd_legacy.HasPoints()) {
-        pcd.SetPoints(core::eigen_converter::EigenVector3dVectorToTensor(
-                pcd_legacy.points_, dtype, device));
+        pcd.SetPointPositions(
+                core::eigen_converter::EigenVector3dVectorToTensor(
+                        pcd_legacy.points_, dtype, device));
     } else {
         utility::LogWarning("Creating from an empty legacy PointCloud.");
     }

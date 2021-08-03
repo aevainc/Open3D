@@ -109,7 +109,7 @@ TEST_P(PointCloudPermuteDevices, GetMinBound_GetMaxBound_GetCenter) {
 
     core::Tensor points = core::Tensor(std::vector<float>{1, 2, 3, 4, 5, 6},
                                        {2, 3}, core::Float32, device);
-    pcd.SetPoints(points);
+    pcd.SetPointPositions(points);
 
     EXPECT_FALSE(pcd.IsEmpty());
     EXPECT_TRUE(pcd.HasPoints());
@@ -134,7 +134,7 @@ TEST_P(PointCloudPermuteDevicePairs, CopyDevice) {
 
     t::geometry::PointCloud pcd(src_device);
 
-    pcd.SetPoints(points);
+    pcd.SetPointPositions(points);
     pcd.SetPointColors(colors);
     pcd.SetPointAttr("labels", labels);
 
@@ -156,7 +156,7 @@ TEST_P(PointCloudPermuteDevices, Copy) {
 
     t::geometry::PointCloud pcd(device);
 
-    pcd.SetPoints(points);
+    pcd.SetPointPositions(points);
     pcd.SetPointColors(colors);
     pcd.SetPointAttr("labels", labels);
 
@@ -185,7 +185,7 @@ TEST_P(PointCloudPermuteDevices, Transform) {
             std::vector<float>{1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1},
             {4, 4}, dtype, device);
 
-    pcd.SetPoints(
+    pcd.SetPointPositions(
             core::Tensor(std::vector<float>{1, 1, 1}, {1, 3}, dtype, device));
     pcd.SetPointNormals(
             core::Tensor(std::vector<float>{1, 1, 1}, {1, 3}, dtype, device));
@@ -203,15 +203,15 @@ TEST_P(PointCloudPermuteDevices, Translate) {
                              device);
 
     // Relative.
-    pcd.SetPoints(core::Tensor(std::vector<float>{0, 1, 2, 6, 7, 8}, {2, 3},
-                               core::Float32, device));
+    pcd.SetPointPositions(core::Tensor(std::vector<float>{0, 1, 2, 6, 7, 8},
+                                       {2, 3}, core::Float32, device));
     pcd.Translate(translation, /*relative=*/true);
     EXPECT_EQ(pcd.GetPointPositions().ToFlatVector<float>(),
               std::vector<float>({10, 21, 32, 16, 27, 38}));
 
     // Non-relative.
-    pcd.SetPoints(core::Tensor(std::vector<float>{0, 1, 2, 6, 7, 8}, {2, 3},
-                               core::Float32, device));
+    pcd.SetPointPositions(core::Tensor(std::vector<float>{0, 1, 2, 6, 7, 8},
+                                       {2, 3}, core::Float32, device));
     pcd.Translate(translation, /*relative=*/false);
     EXPECT_EQ(pcd.GetPointPositions().ToFlatVector<float>(),
               std::vector<float>({7, 17, 27, 13, 23, 33}));
@@ -223,7 +223,7 @@ TEST_P(PointCloudPermuteDevices, Scale) {
     core::Tensor points =
             core::Tensor(std::vector<float>{0, 0, 0, 1, 1, 1, 2, 2, 2}, {3, 3},
                          core::Float32, device);
-    pcd.SetPoints(points);
+    pcd.SetPointPositions(points);
     core::Tensor center(std::vector<float>{1, 1, 1}, {3}, core::Float32,
                         device);
     float scale = 4;
@@ -240,7 +240,7 @@ TEST_P(PointCloudPermuteDevices, Rotate) {
                           dtype, device);
     core::Tensor center = core::Tensor::Ones({3}, dtype, device);
 
-    pcd.SetPoints(
+    pcd.SetPointPositions(
             core::Tensor(std::vector<float>{2, 2, 2}, {1, 3}, dtype, device));
     pcd.SetPointNormals(
             core::Tensor(std::vector<float>{1, 1, 1}, {1, 3}, dtype, device));
@@ -345,7 +345,7 @@ TEST_P(PointCloudPermuteDevices, Setters) {
 
     t::geometry::PointCloud pcd(device);
 
-    pcd.SetPoints(points);
+    pcd.SetPointPositions(points);
     pcd.SetPointColors(colors);
     pcd.SetPointAttr("labels", labels);
 
@@ -367,7 +367,7 @@ TEST_P(PointCloudPermuteDevices, Setters) {
         core::Tensor cpu_labels =
                 core::Tensor::Ones({2, 3}, dtype, cpu_device) * 3;
 
-        EXPECT_ANY_THROW(pcd.SetPoints(cpu_points));
+        EXPECT_ANY_THROW(pcd.SetPointPositions(cpu_points));
         EXPECT_ANY_THROW(pcd.SetPointColors(cpu_colors));
         EXPECT_ANY_THROW(pcd.SetPointAttr("labels", cpu_labels));
     }
@@ -383,7 +383,7 @@ TEST_P(PointCloudPermuteDevices, Append) {
 
     t::geometry::PointCloud pcd(device);
 
-    pcd.SetPoints(points);
+    pcd.SetPointPositions(points);
     pcd.SetPointColors(colors);
 
     t::geometry::PointCloud pcd2(device);
@@ -418,7 +418,7 @@ TEST_P(PointCloudPermuteDevices, Has) {
     EXPECT_FALSE(pcd.HasPointColors());
     EXPECT_FALSE(pcd.HasPointAttr("labels"));
 
-    pcd.SetPoints(core::Tensor::Ones({10, 3}, dtype, device));
+    pcd.SetPointPositions(core::Tensor::Ones({10, 3}, dtype, device));
     EXPECT_TRUE(pcd.HasPoints());
 
     // Different size.

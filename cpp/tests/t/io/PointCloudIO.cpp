@@ -235,7 +235,7 @@ TEST(TPointCloudIO, ReadWritePTS) {
 
     // Write pointcloud with only colors and match it after read.
     pcd_read.Clear();
-    pcd_color.SetPoints(pcd.GetPointPositions());
+    pcd_color.SetPointPositions(pcd.GetPointPositions());
     pcd_color.SetPointColors(pcd.GetPointColors());
     file_name = std::string(TEST_DATA_DIR) + "/test_color.pts";
     EXPECT_TRUE(t::io::WritePointCloud(file_name, pcd_color));
@@ -249,7 +249,7 @@ TEST(TPointCloudIO, ReadWritePTS) {
 
     // Write pointcloud with only intensities and match it after read.
     pcd_read.Clear();
-    pcd_i.SetPoints(pcd.GetPointPositions());
+    pcd_i.SetPointPositions(pcd.GetPointPositions());
     pcd_i.SetPointAttr("intensities", pcd.GetPointAttr("intensities"));
     file_name = std::string(TEST_DATA_DIR) + "/test_intensities.pts";
     EXPECT_TRUE(t::io::WritePointCloud(file_name, pcd_i));
@@ -289,7 +289,7 @@ TEST(TPointCloudIO, WritePTSColorConversion1) {
     t::geometry::PointCloud pcd, pcd_read;
     std::string file_name =
             std::string(TEST_DATA_DIR) + "/test_color_conversion.pts";
-    pcd.SetPoints(core::Tensor::Init<double>({{1, 2, 3}, {4, 5, 6}}));
+    pcd.SetPointPositions(core::Tensor::Init<double>({{1, 2, 3}, {4, 5, 6}}));
     pcd.SetPointColors(
             core::Tensor::Init<float>({{-1, 0.25, 0.3}, {0, 4, 0.1}}));
     EXPECT_TRUE(t::io::WritePointCloud(file_name, pcd));
@@ -305,7 +305,7 @@ TEST(TPointCloudIO, WritePTSColorConversion2) {
     t::geometry::PointCloud pcd, pcd_read;
     std::string file_name =
             std::string(TEST_DATA_DIR) + "/test_color_conversion.pts";
-    pcd.SetPoints(core::Tensor::Init<double>({{1, 2, 3}, {4, 5, 6}}));
+    pcd.SetPointPositions(core::Tensor::Init<double>({{1, 2, 3}, {4, 5, 6}}));
     pcd.SetPointColors(core::Tensor::Init<bool>({{1, 0, 0}, {1, 0, 1}}));
     EXPECT_TRUE(t::io::WritePointCloud(file_name, pcd));
     EXPECT_TRUE(t::io::ReadPointCloud(file_name, pcd_read,

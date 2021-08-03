@@ -173,7 +173,7 @@ public:
     }
 
     /// Set the value of the "points" attribute. Convenience function.
-    void SetPoints(const core::Tensor &value) {
+    void SetPointPositions(const core::Tensor &value) {
         value.AssertShapeCompatible({utility::nullopt, 3});
         SetPointAttr("points", value);
     }

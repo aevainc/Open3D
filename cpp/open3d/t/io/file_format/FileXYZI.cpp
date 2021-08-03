@@ -76,7 +76,7 @@ bool ReadPointCloudFromXYZI(const std::string &filename,
                 reporter.Update(file.CurPos());
             }
         }
-        pointcloud.SetPoints(points);
+        pointcloud.SetPointPositions(points);
         pointcloud.SetPointAttr("intensities", intensities);
         reporter.Finish();
 

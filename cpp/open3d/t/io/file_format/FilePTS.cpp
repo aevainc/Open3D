@@ -68,7 +68,7 @@ bool ReadPointCloudFromPTS(const std::string &filename,
                     "Read PTS failed: number of points must be >= 0.");
             return false;
         } else if (num_points == 0) {
-            pointcloud.SetPoints(core::Tensor({0, 3}, core::Float64));
+            pointcloud.SetPointPositions(core::Tensor({0, 3}, core::Float64));
             return true;
         }
         utility::CountingProgressReporter reporter(params.update_progress);
@@ -87,7 +87,7 @@ bool ReadPointCloudFromPTS(const std::string &filename,
 
             // X Y Z I R G B.
             if (num_fields == 7) {
-                pointcloud.SetPoints(
+                pointcloud.SetPointPositions(
                         core::Tensor({num_points, 3}, core::Float64));
                 points_ptr =
                         pointcloud.GetPointPositions().GetDataPtr<double>();
@@ -102,7 +102,7 @@ bool ReadPointCloudFromPTS(const std::string &filename,
             }
             // X Y Z R G B.
             else if (num_fields == 6) {
-                pointcloud.SetPoints(
+                pointcloud.SetPointPositions(
                         core::Tensor({num_points, 3}, core::Float64));
                 points_ptr =
                         pointcloud.GetPointPositions().GetDataPtr<double>();
@@ -112,7 +112,7 @@ bool ReadPointCloudFromPTS(const std::string &filename,
             }
             // X Y Z I.
             else if (num_fields == 4) {
-                pointcloud.SetPoints(
+                pointcloud.SetPointPositions(
                         core::Tensor({num_points, 3}, core::Float64));
                 points_ptr =
                         pointcloud.GetPointPositions().GetDataPtr<double>();
@@ -124,7 +124,7 @@ bool ReadPointCloudFromPTS(const std::string &filename,
             }
             // X Y Z.
             else if (num_fields == 3) {
-                pointcloud.SetPoints(
+                pointcloud.SetPointPositions(
                         core::Tensor({num_points, 3}, core::Float64));
                 points_ptr =
                         pointcloud.GetPointPositions().GetDataPtr<double>();

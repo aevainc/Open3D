@@ -504,12 +504,12 @@ protected:
                         result.correspondences_.IndexGet({valid}).Reshape({-1});
                 {
                     std::lock_guard<std::mutex> lock(pcd_.lock_);
-                    pcd_.correspondence_src_.SetPoints(
+                    pcd_.correspondence_src_.SetPointPositions(
                             source_down_pyramid[i]
                                     .GetPointPositions()
                                     .IndexGet({source_indices})
                                     .To(host_));
-                    pcd_.correspondence_tar_.SetPoints(
+                    pcd_.correspondence_tar_.SetPointPositions(
                             target_down_pyramid[i]
                                     .GetPointPositions()
                                     .IndexGet({target_indices})
@@ -737,13 +737,13 @@ private:
 
         // Converting point and normals attributes to Floar32 and currently only
         // Float32 pointcloud is supported by the tensor registration module.
-        source.SetPoints(source.GetPointPositions().To(dtype_));
+        source.SetPointPositions(source.GetPointPositions().To(dtype_));
         if (source.HasPointNormals()) {
             source.SetPointNormals(source.GetPointNormals().To(dtype_));
         }
         // Converting attributes to Floar32 and currently only
         // Float32 pointcloud is supported by the tensor registration module.
-        target.SetPoints(target.GetPointPositions().To(dtype_));
+        target.SetPointPositions(target.GetPointPositions().To(dtype_));
         if (target.HasPointNormals()) {
             target.SetPointNormals(target.GetPointNormals().To(dtype_));
         }

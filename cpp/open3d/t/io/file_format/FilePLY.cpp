@@ -269,7 +269,7 @@ bool ReadPointCloudFromPLY(const std::string &filename,
         state.name_to_attr_state_.erase("x");
         state.name_to_attr_state_.erase("y");
         state.name_to_attr_state_.erase("z");
-        pointcloud.SetPoints(points);
+        pointcloud.SetPointPositions(points);
     }
     if (state.name_to_attr_state_.count("nx") != 0 &&
         state.name_to_attr_state_.count("ny") != 0 &&

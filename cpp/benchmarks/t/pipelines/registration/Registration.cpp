@@ -93,11 +93,11 @@ LoadTensorPointCloudFromFile(const std::string& source_pointcloud_filename,
     geometry::PointCloud source_device(device), target_device(device);
 
     core::Tensor source_points = source.GetPointPositions().To(device, dtype);
-    source_device.SetPoints(source_points);
+    source_device.SetPointPositions(source_points);
 
     core::Tensor target_points = target.GetPointPositions().To(device, dtype);
     core::Tensor target_normals = target.GetPointNormals().To(device, dtype);
-    target_device.SetPoints(target_points);
+    target_device.SetPointPositions(target_points);
     target_device.SetPointNormals(target_normals);
 
     return std::make_tuple(source_device, target_device);

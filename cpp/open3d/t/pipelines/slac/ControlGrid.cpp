@@ -234,7 +234,8 @@ geometry::PointCloud ControlGrid::Parameterize(
             masks_nb.View({8, n}).To(core::Int64).Sum({0}).Eq(8);
 
     geometry::PointCloud pcd_with_params = pcd;
-    pcd_with_params.SetPoints(pcd.GetPointPositions().IndexGet({valid_mask}));
+    pcd_with_params.SetPointPositions(
+            pcd.GetPointPositions().IndexGet({valid_mask}));
     pcd_with_params.SetPointAttr(kGrid8NbIndices,
                                  addrs_nb.IndexGet({valid_mask}));
     pcd_with_params.SetPointAttr(kGrid8NbVertexInterpRatios,
