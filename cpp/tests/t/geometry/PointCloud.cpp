@@ -295,7 +295,7 @@ TEST_P(PointCloudPermuteDevices, ToLegacyPointCloud) {
     });
 
     geometry::PointCloud legacy_pcd = pcd.ToLegacyPointCloud();
-    EXPECT_TRUE(legacy_pcd.HasPointPositions());
+    EXPECT_TRUE(legacy_pcd.HasPoints());
     EXPECT_TRUE(legacy_pcd.HasColors());
     EXPECT_FALSE(legacy_pcd.HasNormals());
     EXPECT_EQ(legacy_pcd.points_.size(), 2);
