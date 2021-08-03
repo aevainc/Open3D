@@ -85,7 +85,7 @@ TEST_P(PointCloudPermuteDevices, ConstructFromPointDict) {
     core::Tensor colors = core::Tensor::Ones({10, 3}, dtype, device) * 0.5;
     core::Tensor normals = core::Tensor::Ones({10, 3}, dtype, device) * 0.25;
     std::unordered_map<std::string, core::Tensor> point_dict{
-            {"points", points},
+            {"positions", points},
             {"colors", colors},
             {"normals", normals},
     };
@@ -290,7 +290,7 @@ TEST_P(PointCloudPermuteDevices, ToLegacyPointCloud) {
     core::Dtype dtype = core::Float32;
 
     t::geometry::PointCloud pcd({
-            {"points", core::Tensor::Ones({2, 3}, dtype, device)},
+            {"positions", core::Tensor::Ones({2, 3}, dtype, device)},
             {"colors", core::Tensor::Ones({2, 3}, dtype, device) * 2},
     });
 
@@ -314,7 +314,7 @@ TEST_P(PointCloudPermuteDevices, Getters) {
     core::Dtype dtype = core::Float32;
 
     t::geometry::PointCloud pcd({
-            {"points", core::Tensor::Ones({2, 3}, dtype, device)},
+            {"positions", core::Tensor::Ones({2, 3}, dtype, device)},
             {"colors", core::Tensor::Ones({2, 3}, dtype, device) * 2},
             {"labels", core::Tensor::Ones({2, 3}, dtype, device) * 3},
     });
@@ -435,7 +435,7 @@ TEST_P(PointCloudPermuteDevices, RemovePointAttr) {
     core::Dtype dtype = core::Float32;
 
     t::geometry::PointCloud pcd({
-            {"points", core::Tensor::Ones({2, 3}, dtype, device)},
+            {"positions", core::Tensor::Ones({2, 3}, dtype, device)},
             {"colors", core::Tensor::Ones({2, 3}, dtype, device) * 2},
             {"labels", core::Tensor::Ones({2, 3}, dtype, device) * 3},
     });
@@ -444,8 +444,8 @@ TEST_P(PointCloudPermuteDevices, RemovePointAttr) {
     pcd.RemovePointAttr("labels");
     EXPECT_ANY_THROW(pcd.GetPointAttr("labels"));
 
-    // Not allowed to delete "points" attribute.
-    EXPECT_ANY_THROW(pcd.RemovePointAttr("points"));
+    // Not allowed to delete "positions" attribute.
+    EXPECT_ANY_THROW(pcd.RemovePointAttr("positions"));
 }
 
 TEST_P(PointCloudPermuteDevices, CreateFromRGBDImage) {
@@ -465,7 +465,7 @@ TEST_P(PointCloudPermuteDevices, CreateFromRGBDImage) {
             {{10, 0, 1}, {0, 10, 1}, {0, 0, 1}}, device);
     core::Tensor extrinsics = core::Tensor::Eye(4, core::Float32, device);
     t::geometry::PointCloud pcd_ref(
-            {{"points",
+            {{"positions",
               core::Tensor::Init<float>(
                       {{-0.1, -0.1, 1.0}, {0.0, -0.1, 1.0}, {0.0, 0.0, 1.0}},
                       device)},

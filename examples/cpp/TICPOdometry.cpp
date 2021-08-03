@@ -546,7 +546,7 @@ private:
                                       {"auto", false, false, true});
 
                 // registration module.
-                for (std::string attr : {"points", "colors", "normals"}) {
+                for (std::string attr : {"positions", "colors", "normals"}) {
                     if (pointcloud_local.HasPointAttr(attr)) {
                         pointcloud_local.SetPointAttr(
                                 attr,

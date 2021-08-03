@@ -47,7 +47,7 @@ namespace geometry {
 PointCloud::PointCloud(const core::Device &device)
     : Geometry(Geometry::GeometryType::PointCloud, 3),
       device_(device),
-      point_attr_(TensorMap("points")) {}
+      point_attr_(TensorMap("positions")) {}
 
 PointCloud::PointCloud(const core::Tensor &points)
     : PointCloud(points.GetDevice()) {
@@ -58,14 +58,14 @@ PointCloud::PointCloud(const core::Tensor &points)
 PointCloud::PointCloud(const std::unordered_map<std::string, core::Tensor>
                                &map_keys_to_tensors)
     : Geometry(Geometry::GeometryType::PointCloud, 3),
-      point_attr_(TensorMap("points")) {
-    if (map_keys_to_tensors.count("points") == 0) {
+      point_attr_(TensorMap("positions")) {
+    if (map_keys_to_tensors.count("positions") == 0) {
         utility::LogError("\"points\" attribute must be specified.");
     }
-    device_ = map_keys_to_tensors.at("points").GetDevice();
-    map_keys_to_tensors.at("points").AssertShapeCompatible(
-            {utility::nullopt, 3});
-    point_attr_ = TensorMap("points", map_keys_to_tensors.begin(),
+    device_ = map_keys_to_tensors.at("positions").GetDevice();
+    map_keys_to_tensors.at("positions")
+            .AssertShapeCompatible({utility::nullopt, 3});
+    point_attr_ = TensorMap("positions", map_keys_to_tensors.begin(),
                             map_keys_to_tensors.end());
 }
 
@@ -79,7 +79,7 @@ std::string PointCloud::ToString() const {
                         GetPointPositions().GetDtype().ToString());
     if (point_attr_.size() == 1) return str + " None.";
     for (const auto &keyval : point_attr_) {
-        if (keyval.first != "points") {
+        if (keyval.first != "positions") {
             str += fmt::format(" {} ({}, {}),", keyval.first,
                                keyval.second.GetDtype().ToString(),
                                keyval.second.GetShape(1));
@@ -219,7 +219,7 @@ PointCloud PointCloud::VoxelDownSample(
 
     PointCloud pcd_down(GetPointPositions().GetDevice());
     for (auto &kv : point_attr_) {
-        if (kv.first == "points") {
+        if (kv.first == "positions") {
             pcd_down.SetPointAttr(kv.first,
                                   points_voxeli.IndexGet({masks}).To(
                                           GetPointPositions().GetDtype()) *
@@ -302,7 +302,7 @@ static PointCloud CreatePointCloudWithNormals(
                     .LogicalAnd(vertex_list.Slice(1, 0, 1, 1).IsFinite())
                     .Reshape({im_size});
     PointCloud pcd(
-            {{"points",
+            {{"positions",
               vertex_list.GetItem({TensorKey::IndexTensor(valid_idx),
                                    TensorKey::Slice(None, None, None)})},
              {"normals",
@@ -372,7 +372,7 @@ PointCloud PointCloud::CreateFromRGBDImage(const RGBDImage &rgbd_image,
         kernel::pointcloud::Unproject(
                 rgbd_image.depth_.AsTensor(), image_colors_t, points, colors,
                 intrinsics, extrinsics, depth_scale, depth_max, stride);
-        return PointCloud({{"points", points}, {"colors", colors}});
+        return PointCloud({{"positions", points}, {"colors", colors}});
     }
 }
 

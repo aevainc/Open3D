@@ -109,7 +109,7 @@ public:
     ///
     /// \param map_keys_to_tensors A map of string to Tensor containing
     /// points and their attributes. point_dict must contain at least the
-    /// "points" key.
+    /// "positions" key.
     PointCloud(const std::unordered_map<std::string, core::Tensor>
                        &map_keys_to_tensors);
 
@@ -128,8 +128,8 @@ public:
         return point_attr_.at(key);
     }
 
-    /// Get the value of the "points" attribute. Convenience function.
-    core::Tensor &GetPointPositions() { return GetPointAttr("points"); }
+    /// Get the value of the "positions" attribute. Convenience function.
+    core::Tensor &GetPointPositions() { return GetPointAttr("positions"); }
 
     /// Get the value of the "colors" attribute. Convenience function.
     core::Tensor &GetPointColors() { return GetPointAttr("colors"); }
@@ -144,9 +144,9 @@ public:
         return point_attr_.at(key);
     }
 
-    /// Get the value of the "points" attribute. Convenience function.
+    /// Get the value of the "positions" attribute. Convenience function.
     const core::Tensor &GetPointPositions() const {
-        return GetPointAttr("points");
+        return GetPointAttr("positions");
     }
 
     /// Get the value of the "colors" attribute. Convenience function.
@@ -172,10 +172,10 @@ public:
         point_attr_[key] = value;
     }
 
-    /// Set the value of the "points" attribute. Convenience function.
+    /// Set the value of the "positions" attribute. Convenience function.
     void SetPointPositions(const core::Tensor &value) {
         value.AssertShapeCompatible({utility::nullopt, 3});
-        SetPointAttr("points", value);
+        SetPointAttr("positions", value);
     }
 
     /// Set the value of the "colors" attribute. Convenience function.
@@ -199,15 +199,15 @@ public:
                GetPointAttr(key).GetLength() == GetPointPositions().GetLength();
     }
 
-    /// Removes point attribute by key value. Primary attribute "points" cannot
-    /// be removed. Throws warning if attribute key does not exists.
+    /// Removes point attribute by key value. Primary attribute "positions"
+    /// cannot be removed. Throws warning if attribute key does not exists.
     ///
     /// \param key Attribute name.
     void RemovePointAttr(const std::string &key) { point_attr_.Erase(key); }
 
-    /// Check if the "points" attribute's value has length > 0.
+    /// Check if the "positions" attribute's value has length > 0.
     /// This is a convenience function.
-    bool HasPointPositions() const { return HasPointAttr("points"); }
+    bool HasPointPositions() const { return HasPointAttr("positions"); }
 
     /// Returns true if all of the followings are true:
     /// 1) attribute "colors" exist

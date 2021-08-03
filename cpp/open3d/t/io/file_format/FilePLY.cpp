@@ -402,7 +402,7 @@ bool WritePointCloudToPLY(const std::string &filename,
 
     e_ply_type attributeType;
     for (auto const &it : t_map) {
-        if (it.first != "points" && it.first != "colors" &&
+        if (it.first != "positions" && it.first != "colors" &&
             it.first != "normals") {
             attributeType = GetPlyType(it.second.GetDtype());
             ply_add_property(ply_file, it.first.c_str(), attributeType,
@@ -450,7 +450,7 @@ bool WritePointCloudToPLY(const std::string &filename,
         }
 
         for (auto const &it : t_map) {
-            if (it.first != "points" && it.first != "colors" &&
+            if (it.first != "positions" && it.first != "colors" &&
                 it.first != "normals") {
                 DISPATCH_DTYPE_TO_TEMPLATE(it.second.GetDtype(), [&]() {
                     const scalar_t *data_ptr =
