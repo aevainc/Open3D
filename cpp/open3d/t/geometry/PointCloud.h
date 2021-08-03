@@ -44,52 +44,49 @@ namespace t {
 namespace geometry {
 
 /// \class PointCloud
-/// \brief A pointcloud contains a set of 3D points.
+/// \brief A point cloud contains a list of 3D points.
 ///
-/// The PointCloud class stores the attribute data in key-value pairs for
-/// flexibility, where the key is a string representing the attribute name and
-/// value is a Tensor containing the attribute data. In most cases, the
-/// length of an attribute should be equal to the length of the "points", the
-/// pointcloud class provides helper functions to check and facilitates this
-/// consistency.
+/// The point cloud class stores the attribute data in key-value pairs, where
+/// the key is a string representing the attribute name and the value is a
+/// Tensor containing the attribute data. In most cases, the length of an
+/// attribute should be equal to the length of the point cloud's "positions".
 ///
-/// Although the attributes are all stored in a key-value pair dictionary, the
-/// attributes have different levels:
-///
-/// - Level 0: Default attribute {"points"}.
+/// - Default attribute: "positions".
+///     - Usage
+///         - PointCloud::GetPointPositions()
+///         - PointCloud::SetPointPositions(positions)
+///         - PointCloud::HasPointPositions()
 ///     - Created by default, required for all pointclouds.
-///     - The tensor must be of shape N x {3,}.
-///     - Convenience functions:
-///         - PointCloud::GetPoints()
-///         - PointCloud::SetPoints(points_tensor)
-///         - PointCloud::HasPoints()
-///     - The device of "points" determines the device of the pointcloud.
-/// - Level 1: Commonly-used attributes {"normals", "colors"}.
-///     - Not created by default.
-///     - The tensor must be of shape N x {3,}.
-///     - Convenience functions:
+///     - Value tensor must have shape N x {3,}.
+///     - The device of "positions" determines the device of the pointcloud.
+///
+/// - Common attributes: "normals", "colors".
+///     - Usage
 ///         - PointCloud::GetPointNormals()
-///         - PointCloud::SetPointNormals(normals_tensor)
+///         - PointCloud::SetPointNormals(normals)
 ///         - PointCloud::HasPointNormals()
 ///         - PointCloud::GetPointColors()
-///         - PointCloud::SetPointColors(colors_tensor)
+///         - PointCloud::SetPointColors(colors)
 ///         - PointCloud::HasPointColors()
-///     - Device must be the same as the device of "points". Dtype can be
-///       different.
-/// - Level 2: Custom attributes, e.g. {"labels", "alphas", "intensities"}.
-///     - Not created by default. Created by users.
-///     - No convenience functions.
-///     - Use generalized helper functions. Examples:
-///         - PointCloud::GetPointAttr("labels")
-///         - PointCloud::SetPointAttr("labels", labels_tensor)
-///         - PointCloud::HasPointAttr("labels")
-///     - Device must be the same as the device of "points". Dtype can be
-///       different.
+///     - Not created by default.
+///     - Value tensor must have shape N x {3,}.
+///     - Value tensor must be on the same device as "positions".
+///     - Value tensor can have any dtypes.
 ///
-/// Note that the level 0 and level 1 convenience functions can also be achieved
-/// via the generalized helper functions:
-///     - PointCloud::GetPoints() is the same as
-///       PointCloud::GetPointAttr("points")
+/// - Custom attributes, e.g., "labels", "intensities".
+///     - Usage
+///         - PointCloud::GetPointAttr("labels")
+///         - PointCloud::SetPointAttr("labels", labels)
+///         - PointCloud::HasPointAttr("labels")
+///     - Not created by default. Users and add their own custom attributes.
+///     - Value tensor must be on the same device as "positions".
+///     - Value tensor can have any dtypes.
+///
+/// PointCloud::GetPointAttr(), PointCloud::SetPointAttr(),
+/// PointCloud::HasPointAttr() also works for default attribute "position" and
+/// common attributes "normals" and "colors", e.g.,
+///     - PointCloud::GetPointPositions() is the same as
+///       PointCloud::GetPointAttr("positions")
 ///     - PointCloud::HasPointNormals() is the same as
 ///       PointCloud::HasPointAttr("normals")
 class PointCloud : public Geometry {
