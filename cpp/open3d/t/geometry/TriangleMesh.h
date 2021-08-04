@@ -57,7 +57,7 @@ namespace geometry {
 ///     - Convenience functions:
 ///         - TriangleMesh::GetVertexPositions()
 ///         - TriangleMesh::SetVertexPositions(vertices_tensor)
-///         - TriangleMesh::HasVertices()
+///         - TriangleMesh::HasVertexPositions()
 ///         - TriangleMesh::GetTriangles()
 ///         - TriangleMesh::SetTriangles(triangles_tensor)
 ///         - TriangleMesh::HasTriangles()
@@ -335,7 +335,7 @@ public:
 
     /// Check if the "vertices" attribute's value in vertex_attr_ has length >
     /// 0. Convenience function.
-    bool HasVertices() const { return HasVertexAttr("vertices"); }
+    bool HasVertexPositions() const { return HasVertexAttr("vertices"); }
 
     /// Returns true if all of the followings are true in vertex_attr_:
     /// 1) attribute "colors" exist
@@ -388,8 +388,8 @@ public:
         return *this;
     }
 
-    /// Returns !HasVertices(), triangles are ignored.
-    bool IsEmpty() const override { return !HasVertices(); }
+    /// Returns !HasVertexPositions(), triangles are ignored.
+    bool IsEmpty() const override { return !HasVertexPositions(); }
 
     core::Tensor GetMinBound() const { return GetVertexPositions().Min({0}); }
 

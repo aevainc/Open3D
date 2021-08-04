@@ -105,7 +105,7 @@ bool ReadTriangleMesh(const std::string &filename,
                 "vertices.",
                 mesh.GetTriangles().GetLength(),
                 mesh.GetVertexPositions().GetLength());
-        if (mesh.HasVertices() && !mesh.HasTriangles()) {
+        if (mesh.HasVertexPositions() && !mesh.HasTriangles()) {
             utility::LogWarning(
                     "geometry::TriangleMesh appears to be a "
                     "geometry::PointCloud "

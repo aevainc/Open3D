@@ -154,7 +154,7 @@ geometry::TriangleMesh TriangleMesh::FromLegacy(
 
 open3d::geometry::TriangleMesh TriangleMesh::ToLegacy() const {
     open3d::geometry::TriangleMesh mesh_legacy;
-    if (HasVertices()) {
+    if (HasVertexPositions()) {
         mesh_legacy.vertices_ =
                 core::eigen_converter::TensorToEigenVector3dVector(
                         GetVertexPositions());

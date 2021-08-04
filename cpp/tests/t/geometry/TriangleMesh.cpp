@@ -48,7 +48,7 @@ TEST_P(TriangleMeshPermuteDevices, DefaultConstructor) {
 
     // Public members.
     EXPECT_TRUE(mesh.IsEmpty());
-    EXPECT_FALSE(mesh.HasVertices());
+    EXPECT_FALSE(mesh.HasVertexPositions());
     EXPECT_FALSE(mesh.HasVertexColors());
     EXPECT_FALSE(mesh.HasVertexNormals());
     EXPECT_FALSE(mesh.HasTriangles());
@@ -70,7 +70,7 @@ TEST_P(TriangleMeshPermuteDevices, ConstructFromVertices) {
 
     t::geometry::TriangleMesh mesh(vertices, triangles);
 
-    EXPECT_TRUE(mesh.HasVertices());
+    EXPECT_TRUE(mesh.HasVertexPositions());
     EXPECT_EQ(mesh.GetVertexPositions().GetLength(), 10);
     EXPECT_EQ(mesh.GetTriangles().GetLength(), 10);
 }
@@ -183,7 +183,7 @@ TEST_P(TriangleMeshPermuteDevices, Has) {
     core::Device device = GetParam();
 
     t::geometry::TriangleMesh mesh(device);
-    EXPECT_FALSE(mesh.HasVertices());
+    EXPECT_FALSE(mesh.HasVertexPositions());
     EXPECT_FALSE(mesh.HasVertexColors());
     EXPECT_FALSE(mesh.HasVertexNormals());
     EXPECT_FALSE(mesh.HasVertexAttr("labels"));
@@ -192,7 +192,7 @@ TEST_P(TriangleMeshPermuteDevices, Has) {
     EXPECT_FALSE(mesh.HasTriangleAttr("labels"));
 
     mesh.SetVertexPositions(core::Tensor::Ones({10, 3}, core::Float32, device));
-    EXPECT_TRUE(mesh.HasVertices());
+    EXPECT_TRUE(mesh.HasVertexPositions());
     mesh.SetTriangles(core::Tensor::Ones({10, 3}, core::Int64, device));
     EXPECT_TRUE(mesh.HasTriangles());
 
@@ -314,7 +314,7 @@ TEST_P(TriangleMeshPermuteDevices, FromLegacy) {
     t::geometry::TriangleMesh mesh = t::geometry::TriangleMesh::FromLegacy(
             legacy_mesh, float_dtype, int_dtype, device);
 
-    EXPECT_TRUE(mesh.HasVertices());
+    EXPECT_TRUE(mesh.HasVertexPositions());
     EXPECT_TRUE(mesh.HasVertexColors());
     EXPECT_TRUE(mesh.HasVertexNormals());
     EXPECT_TRUE(mesh.HasTriangles());
