@@ -194,7 +194,7 @@ TEST_P(TriangleMeshPermuteDevices, Has) {
 
     mesh.SetVertexPositions(core::Tensor::Ones({10, 3}, core::Float32, device));
     EXPECT_TRUE(mesh.HasVertexPositions());
-    mesh.SetTriangles(core::Tensor::Ones({10, 3}, core::Int64, device));
+    mesh.SetTriangleIndices(core::Tensor::Ones({10, 3}, core::Int64, device));
     EXPECT_TRUE(mesh.HasTriangles());
 
     // Different size.
@@ -352,7 +352,7 @@ TEST_P(TriangleMeshPermuteDevices, ToLegacy) {
                             0);
     mesh.SetVertexColors(core::Tensor::Ones({2, 3}, float_dtype, device) * 1);
     mesh.SetVertexNormals(core::Tensor::Ones({2, 3}, float_dtype, device) * 2);
-    mesh.SetTriangles(core::Tensor::Ones({2, 3}, int_dtype, device) * 3);
+    mesh.SetTriangleIndices(core::Tensor::Ones({2, 3}, int_dtype, device) * 3);
     mesh.SetTriangleNormals(core::Tensor::Ones({2, 3}, float_dtype, device) *
                             4);
 

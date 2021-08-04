@@ -59,7 +59,7 @@ namespace geometry {
 ///         - TriangleMesh::SetVertexPositions(vertices_tensor)
 ///         - TriangleMesh::HasVertexPositions()
 ///         - TriangleMesh::GetTriangleIndices()
-///         - TriangleMesh::SetTriangles(triangles_tensor)
+///         - TriangleMesh::SetTriangleIndices(triangles_tensor)
 ///         - TriangleMesh::HasTriangles()
 ///     - The device of "positions" and "triangles" must be consistent and they
 ///       determine the device of the trianglemesh.
@@ -303,7 +303,7 @@ public:
     }
 
     /// Set the vlaue of the "triangles" attribute in triangle_attr_.
-    void SetTriangles(const core::Tensor &value) {
+    void SetTriangleIndices(const core::Tensor &value) {
         value.AssertShapeCompatible({utility::nullopt, 3});
         SetTriangleAttr("triangles", value);
     }

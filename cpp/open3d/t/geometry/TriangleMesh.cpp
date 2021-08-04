@@ -59,7 +59,7 @@ TriangleMesh::TriangleMesh(const core::Tensor &vertices,
           return vertices.GetDevice();
       }()) {
     SetVertexPositions(vertices);
-    SetTriangles(triangles);
+    SetTriangleIndices(triangles);
 }
 
 TriangleMesh &TriangleMesh::Transform(const core::Tensor &transformation) {
@@ -141,8 +141,9 @@ geometry::TriangleMesh TriangleMesh::FromLegacy(
                         mesh_legacy.vertex_normals_, float_dtype, device));
     }
     if (mesh_legacy.HasTriangles()) {
-        mesh.SetTriangles(core::eigen_converter::EigenVector3iVectorToTensor(
-                mesh_legacy.triangles_, int_dtype, device));
+        mesh.SetTriangleIndices(
+                core::eigen_converter::EigenVector3iVectorToTensor(
+                        mesh_legacy.triangles_, int_dtype, device));
     }
     if (mesh_legacy.HasTriangleNormals()) {
         mesh.SetTriangleNormals(
