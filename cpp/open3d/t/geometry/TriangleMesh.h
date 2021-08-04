@@ -60,7 +60,7 @@ namespace geometry {
 ///         - TriangleMesh::HasVertexPositions()
 ///         - TriangleMesh::GetTriangleIndices()
 ///         - TriangleMesh::SetTriangleIndices(triangles_tensor)
-///         - TriangleMesh::HasTriangles()
+///         - TriangleMesh::HasTriangleIndices()
 ///     - The device of "positions" and "triangles" must be consistent and they
 ///       determine the device of the trianglemesh.
 /// - Level 1: Commonly-used attributes: {"normals", "colors"} for vertices and
@@ -365,7 +365,7 @@ public:
     /// Check if the "triangles" attribute's value in triangle_attr_ has length
     /// > 0.
     /// Convenience function.
-    bool HasTriangles() const { return HasTriangleAttr("triangles"); }
+    bool HasTriangleIndices() const { return HasTriangleAttr("triangles"); }
 
     /// Returns true if all of the followings are true in triangle_attr_:
     /// 1) attribute "normals" exist

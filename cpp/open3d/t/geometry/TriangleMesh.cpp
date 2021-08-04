@@ -170,7 +170,7 @@ open3d::geometry::TriangleMesh TriangleMesh::ToLegacy() const {
                 core::eigen_converter::TensorToEigenVector3dVector(
                         GetVertexNormals());
     }
-    if (HasTriangles()) {
+    if (HasTriangleIndices()) {
         mesh_legacy.triangles_ =
                 core::eigen_converter::TensorToEigenVector3iVector(
                         GetTriangleIndices());

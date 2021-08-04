@@ -51,7 +51,7 @@ TEST_P(TriangleMeshPermuteDevices, DefaultConstructor) {
     EXPECT_FALSE(mesh.HasVertexPositions());
     EXPECT_FALSE(mesh.HasVertexColors());
     EXPECT_FALSE(mesh.HasVertexNormals());
-    EXPECT_FALSE(mesh.HasTriangles());
+    EXPECT_FALSE(mesh.HasTriangleIndices());
     EXPECT_FALSE(mesh.HasTriangleNormals());
 
     // Default device.
@@ -188,14 +188,14 @@ TEST_P(TriangleMeshPermuteDevices, Has) {
     EXPECT_FALSE(mesh.HasVertexColors());
     EXPECT_FALSE(mesh.HasVertexNormals());
     EXPECT_FALSE(mesh.HasVertexAttr("labels"));
-    EXPECT_FALSE(mesh.HasTriangles());
+    EXPECT_FALSE(mesh.HasTriangleIndices());
     EXPECT_FALSE(mesh.HasTriangleNormals());
     EXPECT_FALSE(mesh.HasTriangleAttr("labels"));
 
     mesh.SetVertexPositions(core::Tensor::Ones({10, 3}, core::Float32, device));
     EXPECT_TRUE(mesh.HasVertexPositions());
     mesh.SetTriangleIndices(core::Tensor::Ones({10, 3}, core::Int64, device));
-    EXPECT_TRUE(mesh.HasTriangles());
+    EXPECT_TRUE(mesh.HasTriangleIndices());
 
     // Different size.
     mesh.SetVertexColors(core::Tensor::Ones({5, 3}, core::Float32, device));
@@ -318,7 +318,7 @@ TEST_P(TriangleMeshPermuteDevices, FromLegacy) {
     EXPECT_TRUE(mesh.HasVertexPositions());
     EXPECT_TRUE(mesh.HasVertexColors());
     EXPECT_TRUE(mesh.HasVertexNormals());
-    EXPECT_TRUE(mesh.HasTriangles());
+    EXPECT_TRUE(mesh.HasTriangleIndices());
     EXPECT_TRUE(mesh.HasTriangleNormals());
     EXPECT_FALSE(mesh.HasTriangleColors());
 
