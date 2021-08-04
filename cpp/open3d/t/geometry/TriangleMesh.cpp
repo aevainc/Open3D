@@ -172,7 +172,7 @@ open3d::geometry::TriangleMesh TriangleMesh::ToLegacy() const {
     if (HasTriangles()) {
         mesh_legacy.triangles_ =
                 core::eigen_converter::TensorToEigenVector3iVector(
-                        GetTriangles());
+                        GetTriangleIndices());
     }
     if (HasTriangleNormals()) {
         mesh_legacy.triangle_normals_ =

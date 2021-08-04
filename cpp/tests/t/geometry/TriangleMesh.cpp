@@ -72,7 +72,7 @@ TEST_P(TriangleMeshPermuteDevices, ConstructFromVertices) {
 
     EXPECT_TRUE(mesh.HasVertexPositions());
     EXPECT_EQ(mesh.GetVertexPositions().GetLength(), 10);
-    EXPECT_EQ(mesh.GetTriangles().GetLength(), 10);
+    EXPECT_EQ(mesh.GetTriangleIndices().GetLength(), 10);
 }
 
 TEST_P(TriangleMeshPermuteDevices, Getters) {
@@ -104,7 +104,7 @@ TEST_P(TriangleMeshPermuteDevices, Getters) {
             core::Tensor::Ones({2, 3}, core::Float32, device) * 3));
     EXPECT_ANY_THROW(mesh.GetVertexNormals());
 
-    EXPECT_TRUE(mesh.GetTriangles().AllClose(
+    EXPECT_TRUE(mesh.GetTriangleIndices().AllClose(
             core::Tensor::Ones({2, 3}, core::Int64, device)));
     EXPECT_TRUE(mesh.GetTriangleNormals().AllClose(
             core::Tensor::Ones({2, 3}, core::Float32, device) * 2));
@@ -120,7 +120,8 @@ TEST_P(TriangleMeshPermuteDevices, Getters) {
     EXPECT_ANY_THROW(const core::Tensor& tl = mesh.GetVertexNormals();
                      (void)tl);
 
-    EXPECT_NO_THROW(const core::Tensor& tl = mesh.GetTriangles(); (void)tl);
+    EXPECT_NO_THROW(const core::Tensor& tl = mesh.GetTriangleIndices();
+                    (void)tl);
     EXPECT_NO_THROW(const core::Tensor& tl = mesh.GetTriangleNormals();
                     (void)tl);
     EXPECT_NO_THROW(const core::Tensor& tl = mesh.GetTriangleAttr("labels");
@@ -325,7 +326,7 @@ TEST_P(TriangleMeshPermuteDevices, FromLegacy) {
     EXPECT_NO_THROW(mesh.GetVertexPositions().AssertDtype(float_dtype));
     EXPECT_NO_THROW(mesh.GetVertexColors().AssertDtype(float_dtype));
     EXPECT_NO_THROW(mesh.GetVertexNormals().AssertDtype(float_dtype));
-    EXPECT_NO_THROW(mesh.GetTriangles().AssertDtype(int_dtype));
+    EXPECT_NO_THROW(mesh.GetTriangleIndices().AssertDtype(int_dtype));
     EXPECT_NO_THROW(mesh.GetTriangleNormals().AssertDtype(float_dtype));
 
     EXPECT_TRUE(mesh.GetVertexPositions().AllClose(
@@ -334,7 +335,7 @@ TEST_P(TriangleMeshPermuteDevices, FromLegacy) {
             core::Tensor::Ones({2, 3}, float_dtype, device) * 1));
     EXPECT_TRUE(mesh.GetVertexNormals().AllClose(
             core::Tensor::Ones({2, 3}, float_dtype, device) * 2));
-    EXPECT_TRUE(mesh.GetTriangles().AllClose(
+    EXPECT_TRUE(mesh.GetTriangleIndices().AllClose(
             core::Tensor::Ones({2, 3}, int_dtype, device) * 3));
     EXPECT_TRUE(mesh.GetTriangleNormals().AllClose(
             core::Tensor::Ones({2, 3}, float_dtype, device) * 4));

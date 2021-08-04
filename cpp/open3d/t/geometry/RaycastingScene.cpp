@@ -450,7 +450,7 @@ uint32_t RaycastingScene::AddTriangles(const TriangleMesh& mesh) {
                 std::numeric_limits<uint32_t>::max());
     }
     return AddTriangles(mesh.GetVertexPositions(),
-                        mesh.GetTriangles().To(core::UInt32));
+                        mesh.GetTriangleIndices().To(core::UInt32));
 }
 
 std::unordered_map<std::string, core::Tensor> RaycastingScene::CastRays(

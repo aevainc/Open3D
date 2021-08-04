@@ -58,7 +58,7 @@ namespace geometry {
 ///         - TriangleMesh::GetVertexPositions()
 ///         - TriangleMesh::SetVertexPositions(vertices_tensor)
 ///         - TriangleMesh::HasVertexPositions()
-///         - TriangleMesh::GetTriangles()
+///         - TriangleMesh::GetTriangleIndices()
 ///         - TriangleMesh::SetTriangles(triangles_tensor)
 ///         - TriangleMesh::HasTriangles()
 ///     - The device of "positions" and "triangles" must be consistent and they
@@ -186,7 +186,7 @@ public:
 
     /// Get the value of the "triangles" attribute in triangle_attr_.
     /// Convenience function.
-    core::Tensor &GetTriangles() { return GetTriangleAttr("triangles"); }
+    core::Tensor &GetTriangleIndices() { return GetTriangleAttr("triangles"); }
 
     /// Get the value of the "normals" attribute in triangle_attr_.
     /// Convenience function.
@@ -245,7 +245,7 @@ public:
 
     /// Get the value of the "triangles" attribute in triangle_attr_.
     /// Convenience function.
-    const core::Tensor &GetTriangles() const {
+    const core::Tensor &GetTriangleIndices() const {
         return GetTriangleAttr("triangles");
     }
 
@@ -358,7 +358,8 @@ public:
     bool HasTriangleAttr(const std::string &key) const {
         return triangle_attr_.Contains(key) &&
                GetTriangleAttr(key).GetLength() > 0 &&
-               GetTriangleAttr(key).GetLength() == GetTriangles().GetLength();
+               GetTriangleAttr(key).GetLength() ==
+                       GetTriangleIndices().GetLength();
     }
 
     /// Check if the "triangles" attribute's value in triangle_attr_ has length

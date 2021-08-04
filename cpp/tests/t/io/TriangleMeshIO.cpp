@@ -35,7 +35,7 @@ namespace tests {
 
 TEST(TriangleMeshIO, CreateMeshFromFile) {
     auto mesh = t::io::CreateMeshFromFile(TEST_DATA_DIR "/knot.ply");
-    EXPECT_EQ(mesh->GetTriangles().GetLength(), 2880);
+    EXPECT_EQ(mesh->GetTriangleIndices().GetLength(), 2880);
     EXPECT_EQ(mesh->GetVertexPositions().GetLength(), 1440);
 }
 
@@ -45,7 +45,8 @@ TEST(TriangleMeshIO, ReadWriteTriangleMeshPLY) {
     std::string file_name = std::string(TEST_DATA_DIR) + "/test_mesh.ply";
     EXPECT_TRUE(t::io::WriteTriangleMesh(file_name, mesh));
     EXPECT_TRUE(t::io::ReadTriangleMesh(file_name, mesh_read));
-    EXPECT_TRUE(mesh.GetTriangles().AllClose(mesh_read.GetTriangles()));
+    EXPECT_TRUE(
+            mesh.GetTriangleIndices().AllClose(mesh_read.GetTriangleIndices()));
     EXPECT_TRUE(
             mesh.GetVertexPositions().AllClose(mesh_read.GetVertexPositions()));
     std::remove(file_name.c_str());
@@ -81,13 +82,14 @@ TEST(TriangleMeshIO, ReadWriteTriangleMeshOBJ) {
              {0.0, 0.0, 0.0}, {1.0, 0.0, 1.0}, {0.0, 0.0, 1.0},
              {0.0, 0.0, 1.0}, {1.0, 0.0, 1.0}, {1.0, 1.0, 1.0},
              {0.0, 0.0, 1.0}, {1.0, 1.0, 1.0}, {0.0, 1.0, 1.0}});
-    EXPECT_TRUE(mesh.GetTriangles().AllClose(triangles));
+    EXPECT_TRUE(mesh.GetTriangleIndices().AllClose(triangles));
     EXPECT_TRUE(mesh.GetVertexPositions().AllClose(vertices));
 
     std::string file_name = std::string(TEST_DATA_DIR) + "/test_mesh.obj";
     EXPECT_TRUE(t::io::WriteTriangleMesh(file_name, mesh));
     EXPECT_TRUE(t::io::ReadTriangleMesh(file_name, mesh_read));
-    EXPECT_TRUE(mesh.GetTriangles().AllClose(mesh_read.GetTriangles()));
+    EXPECT_TRUE(
+            mesh.GetTriangleIndices().AllClose(mesh_read.GetTriangleIndices()));
     EXPECT_TRUE(
             mesh.GetVertexPositions().AllClose(mesh_read.GetVertexPositions()));
     std::remove(file_name.c_str());
@@ -103,7 +105,7 @@ TEST(TriangleMeshIO, TriangleMeshLegecyCompatibility) {
     EXPECT_TRUE(io::ReadTriangleMesh(TEST_DATA_DIR "/monkey/monkey.obj",
                                      mesh_legacy));
 
-    EXPECT_EQ(mesh_tensor.GetTriangles().GetLength(),
+    EXPECT_EQ(mesh_tensor.GetTriangleIndices().GetLength(),
               static_cast<int64_t>(mesh_legacy.triangles_.size()));
     EXPECT_EQ(mesh_tensor.GetVertexPositions().GetLength(),
               static_cast<int64_t>(mesh_legacy.vertices_.size()));
@@ -120,7 +122,7 @@ TEST(TriangleMeshIO, TriangleMeshLegecyCompatibility) {
     EXPECT_TRUE(t::io::ReadTriangleMesh(file_name_tensor, mesh_tensor_read));
     EXPECT_TRUE(io::ReadTriangleMesh(file_name_legacy, mesh_legacy_read));
 
-    EXPECT_EQ(mesh_tensor_read.GetTriangles().GetLength(),
+    EXPECT_EQ(mesh_tensor_read.GetTriangleIndices().GetLength(),
               static_cast<int64_t>(mesh_legacy_read.triangles_.size()));
     EXPECT_EQ(mesh_tensor_read.GetVertexPositions().GetLength(),
               static_cast<int64_t>(mesh_legacy_read.vertices_.size()));
