@@ -55,7 +55,7 @@ namespace geometry {
 ///     - Created by default, required for all trianglemeshes.
 ///     - The tensor must be of shape N x {3,}.
 ///     - Convenience functions:
-///         - TriangleMesh::GetVertices()
+///         - TriangleMesh::GetVertexPositions()
 ///         - TriangleMesh::SetVertices(vertices_tensor)
 ///         - TriangleMesh::HasVertices()
 ///         - TriangleMesh::GetTriangles()
@@ -163,7 +163,7 @@ public:
 
     /// Get the value of the "vertices" attribute in vertex_attr_.
     /// Convenience function.
-    core::Tensor &GetVertices() { return GetVertexAttr("vertices"); }
+    core::Tensor &GetVertexPositions() { return GetVertexAttr("vertices"); }
 
     /// Get the value of the "colors" attribute in vertex_attr_.
     /// Convenience function.
@@ -211,7 +211,7 @@ public:
 
     /// Get the value of the "vertices" attribute in vertex_attr_.
     /// Convenience function.
-    const core::Tensor &GetVertices() const {
+    const core::Tensor &GetVertexPositions() const {
         return GetVertexAttr("vertices");
     }
 
@@ -329,7 +329,8 @@ public:
     bool HasVertexAttr(const std::string &key) const {
         return vertex_attr_.Contains(key) &&
                GetVertexAttr(key).GetLength() > 0 &&
-               GetVertexAttr(key).GetLength() == GetVertices().GetLength();
+               GetVertexAttr(key).GetLength() ==
+                       GetVertexPositions().GetLength();
     }
 
     /// Check if the "vertices" attribute's value in vertex_attr_ has length >
@@ -390,11 +391,11 @@ public:
     /// Returns !HasVertices(), triangles are ignored.
     bool IsEmpty() const override { return !HasVertices(); }
 
-    core::Tensor GetMinBound() const { return GetVertices().Min({0}); }
+    core::Tensor GetMinBound() const { return GetVertexPositions().Min({0}); }
 
-    core::Tensor GetMaxBound() const { return GetVertices().Max({0}); }
+    core::Tensor GetMaxBound() const { return GetVertexPositions().Max({0}); }
 
-    core::Tensor GetCenter() const { return GetVertices().Mean({0}); }
+    core::Tensor GetCenter() const { return GetVertexPositions().Mean({0}); }
 
     TriangleMesh &Transform(const core::Tensor &transformation);
 

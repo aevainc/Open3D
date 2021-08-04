@@ -443,13 +443,13 @@ uint32_t RaycastingScene::AddTriangles(const core::Tensor& vertices,
 }
 
 uint32_t RaycastingScene::AddTriangles(const TriangleMesh& mesh) {
-    size_t num_verts = mesh.GetVertices().GetLength();
+    size_t num_verts = mesh.GetVertexPositions().GetLength();
     if (num_verts > std::numeric_limits<uint32_t>::max()) {
         utility::LogError(
                 "Cannot add mesh with more than {} vertices to the scene",
                 std::numeric_limits<uint32_t>::max());
     }
-    return AddTriangles(mesh.GetVertices(),
+    return AddTriangles(mesh.GetVertexPositions(),
                         mesh.GetTriangles().To(core::UInt32));
 }
 

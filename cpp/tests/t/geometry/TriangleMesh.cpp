@@ -71,7 +71,7 @@ TEST_P(TriangleMeshPermuteDevices, ConstructFromVertices) {
     t::geometry::TriangleMesh mesh(vertices, triangles);
 
     EXPECT_TRUE(mesh.HasVertices());
-    EXPECT_EQ(mesh.GetVertices().GetLength(), 10);
+    EXPECT_EQ(mesh.GetVertexPositions().GetLength(), 10);
     EXPECT_EQ(mesh.GetTriangles().GetLength(), 10);
 }
 
@@ -96,7 +96,7 @@ TEST_P(TriangleMeshPermuteDevices, Getters) {
     mesh.SetTriangleNormals(triangle_normals);
     mesh.SetTriangleAttr("labels", triangle_labels);
 
-    EXPECT_TRUE(mesh.GetVertices().AllClose(
+    EXPECT_TRUE(mesh.GetVertexPositions().AllClose(
             core::Tensor::Ones({2, 3}, core::Float32, device)));
     EXPECT_TRUE(mesh.GetVertexColors().AllClose(
             core::Tensor::Ones({2, 3}, core::Float32, device) * 2));
@@ -112,7 +112,8 @@ TEST_P(TriangleMeshPermuteDevices, Getters) {
             core::Tensor::Ones({2, 3}, core::Float32, device) * 3));
 
     // Const getters. (void)tl gets rid of the unused variables warning.
-    EXPECT_NO_THROW(const core::Tensor& tl = mesh.GetVertices(); (void)tl);
+    EXPECT_NO_THROW(const core::Tensor& tl = mesh.GetVertexPositions();
+                    (void)tl);
     EXPECT_NO_THROW(const core::Tensor& tl = mesh.GetVertexColors(); (void)tl);
     EXPECT_NO_THROW(const core::Tensor& tl = mesh.GetVertexAttr("labels");
                     (void)tl);
@@ -220,7 +221,7 @@ TEST_P(TriangleMeshPermuteDevices, Transform) {
             core::Tensor::Init<float>({{1, 1, 1}, {1, 1, 1}}, device));
 
     mesh.Transform(transformation);
-    EXPECT_TRUE(mesh.GetVertices().AllClose(
+    EXPECT_TRUE(mesh.GetVertexPositions().AllClose(
             core::Tensor::Init<float>({{3, 3, 2}, {3, 3, 2}}, device)));
     EXPECT_TRUE(mesh.GetVertexNormals().AllClose(
             core::Tensor::Init<float>({{2, 2, 1}, {2, 2, 1}}, device)));
@@ -243,14 +244,14 @@ TEST_P(TriangleMeshPermuteDevices, Translate) {
     EXPECT_TRUE(mesh.GetVertexNormals().AllClose(
             core::Tensor::Init<float>({{1, 1, 1}, {1, 1, 1}}, device)));
 
-    EXPECT_TRUE(mesh.GetVertices().AllClose(
+    EXPECT_TRUE(mesh.GetVertexPositions().AllClose(
             core::Tensor::Init<float>({{10, 21, 32}, {16, 27, 38}}, device)));
 
     // Non-relative.
     mesh.SetVertices(core::Tensor::Init<float>({{0, 1, 2}, {6, 7, 8}}, device));
     mesh.Translate(translation, /*relative=*/false);
 
-    EXPECT_TRUE(mesh.GetVertices().AllClose(
+    EXPECT_TRUE(mesh.GetVertexPositions().AllClose(
             core::Tensor::Init<float>({{7, 17, 27}, {13, 23, 33}}, device)));
 }
 
@@ -267,7 +268,7 @@ TEST_P(TriangleMeshPermuteDevices, Scale) {
             {{0, 0, 0}, {1, 1, 1}, {2, 2, 2}}, device));
 
     mesh.Scale(scale, center);
-    EXPECT_TRUE(mesh.GetVertices().AllClose(core::Tensor::Init<float>(
+    EXPECT_TRUE(mesh.GetVertexPositions().AllClose(core::Tensor::Init<float>(
             {{-3, -3, -3}, {1, 1, 1}, {5, 5, 5}}, device)));
 }
 
@@ -284,7 +285,7 @@ TEST_P(TriangleMeshPermuteDevices, Rotate) {
             core::Tensor::Init<float>({{1, 1, 1}, {1, 1, 1}}, device));
 
     mesh.Rotate(rotation, center);
-    EXPECT_TRUE(mesh.GetVertices().AllClose(
+    EXPECT_TRUE(mesh.GetVertexPositions().AllClose(
             core::Tensor::Init<float>({{3, 3, 2}, {3, 3, 2}}, device)));
     EXPECT_TRUE(mesh.GetVertexNormals().AllClose(
             core::Tensor::Init<float>({{2, 2, 1}, {2, 2, 1}}, device)));
@@ -316,14 +317,14 @@ TEST_P(TriangleMeshPermuteDevices, FromLegacy) {
     EXPECT_TRUE(mesh.HasTriangleNormals());
     EXPECT_FALSE(mesh.HasTriangleColors());
 
-    EXPECT_NO_THROW(mesh.GetVertices().AssertDtype(float_dtype));
-    EXPECT_NO_THROW(mesh.GetVertices().AssertDtype(float_dtype));
+    EXPECT_NO_THROW(mesh.GetVertexPositions().AssertDtype(float_dtype));
+    EXPECT_NO_THROW(mesh.GetVertexPositions().AssertDtype(float_dtype));
     EXPECT_NO_THROW(mesh.GetVertexColors().AssertDtype(float_dtype));
     EXPECT_NO_THROW(mesh.GetVertexNormals().AssertDtype(float_dtype));
     EXPECT_NO_THROW(mesh.GetTriangles().AssertDtype(int_dtype));
     EXPECT_NO_THROW(mesh.GetTriangleNormals().AssertDtype(float_dtype));
 
-    EXPECT_TRUE(mesh.GetVertices().AllClose(
+    EXPECT_TRUE(mesh.GetVertexPositions().AllClose(
             core::Tensor::Ones({2, 3}, float_dtype, device) * 0));
     EXPECT_TRUE(mesh.GetVertexColors().AllClose(
             core::Tensor::Ones({2, 3}, float_dtype, device) * 1));

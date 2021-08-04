@@ -104,7 +104,7 @@ bool ReadTriangleMesh(const std::string &filename,
                 "Read geometry::TriangleMesh: {:d} triangles and {:d} "
                 "vertices.",
                 mesh.GetTriangles().GetLength(),
-                mesh.GetVertices().GetLength());
+                mesh.GetVertexPositions().GetLength());
         if (mesh.HasVertices() && !mesh.HasTriangles()) {
             utility::LogWarning(
                     "geometry::TriangleMesh appears to be a "
@@ -144,7 +144,8 @@ bool WriteTriangleMesh(const std::string &filename,
                                    write_triangle_uvs, print_progress);
     utility::LogDebug(
             "Write geometry::TriangleMesh: {:d} triangles and {:d} vertices.",
-            mesh.GetTriangles().GetLength(), mesh.GetVertices().GetLength());
+            mesh.GetTriangles().GetLength(),
+            mesh.GetVertexPositions().GetLength());
     return success;
 }
 
