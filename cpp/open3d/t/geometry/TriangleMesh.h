@@ -51,7 +51,7 @@ namespace geometry {
 /// Although the attributes are all stored in a key-value pair dictionary, the
 /// attributes have different levels:
 ///
-/// - Level 0: Default attribute {"positions", "triangles"}.
+/// - Level 0: Default attribute {"positions", "indices"}.
 ///     - Created by default, required for all trianglemeshes.
 ///     - The tensor must be of shape N x {3,}.
 ///     - Convenience functions:
@@ -61,7 +61,7 @@ namespace geometry {
 ///         - TriangleMesh::GetTriangleIndices()
 ///         - TriangleMesh::SetTriangleIndices(triangles_tensor)
 ///         - TriangleMesh::HasTriangleIndices()
-///     - The device of "positions" and "triangles" must be consistent and they
+///     - The device of "positions" and "indices" must be consistent and they
 ///       determine the device of the trianglemesh.
 /// - Level 1: Commonly-used attributes: {"normals", "colors"} for vertices and
 ///            {"normals"} for triangles.
@@ -184,9 +184,9 @@ public:
         return triangle_attr_.at(key);
     }
 
-    /// Get the value of the "triangles" attribute in triangle_attr_.
+    /// Get the value of the "indices" attribute in triangle_attr_.
     /// Convenience function.
-    core::Tensor &GetTriangleIndices() { return GetTriangleAttr("triangles"); }
+    core::Tensor &GetTriangleIndices() { return GetTriangleAttr("indices"); }
 
     /// Get the value of the "normals" attribute in triangle_attr_.
     /// Convenience function.
@@ -235,7 +235,7 @@ public:
         return triangle_attr_.at(key);
     }
 
-    /// Removes triangle attribute by key value. Primary attribute "triangles"
+    /// Removes triangle attribute by key value. Primary attribute "indices"
     /// cannot be removed. Throws warning if attribute key does not exists.
     ///
     /// \param key Attribute name.
@@ -243,10 +243,10 @@ public:
         triangle_attr_.Erase(key);
     }
 
-    /// Get the value of the "triangles" attribute in triangle_attr_.
+    /// Get the value of the "indices" attribute in triangle_attr_.
     /// Convenience function.
     const core::Tensor &GetTriangleIndices() const {
-        return GetTriangleAttr("triangles");
+        return GetTriangleAttr("indices");
     }
 
     /// Get the value of the "normals" attribute in triangle_attr_.
@@ -302,10 +302,10 @@ public:
         triangle_attr_[key] = value;
     }
 
-    /// Set the vlaue of the "triangles" attribute in triangle_attr_.
+    /// Set the vlaue of the "indices" attribute in triangle_attr_.
     void SetTriangleIndices(const core::Tensor &value) {
         value.AssertShapeCompatible({utility::nullopt, 3});
-        SetTriangleAttr("triangles", value);
+        SetTriangleAttr("indices", value);
     }
 
     /// Set the value of the "normals" attribute in triangle_attr_.
@@ -362,10 +362,10 @@ public:
                        GetTriangleIndices().GetLength();
     }
 
-    /// Check if the "triangles" attribute's value in triangle_attr_ has length
+    /// Check if the "indices" attribute's value in triangle_attr_ has length
     /// > 0.
     /// Convenience function.
-    bool HasTriangleIndices() const { return HasTriangleAttr("triangles"); }
+    bool HasTriangleIndices() const { return HasTriangleAttr("indices"); }
 
     /// Returns true if all of the followings are true in triangle_attr_:
     /// 1) attribute "normals" exist

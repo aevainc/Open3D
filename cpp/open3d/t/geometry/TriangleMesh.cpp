@@ -44,7 +44,7 @@ TriangleMesh::TriangleMesh(const core::Device &device)
     : Geometry(Geometry::GeometryType::TriangleMesh, 3),
       device_(device),
       vertex_attr_(TensorMap("positions")),
-      triangle_attr_(TensorMap("triangles")) {}
+      triangle_attr_(TensorMap("indices")) {}
 
 TriangleMesh::TriangleMesh(const core::Tensor &vertices,
                            const core::Tensor &triangles)
