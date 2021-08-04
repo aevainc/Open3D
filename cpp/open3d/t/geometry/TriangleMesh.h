@@ -36,70 +36,67 @@ namespace t {
 namespace geometry {
 
 /// \class TriangleMesh
-/// \brief A TriangleMesh contains vertices and triangles.
+/// \brief A triangle mesh contains vertices and triangles.
 ///
-/// The TriangleMesh class stores the attribute data in key-value pairs for
-/// flexibility, where the key is a string representing the attribute name and
-/// value is a Tensor containing the attribute data.
+/// The triangle mesh class stores the attribute data in key-value maps. There
+/// are two maps by default: the vertex attributes map, and the triangle
+/// attribute map.
 ///
-/// By default, there are two sets of dictionaries, i.e. `vertex_attr_` and
-/// `triangle_attr_`. In most cases, the length of an attribute should be
-/// equal to the length of the the data corresponding to the master key. For
-/// instance `vertex_attr_["normals"]` should have the same length as
-/// `vertex_attr_["positions"]`.
-///
-/// Although the attributes are all stored in a key-value pair dictionary, the
-/// attributes have different levels:
-///
-/// - Level 0: Default attribute {"positions", "indices"}.
-///     - Created by default, required for all trianglemeshes.
-///     - The tensor must be of shape N x {3,}.
-///     - Convenience functions:
+/// - Default attribute: vertex_attr_["positions"], triangle_attr_["indices"]
+///     - Vertex positions
 ///         - TriangleMesh::GetVertexPositions()
-///         - TriangleMesh::SetVertexPositions(vertices_tensor)
+///         - TriangleMesh::SetVertexPositions(vertex_positions)
 ///         - TriangleMesh::HasVertexPositions()
+///         - Value tensor must have shape {num_vertices, 3.
+///     - Triangle indices
 ///         - TriangleMesh::GetTriangleIndices()
-///         - TriangleMesh::SetTriangleIndices(triangles_tensor)
+///         - TriangleMesh::SetTriangleIndices(triangle_indices)
 ///         - TriangleMesh::HasTriangleIndices()
-///     - The device of "positions" and "indices" must be consistent and they
-///       determine the device of the trianglemesh.
-/// - Level 1: Commonly-used attributes: {"normals", "colors"} for vertices and
-///            {"normals"} for triangles.
+///         - Value tensor must have shape {num_triangles, 3}.
+///     - Created by default, required for all triangle meshes.
+///     - The device of vertex positions and triangle indices must be the same.
+///       They determine the device of the trianglemesh.
+///
+/// - Common attributes: vertex_attr_["normals"], vertex_attr_["colors"]
+///                      triangle_attr_["normals"], triangle_attr_["colors"]
+///     - Vertex normals
+///         - TriangleMesh::GetVertexNormals()
+///         - TriangleMesh::SetVertexNormals(vertex_normals)
+///         - TriangleMesh::HasVertexNormals()
+///         - Value tensor must have shape {num_vertices, 3}.
+///         - Value tensor can have any dtype.
+///     - Vertex colors
+///         - TriangleMesh::GetVertexColors()
+///         - TriangleMesh::SetVertexColors(vertex_colors)
+///         - TriangleMesh::HasVertexColors()
+///         - Value tensor must have shape {num_vertices, 3}.
+///         - Value tensor can have any dtype.
+///     - Triangle normals
+///         - TriangleMesh::GetTriangleNormals()
+///         - TriangleMesh::SetTriangleNormals(triangle_normals)
+///         - TriangleMesh::HasTriangleNormals()
+///         - Value tensor must have shape {num_triangles, 3}.
+///         - Value tensor can have any dtype.
+///     - Triangle colors
+///         - TriangleMesh::GetTriangleColors()
+///         - TriangleMesh::SetTriangleColors(triangle_colors)
+///         - TriangleMesh::HasTriangleColors()
+///         - Value tensor must have shape {num_triangles, 3}.
+///         - Value tensor can have any dtype.
 ///     - Not created by default.
-///     - The tensor must be of shape N x 3.
-///     - Convenience functions:
-///         - Vertex normals (stored at vertex_attr_["normals"])
-///             - TriangleMesh::GetVertexNormals()
-///             - TriangleMesh::SetVertexNormals(vertex_normals_tensor)
-///             - TriangleMesh::HasVertexNormals()
-///         - Vertex colors (stored at vertex_attr_["colors"])
-///             - TriangleMesh::GetVertexColors()
-///             - TriangleMesh::SetVertexColors(vertex_colors_tensor)
-///             - TriangleMesh::HasVertexColors()
-///         - Triangle normals (stored at triangle_attr_["normals"])
-///             - TriangleMesh::GetTriangleNormals()
-///             - TriangleMesh::SetTriangleNormals(triangle_normals_tensor)
-///             - TriangleMesh::HasTriangleNormals()
-///         - Triangle colors (stored at triangle_attr_["colors"])
-///             - TriangleMesh::GetTriangleColors()
-///             - TriangleMesh::SetTriangleColors(triangle_colors_tensor)
-///             - TriangleMesh::HasTriangleColors()
-///     - For all attributes, the device must be consistent with the device of
-///       the trianglemesh. Dtype can be different.
-/// - Level 2: Custom attributes, e.g. {"labels"}.
-///     - Not created by default. Created by users.
-///     - No convenience functions.
-///     - Use generalized helper functions. Examples:
+///     - For all attributes above, the device must be consistent with the
+///       device of the triangle mesh.
+///
+/// - Custom attributes: e.g. vetex_attr_["labels"], triangle_attr_["labels"]
+///     - Use generalized helper functions, e.g.:
 ///         - TriangleMesh::GetVertexAttr("labels")
-///         - TriangleMesh::SetVertexAttr("labels",
-///                                       vertex_labels_tensor)
+///         - TriangleMesh::SetVertexAttr("labels", vertex_labels)
 ///         - TriangleMesh::HasVertexAttr("labels")
 ///         - TriangleMesh::GetTriangleAttr("labels")
-///         - TriangleMesh::SetTriangleAttr("labels",
-///                                         triangle_labels_tensor)
+///         - TriangleMesh::SetTriangleAttr("labels", triangle_labels)
 ///         - TriangleMesh::HasTriangleAttr("labels")
-///     - For all attributes, the device must be consistent with the device of
-///       the trianglemesh. Dtype can be different.
+///     - Not created by default. Users and add their own custom attributes.
+///     - Value tensor must be on the same device as the triangle mesh.
 ///
 /// Note that the level 0 and level 1 convenience functions can also be achieved
 /// via the generalized helper functions.

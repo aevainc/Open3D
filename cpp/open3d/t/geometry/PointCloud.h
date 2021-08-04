@@ -46,7 +46,7 @@ namespace geometry {
 /// \class PointCloud
 /// \brief A point cloud contains a list of 3D points.
 ///
-/// The point cloud class stores the attribute data in key-value pairs, where
+/// The point cloud class stores the attribute data in key-value maps, where
 /// the key is a string representing the attribute name and the value is a
 /// Tensor containing the attribute data. In most cases, the length of an
 /// attribute should be equal to the length of the point cloud's "positions".
@@ -57,7 +57,7 @@ namespace geometry {
 ///         - PointCloud::SetPointPositions(positions)
 ///         - PointCloud::HasPointPositions()
 ///     - Created by default, required for all pointclouds.
-///     - Value tensor must have shape N x {3,}.
+///     - Value tensor must have shape {N, 3}.
 ///     - The device of "positions" determines the device of the pointcloud.
 ///
 /// - Common attributes: "normals", "colors".
@@ -69,9 +69,9 @@ namespace geometry {
 ///         - PointCloud::SetPointColors(colors)
 ///         - PointCloud::HasPointColors()
 ///     - Not created by default.
-///     - Value tensor must have shape N x {3,}.
-///     - Value tensor must be on the same device as "positions".
-///     - Value tensor can have any dtypes.
+///     - Value tensor must have shape {N, 3}.
+///     - Value tensor must be on the same device as the point cloud.
+///     - Value tensor can have any dtype.
 ///
 /// - Custom attributes, e.g., "labels", "intensities".
 ///     - Usage
@@ -79,8 +79,8 @@ namespace geometry {
 ///         - PointCloud::SetPointAttr("labels", labels)
 ///         - PointCloud::HasPointAttr("labels")
 ///     - Not created by default. Users and add their own custom attributes.
-///     - Value tensor must be on the same device as "positions".
-///     - Value tensor can have any dtypes.
+///     - Value tensor must be on the same device as the point cloud.
+///     - Value tensor can have any dtype.
 ///
 /// PointCloud::GetPointAttr(), PointCloud::SetPointAttr(),
 /// PointCloud::HasPointAttr() also works for default attribute "position" and
