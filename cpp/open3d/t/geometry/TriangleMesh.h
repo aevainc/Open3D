@@ -114,12 +114,13 @@ public:
     /// functions like `SynchronizedPushBack` will raise an exception.
     ///
     /// The resulting trianglemesh will have the same dtype and device as the
-    /// tensor. The device for \p vertices must be consistent with
-    /// \p triangles.
+    /// tensor. The device for \p vertex_positions must be consistent with
+    /// \p triangle_indices.
     ///
-    /// \param vertices A tensor with element shape (3,).
-    /// \param triangles A tensor with element shape (3,).
-    TriangleMesh(const core::Tensor &vertices, const core::Tensor &triangles);
+    /// \param vertex_positions A tensor with element shape (3,).
+    /// \param triangle_indices A tensor with element shape (3,).
+    TriangleMesh(const core::Tensor &vertex_positions,
+                 const core::Tensor &triangle_indices);
 
     virtual ~TriangleMesh() override {}
 

@@ -46,20 +46,20 @@ TriangleMesh::TriangleMesh(const core::Device &device)
       vertex_attr_(TensorMap("positions")),
       triangle_attr_(TensorMap("indices")) {}
 
-TriangleMesh::TriangleMesh(const core::Tensor &vertices,
-                           const core::Tensor &triangles)
+TriangleMesh::TriangleMesh(const core::Tensor &vertex_positions,
+                           const core::Tensor &triangle_indices)
     : TriangleMesh([&]() {
-          if (vertices.GetDevice() != triangles.GetDevice()) {
+          if (vertex_positions.GetDevice() != triangle_indices.GetDevice()) {
               utility::LogError(
-                      "vertices' device {} does not match triangles' device "
-                      "{}.",
-                      vertices.GetDevice().ToString(),
-                      triangles.GetDevice().ToString());
+                      "vertex_positions' device {} does not match "
+                      "triangle_indices' device {}.",
+                      vertex_positions.GetDevice().ToString(),
+                      triangle_indices.GetDevice().ToString());
           }
-          return vertices.GetDevice();
+          return vertex_positions.GetDevice();
       }()) {
-    SetVertexPositions(vertices);
-    SetTriangleIndices(triangles);
+    SetVertexPositions(vertex_positions);
+    SetTriangleIndices(triangle_indices);
 }
 
 TriangleMesh &TriangleMesh::Transform(const core::Tensor &transformation) {
