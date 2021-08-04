@@ -43,7 +43,7 @@ namespace geometry {
 TriangleMesh::TriangleMesh(const core::Device &device)
     : Geometry(Geometry::GeometryType::TriangleMesh, 3),
       device_(device),
-      vertex_attr_(TensorMap("vertices")),
+      vertex_attr_(TensorMap("positions")),
       triangle_attr_(TensorMap("triangles")) {}
 
 TriangleMesh::TriangleMesh(const core::Tensor &vertices,

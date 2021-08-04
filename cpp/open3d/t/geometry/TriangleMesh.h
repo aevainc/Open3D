@@ -46,12 +46,12 @@ namespace geometry {
 /// `triangle_attr_`. In most cases, the length of an attribute should be
 /// equal to the length of the the data corresponding to the master key. For
 /// instance `vertex_attr_["normals"]` should have the same length as
-/// `vertex_attr_["vertices"]`.
+/// `vertex_attr_["positions"]`.
 ///
 /// Although the attributes are all stored in a key-value pair dictionary, the
 /// attributes have different levels:
 ///
-/// - Level 0: Default attribute {"vertices", "triangles"}.
+/// - Level 0: Default attribute {"positions", "triangles"}.
 ///     - Created by default, required for all trianglemeshes.
 ///     - The tensor must be of shape N x {3,}.
 ///     - Convenience functions:
@@ -61,7 +61,7 @@ namespace geometry {
 ///         - TriangleMesh::GetTriangles()
 ///         - TriangleMesh::SetTriangles(triangles_tensor)
 ///         - TriangleMesh::HasTriangles()
-///     - The device of "vertices" and "triangles" must be consistent and they
+///     - The device of "positions" and "triangles" must be consistent and they
 ///       determine the device of the trianglemesh.
 /// - Level 1: Commonly-used attributes: {"normals", "colors"} for vertices and
 ///            {"normals"} for triangles.
@@ -161,9 +161,9 @@ public:
         return vertex_attr_.at(key);
     }
 
-    /// Get the value of the "vertices" attribute in vertex_attr_.
+    /// Get the value of the "positions" attribute in vertex_attr_.
     /// Convenience function.
-    core::Tensor &GetVertexPositions() { return GetVertexAttr("vertices"); }
+    core::Tensor &GetVertexPositions() { return GetVertexAttr("positions"); }
 
     /// Get the value of the "colors" attribute in vertex_attr_.
     /// Convenience function.
@@ -203,16 +203,16 @@ public:
         return vertex_attr_.at(key);
     }
 
-    /// Removes vertex attribute by key value. Primary attribute "vertices"
+    /// Removes vertex attribute by key value. Primary attribute "positions"
     /// cannot be removed. Throws warning if attribute key does not exists.
     ///
     /// \param key Attribute name.
     void RemoveVertexAttr(const std::string &key) { vertex_attr_.Erase(key); }
 
-    /// Get the value of the "vertices" attribute in vertex_attr_.
+    /// Get the value of the "positions" attribute in vertex_attr_.
     /// Convenience function.
     const core::Tensor &GetVertexPositions() const {
-        return GetVertexAttr("vertices");
+        return GetVertexAttr("positions");
     }
 
     /// Get the value of the "colors" attribute in vertex_attr_.
@@ -271,11 +271,11 @@ public:
         vertex_attr_[key] = value;
     }
 
-    /// Set the value of the "vertices" attribute in vertex_attr_.
+    /// Set the value of the "positions" attribute in vertex_attr_.
     /// Convenience function.
     void SetVertexPositions(const core::Tensor &value) {
         value.AssertShapeCompatible({utility::nullopt, 3});
-        SetVertexAttr("vertices", value);
+        SetVertexAttr("positions", value);
     }
 
     /// Set the value of the "colors" attribute in vertex_attr_.
@@ -333,9 +333,9 @@ public:
                        GetVertexPositions().GetLength();
     }
 
-    /// Check if the "vertices" attribute's value in vertex_attr_ has length >
+    /// Check if the "positions" attribute's value in vertex_attr_ has length >
     /// 0. Convenience function.
-    bool HasVertexPositions() const { return HasVertexAttr("vertices"); }
+    bool HasVertexPositions() const { return HasVertexAttr("positions"); }
 
     /// Returns true if all of the followings are true in vertex_attr_:
     /// 1) attribute "colors" exist

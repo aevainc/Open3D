@@ -175,7 +175,7 @@ TEST_P(TriangleMeshPermuteDevices, RemoveAttr) {
     EXPECT_ANY_THROW(mesh.GetTriangleAttr("labels"));
 
     // Not allowed to delete primary key attribute.
-    EXPECT_ANY_THROW(mesh.RemoveVertexAttr("vertices"));
+    EXPECT_ANY_THROW(mesh.RemoveVertexAttr("positions"));
     EXPECT_ANY_THROW(mesh.RemoveTriangleAttr("triangles"));
 }
 
