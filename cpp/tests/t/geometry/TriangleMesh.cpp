@@ -143,7 +143,7 @@ TEST_P(TriangleMeshPermuteDevices, Setters) {
         core::Tensor cpu_labels =
                 core::Tensor::Ones({2, 3}, core::Float32, cpu_device) * 3;
 
-        EXPECT_ANY_THROW(mesh.SetVertices(cpu_vertices));
+        EXPECT_ANY_THROW(mesh.SetVertexPositions(cpu_vertices));
         EXPECT_ANY_THROW(mesh.SetVertexColors(cpu_colors));
         EXPECT_ANY_THROW(mesh.SetVertexAttr("labels", cpu_labels));
     }
@@ -191,7 +191,7 @@ TEST_P(TriangleMeshPermuteDevices, Has) {
     EXPECT_FALSE(mesh.HasTriangleNormals());
     EXPECT_FALSE(mesh.HasTriangleAttr("labels"));
 
-    mesh.SetVertices(core::Tensor::Ones({10, 3}, core::Float32, device));
+    mesh.SetVertexPositions(core::Tensor::Ones({10, 3}, core::Float32, device));
     EXPECT_TRUE(mesh.HasVertices());
     mesh.SetTriangles(core::Tensor::Ones({10, 3}, core::Int64, device));
     EXPECT_TRUE(mesh.HasTriangles());
@@ -216,7 +216,8 @@ TEST_P(TriangleMeshPermuteDevices, Transform) {
     core::Tensor transformation = core::Tensor::Init<float>(
             {{1, 1, 0, 1}, {0, 1, 1, 1}, {0, 1, 0, 1}, {0, 0, 0, 1}}, device);
 
-    mesh.SetVertices(core::Tensor::Init<float>({{1, 1, 1}, {1, 1, 1}}, device));
+    mesh.SetVertexPositions(
+            core::Tensor::Init<float>({{1, 1, 1}, {1, 1, 1}}, device));
     mesh.SetVertexNormals(
             core::Tensor::Init<float>({{1, 1, 1}, {1, 1, 1}}, device));
 
@@ -234,7 +235,8 @@ TEST_P(TriangleMeshPermuteDevices, Translate) {
     core::Tensor translation = core::Tensor::Init<float>({10, 20, 30}, device);
 
     // Relative.
-    mesh.SetVertices(core::Tensor::Init<float>({{0, 1, 2}, {6, 7, 8}}, device));
+    mesh.SetVertexPositions(
+            core::Tensor::Init<float>({{0, 1, 2}, {6, 7, 8}}, device));
     mesh.SetVertexNormals(
             core::Tensor::Init<float>({{1, 1, 1}, {1, 1, 1}}, device));
 
@@ -248,7 +250,8 @@ TEST_P(TriangleMeshPermuteDevices, Translate) {
             core::Tensor::Init<float>({{10, 21, 32}, {16, 27, 38}}, device)));
 
     // Non-relative.
-    mesh.SetVertices(core::Tensor::Init<float>({{0, 1, 2}, {6, 7, 8}}, device));
+    mesh.SetVertexPositions(
+            core::Tensor::Init<float>({{0, 1, 2}, {6, 7, 8}}, device));
     mesh.Translate(translation, /*relative=*/false);
 
     EXPECT_TRUE(mesh.GetVertexPositions().AllClose(
@@ -264,7 +267,7 @@ TEST_P(TriangleMeshPermuteDevices, Scale) {
     core::Tensor center = core::Tensor::Ones({3}, core::Dtype::Float32, device);
     double scale = 4;
 
-    mesh.SetVertices(core::Tensor::Init<float>(
+    mesh.SetVertexPositions(core::Tensor::Init<float>(
             {{0, 0, 0}, {1, 1, 1}, {2, 2, 2}}, device));
 
     mesh.Scale(scale, center);
@@ -280,7 +283,8 @@ TEST_P(TriangleMeshPermuteDevices, Rotate) {
             {{1, 1, 0}, {0, 1, 1}, {0, 1, 0}}, device);
     core::Tensor center = core::Tensor::Ones({3}, core::Dtype::Float32, device);
 
-    mesh.SetVertices(core::Tensor::Init<float>({{2, 2, 2}, {2, 2, 2}}, device));
+    mesh.SetVertexPositions(
+            core::Tensor::Init<float>({{2, 2, 2}, {2, 2, 2}}, device));
     mesh.SetVertexNormals(
             core::Tensor::Init<float>({{1, 1, 1}, {1, 1, 1}}, device));
 
@@ -343,7 +347,8 @@ TEST_P(TriangleMeshPermuteDevices, ToLegacy) {
     core::Dtype int_dtype = core::Int64;
 
     t::geometry::TriangleMesh mesh(device);
-    mesh.SetVertices(core::Tensor::Ones({2, 3}, float_dtype, device) * 0);
+    mesh.SetVertexPositions(core::Tensor::Ones({2, 3}, float_dtype, device) *
+                            0);
     mesh.SetVertexColors(core::Tensor::Ones({2, 3}, float_dtype, device) * 1);
     mesh.SetVertexNormals(core::Tensor::Ones({2, 3}, float_dtype, device) * 2);
     mesh.SetTriangles(core::Tensor::Ones({2, 3}, int_dtype, device) * 3);

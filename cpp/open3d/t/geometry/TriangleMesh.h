@@ -56,7 +56,7 @@ namespace geometry {
 ///     - The tensor must be of shape N x {3,}.
 ///     - Convenience functions:
 ///         - TriangleMesh::GetVertexPositions()
-///         - TriangleMesh::SetVertices(vertices_tensor)
+///         - TriangleMesh::SetVertexPositions(vertices_tensor)
 ///         - TriangleMesh::HasVertices()
 ///         - TriangleMesh::GetTriangles()
 ///         - TriangleMesh::SetTriangles(triangles_tensor)
@@ -273,7 +273,7 @@ public:
 
     /// Set the value of the "vertices" attribute in vertex_attr_.
     /// Convenience function.
-    void SetVertices(const core::Tensor &value) {
+    void SetVertexPositions(const core::Tensor &value) {
         value.AssertShapeCompatible({utility::nullopt, 3});
         SetVertexAttr("vertices", value);
     }

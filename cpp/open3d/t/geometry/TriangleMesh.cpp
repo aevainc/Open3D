@@ -58,7 +58,7 @@ TriangleMesh::TriangleMesh(const core::Tensor &vertices,
           }
           return vertices.GetDevice();
       }()) {
-    SetVertices(vertices);
+    SetVertexPositions(vertices);
     SetTriangles(triangles);
 }
 
@@ -125,8 +125,9 @@ geometry::TriangleMesh TriangleMesh::FromLegacy(
 
     TriangleMesh mesh(device);
     if (mesh_legacy.HasVertices()) {
-        mesh.SetVertices(core::eigen_converter::EigenVector3dVectorToTensor(
-                mesh_legacy.vertices_, float_dtype, device));
+        mesh.SetVertexPositions(
+                core::eigen_converter::EigenVector3dVectorToTensor(
+                        mesh_legacy.vertices_, float_dtype, device));
     } else {
         utility::LogWarning("Creating from empty legacy TriangleMesh.");
     }
