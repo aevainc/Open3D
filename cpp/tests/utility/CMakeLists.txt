@@ -5,4 +5,5 @@ target_sources(tests PRIVATE
     IJsonConvertible.cpp
     Logging.cpp
     Timer.cpp
+    MiniVec.cpp
 )
