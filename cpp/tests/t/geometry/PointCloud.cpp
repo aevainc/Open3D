@@ -125,7 +125,7 @@ TEST_P(PointCloudPermuteDevices, GetMinBound_GetMaxBound_GetCenter) {
               std::vector<float>({2.5, 3.5, 4.5}));
 }
 
-TEST_P(PointCloudPermuteDevicePairs, CopyDevice) {
+TEST_P(PointCloudPermuteDevicePairs, To) {
     core::Device dst_device;
     core::Device src_device;
     std::tie(dst_device, src_device) = GetParam();
@@ -150,7 +150,7 @@ TEST_P(PointCloudPermuteDevicePairs, CopyDevice) {
               pcd.GetPointPositions().GetDtype());
 }
 
-TEST_P(PointCloudPermuteDevices, Copy) {
+TEST_P(PointCloudPermuteDevices, Clone) {
     core::Device device = GetParam();
     core::Dtype dtype = core::Float32;
 

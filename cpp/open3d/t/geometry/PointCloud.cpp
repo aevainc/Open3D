@@ -196,6 +196,7 @@ PointCloud &PointCloud::Scale(double scale, const core::Tensor &center) {
 
 PointCloud &PointCloud::Rotate(const core::Tensor &R,
                                const core::Tensor &center) {
+    center.AssertDevice(device_);
     kernel::transform::RotatePoints(R, GetPointPositions(), center);
 
     if (HasPointNormals()) {
