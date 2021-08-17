@@ -165,10 +165,7 @@ public:
     /// \param key Attribute name.
     /// \param value A tensor.
     void SetPointAttr(const std::string &key, const core::Tensor &value) {
-        if (value.GetDevice() != device_) {
-            utility::LogError("Attribute device {} != Pointcloud's device {}.",
-                              value.GetDevice().ToString(), device_.ToString());
-        }
+        value.AssertDevice(device_);
         point_attr_[key] = value;
     }
 
