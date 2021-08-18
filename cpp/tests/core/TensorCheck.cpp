@@ -38,7 +38,7 @@ static void VDayin(const char *file_name,
                    const char *format,
                    fmt::format_args args) {
     std::string err_msg = fmt::vformat(format, args);
-    err_msg = fmt::format("[Open3D INFO] {}", err_msg);
+    err_msg = fmt::format("[Open3D DAYIN] {}", err_msg);
     std::cout << err_msg << std::endl;
 }
 
@@ -106,8 +106,12 @@ TEST_P(TensorCheckPermuteDevices, AssertTensorShape) {
     core::Tensor t = core::Tensor::Empty({}, core::Float32, device);
 
     std::cout << "To call LogDayin" << std::endl;
-    LogDayin("Hello: {}", "hello {} world");
+    _LogDayin("file", 100, "function", "hello world");
     std::cout << "Called LogDayin" << std::endl;
+
+    std::cout << "To call LogDayin with {}" << std::endl;
+    _LogDayin("file", 100, "function", "hello {} world");
+    std::cout << "Called LogDayin with {}" << std::endl;
 }
 
 TEST_P(TensorCheckPermuteDevices, AssertTensorShapeCompatible) {
