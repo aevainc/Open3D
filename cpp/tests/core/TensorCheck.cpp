@@ -105,13 +105,17 @@ TEST_P(TensorCheckPermuteDevices, AssertTensorShape) {
     core::Device device = GetParam();
     core::Tensor t = core::Tensor::Empty({}, core::Float32, device);
 
-    std::cout << "To call LogDayin" << std::endl;
-    _LogDayin("file", 100, "function", "hello world");
-    std::cout << "Called LogDayin" << std::endl;
-
     std::cout << "To call LogDayin with {}" << std::endl;
-    _LogDayin("file", 100, "function", "hello {} world");
+    LogDayin("hello {}", "hello {} world");
     std::cout << "Called LogDayin with {}" << std::endl;
+
+    std::cout << "To call _LogDayin" << std::endl;
+    _LogDayin("file", 100, "function", "hello world");
+    std::cout << "Called _LogDayin" << std::endl;
+
+    std::cout << "To call _LogDayin with {}" << std::endl;
+    _LogDayin("file", 100, "function", "hello {} world");
+    std::cout << "Called _LogDayin with {}" << std::endl;
 }
 
 TEST_P(TensorCheckPermuteDevices, AssertTensorShapeCompatible) {
