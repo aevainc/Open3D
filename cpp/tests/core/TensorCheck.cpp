@@ -33,23 +33,31 @@
     _LogDayin(__FILE__, __LINE__, (const char *)__FN__, __VA_ARGS__)
 
 // In console.cpp
-static void VDayin(const char *file_name,
-                   int line_number,
-                   const char *function_name,
-                   const char *format,
-                   fmt::format_args args) {
+void VDayin(const char *file_name,
+            int line_number,
+            const char *function_name,
+            const char *format,
+            fmt::format_args args) {
     std::string err_msg = fmt::vformat(format, args);
     err_msg = fmt::format("[Open3D DAYIN] {}", err_msg);
     std::cout << err_msg << std::endl;
 }
 
+void VDayin(const char *file_name,
+            int line_number,
+            const char *function_name,
+            const char *message) {
+    std::string err_msg = fmt::format("[Open3D DAYIN] {}", message);
+    std::cout << err_msg << std::endl;
+}
+
 // In console.h
 template <typename... Args>
-static void _LogDayin(const char *file_name,
-                      int line_number,
-                      const char *function_name,
-                      const char *format,
-                      Args &&... args) {
+void _LogDayin(const char *file_name,
+               int line_number,
+               const char *function_name,
+               const char *format,
+               Args &&... args) {
     VDayin(file_name, line_number, function_name, format,
            fmt::make_format_args(args...));
 }
@@ -103,7 +111,6 @@ TEST_P(TensorCheckPermuteDevices, AssertTensorDevice) {
 }
 
 TEST_P(TensorCheckPermuteDevices, AssertTensorShape) {
-    (void)VDayin;
     core::Device device = GetParam();
     core::Tensor t = core::Tensor::Empty({}, core::Float32, device);
 
