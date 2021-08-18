@@ -50,6 +50,11 @@ void VDayin(const char *file_name,
     VDayin(file_name, line_number, function_name, err_msg.c_str());
 }
 
+std::string FormatArgs(const char *format, fmt::format_args args) {
+    std::string err_msg = fmt::vformat(format, args);
+    return err_msg;
+}
+
 // In console.h
 template <typename... Args>
 void _LogDayin(const char *file_name,
@@ -58,8 +63,8 @@ void _LogDayin(const char *file_name,
                const char *format,
                Args &&... args) {
     if (sizeof...(Args) > 0) {
-        VDayin(file_name, line_number, function_name, format,
-               fmt::make_format_args(args...));
+        VDayin(file_name, line_number, function_name,
+               FormatArgs(format, fmt::make_format_args(args...)).c_str());
     } else {
         VDayin(file_name, line_number, function_name, format);
     }
