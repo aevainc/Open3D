@@ -105,16 +105,9 @@ TEST_P(TensorCheckPermuteDevices, AssertTensorShape) {
     core::Device device = GetParam();
     core::Tensor t = core::Tensor::Empty({}, core::Float32, device);
 
-    try {
-        core::AssertTensorShape(t, {1});
-        FAIL() << "Should not reach here.";
-    } catch (std::runtime_error const &err) {
-        std::cout << "To call LogDayin" << std::endl;
-        LogDayin("Error: {}", err.what());
-        std::cout << "Called LogDayin" << std::endl;
-    } catch (...) {
-        FAIL() << "std::runtime_error not thrown.";
-    }
+    std::cout << "To call LogDayin" << std::endl;
+    LogDayin("Hello: {}", "hello {} world");
+    std::cout << "Called LogDayin" << std::endl;
 }
 
 TEST_P(TensorCheckPermuteDevices, AssertTensorShapeCompatible) {
