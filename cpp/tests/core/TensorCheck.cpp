@@ -29,6 +29,29 @@
 #include "tests/UnitTest.h"
 #include "tests/core/CoreTest.h"
 
+#define LogDayin(...) \
+    _LogDayin(__FILE__, __LINE__, (const char *)__FN__, __VA_ARGS__)
+
+static void VDayin(const char *file_name,
+                   int line_number,
+                   const char *function_name,
+                   const char *format,
+                   fmt::format_args args) {
+    std::string err_msg = fmt::vformat(format, args);
+    err_msg = fmt::format("[Open3D INFO] {}", err_msg);
+    std::cout << err_msg << std::endl;
+}
+
+template <typename... Args>
+static void _LogDayin(const char *file_name,
+                      int line_number,
+                      const char *function_name,
+                      const char *format,
+                      Args &&... args) {
+    VDayin(file_name, line_number, function_name, format,
+           fmt::make_format_args(args...));
+}
+
 namespace open3d {
 namespace tests {
 
@@ -46,7 +69,7 @@ TEST_P(TensorCheckPermuteDevices, AssertTensorDtype) {
     try {
         core::AssertTensorDtype(t, core::Int32);
         FAIL() << "Should not reach here.";
-    } catch (std::runtime_error const& err) {
+    } catch (std::runtime_error const &err) {
         EXPECT_TRUE(utility::ContainsString(
                 err.what(),
                 "Tensor has dtype Float32, but is expected to be Int32."));
@@ -65,7 +88,7 @@ TEST_P(TensorCheckPermuteDevices, AssertTensorDevice) {
     try {
         core::AssertTensorDevice(t, core::Device("CUDA:1000"));
         FAIL() << "Should not reach here.";
-    } catch (std::runtime_error const& err) {
+    } catch (std::runtime_error const &err) {
         EXPECT_TRUE(utility::ContainsString(err.what(), "Tensor has device"));
         EXPECT_TRUE(utility::ContainsString(err.what(),
                                             "but is expected to be CUDA:1000"));
@@ -78,24 +101,17 @@ TEST_P(TensorCheckPermuteDevices, AssertTensorDevice) {
 }
 
 TEST_P(TensorCheckPermuteDevices, AssertTensorShape) {
+    (void)VDayin;
     core::Device device = GetParam();
     core::Tensor t = core::Tensor::Empty({}, core::Float32, device);
-
-    core::AssertTensorShape(t, {1});
 
     try {
         core::AssertTensorShape(t, {1});
         FAIL() << "Should not reach here.";
-    } catch (std::runtime_error const& err) {
-        utility::LogInfo("Error: {}", err.what());
-        // EXPECT_TRUE(utility::ContainsString(err.what(), "Tensor has
-        // device")); EXPECT_TRUE(utility::ContainsString(err.what(),
-        //                                     "but is expected to be
-        //                                     CUDA:1000"));
-        // EXPECT_TRUE(utility::ContainsString(err.what(),
-        // "tests/core/TensorCheck.cpp:"));
-        // EXPECT_TRUE(utility::ContainsString(err.what(),
-        // "AssertTensorShape"));
+    } catch (std::runtime_error const &err) {
+        std::cout << "To call LogDayin" << std::endl;
+        LogDayin("Error: {}", err.what());
+        std::cout << "Called LogDayin" << std::endl;
     } catch (...) {
         FAIL() << "std::runtime_error not thrown.";
     }
