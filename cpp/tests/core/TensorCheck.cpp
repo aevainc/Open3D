@@ -57,8 +57,12 @@ void _LogDayin(const char *file_name,
                const char *function_name,
                const char *format,
                Args &&... args) {
-    VDayin(file_name, line_number, function_name, format,
-           fmt::make_format_args(args...));
+    if (sizeof...(Args) > 0) {
+        VDayin(file_name, line_number, function_name, format,
+               fmt::make_format_args(args...));
+    } else {
+        VDayin(file_name, line_number, function_name, format);
+    }
 }
 
 namespace open3d {
