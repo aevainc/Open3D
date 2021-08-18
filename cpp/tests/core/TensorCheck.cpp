@@ -41,15 +41,6 @@ void VDayin(const char *file_name,
     std::cout << err_msg << std::endl;
 }
 
-void VDayin(const char *file_name,
-            int line_number,
-            const char *function_name,
-            const char *format,
-            fmt::format_args args) {
-    std::string err_msg = fmt::vformat(format, args);
-    VDayin(file_name, line_number, function_name, err_msg.c_str());
-}
-
 std::string FormatArgs(const char *format, fmt::format_args args) {
     std::string err_msg = fmt::vformat(format, args);
     return err_msg;
