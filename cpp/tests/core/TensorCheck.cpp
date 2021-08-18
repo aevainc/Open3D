@@ -32,6 +32,7 @@
 #define LogDayin(...) \
     _LogDayin(__FILE__, __LINE__, (const char *)__FN__, __VA_ARGS__)
 
+// In console.cpp
 static void VDayin(const char *file_name,
                    int line_number,
                    const char *function_name,
@@ -42,6 +43,7 @@ static void VDayin(const char *file_name,
     std::cout << err_msg << std::endl;
 }
 
+// In console.h
 template <typename... Args>
 static void _LogDayin(const char *file_name,
                       int line_number,
