@@ -108,10 +108,12 @@ TEST_P(TensorCheckPermuteDevices, AssertTensorShape) {
     std::cout << "To call LogDayin with {}" << std::endl;
     LogDayin("hello {}", "hello {} world");
     std::cout << "Called LogDayin with {}" << std::endl;
+    std::cout << "##################################" << std::endl;
 
     std::cout << "To call _LogDayin" << std::endl;
     _LogDayin("file", 100, "function", "hello world");
     std::cout << "Called _LogDayin" << std::endl;
+    std::cout << "##################################" << std::endl;
 
     std::cout << "To call _LogDayin with {}" << std::endl;
     _LogDayin("file", 100, "function", "hello {} world");
