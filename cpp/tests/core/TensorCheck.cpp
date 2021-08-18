@@ -36,19 +36,18 @@
 void VDayin(const char *file_name,
             int line_number,
             const char *function_name,
-            const char *format,
-            fmt::format_args args) {
-    std::string err_msg = fmt::vformat(format, args);
-    err_msg = fmt::format("[Open3D DAYIN] {}", err_msg);
+            const char *message) {
+    std::string err_msg = fmt::format("[Open3D DAYIN] {}", message);
     std::cout << err_msg << std::endl;
 }
 
 void VDayin(const char *file_name,
             int line_number,
             const char *function_name,
-            const char *message) {
-    std::string err_msg = fmt::format("[Open3D DAYIN] {}", message);
-    std::cout << err_msg << std::endl;
+            const char *format,
+            fmt::format_args args) {
+    std::string err_msg = fmt::vformat(format, args);
+    VDayin(file_name, line_number, function_name, err_msg.c_str());
 }
 
 // In console.h
