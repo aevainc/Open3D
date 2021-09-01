@@ -36,11 +36,11 @@ DataManager& DataManager::GetInstance() {
     return instance;
 }
 
-void DataManager::SetDataPathCommon(const std::string& data_root) {
+void DataManager::SetDataRootCommon(const std::string& data_root) {
     GetInstance().data_root_common_ = data_root;
 }
 
-void DataManager::SetDataPathDownload(const std::string& data_root) {
+void DataManager::SetDataRootDownload(const std::string& data_root) {
     GetInstance().data_root_download_ = data_root;
 }
 

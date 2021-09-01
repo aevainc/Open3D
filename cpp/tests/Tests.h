@@ -52,13 +52,15 @@ const Eigen::Vector2i Zero2i = Eigen::Vector2i::Zero();
 // Mechanism for reporting unit tests for which there is no implementation yet.
 void NotImplemented();
 
-/// Returns Open3D common data directory. If a relative path will be appended
+/// Returns Open3D common data directory. \p relative_path will be appended
 /// when specified.
+///
 /// \param relative_path Relative path to Open3D common data directory.
 std::string GetDataPathCommon(const std::string& relative_path = "");
 
-/// Returns Open3D download data directory. If a relative path will be appended
+/// Returns Open3D download data directory. \p relative_path will be appended
 /// when specified.
+///
 /// \param relative_path Relative path to Open3D download data directory.
 std::string GetDataPathDownload(const std::string& relative_path = "");
 
