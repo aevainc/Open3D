@@ -43,12 +43,6 @@ public:
         return instance;
     }
 
-    /// Computes the full path of a file/directory inside the Open3D common data
-    /// root. If \p relative_path is specified, the full path is computed by
-    /// appending the \p relative_path to the common data root; otherwise, the
-    /// common data root is returned.
-    ///
-    /// \param relative_path Relative path to Open3D common data root.
     std::string GetDataPathCommon(const std::string& relative_path = "") {
         const std::string data_root_common = data_root_common_;
         if (data_root_common.empty()) {
@@ -63,13 +57,6 @@ public:
         }
     }
 
-    /// Computes the full path of a file/directory inside the Open3D
-    /// download data root. If \p relative_path is specified, the full
-    /// path is computed by appending the \p relative_path to the
-    /// download data root; otherwise, the download data root is
-    /// returned.
-    ///
-    /// \param relative_path Relative path to Open3D download data root.
     std::string GetDataPathDownload(const std::string& relative_path = "") {
         const std::string data_root_download = data_root_download_;
         if (data_root_download.empty()) {
@@ -84,18 +71,10 @@ public:
         }
     }
 
-    /// Set the Open3D common data root. This is typically done once during
-    /// the initialization phase of a program.
-    ///
-    /// \param data_root Full path of the Open3D common data root directory.
     void SetDataRootCommon(const std::string& data_root) {
         data_root_common_ = data_root;
     }
 
-    /// Set the Open3D download data root. This is typically done once during
-    /// the initialization phase of a program.
-    ///
-    /// \param data_root Full path of the Open3D download data root directory.
     void SetDataRootDownload(const std::string& data_root) {
         data_root_download_ = data_root;
     }
