@@ -60,12 +60,11 @@ bool ShallDisableP2P(int argc, char** argv) {
 int main(int argc, char** argv) {
     using namespace open3d;
 
+    utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
     utility::CPUInfo::GetInstance().Print();
-
     utility::SetDataRootCommon(std::string(TEST_DATA_DIR));
     utility::SetDataRootDownload(std::string(TEST_DATA_DIR) +
                                  "/open3d_downloads");
-
 #ifdef BUILD_CUDA_MODULE
     if (ShallDisableP2P(argc, argv)) {
         core::CUDAState::GetInstance().ForceDisableP2PForTesting();
@@ -74,7 +73,5 @@ int main(int argc, char** argv) {
 #endif
 
     testing::InitGoogleMock(&argc, argv);
-    utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
-
     return RUN_ALL_TESTS();
 }
