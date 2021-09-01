@@ -36,6 +36,9 @@ namespace utility {
 /// appending the \p relative_path to the common data root; otherwise, the
 /// common data root is returned.
 ///
+/// SetDataRootCommon() must be called before using GetDataPathCommon().
+/// SetDataRootCommon() is typically called once in program initialization.
+///
 /// \param relative_path Relative path to Open3D common data root.
 std::string GetDataPathCommon(const std::string& relative_path = "");
 
@@ -44,6 +47,9 @@ std::string GetDataPathCommon(const std::string& relative_path = "");
 /// path is computed by appending the \p relative_path to the
 /// download data root; otherwise, the download data root is
 /// returned.
+///
+/// SetDataRootDownload() must be called before using GetDataPathDownload().
+/// SetDataRootDownload() is typically called once in program initialization.
 ///
 /// \param relative_path Relative path to Open3D download data root.
 std::string GetDataPathDownload(const std::string& relative_path = "");
