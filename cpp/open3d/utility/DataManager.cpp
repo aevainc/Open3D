@@ -36,22 +36,32 @@ DataManager& DataManager::GetInstance() {
     return instance;
 }
 
-void DataManager::SetDataPathCommon(const std::string& path) {
-    data_path_common_ = path;
+void DataManager::SetDataPathCommon(const std::string& data_root) {
+    GetInstance().data_root_common_ = data_root;
 }
 
-void DataManager::SetDataPathDownload(const std::string& path) {
-    data_path_download_ = path;
+void DataManager::SetDataPathDownload(const std::string& data_root) {
+    GetInstance().data_root_download_ = data_root;
 }
 
-std::string DataManager::GetDataPathCommon() const { return data_path_common_; }
+std::string DataManager::GetDataPathCommon(const std::string& relative_path) {
+    if (relative_path.empty()) {
+        return GetInstance().data_root_common_;
+    } else {
+        return GetInstance().data_root_common_ + "/" + relative_path;
+    }
+}
 
-std::string DataManager::GetDataPathDownload() const {
-    return data_path_download_;
+std::string DataManager::GetDataPathDownload(const std::string& relative_path) {
+    if (relative_path.empty()) {
+        return GetInstance().data_root_download_;
+    } else {
+        return GetInstance().data_root_download_ + "/" + relative_path;
+    }
 }
 
 DataManager::DataManager()
-    : data_path_common_("UNDEFINED"), data_path_download_("UNDEFINED") {}
+    : data_root_common_("UNDEFINED"), data_root_download_("UNDEFINED") {}
 
 }  // namespace utility
 }  // namespace open3d

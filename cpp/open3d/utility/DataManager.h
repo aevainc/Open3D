@@ -33,22 +33,17 @@ namespace utility {
 
 class DataManager {
 public:
-    static DataManager& GetInstance();
+    static std::string GetDataPathCommon(const std::string& relative_path);
+    static std::string GetDataPathDownload(const std::string& relative_path);
 
-    ~DataManager() = default;
-    DataManager(const DataManager&) = delete;
-    void operator=(const DataManager&) = delete;
-
-    void SetDataPathCommon(const std::string& path);
-    void SetDataPathDownload(const std::string& path);
-
-    std::string GetDataPathCommon() const;
-    std::string GetDataPathDownload() const;
+    static void SetDataPathCommon(const std::string& data_root);
+    static void SetDataPathDownload(const std::string& data_root);
 
 private:
+    static DataManager& GetInstance();
     DataManager();
-    std::string data_path_common_;
-    std::string data_path_download_;
+    std::string data_root_common_;
+    std::string data_root_download_;
 };
 
 }  // namespace utility
