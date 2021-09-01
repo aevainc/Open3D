@@ -62,9 +62,9 @@ int main(int argc, char** argv) {
 
     utility::CPUInfo::GetInstance().Print();
 
-    utility::DataManager::SetDataRootCommon(std::string(TEST_DATA_DIR));
-    utility::DataManager::SetDataRootDownload(std::string(TEST_DATA_DIR) +
-                                              "/open3d_downloads");
+    utility::SetDataRootCommon(std::string(TEST_DATA_DIR));
+    utility::SetDataRootDownload(std::string(TEST_DATA_DIR) +
+                                 "/open3d_downloads");
 
 #ifdef BUILD_CUDA_MODULE
     if (ShallDisableP2P(argc, argv)) {
