@@ -38,15 +38,19 @@ namespace utility {
 /// the class in a public interface.
 class DataManager {
 public:
+    static DataManager& GetInstance() {
+        static DataManager instance;
+        return instance;
+    }
+
     /// Computes the full path of a file/directory inside the Open3D common data
     /// root. If \p relative_path is specified, the full path is computed by
     /// appending the \p relative_path to the common data root; otherwise, the
     /// common data root is returned.
     ///
     /// \param relative_path Relative path to Open3D common data root.
-    static std::string GetDataPathCommon(
-            const std::string& relative_path = "") {
-        const std::string data_root_common = GetInstance().data_root_common_;
+    std::string GetDataPathCommon(const std::string& relative_path = "") {
+        const std::string data_root_common = data_root_common_;
         if (data_root_common.empty()) {
             utility::LogError(
                     "SetDataRootCommon() must be called first to specify the "
@@ -66,10 +70,8 @@ public:
     /// returned.
     ///
     /// \param relative_path Relative path to Open3D download data root.
-    static std::string GetDataPathDownload(
-            const std::string& relative_path = "") {
-        const std::string data_root_download =
-                GetInstance().data_root_download_;
+    std::string GetDataPathDownload(const std::string& relative_path = "") {
+        const std::string data_root_download = data_root_download_;
         if (data_root_download.empty()) {
             utility::LogError(
                     "SetDataRootdownload() must be called first to specify the "
@@ -86,42 +88,38 @@ public:
     /// the initialization phase of a program.
     ///
     /// \param data_root Full path of the Open3D common data root directory.
-    static void SetDataRootCommon(const std::string& data_root) {
-        GetInstance().data_root_common_ = data_root;
+    void SetDataRootCommon(const std::string& data_root) {
+        data_root_common_ = data_root;
     }
 
     /// Set the Open3D download data root. This is typically done once during
     /// the initialization phase of a program.
     ///
     /// \param data_root Full path of the Open3D download data root directory.
-    static void SetDataRootDownload(const std::string& data_root) {
-        GetInstance().data_root_download_ = data_root;
+    void SetDataRootDownload(const std::string& data_root) {
+        data_root_download_ = data_root;
     }
 
 private:
-    static DataManager& GetInstance() {
-        static DataManager instance;
-        return instance;
-    }
     DataManager() : data_root_common_(""), data_root_download_("") {}
     std::string data_root_common_;
     std::string data_root_download_;
 };
 
 std::string GetDataPathCommon(const std::string& relative_path) {
-    return DataManager::GetDataPathCommon(relative_path);
+    return DataManager::GetInstance().GetDataPathCommon(relative_path);
 }
 
 std::string GetDataPathDownload(const std::string& relative_path) {
-    return DataManager::GetDataPathDownload(relative_path);
+    return DataManager::GetInstance().GetDataPathDownload(relative_path);
 }
 
 void SetDataRootCommon(const std::string& data_root) {
-    DataManager::SetDataRootCommon(data_root);
+    DataManager::GetInstance().SetDataRootCommon(data_root);
 }
 
 void SetDataRootDownload(const std::string& data_root) {
-    DataManager::SetDataRootDownload(data_root);
+    DataManager::GetInstance().SetDataRootDownload(data_root);
 }
 
 }  // namespace utility
