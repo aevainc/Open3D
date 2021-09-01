@@ -28,6 +28,8 @@
 
 #include <string>
 
+#include "open3d/utility/Logging.h"
+
 namespace open3d {
 namespace utility {
 
@@ -45,23 +47,34 @@ void DataManager::SetDataRootDownload(const std::string& data_root) {
 }
 
 std::string DataManager::GetDataPathCommon(const std::string& relative_path) {
+    const std::string data_root_common = GetInstance().data_root_common_;
+    if (data_root_common.empty()) {
+        utility::LogError(
+                "DataManager::SetDataRootCommon() must be called first to "
+                "specify the common data root.");
+    }
     if (relative_path.empty()) {
-        return GetInstance().data_root_common_;
+        return data_root_common;
     } else {
-        return GetInstance().data_root_common_ + "/" + relative_path;
+        return data_root_common + "/" + relative_path;
     }
 }
 
 std::string DataManager::GetDataPathDownload(const std::string& relative_path) {
+    const std::string data_root_download = GetInstance().data_root_download_;
+    if (data_root_download.empty()) {
+        utility::LogError(
+                "DataManager::SetDataRootdownload() must be called first to "
+                "specify the download data root.");
+    }
     if (relative_path.empty()) {
-        return GetInstance().data_root_download_;
+        return data_root_download;
     } else {
-        return GetInstance().data_root_download_ + "/" + relative_path;
+        return data_root_download + "/" + relative_path;
     }
 }
 
-DataManager::DataManager()
-    : data_root_common_("UNDEFINED"), data_root_download_("UNDEFINED") {}
+DataManager::DataManager() : data_root_common_(""), data_root_download_("") {}
 
 }  // namespace utility
 }  // namespace open3d
