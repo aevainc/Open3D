@@ -24,6 +24,12 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
+// TEST_DATA_DIR defined in CMakeLists.txt
+// Put it here to avoid editor warnings
+#ifndef TEST_DATA_DIR
+#define TEST_DATA_DIR
+#endif
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -53,14 +59,22 @@ bool ShallDisableP2P(int argc, char** argv) {
 
 int main(int argc, char** argv) {
     using namespace open3d;
+
     utility::CPUInfo::GetInstance().Print();
+
+    utility::DataManager::SetDataRootCommon(std::string(TEST_DATA_DIR));
+    utility::DataManager::SetDataRootDownload(std::string(TEST_DATA_DIR) +
+                                              "/open3d_downloads");
+
 #ifdef BUILD_CUDA_MODULE
     if (ShallDisableP2P(argc, argv)) {
         core::CUDAState::GetInstance().ForceDisableP2PForTesting();
         utility::LogInfo("P2P device transfer has been disabled.");
     }
 #endif
+
     testing::InitGoogleMock(&argc, argv);
     utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
+
     return RUN_ALL_TESTS();
 }
