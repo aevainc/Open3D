@@ -25,3 +25,9 @@
 // ----------------------------------------------------------------------------
 
 #include "open3d/utility/DataManager.h"
+
+#include <string>
+
+namespace open3d {
+namespace utility {}  // namespace utility
+}  // namespace open3d
