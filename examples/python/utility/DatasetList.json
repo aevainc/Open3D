@@ -1,0 +1,10 @@
+{"Redwood" : {
+    "url" : [
+        "https://github.com/isl-org/open3d_downloads/releases/download/redwood/livingroom1-fragments-ply.zip",
+        "https://github.com/isl-org/open3d_downloads/releases/download/redwood/livingroom2-fragments-ply.zip",
+        "https://github.com/isl-org/open3d_downloads/releases/download/redwood/office1-fragments-ply.zip",
+        "https://github.com/isl-org/open3d_downloads/releases/download/redwood/office2-fragments-ply.zip"],
+    "license": "license_url",
+    "tags": ["redwood", "tag2"],
+    "HASH": []}
+}
