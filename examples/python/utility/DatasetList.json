@@ -1,10 +1,26 @@
 {"Redwood" : {
-    "url" : [
-        "https://github.com/isl-org/open3d_downloads/releases/download/redwood/livingroom1-fragments-ply.zip",
-        "https://github.com/isl-org/open3d_downloads/releases/download/redwood/livingroom2-fragments-ply.zip",
-        "https://github.com/isl-org/open3d_downloads/releases/download/redwood/office1-fragments-ply.zip",
-        "https://github.com/isl-org/open3d_downloads/releases/download/redwood/office2-fragments-ply.zip"],
-    "license": "license_url",
-    "tags": ["redwood", "tag2"],
-    "HASH": []}
+    "files":{
+        "livingroom1":{
+            "url" :"https://github.com/isl-org/open3d_downloads/releases/download/redwood/livingroom1-fragments-ply.zip",
+            "path": "redwood/livingroom1-fragments-ply.zip",
+            "license": "license_url",
+            "sha256": "642d62dae824b95a220370a15d4d5e2cc2b33d47a7e1075dc058047510813f70"},
+        "livingroom2":{
+            "url" :"https://github.com/isl-org/open3d_downloads/releases/download/redwood/livingroom2-fragments-ply.zip",
+            "path": "redwood/livingroom1-fragments-ply.zip",
+            "license": "license_url",
+            "sha256": "c8d68d18a02b1152052cd761566bc88ca7a75c027a8676180a3f81597f9ad34e"},
+        "office1":{
+            "url" :"https://github.com/isl-org/open3d_downloads/releases/download/redwood/office1-fragments-ply.zip",
+            "path": "redwood/livingroom1-fragments-ply.zip",
+            "license": "license_url",
+            "sha256": "3cf4ddec1f30ec8c43a65e32bff5cf5afe4316f1069c5b0e66f573ba9f4eb6f5"},
+        "office2":{
+            "url" :"https://github.com/isl-org/open3d_downloads/releases/download/redwood/office2-fragments-ply.zip",
+            "path": "redwood/livingroom1-fragments-ply.zip",
+            "license": "license_url",
+            "sha256": "8a0f99217b4de27c9bf2c2beb432248c61a7a73c1af2b44fd39fb88bcfee793d"}
+    },
+    "tags": ["redwood", "PLY"]
+    }
 }
