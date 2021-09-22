@@ -33,18 +33,18 @@ import io
 import time
 import os
 
-# Typically "Open3D/test_data", the test data dir.
-_test_data_dir = Path(__file__).parent.absolute().resolve()
+# Typically "Open3D/data", the test data dir.
+_data_dir = Path(__file__).parent.absolute().resolve()
 
-# Typically "Open3D/examples/test_data/open3d_downloads", the download dir.
-_download_dir = os.path.join(_test_data_dir, "open3d_downloads")
+# Typically "Open3D/examples/data/open3d_downloads", the download dir.
+_download_dir = os.path.join(_data_dir, "open3d_downloads")
 
 
 def get_data_path_common(relative_path=""):
     if not relative_path:
-        return _test_data_dir
+        return _data_dir
     else:
-        return os.path.join(_test_data_dir, relative_path)
+        return os.path.join(_data_dir, relative_path)
 
 
 def get_data_path_download(relative_path=""):
@@ -72,12 +72,12 @@ def _download_file(url, path, sha256, max_retry=3):
 
     full_path = _download_dir / Path(path)
 
-    # The saved file must be inside _test_data_dir.
+    # The saved file must be inside _data_dir.
     if _download_dir not in full_path.parents:
         raise AssertionError(f"{full_path} must be inside {_download_dir}.")
 
-    # Supports sub directory inside _test_data_dir, e.g.
-    # Open3D/test_data/open3d_downloads/foo/bar/my_file.txt
+    # Supports sub directory inside _data_dir, e.g.
+    # Open3D/data/open3d_downloads/foo/bar/my_file.txt
     full_path.parent.mkdir(parents=True, exist_ok=True)
 
     if full_path.exists() and _compute_sha256(full_path) == sha256:
@@ -102,7 +102,7 @@ def _download_file(url, path, sha256, max_retry=3):
 
 
 def download_all_files():
-    with open(_test_data_dir / "download_file_list.json") as f:
+    with open(_data_dir / "download_file_list.json") as f:
         datasets = json.load(f)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:

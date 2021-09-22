@@ -38,7 +38,7 @@ from trajectory_io import read_trajectory
 
 
 def run_benchmark():
-    dataset_path = os.path.join(pwd, "..", "..", "test_data", "RGBD")
+    dataset_path = os.path.join(pwd, "..", "..", "data", "RGBD")
     camera_poses = read_trajectory(os.path.join(dataset_path, "odometry.log"))
     camera_intrinsics = o3d.camera.PinholeCameraIntrinsic(
         o3d.camera.PinholeCameraIntrinsicParameters.PrimeSenseDefault)

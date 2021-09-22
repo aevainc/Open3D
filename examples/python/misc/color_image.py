@@ -49,7 +49,7 @@ if __name__ == "__main__":
     print(
         "Convet a numpy image to o3d.geometry.Image and show it with DrawGeomtries()."
     )
-    y = mpimg.imread("../../test_data/lena_color.jpg")
+    y = mpimg.imread("../../data/lena_color.jpg")
     print(y.shape)
     yy = o3d.geometry.Image(y)
     print(yy)
