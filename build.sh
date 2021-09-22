@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+/home/yixing/.dotfiles/bin/clean_build
+
+pushd build
+cmake \
+    -DBUILD_CUDA_MODULE=OFF \
+    -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_JUPYTER_EXTENSION=OFF \
+    -DGLIBCXX_USE_CXX11_ABI=OFF \
+    -DBUILD_COMMON_CUDA_ARCHS=OFF \
+    -DCMAKE_C_COMPILER=gcc \
+    -DCMAKE_CXX_COMPILER=g++ \
+    -DUSE_BLAS=OFF \
+    -DBUILD_FILAMENT_FROM_SOURCE=OFF \
+    -DBUILD_LIBREALSENSE=OFF \
+    -DBUILD_RPC_INTERFACE=OFF \
+    -DBUILD_BENCHMARKS=ON \
+    -DBUILD_GUI=ON \
+    -DBUILD_TENSORFLOW_OPS=OFF \
+    -DBUILD_PYTORCH_OPS=OFF \
+    -DBUILD_UNIT_TESTS=ON \
+    -DCMAKE_INSTALL_PREFIX=~/open3d_install ..
+make VERBOSE=1 Open3D -j
+popd
