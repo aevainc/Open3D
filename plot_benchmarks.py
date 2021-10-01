@@ -65,7 +65,7 @@ if __name__ == "__main__":
     # log_file = "benchmark_patrick.log"
     # log_file = "benchmark_regular_numpy.log"
     # log_file = "benchmark_intel_numpy.log"
-
+    log_File = args.log_file
     with open(log_file, "r") as f:
         lines = f.readlines()
         lines = [line.strip() for line in lines]
