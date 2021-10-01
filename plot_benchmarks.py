@@ -52,12 +52,15 @@ def autolabel(rects):
 # Install Intel python
 # conda create -n intel-python -c intel intelpython3_core python=3
 # python -c "import numpy as np; print(np.show_config())"
+# python --version
 
 if __name__ == "__main__":
 
-    # with open("patrick_results.log", "r") as f:
+    log_file = "benchmark_patrick.log"
+    log_file = "benchmark_regular_numpy.log"
+    log_file = "benchmark_intel_numpy.log"
 
-    with open("benchmark_results.log", "r") as f:
+    with open(log_file, "r") as f:
         lines = f.readlines()
         lines = [line.strip() for line in lines]
         spaces = r"\s+"
@@ -129,7 +132,7 @@ if __name__ == "__main__":
         rects2 = ax.bar(ind + width, numpy_times, width, color='y')
 
         ax.set_ylabel('Time (ms)')
-        ax.set_title(f'{operand} op benchmarks')
+        ax.set_title(f'{log_file}: {operand} op benchmarks')
         ax.set_xticks(ind + width / 2)
         ax.set_xticklabels(ops)
 
