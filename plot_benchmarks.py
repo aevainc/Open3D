@@ -43,7 +43,7 @@ def autolabel(rects):
     for rect in rects:
         height = rect.get_height()
         ax.text(rect.get_x() + rect.get_width() / 2.,
-                1.05 * height,
+                1.0 * height,
                 '%d' % int(height),
                 ha='center',
                 va='bottom')
@@ -84,57 +84,34 @@ if __name__ == "__main__":
                 entries.append(entry)
         print(f"len(entries): {len(entries)}")
 
-    # Compute geometirc mean
-    binary_times = dict()
-    binary_ops = [
-        entry["op"] for entry in entries if entry["operands"] == "binary"
-    ]
-    binary_ops = sorted(list(set(binary_ops)))
-    for binary_op in binary_ops:
-        open3d_times = [
-            entry["mean"]
-            for entry in entries
-            if entry["op"] == binary_op and entry["engine"] == "open3d"
-        ]
-        numpy_times = [
-            entry["mean"]
-            for entry in entries
-            if entry["op"] == binary_op and entry["engine"] == "numpy"
-        ]
-        binary_times[binary_op] = dict()
-        binary_times[binary_op]["open3d"] = gmean(open3d_times)
-        binary_times[binary_op]["numpy"] = gmean(numpy_times)
-    pprint(binary_times)
+    operands = "binary"
 
-    unary_times = dict()
-    unary_ops = [
-        entry["op"] for entry in entries if entry["operands"] == "unary"
-    ]
-    unary_ops = sorted(list(set(unary_ops)))
-    for unary_op in unary_ops:
+    # Compute geometirc mean
+    times = dict()
+    ops = [entry["op"] for entry in entries if entry["operands"] == operands]
+    ops = sorted(list(set(ops)))
+    for op in ops:
         open3d_times = [
             entry["mean"]
             for entry in entries
-            if entry["op"] == unary_op and entry["engine"] == "open3d"
+            if entry["op"] == op and entry["engine"] == "open3d"
         ]
         numpy_times = [
             entry["mean"]
             for entry in entries
-            if entry["op"] == unary_op and entry["engine"] == "numpy"
+            if entry["op"] == op and entry["engine"] == "numpy"
         ]
-        unary_times[unary_op] = dict()
-        unary_times[unary_op]["open3d"] = gmean(open3d_times)
-        unary_times[unary_op]["numpy"] = gmean(numpy_times)
-    pprint(unary_times)
+        times[op] = dict()
+        times[op]["open3d"] = gmean(open3d_times)
+        times[op]["numpy"] = gmean(numpy_times)
+    pprint(times)
 
     # Plot
     # https://matplotlib.org/2.0.2/examples/api/barchart_demo.html
-    open3d_times = [
-        binary_times[binary_op]["open3d"] for binary_op in binary_ops
-    ]
-    numpy_times = [binary_times[binary_op]["numpy"] for binary_op in binary_ops]
+    open3d_times = [times[op]["open3d"] for op in ops]
+    numpy_times = [times[op]["numpy"] for op in ops]
 
-    ind = np.arange(len(binary_ops))  # the x locations for the groups
+    ind = np.arange(len(ops))  # the x locations for the groups
     width = 0.35  # the width of the bars
 
     fig, ax = plt.subplots()
@@ -142,9 +119,9 @@ if __name__ == "__main__":
     rects2 = ax.bar(ind + width, numpy_times, width, color='y')
 
     ax.set_ylabel('Time (ms)')
-    ax.set_title('Binary op benchmarks')
+    ax.set_title(f'{operands} op benchmarks')
     ax.set_xticks(ind + width / 2)
-    ax.set_xticklabels(binary_ops)
+    ax.set_xticklabels(ops)
 
     ax.legend((rects1[0], rects2[0]), ('Open3D', 'Numpy'))
 
