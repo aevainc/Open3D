@@ -49,11 +49,15 @@ def autolabel(rects):
                 va='bottom')
 
 
+# Install Intel python
+# conda create -n intel-python -c intel intelpython3_core python=3
+# python -c "import numpy as np; print(np.show_config())"
+
 if __name__ == "__main__":
 
-    with open("patrick_results.log", "r") as f:
+    # with open("patrick_results.log", "r") as f:
 
-        # with open("benchmark_results.log", "r") as f:
+    with open("benchmark_results.log", "r") as f:
         lines = f.readlines()
         lines = [line.strip() for line in lines]
         spaces = r"\s+"
