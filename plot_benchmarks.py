@@ -115,4 +115,24 @@ if __name__ == "__main__":
     pprint(unary_times)
 
     # Plot
-    
+    # https://matplotlib.org/2.0.2/examples/api/barchart_demo.html
+    open3d_times = [
+        binary_times[binary_op]["open3d"] for binary_op in binary_ops
+    ]
+    numpy_times = [binary_times[binary_op]["numpy"] for binary_op in binary_ops]
+
+    ind = np.arange(len(binary_ops))  # the x locations for the groups
+    width = 0.35  # the width of the bars
+
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(ind, open3d_times, width, color='r')
+    rects2 = ax.bar(ind + width, numpy_times, width, color='y')
+
+    ax.set_ylabel('Time (ms)')
+    ax.set_title('Binary op benchmarks')
+    ax.set_xticks(ind + width / 2)
+    ax.set_xticklabels(binary_ops)
+
+    ax.legend((rects1[0], rects2[0]), ('Open3D', 'Numpy'))
+
+    plt.show()
