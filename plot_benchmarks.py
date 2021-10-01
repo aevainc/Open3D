@@ -5,6 +5,7 @@ import os
 import re
 from scipy.stats import gmean
 from pprint import pprint
+import argparse
 
 decimal_with_parenthesis = r"([0-9\.\,]+) \([^)]*\)"
 regex_dict = {
@@ -56,9 +57,14 @@ def autolabel(rects):
 
 if __name__ == "__main__":
 
-    log_file = "benchmark_patrick.log"
-    log_file = "benchmark_regular_numpy.log"
-    log_file = "benchmark_intel_numpy.log"
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('log_file', type=str, help='log_file')
+    args = parser.parse_args()
+    print(args.log_file)
+
+    # log_file = "benchmark_patrick.log"
+    # log_file = "benchmark_regular_numpy.log"
+    # log_file = "benchmark_intel_numpy.log"
 
     with open(log_file, "r") as f:
         lines = f.readlines()
