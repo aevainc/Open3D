@@ -36,6 +36,19 @@ def decode_name(name):
     return operands, op, dtype, size, engine
 
 
+def autolabel(rects):
+    """
+    Attach a text label above each bar displaying its height
+    """
+    for rect in rects:
+        height = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width() / 2.,
+                1.05 * height,
+                '%d' % int(height),
+                ha='center',
+                va='bottom')
+
+
 if __name__ == "__main__":
 
     with open("benchmark_results.log", "r") as f:
@@ -135,4 +148,6 @@ if __name__ == "__main__":
 
     ax.legend((rects1[0], rects2[0]), ('Open3D', 'Numpy'))
 
+    autolabel(rects1)
+    autolabel(rects2)
     plt.show()
