@@ -26,6 +26,14 @@ def simplify_name(name):
     return name.replace("test_", "").replace("_ops", "").replace("_ew", "")
 
 
+def decode_name(name):
+    operands = re.search(r"(binary|unary)", name).group(1)
+    op = re.search(r"\[([a-z_A-Z]+)-", name).group(1)
+    dtype = re.search(r"(dtype[0-9]+)", name).group(1)
+    size = re.search(r"-([0-9]+)", name).group(1)
+    return operands, op, dtype, size
+
+
 if __name__ == "__main__":
 
     with open("benchmark_results.log", "r") as f:
@@ -50,7 +58,9 @@ if __name__ == "__main__":
             match = re.search(line_regex, line)
             if match:
                 entry = dict()
-                entry["name"] = simplify_name(match.group(1).strip())
+                entry["name"] = match.group(1).strip()
+                entry["operands"], entry["op"], entry["dtype"], entry[
+                    "size"] = decode_name(entry["name"])
                 entry["min"] = match.group(2).strip()
                 entry["max"] = match.group(3).strip()
                 entry["mean"] = match.group(4).strip()
