@@ -84,47 +84,52 @@ if __name__ == "__main__":
                 entries.append(entry)
         print(f"len(entries): {len(entries)}")
 
-    operand = "binary"
+    operands = ["unary", "binary"]
+    fig, axes = plt.subplots(2, 1)
 
-    # Compute geometirc mean
-    times = dict()
-    ops = [entry["op"] for entry in entries if entry["operand"] == operand]
-    ops = sorted(list(set(ops)))
-    for op in ops:
-        open3d_times = [
-            entry["mean"]
-            for entry in entries
-            if entry["op"] == op and entry["engine"] == "open3d"
-        ]
-        numpy_times = [
-            entry["mean"]
-            for entry in entries
-            if entry["op"] == op and entry["engine"] == "numpy"
-        ]
-        times[op] = dict()
-        times[op]["open3d"] = gmean(open3d_times)
-        times[op]["numpy"] = gmean(numpy_times)
-    pprint(times)
+    for i in range(2):
+        operand = operands[i]
+        ax = axes[i]
 
-    # Plot
-    # https://matplotlib.org/2.0.2/examples/api/barchart_demo.html
-    open3d_times = [times[op]["open3d"] for op in ops]
-    numpy_times = [times[op]["numpy"] for op in ops]
+        # Compute geometirc mean
+        times = dict()
+        ops = [entry["op"] for entry in entries if entry["operand"] == operand]
+        ops = sorted(list(set(ops)))
+        for op in ops:
+            open3d_times = [
+                entry["mean"]
+                for entry in entries
+                if entry["op"] == op and entry["engine"] == "open3d"
+            ]
+            numpy_times = [
+                entry["mean"]
+                for entry in entries
+                if entry["op"] == op and entry["engine"] == "numpy"
+            ]
+            times[op] = dict()
+            times[op]["open3d"] = gmean(open3d_times)
+            times[op]["numpy"] = gmean(numpy_times)
+        pprint(times)
 
-    ind = np.arange(len(ops))  # the x locations for the groups
-    width = 0.35  # the width of the bars
+        # Plot
+        # https://matplotlib.org/2.0.2/examples/api/barchart_demo.html
+        open3d_times = [times[op]["open3d"] for op in ops]
+        numpy_times = [times[op]["numpy"] for op in ops]
 
-    fig, ax = plt.subplots()
-    rects1 = ax.bar(ind, open3d_times, width, color='r')
-    rects2 = ax.bar(ind + width, numpy_times, width, color='y')
+        ind = np.arange(len(ops))  # the x locations for the groups
+        width = 0.35  # the width of the bars
 
-    ax.set_ylabel('Time (ms)')
-    ax.set_title(f'{operand} op benchmarks')
-    ax.set_xticks(ind + width / 2)
-    ax.set_xticklabels(ops)
+        rects1 = ax.bar(ind, open3d_times, width, color='r')
+        rects2 = ax.bar(ind + width, numpy_times, width, color='y')
 
-    ax.legend((rects1[0], rects2[0]), ('Open3D', 'Numpy'))
+        ax.set_ylabel('Time (ms)')
+        ax.set_title(f'{operand} op benchmarks')
+        ax.set_xticks(ind + width / 2)
+        ax.set_xticklabels(ops)
 
-    autolabel(rects1)
-    autolabel(rects2)
+        ax.legend((rects1[0], rects2[0]), ('Open3D', 'Numpy'))
+
+        autolabel(rects1)
+        autolabel(rects2)
+
     plt.show()
