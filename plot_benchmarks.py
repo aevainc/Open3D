@@ -72,29 +72,47 @@ if __name__ == "__main__":
         print(f"len(entries): {len(entries)}")
 
     # Compute geometirc mean
-    all_times = dict()
-    for operands in ["binary", "unary"]:
-        ops = [
-            entry["op"] for entry in entries if entry["operands"] == operands
+    binary_times = dict()
+    binary_ops = [
+        entry["op"] for entry in entries if entry["operands"] == "binary"
+    ]
+    binary_ops = sorted(list(set(binary_ops)))
+    for binary_op in binary_ops:
+        open3d_times = [
+            entry["mean"]
+            for entry in entries
+            if entry["op"] == binary_op and entry["engine"] == "open3d"
         ]
-        ops = sorted(list(set(ops)))
+        numpy_times = [
+            entry["mean"]
+            for entry in entries
+            if entry["op"] == binary_op and entry["engine"] == "numpy"
+        ]
+        binary_times[binary_op] = dict()
+        binary_times[binary_op]["open3d"] = gmean(open3d_times)
+        binary_times[binary_op]["numpy"] = gmean(numpy_times)
+    pprint(binary_times)
 
-        all_times[operands] = dict()
-        for binary_op in ops:
-            open3d_times = [
-                entry["mean"]
-                for entry in entries
-                if entry["op"] == binary_op and entry["engine"] == "open3d"
-            ]
-            numpy_times = [
-                entry["mean"]
-                for entry in entries
-                if entry["op"] == binary_op and entry["engine"] == "numpy"
-            ]
-            all_times[operands][binary_op] = dict()
-            all_times[operands][binary_op]["open3d"] = gmean(open3d_times)
-            all_times[operands][binary_op]["numpy"] = gmean(numpy_times)
-
-    pprint(all_times)
+    unary_times = dict()
+    unary_ops = [
+        entry["op"] for entry in entries if entry["operands"] == "unary"
+    ]
+    unary_ops = sorted(list(set(unary_ops)))
+    for unary_op in unary_ops:
+        open3d_times = [
+            entry["mean"]
+            for entry in entries
+            if entry["op"] == unary_op and entry["engine"] == "open3d"
+        ]
+        numpy_times = [
+            entry["mean"]
+            for entry in entries
+            if entry["op"] == unary_op and entry["engine"] == "numpy"
+        ]
+        unary_times[unary_op] = dict()
+        unary_times[unary_op]["open3d"] = gmean(open3d_times)
+        unary_times[unary_op]["numpy"] = gmean(numpy_times)
+    pprint(unary_times)
 
     # Plot
+    
