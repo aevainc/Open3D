@@ -51,7 +51,9 @@ def autolabel(rects):
 
 if __name__ == "__main__":
 
-    with open("benchmark_results.log", "r") as f:
+    with open("patrick_results.log", "r") as f:
+
+        # with open("benchmark_results.log", "r") as f:
         lines = f.readlines()
         lines = [line.strip() for line in lines]
         spaces = r"\s+"
