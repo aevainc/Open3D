@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 import re
 from scipy.stats import gmean
+from pprint import pprint
 
 decimal_with_parenthesis = r"([0-9\.\,]+) \([^)]*\)"
 regex_dict = {
@@ -31,7 +32,8 @@ def decode_name(name):
     op = re.search(r"\[([a-z_A-Z]+)-", name).group(1)
     dtype = re.search(r"(dtype[0-9]+)", name).group(1)
     size = re.search(r"-([0-9]+)", name).group(1)
-    return operands, op, dtype, size
+    engine = "open3d" if re.search(r"numpy", name) is None else "numpy"
+    return operands, op, dtype, size, engine
 
 
 if __name__ == "__main__":
@@ -60,7 +62,7 @@ if __name__ == "__main__":
                 entry = dict()
                 entry["name"] = match.group(1).strip()
                 entry["operands"], entry["op"], entry["dtype"], entry[
-                    "size"] = decode_name(entry["name"])
+                    "size"], entry["engine"] = decode_name(entry["name"])
                 entry["min"] = match.group(2).strip()
                 entry["max"] = match.group(3).strip()
                 entry["mean"] = match.group(4).strip()
@@ -71,3 +73,24 @@ if __name__ == "__main__":
 
     # Plotting
     print(entries[0])
+    binary_ops = [
+        entry["op"] for entry in entries if entry["operands"] == "binary"
+    ]
+    binary_ops = sorted(list(set(binary_ops)))
+
+    binary_times = dict()
+    for binary_op in binary_ops:
+        open3d_times = [
+            float(entry["mean"])
+            for entry in entries
+            if entry["op"] == binary_op and entry["engine"] == "open3d"
+        ]
+        numpy_times = [
+            float(entry["mean"])
+            for entry in entries
+            if entry["op"] == binary_op and entry["engine"] == "numpy"
+        ]
+        binary_times[binary_op] = dict()
+        binary_times[binary_op]["open3d"] = gmean(open3d_times)
+        binary_times[binary_op]["numpy"] = gmean(numpy_times)
+    pprint(binary_times)
