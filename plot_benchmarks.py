@@ -28,12 +28,12 @@ def to_float(string):
 
 
 def decode_name(name):
-    operands = re.search(r"(binary|unary)", name).group(1)
+    operand = re.search(r"(binary|unary)", name).group(1)
     op = re.search(r"\[([a-z_A-Z]+)-", name).group(1)
     dtype = re.search(r"(dtype[0-9]+)", name).group(1)
     size = re.search(r"-([0-9]+)", name).group(1)
     engine = "open3d" if re.search(r"numpy", name) is None else "numpy"
-    return operands, op, dtype, size, engine
+    return operand, op, dtype, size, engine
 
 
 def autolabel(rects):
@@ -74,7 +74,7 @@ if __name__ == "__main__":
             if match:
                 entry = dict()
                 entry["name"] = match.group(1).strip()
-                entry["operands"], entry["op"], entry["dtype"], entry[
+                entry["operand"], entry["op"], entry["dtype"], entry[
                     "size"], entry["engine"] = decode_name(entry["name"])
                 entry["min"] = to_float(match.group(2).strip())
                 entry["max"] = to_float(match.group(3).strip())
@@ -84,11 +84,11 @@ if __name__ == "__main__":
                 entries.append(entry)
         print(f"len(entries): {len(entries)}")
 
-    operands = "binary"
+    operand = "binary"
 
     # Compute geometirc mean
     times = dict()
-    ops = [entry["op"] for entry in entries if entry["operands"] == operands]
+    ops = [entry["op"] for entry in entries if entry["operand"] == operand]
     ops = sorted(list(set(ops)))
     for op in ops:
         open3d_times = [
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     rects2 = ax.bar(ind + width, numpy_times, width, color='y')
 
     ax.set_ylabel('Time (ms)')
-    ax.set_title(f'{operands} op benchmarks')
+    ax.set_title(f'{operand} op benchmarks')
     ax.set_xticks(ind + width / 2)
     ax.set_xticklabels(ops)
 
