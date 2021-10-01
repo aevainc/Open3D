@@ -23,8 +23,8 @@ regex_dict = {
 }
 
 
-def simplify_name(name):
-    return name.replace("test_", "").replace("_ops", "").replace("_ew", "")
+def to_float(string):
+    return float(string.replace(",", ""))
 
 
 def decode_name(name):
@@ -63,34 +63,38 @@ if __name__ == "__main__":
                 entry["name"] = match.group(1).strip()
                 entry["operands"], entry["op"], entry["dtype"], entry[
                     "size"], entry["engine"] = decode_name(entry["name"])
-                entry["min"] = match.group(2).strip()
-                entry["max"] = match.group(3).strip()
-                entry["mean"] = match.group(4).strip()
-                entry["stddev"] = match.group(5).strip()
-                entry["median"] = match.group(6).strip()
+                entry["min"] = to_float(match.group(2).strip())
+                entry["max"] = to_float(match.group(3).strip())
+                entry["mean"] = to_float(match.group(4).strip())
+                entry["stddev"] = to_float(match.group(5).strip())
+                entry["median"] = to_float(match.group(6).strip())
                 entries.append(entry)
         print(f"len(entries): {len(entries)}")
 
-    # Plotting
-    print(entries[0])
-    binary_ops = [
-        entry["op"] for entry in entries if entry["operands"] == "binary"
-    ]
-    binary_ops = sorted(list(set(binary_ops)))
+    # Compute geometirc mean
+    all_times = dict()
+    for operands in ["binary", "unary"]:
+        ops = [
+            entry["op"] for entry in entries if entry["operands"] == operands
+        ]
+        ops = sorted(list(set(ops)))
 
-    binary_times = dict()
-    for binary_op in binary_ops:
-        open3d_times = [
-            float(entry["mean"])
-            for entry in entries
-            if entry["op"] == binary_op and entry["engine"] == "open3d"
-        ]
-        numpy_times = [
-            float(entry["mean"])
-            for entry in entries
-            if entry["op"] == binary_op and entry["engine"] == "numpy"
-        ]
-        binary_times[binary_op] = dict()
-        binary_times[binary_op]["open3d"] = gmean(open3d_times)
-        binary_times[binary_op]["numpy"] = gmean(numpy_times)
-    pprint(binary_times)
+        all_times[operands] = dict()
+        for binary_op in ops:
+            open3d_times = [
+                entry["mean"]
+                for entry in entries
+                if entry["op"] == binary_op and entry["engine"] == "open3d"
+            ]
+            numpy_times = [
+                entry["mean"]
+                for entry in entries
+                if entry["op"] == binary_op and entry["engine"] == "numpy"
+            ]
+            all_times[operands][binary_op] = dict()
+            all_times[operands][binary_op]["open3d"] = gmean(open3d_times)
+            all_times[operands][binary_op]["numpy"] = gmean(numpy_times)
+
+    pprint(all_times)
+
+    # Plot
