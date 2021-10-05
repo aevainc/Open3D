@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import open3d.core as o3c
 import time
 
@@ -26,6 +27,15 @@ for i in range(repeat):
     print(i)
     c = a + b
 print(f"Numpy time: {time.time() - start_time}")
+
+start_time = time.time()
+print("Torch compute binary op")
+a = torch.ones(size, dtype=torch.int32)
+b = torch.ones(size, dtype=torch.int32)
+for i in range(repeat):
+    print(i)
+    c = a + b
+print(f"Torch time: {time.time() - start_time}")
 
 start_time = time.time()
 print("Open3D compute binary")
