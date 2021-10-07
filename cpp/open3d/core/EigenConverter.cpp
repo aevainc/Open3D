@@ -148,11 +148,11 @@ static core::Tensor EigenVectorNxVectorToTensor(
                           core::DtypePolicy::ALL_SAME);
     DISPATCH_DTYPE_TO_TEMPLATE(dtype, [&]() {
         LaunchIndexFillKernel<scalar_t>(
-                indexer, [&](void *ptr, int64_t workload_idx) {
+                indexer, [&](scalar_t *ptr, int64_t workload_idx) {
                     // Fills the flattened tensor tensor_cpu[:] with dtype
                     // casting. tensor_cpu[:][i] corresponds to the (i/N)-th
                     // element's (i%N)-th coordinate value.
-                    *static_cast<scalar_t *>(ptr) = static_cast<scalar_t>(
+                    *ptr = static_cast<scalar_t>(
                             values[workload_idx / N](workload_idx % N));
                 });
     });
