@@ -111,10 +111,8 @@ private:
                                             func_t element_kernel) {
         for (int64_t workload_idx = 0; workload_idx < indexer.NumWorkloads();
              ++workload_idx) {
-            scalar_t* src = reinterpret_cast<scalar_t*>(
-                    indexer.GetInputPtr(0, workload_idx));
-            scalar_t* dst = reinterpret_cast<scalar_t*>(
-                    indexer.GetOutputPtr(workload_idx));
+            scalar_t* src = indexer.GetInputPtr<scalar_t>(0, workload_idx);
+            scalar_t* dst = indexer.GetOutputPtr<scalar_t>(workload_idx);
             *dst = element_kernel(*src, *dst);
         }
     }
@@ -143,13 +141,12 @@ private:
             int64_t end = std::min(start + workload_per_thread, num_workloads);
             for (int64_t workload_idx = start; workload_idx < end;
                  ++workload_idx) {
-                scalar_t* src = reinterpret_cast<scalar_t*>(
-                        indexer.GetInputPtr(0, workload_idx));
+                scalar_t* src = indexer.GetInputPtr<scalar_t>(0, workload_idx);
                 thread_results[thread_idx] =
                         element_kernel(*src, thread_results[thread_idx]);
             }
         }
-        scalar_t* dst = reinterpret_cast<scalar_t*>(indexer.GetOutputPtr(0));
+        scalar_t* dst = indexer.GetOutputPtr<scalar_t>(0);
         for (int64_t thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
             *dst = element_kernel(thread_results[thread_idx], *dst);
         }
@@ -221,10 +218,10 @@ public:
             for (int64_t workload_idx = 0;
                  workload_idx < sub_indexer.NumWorkloads(); workload_idx++) {
                 int64_t src_idx = workload_idx;
-                scalar_t* src_val = reinterpret_cast<scalar_t*>(
-                        sub_indexer.GetInputPtr(0, workload_idx));
-                int64_t* dst_idx = reinterpret_cast<int64_t*>(
-                        sub_indexer.GetOutputPtr(0, workload_idx));
+                scalar_t* src_val =
+                        sub_indexer.GetInputPtr<scalar_t>(0, workload_idx);
+                int64_t* dst_idx =
+                        sub_indexer.GetOutputPtr<int64_t>(0, workload_idx);
                 std::tie(*dst_idx, dst_val) =
                         reduce_func(src_idx, *src_val, *dst_idx, dst_val);
             }
