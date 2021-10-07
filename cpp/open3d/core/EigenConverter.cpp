@@ -43,11 +43,11 @@ namespace eigen_converter {
 /// \param func A function that takes pointer location and
 /// workload index i, computes the value to fill, and fills the value at the
 /// pointer location.
-template <typename func_t>
+template <typename scalar_t, typename func_t>
 static void LaunchIndexFillKernel(const Indexer &indexer, const func_t &func) {
     ParallelFor(Device("CPU:0"), indexer.NumWorkloads(),
                 [&indexer, &func](int64_t i) {
-                    func(indexer.GetInputPtr(0, i), i);
+                    func(indexer.GetInputPtr<scalar_t>(0, i), i);
                 });
 }
 
@@ -147,13 +147,14 @@ static core::Tensor EigenVectorNxVectorToTensor(
     core::Indexer indexer({tensor_cpu}, tensor_cpu,
                           core::DtypePolicy::ALL_SAME);
     DISPATCH_DTYPE_TO_TEMPLATE(dtype, [&]() {
-        LaunchIndexFillKernel(indexer, [&](void *ptr, int64_t workload_idx) {
-            // Fills the flattened tensor tensor_cpu[:] with dtype
-            // casting. tensor_cpu[:][i] corresponds to the (i/N)-th
-            // element's (i%N)-th coordinate value.
-            *static_cast<scalar_t *>(ptr) = static_cast<scalar_t>(
-                    values[workload_idx / N](workload_idx % N));
-        });
+        LaunchIndexFillKernel<scalar_t>(
+                indexer, [&](void *ptr, int64_t workload_idx) {
+                    // Fills the flattened tensor tensor_cpu[:] with dtype
+                    // casting. tensor_cpu[:][i] corresponds to the (i/N)-th
+                    // element's (i%N)-th coordinate value.
+                    *static_cast<scalar_t *>(ptr) = static_cast<scalar_t>(
+                            values[workload_idx / N](workload_idx % N));
+                });
     });
 
     // Copy Tensor to device if necessary.
