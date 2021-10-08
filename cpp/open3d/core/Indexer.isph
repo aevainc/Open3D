@@ -250,55 +250,60 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 /// Get data pointer from a TensorRef with \p workload_idx.
 /// Note: can be optimized by computing all input ptrs and output ptr
 /// together.
-#define TEMPLATE(T)                                                        \
-    static inline T* OPEN3D_SPECIALIZED(T, Indexer_GetWorkloadDataPtr_3)(  \
-            const uniform Indexer* const uniform self,                     \
-            const uniform TensorRef* const uniform tr_0,                   \
-            const uniform TensorRef* const uniform tr_1,                   \
-            const uniform TensorRef* const uniform tr_2,                   \
-            uniform bool tr_0_contiguous, uniform bool tr_1_contiguous,    \
-            uniform bool tr_2_contiguous, int64_t workload_idx, T** ptr_0, \
-            T** ptr_1, T** ptr_2) {                                        \
-        cif(workload_idx < 0) { return NULL; }                             \
-        if (tr_0_contiguous && tr_1_contiguous && tr_2_contiguous) {       \
-            *ptr_0 = (T*)(tr_0->data_ptr_) + workload_idx;                 \
-            *ptr_1 = (T*)(tr_1->data_ptr_) + workload_idx;                 \
-            *ptr_2 = (T*)(tr_2->data_ptr_) + workload_idx;                 \
-        } else {                                                           \
-            int64_t offset_0 = 0;                                          \
-            int64_t offset_1 = 0;                                          \
-            int64_t offset_2 = 0;                                          \
-            for (uniform int64_t i = 0; i < self->ndims_; ++i) {           \
-                int64_t steps = workload_idx / self->master_strides_[i];   \
-                offset_0 += steps * tr_0->byte_strides_[i];                \
-                offset_1 += steps * tr_1->byte_strides_[i];                \
-                offset_2 += steps * tr_2->byte_strides_[i];                \
-                workload_idx = workload_idx % self->master_strides_[i];    \
-            }                                                              \
-            *ptr_0 = (T*)((uint8_t*)(tr_0->data_ptr_) + offset_0);         \
-            *ptr_1 = (T*)((uint8_t*)(tr_1->data_ptr_) + offset_1);         \
-            *ptr_2 = (T*)((uint8_t*)(tr_2->data_ptr_) + offset_2);         \
-        }                                                                  \
+#define TEMPLATE(T)                                                         \
+    static inline void OPEN3D_SPECIALIZED(T, Indexer_GetWorkloadDataPtr_3)( \
+            const uniform Indexer* const uniform self,                      \
+            const uniform TensorRef* const uniform tr_0,                    \
+            const uniform TensorRef* const uniform tr_1,                    \
+            const uniform TensorRef* const uniform tr_2,                    \
+            uniform bool tr_0_contiguous, uniform bool tr_1_contiguous,     \
+            uniform bool tr_2_contiguous, T** ptr_0, T** ptr_1, T** ptr_2,  \
+            int64_t workload_idx) {                                         \
+        cif(workload_idx < 0) { return; }                                   \
+        if (tr_0_contiguous && tr_1_contiguous && tr_2_contiguous) {        \
+            *ptr_0 = (T*)(tr_0->data_ptr_) + workload_idx;                  \
+            *ptr_1 = (T*)(tr_1->data_ptr_) + workload_idx;                  \
+            *ptr_2 = (T*)(tr_2->data_ptr_) + workload_idx;                  \
+        } else {                                                            \
+            int64_t offset_0 = 0;                                           \
+            int64_t offset_1 = 0;                                           \
+            int64_t offset_2 = 0;                                           \
+            for (uniform int64_t i = 0; i < self->ndims_; ++i) {            \
+                int64_t steps = workload_idx / self->master_strides_[i];    \
+                offset_0 += steps * tr_0->byte_strides_[i];                 \
+                offset_1 += steps * tr_1->byte_strides_[i];                 \
+                offset_2 += steps * tr_2->byte_strides_[i];                 \
+                workload_idx = workload_idx % self->master_strides_[i];     \
+            }                                                               \
+            *ptr_0 = (T*)((uint8_t*)(tr_0->data_ptr_) + offset_0);          \
+            *ptr_1 = (T*)((uint8_t*)(tr_1->data_ptr_) + offset_1);          \
+            *ptr_2 = (T*)((uint8_t*)(tr_2->data_ptr_) + offset_2);          \
+        }                                                                   \
     }
 #pragma ignore warning(perf)
 OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 #undef TEMPLATE
 
-/// Get input Tensor data pointer based on \p workload_idx.
-///
-/// \param self The indexer instance.
-/// \param input_idx Input tensor index.
-/// \param workload_idx The index of the compute workload, similar to
-/// thread_id, if a thread only processes one workload.
-#define TEMPLATE(T)                                                           \
-    static inline T* OPEN3D_SPECIALIZED(T, Indexer_GetInputOutputPtrs_2_1)(   \
-            const uniform Indexer* const uniform self,                        \
-            uniform int64_t input_idx, int64_t workload_idx, T** input_ptr_0, \
-            T** input_ptr_1, T** output_ptr_0) {                              \
-        return OPEN3D_SPECIALIZED(T, Indexer_GetWorkloadDataPtr)(             \
-                self, &(self->inputs_[input_idx]),                            \
-                self->inputs_contiguous_[input_idx], workload_idx);           \
-    }
-#pragma ignore warning(perf)
-OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
-#undef TEMPLATE
+// /// Get input Tensor data pointer based on \p workload_idx.
+// ///
+// /// \param self The indexer instance.
+// /// \param input_idx Input tensor index.
+// /// \param workload_idx The index of the compute workload, similar to
+// /// thread_id, if a thread only processes one workload.
+// #define TEMPLATE(T) \
+//     static inline void OPEN3D_SPECIALIZED(T, Indexer_GetInputOutputPtrs_2_1)(
+//     \
+//             const uniform Indexer* const uniform self, int64_t workload_idx,
+//             \
+//             T** input_ptr_0, T** input_ptr_1, T** output_ptr_0) { \
+//         OPEN3D_SPECIALIZED(T, Indexer_GetWorkloadDataPtr) \
+//         (self, &(self->inputs_[0]), &(self->inputs_[1]),
+//         &(self->outputs_[0]), \
+//          self->inputs_contiguous_[0], self->inputs_contiguous_[1], \
+//          self->outputs_contiguous_[0], input_ptr_0, input_ptr_1,
+//          output_ptr_0, \
+//          workload_idx); \
+//     }
+// #pragma ignore warning(perf)
+// OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
+// #undef TEMPLATE
