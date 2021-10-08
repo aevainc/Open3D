@@ -45,7 +45,7 @@ static inline void GetPtr(float** input_ptr) { *input_ptr = NULL; }
 
 static inline void CPUAddElement_New() {
     float* lhs;
-    float** lhs_ref = (float** uniform)(&lhs);
+    float** lhs_ref = (float** varying)(&lhs);
     GetPtr(lhs_ref);
 }
 
