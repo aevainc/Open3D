@@ -258,13 +258,14 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
             const uniform TensorRef* const uniform tr_2,                    \
             uniform bool tr_0_contiguous, uniform bool tr_1_contiguous,     \
             uniform bool tr_2_contiguous, T** ptr_0, T** ptr_1, T** ptr_2,  \
-            int64_t workload_idx) {}
+            int64_t workload_idx) {                                         \
+        cif(workload_idx < 0) { return; }                                   \
+    }
 #pragma ignore warning(perf)
 OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 #undef TEMPLATE
 
-// cif(workload_idx < 0) { return; }                                   \
-        // if (tr_0_contiguous && tr_1_contiguous && tr_2_contiguous) {        \
+// if (tr_0_contiguous && tr_1_contiguous && tr_2_contiguous) {        \
         //     *ptr_0 = (T*)(tr_0->data_ptr_) + workload_idx;                  \
         //     *ptr_1 = (T*)(tr_1->data_ptr_) + workload_idx;                  \
         //     *ptr_2 = (T*)(tr_2->data_ptr_) + workload_idx;                  \
