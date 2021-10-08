@@ -256,22 +256,29 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 /// Get data pointer from a TensorRef with \p workload_idx.
 /// Note: can be optimized by computing all input ptrs and output ptr
 /// together.
-#define TEMPLATE(T)                                                     \
-    static inline BinyEWPtrs OPEN3D_SPECIALIZED(                        \
-            T, Indexer_GetWorkloadDataPtrs_3)(                          \
-            const uniform Indexer* const uniform self,                  \
-            const uniform TensorRef* const uniform tr_0,                \
-            const uniform TensorRef* const uniform tr_1,                \
-            const uniform TensorRef* const uniform tr_2,                \
-            uniform bool tr_0_contiguous, uniform bool tr_1_contiguous, \
-            uniform bool tr_2_contiguous, int64_t workload_idx) {       \
-        cif(workload_idx < 0) {                                         \
-            BinyEWPtrs ptrs;                                            \
-            ptrs.lhs_ = NULL;                                           \
-            ptrs.rhs_ = NULL;                                           \
-            ptrs.out_ = NULL;                                           \
-            return ptrs;                                                \
-        }                                                               \
+#define TEMPLATE(T)                                                       \
+    static inline BinyEWPtrs OPEN3D_SPECIALIZED(                          \
+            T, Indexer_GetWorkloadDataPtrs_3)(                            \
+            const uniform Indexer* const uniform self,                    \
+            const uniform TensorRef* const uniform tr_0,                  \
+            const uniform TensorRef* const uniform tr_1,                  \
+            const uniform TensorRef* const uniform tr_2,                  \
+            uniform bool tr_0_contiguous, uniform bool tr_1_contiguous,   \
+            uniform bool tr_2_contiguous, int64_t workload_idx) {         \
+        cif(workload_idx < 0) {                                           \
+            BinyEWPtrs ptrs;                                              \
+            ptrs.lhs_ = NULL;                                             \
+            ptrs.rhs_ = NULL;                                             \
+            ptrs.out_ = NULL;                                             \
+            return ptrs;                                                  \
+        }                                                                 \
+        if (tr_0_contiguous && tr_1_contiguous && tr_2_contiguous) {      \
+            BinyEWPtrs ptrs;                                              \
+            ptrs.lhs_ = (uint8_t*)((T*)(tr_0->data_ptr_) + workload_idx); \
+            ptrs.rhs_ = (uint8_t*)((T*)(tr_1->data_ptr_) + workload_idx); \
+            ptrs.out_ = (uint8_t*)((T*)(tr_2->data_ptr_) + workload_idx); \
+            return ptrs;                                                  \
+        }                                                                 \
     }
 #pragma ignore warning(perf)
 OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
