@@ -257,18 +257,27 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
             const uniform TensorRef* const uniform tr_1,                  \
             const uniform TensorRef* const uniform tr_2,                  \
             uniform bool tr_0_contiguous, uniform bool tr_1_contiguous,   \
-            uniform bool tr_2_contiguous, int64_t workload_idx) {         \
+            uniform bool tr_2_contiguous, int64_t workload_idx, T* ptr_0, \
+            T* ptr_1, T* ptr_2) {                                         \
         cif(workload_idx < 0) { return NULL; }                            \
         if (tr_0_contiguous && tr_1_contiguous && tr_2_contiguous) {      \
-            return (T*)(tr_0->data_ptr_) + workload_idx;                  \
+            ptr_0 = (T*)(tr_0->data_ptr_) + workload_idx;                 \
+            ptr_1 = (T*)(tr_1->data_ptr_) + workload_idx;                 \
+            ptr_2 = (T*)(tr_2->data_ptr_) + workload_idx;                 \
         } else {                                                          \
-            int64_t offset = 0;                                           \
+            int64_t offset_0 = 0;                                         \
+            int64_t offset_1 = 0;                                         \
+            int64_t offset_2 = 0;                                         \
             for (uniform int64_t i = 0; i < self->ndims_; ++i) {          \
-                offset += workload_idx / self->master_strides_[i] *       \
-                          tr_0->byte_strides_[i];                         \
+                int64_t steps = workload_idx / self->master_strides_[i];  \
+                offset_0 += steps * tr_0->byte_strides_[i];               \
+                offset_1 += steps * tr_1->byte_strides_[i];               \
+                offset_2 += steps * tr_2->byte_strides_[i];               \
                 workload_idx = workload_idx % self->master_strides_[i];   \
             }                                                             \
-            return (T*)((uint8_t*)(tr_0->data_ptr_) + offset);            \
+            ptr_0 = (T*)((uint8_t*)(tr_0->data_ptr_) + offset_0);         \
+            ptr_1 = (T*)((uint8_t*)(tr_1->data_ptr_) + offset_1);         \
+            ptr_2 = (T*)((uint8_t*)(tr_2->data_ptr_) + offset_2);         \
         }                                                                 \
     }
 #pragma ignore warning(perf)
