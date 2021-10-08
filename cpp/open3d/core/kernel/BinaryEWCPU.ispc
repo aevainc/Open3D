@@ -44,8 +44,9 @@ OPEN3D_INSTANTIATE_TEMPLATE()
 #define TEMPLATE(T)                                               \
     static inline void OPEN3D_SPECIALIZED(T, CPUAddElementNew)(   \
             int64_t idx, uniform Indexer * uniform indexer) {     \
-        BinyEWPtrs biny_ew_ptrs = OPEN3D_SPECIALIZED(             \
+        BinyEWPtrs ptrs = OPEN3D_SPECIALIZED(                     \
                 T, Indexer_GetInputOutputPtrs_2_1)(indexer, idx); \
+        *ptrs.out_ = *ptrs.lhs_ + *ptrs.rhs_;                     \
     }
 #pragma ignore warning(perf)
 OPEN3D_INSTANTIATE_TEMPLATE()
