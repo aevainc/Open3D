@@ -303,46 +303,6 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 // /// Get data pointer from a TensorRef with \p workload_idx.
 // /// Note: can be optimized by computing all input ptrs and output ptr
 // /// together.
-// #define TEMPLATE(T)                                                       \
-//     static inline BinyEWPtrs OPEN3D_SPECIALIZED(                          \
-//             T, Indexer_GetWorkloadDataPtrs_3)(                            \
-//             const uniform Indexer* const uniform self,                    \
-//             const uniform TensorRef* const uniform tr_0,                  \
-//             const uniform TensorRef* const uniform tr_1,                  \
-//             const uniform TensorRef* const uniform tr_2,                  \
-//             uniform bool tr_0_contiguous, uniform bool tr_1_contiguous,   \
-//             uniform bool tr_2_contiguous, int64_t workload_idx) {         \
-//         cif(workload_idx < 0) { return; }                                 \
-//         if (tr_0_contiguous && tr_1_contiguous && tr_2_contiguous) {      \
-//             BinyEWPtrs ptrs;                                              \
-//             ptrs.lhs_ = (uint8_t*)((T*)(tr_0->data_ptr_) + workload_idx); \
-//             ptrs.rhs_ = (uint8_t*)((T*)(tr_1->data_ptr_) + workload_idx); \
-//             ptrs.out_ = (uint8_t*)((T*)(tr_2->data_ptr_) + workload_idx); \
-//             return ptrs;                                                  \
-//         } else {                                                          \
-//             int64_t offset_0 = 0;                                         \
-//             int64_t offset_1 = 0;                                         \
-//             int64_t offset_2 = 0;                                         \
-//             for (uniform int64_t i = 0; i < self->ndims_; ++i) {          \
-//                 int64_t steps = workload_idx / self->master_strides_[i];  \
-//                 offset_0 += steps * tr_0->byte_strides_[i];               \
-//                 offset_1 += steps * tr_1->byte_strides_[i];               \
-//                 offset_2 += steps * tr_2->byte_strides_[i];               \
-//                 workload_idx = workload_idx % self->master_strides_[i];   \
-//             }                                                             \
-//             BinyEWPtrs ptrs;                                              \
-//             ptrs.lhs_ = (uint8_t*)((T*)(tr_0->data_ptr_) + offset_0);     \
-//             ptrs.rhs_ = (uint8_t*)((T*)(tr_1->data_ptr_) + offset_1);     \
-//             ptrs.out_ = (uint8_t*)((T*)(tr_2->data_ptr_) + offset_2);     \
-//             return ptrs;                                                  \
-//         }
-// #pragma ignore warning(perf)
-// OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
-// #undef TEMPLATE
-
-// /// Get data pointer from a TensorRef with \p workload_idx.
-// /// Note: can be optimized by computing all input ptrs and output ptr
-// /// together.
 // #define TEMPLATE(T)                                                     \
 //     static inline T* OPEN3D_SPECIALIZED(T, Indexer_GetWorkloadDataPtr)( \
 //             const uniform Indexer* const uniform self,                  \
