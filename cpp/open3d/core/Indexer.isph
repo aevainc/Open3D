@@ -290,9 +290,9 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
                 workload_idx = workload_idx % self->master_strides_[i];   \
             }                                                             \
             BinyEWPtrs ptrs;                                              \
-            ptrs.lhs_ = (uint8_t*)((T*)(tr_0->data_ptr_) + offset_0);     \
-            ptrs.rhs_ = (uint8_t*)((T*)(tr_1->data_ptr_) + offset_1);     \
-            ptrs.out_ = (uint8_t*)((T*)(tr_2->data_ptr_) + offset_2);     \
+            ptrs.lhs_ = (uint8_t*)(tr_0->data_ptr_) + offset_0;           \
+            ptrs.rhs_ = (uint8_t*)(tr_1->data_ptr_) + offset_1;           \
+            ptrs.out_ = (uint8_t*)(tr_2->data_ptr_) + offset_2;           \
             return ptrs;                                                  \
         }                                                                 \
     }
