@@ -254,7 +254,10 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
     static inline T* OPEN3D_SPECIALIZED(T, Indexer_GetWorkloadDataPtr_3)( \
             const uniform Indexer* const uniform self,                    \
             const uniform TensorRef* const uniform tr_0,                  \
-            uniform bool tr_0_contiguous, int64_t workload_idx) {         \
+            const uniform TensorRef* const uniform tr_1,                  \
+            const uniform TensorRef* const uniform tr_2,                  \
+            uniform bool tr_0_contiguous, uniform bool tr_1_contiguous,   \
+            uniform bool tr_2_contiguous, int64_t workload_idx) {         \
         cif(workload_idx < 0) { return NULL; }                            \
         if (tr_0_contiguous) {                                            \
             return (T*)(tr_0->data_ptr_) + workload_idx;                  \
