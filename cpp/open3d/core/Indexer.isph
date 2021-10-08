@@ -259,7 +259,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
             uniform bool tr_0_contiguous, uniform bool tr_1_contiguous,   \
             uniform bool tr_2_contiguous, int64_t workload_idx) {         \
         cif(workload_idx < 0) { return NULL; }                            \
-        if (tr_0_contiguous) {                                            \
+        if (tr_0_contiguous && tr_1_contiguous && tr_2_contiguous) {      \
             return (T*)(tr_0->data_ptr_) + workload_idx;                  \
         } else {                                                          \
             int64_t offset = 0;                                           \
