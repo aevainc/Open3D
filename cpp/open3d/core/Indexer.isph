@@ -290,17 +290,17 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 /// \param input_idx Input tensor index.
 /// \param workload_idx The index of the compute workload, similar to
 /// thread_id, if a thread only processes one workload.
-#define TEMPLATE(T)                                                          \
-    static inline T* OPEN3D_SPECIALIZED(T, Indexer_GetInputOutputPtrs_2_1)(  \
-            const uniform Indexer* const uniform self,                       \
-            uniform int64_t input_idx, int64_t workload_idx, T* input_ptr_0, \
-            T* input_ptr_1, T* output_ptr_0) {                               \
-        if (input_idx < 0 || input_idx >= self->num_inputs_) {               \
-            return NULL;                                                     \
-        }                                                                    \
-        return OPEN3D_SPECIALIZED(T, Indexer_GetWorkloadDataPtr)(            \
-                self, &(self->inputs_[input_idx]),                           \
-                self->inputs_contiguous_[input_idx], workload_idx);          \
+#define TEMPLATE(T)                                                           \
+    static inline T* OPEN3D_SPECIALIZED(T, Indexer_GetInputOutputPtrs_2_1)(   \
+            const uniform Indexer* const uniform self,                        \
+            uniform int64_t input_idx, int64_t workload_idx, T** input_ptr_0, \
+            T** input_ptr_1, T** output_ptr_0) {                              \
+        if (input_idx < 0 || input_idx >= self->num_inputs_) {                \
+            return NULL;                                                      \
+        }                                                                     \
+        return OPEN3D_SPECIALIZED(T, Indexer_GetWorkloadDataPtr)(             \
+                self, &(self->inputs_[input_idx]),                            \
+                self->inputs_contiguous_[input_idx], workload_idx);           \
     }
 #pragma ignore warning(perf)
 OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
