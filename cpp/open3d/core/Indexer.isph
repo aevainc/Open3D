@@ -284,26 +284,22 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 #undef TEMPLATE
 
-// /// Get input Tensor data pointer based on \p workload_idx.
-// ///
-// /// \param self The indexer instance.
-// /// \param input_idx Input tensor index.
-// /// \param workload_idx The index of the compute workload, similar to
-// /// thread_id, if a thread only processes one workload.
-// #define TEMPLATE(T) \
-//     static inline void OPEN3D_SPECIALIZED(T, Indexer_GetInputOutputPtrs_2_1)(
-//     \
-//             const uniform Indexer* const uniform self, int64_t workload_idx,
-//             \
-//             T** input_ptr_0, T** input_ptr_1, T** output_ptr_0) { \
-//         OPEN3D_SPECIALIZED(T, Indexer_GetWorkloadDataPtr) \
-//         (self, &(self->inputs_[0]), &(self->inputs_[1]),
-//         &(self->outputs_[0]), \
-//          self->inputs_contiguous_[0], self->inputs_contiguous_[1], \
-//          self->outputs_contiguous_[0], input_ptr_0, input_ptr_1,
-//          output_ptr_0, \
-//          workload_idx); \
-//     }
-// #pragma ignore warning(perf)
-// OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
-// #undef TEMPLATE
+/// Get input Tensor data pointer based on \p workload_idx.
+///
+/// \param self The indexer instance.
+/// \param input_idx Input tensor index.
+/// \param workload_idx The index of the compute workload, similar to
+/// thread_id, if a thread only processes one workload.
+#define TEMPLATE(T)                                                            \
+    static inline void OPEN3D_SPECIALIZED(T, Indexer_GetInputOutputPtrs_2_1)(  \
+            const uniform Indexer* const uniform self, int64_t workload_idx,   \
+            T** input_ptr_0, T** input_ptr_1, T** output_ptr_0) {              \
+        OPEN3D_SPECIALIZED(T, Indexer_GetWorkloadDataPtr_3)                    \
+        (self, &(self->inputs_[0]), &(self->inputs_[1]), &(self->outputs_[0]), \
+         self->inputs_contiguous_[0], self->inputs_contiguous_[1],             \
+         self->outputs_contiguous_[0], input_ptr_0, input_ptr_1, output_ptr_0, \
+         workload_idx);                                                        \
+    }
+#pragma ignore warning(perf)
+OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
+#undef TEMPLATE
