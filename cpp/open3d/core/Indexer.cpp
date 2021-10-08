@@ -45,6 +45,7 @@ ispc::TensorRef TensorRef::ToISPC() const {
     for (int64_t i = 0; i < ndims_; ++i) {
         ispc_tensor_ref.shape_[i] = shape_[i];
         ispc_tensor_ref.byte_strides_[i] = byte_strides_[i];
+        ispc_tensor_ref.typed_strides_[i] = byte_strides_[i] / dtype_byte_size_;
     }
 
     return ispc_tensor_ref;
