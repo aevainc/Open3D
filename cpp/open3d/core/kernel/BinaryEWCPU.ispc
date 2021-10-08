@@ -55,9 +55,9 @@ static inline void CPUAddElement_New() {
 //         T* lhs;                                               \
 //         T* rhs;                                               \
 //         T* dst;                                               \
-//         T** lhs_ref = &lhs;                                   \
-//         T** rhs_ref = &rhs;                                   \
-//         T** dst_ref = &dst;                                   \
+//         T** lhs_ref = (T * *uniform)(&lhs);                   \
+//         T** rhs_ref = (T * *uniform)(&rhs);                   \
+//         T** dst_ref = (T * *uniform)(&dst);                   \
 //         OPEN3D_SPECIALIZED(T, Indexer_GetInputOutputPtrs_2_1) \
 //         (indexer, lhs_ref, rhs_ref, dst_ref, idx);            \
 //     }
