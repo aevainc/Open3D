@@ -12,6 +12,15 @@ print("##############################")
 size = int(10e8)
 repeat = 5
 
+# print("Open3D compute binary op")
+a_ = o3c.Tensor.ones(10 * 2, dtype=o3c.int32)
+b_ = o3c.Tensor.ones(10 * 2, dtype=o3c.int32)
+a = a_[0:-1:2]
+b = b_[0:-1:2]
+start_time = time.time()
+for i in range(repeat):
+    c = a + b
+
 # a = np.ones((2, 3), dtype=np.int32)
 # b = np.ones((2, 3), dtype=np.int32)
 # c = a + b
