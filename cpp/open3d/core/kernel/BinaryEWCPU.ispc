@@ -29,7 +29,7 @@
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPUAddElement)(                 \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -43,7 +43,7 @@ OPEN3D_INSTANTIATE_TEMPLATE()
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPUSubElement)(                 \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -57,7 +57,7 @@ OPEN3D_INSTANTIATE_TEMPLATE()
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPUMulElement)(                 \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -71,7 +71,7 @@ OPEN3D_INSTANTIATE_TEMPLATE()
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPUDivElement)(                 \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -84,28 +84,28 @@ OPEN3D_INSTANTIATE_TEMPLATE()
 #undef TEMPLATE
 
 static inline void OPEN3D_SPECIALIZED(bool, CPUAddElement)(
-        int64_t idx, uniform Indexer* uniform indexer) {
+        int32_t idx, uniform Indexer* uniform indexer) {
     /* No-op */
 }
 
 static inline void OPEN3D_SPECIALIZED(bool, CPUSubElement)(
-        int64_t idx, uniform Indexer* uniform indexer) {
+        int32_t idx, uniform Indexer* uniform indexer) {
     /* No-op */
 }
 
 static inline void OPEN3D_SPECIALIZED(bool, CPUMulElement)(
-        int64_t idx, uniform Indexer* uniform indexer) {
+        int32_t idx, uniform Indexer* uniform indexer) {
     /* No-op */
 }
 
 static inline void OPEN3D_SPECIALIZED(bool, CPUDivElement)(
-        int64_t idx, uniform Indexer* uniform indexer) {
+        int32_t idx, uniform Indexer* uniform indexer) {
     /* No-op */
 }
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalAndElement)(          \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -119,7 +119,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalOrElement)(           \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -133,7 +133,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalXorElement)(          \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -147,7 +147,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalGtElement)(           \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -161,7 +161,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalLtElement)(           \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -175,7 +175,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalGeqElement)(          \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -189,7 +189,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalLeqElement)(          \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -203,7 +203,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalEqElement)(           \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -217,7 +217,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalNeqElement)(          \
-            int64_t idx, uniform Indexer * uniform indexer) {                \
+            int32_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
         const T* rhs =                                                       \
@@ -231,7 +231,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                           \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalAndElement_bool)(      \
-            int64_t idx, uniform Indexer * uniform indexer) {                 \
+            int32_t idx, uniform Indexer * uniform indexer) {                 \
         const T* lhs =                                                        \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx);  \
         const T* rhs =                                                        \
@@ -246,7 +246,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                           \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalOrElement_bool)(       \
-            int64_t idx, uniform Indexer * uniform indexer) {                 \
+            int32_t idx, uniform Indexer * uniform indexer) {                 \
         const T* lhs =                                                        \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx);  \
         const T* rhs =                                                        \
@@ -261,7 +261,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                           \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalXorElement_bool)(      \
-            int64_t idx, uniform Indexer * uniform indexer) {                 \
+            int32_t idx, uniform Indexer * uniform indexer) {                 \
         const T* lhs =                                                        \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx);  \
         const T* rhs =                                                        \
@@ -276,7 +276,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                           \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalGtElement_bool)(       \
-            int64_t idx, uniform Indexer * uniform indexer) {                 \
+            int32_t idx, uniform Indexer * uniform indexer) {                 \
         const T* lhs =                                                        \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx);  \
         const T* rhs =                                                        \
@@ -291,7 +291,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                           \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalLtElement_bool)(       \
-            int64_t idx, uniform Indexer * uniform indexer) {                 \
+            int32_t idx, uniform Indexer * uniform indexer) {                 \
         const T* lhs =                                                        \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx);  \
         const T* rhs =                                                        \
@@ -306,7 +306,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                           \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalGeqElement_bool)(      \
-            int64_t idx, uniform Indexer * uniform indexer) {                 \
+            int32_t idx, uniform Indexer * uniform indexer) {                 \
         const T* lhs =                                                        \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx);  \
         const T* rhs =                                                        \
@@ -321,7 +321,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                           \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalLeqElement_bool)(      \
-            int64_t idx, uniform Indexer * uniform indexer) {                 \
+            int32_t idx, uniform Indexer * uniform indexer) {                 \
         const T* lhs =                                                        \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx);  \
         const T* rhs =                                                        \
@@ -336,7 +336,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                           \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalEqElement_bool)(       \
-            int64_t idx, uniform Indexer * uniform indexer) {                 \
+            int32_t idx, uniform Indexer * uniform indexer) {                 \
         const T* lhs =                                                        \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx);  \
         const T* rhs =                                                        \
@@ -351,7 +351,7 @@ OPEN3D_INSTANTIATE_TEMPLATE_WITH_BOOL()
 
 #define TEMPLATE(T)                                                           \
     static inline void OPEN3D_SPECIALIZED(T, CPULogicalNeqElement_bool)(      \
-            int64_t idx, uniform Indexer * uniform indexer) {                 \
+            int32_t idx, uniform Indexer * uniform indexer) {                 \
         const T* lhs =                                                        \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx);  \
         const T* rhs =                                                        \

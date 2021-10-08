@@ -66,8 +66,8 @@ static inline uint8_t CPUAnyReductionKernel(uint8_t a, uint8_t b) {
 }
 
 template <typename scalar_t>
-static inline std::pair<int64_t, scalar_t> CPUArgMinReductionKernel(
-        int64_t a_idx, scalar_t a, int64_t b_idx, scalar_t b) {
+static inline std::pair<int32_t, scalar_t> CPUArgMinReductionKernel(
+        int32_t a_idx, scalar_t a, int32_t b_idx, scalar_t b) {
     if (a < b) {
         return {a_idx, a};
     } else {
@@ -76,8 +76,8 @@ static inline std::pair<int64_t, scalar_t> CPUArgMinReductionKernel(
 }
 
 template <typename scalar_t>
-static inline std::pair<int64_t, scalar_t> CPUArgMaxReductionKernel(
-        int64_t a_idx, scalar_t a, int64_t b_idx, scalar_t b) {
+static inline std::pair<int32_t, scalar_t> CPUArgMaxReductionKernel(
+        int32_t a_idx, scalar_t a, int32_t b_idx, scalar_t b) {
     if (a > b) {
         return {a_idx, a};
     } else {
@@ -109,7 +109,7 @@ private:
     template <typename scalar_t, typename func_t>
     static void LaunchReductionKernelSerial(const Indexer& indexer,
                                             func_t element_kernel) {
-        for (int64_t workload_idx = 0; workload_idx < indexer.NumWorkloads();
+        for (int32_t workload_idx = 0; workload_idx < indexer.NumWorkloads();
              ++workload_idx) {
             scalar_t* src = reinterpret_cast<scalar_t*>(
                     indexer.GetInputPtr(0, workload_idx));
@@ -130,18 +130,18 @@ private:
                     "Internal error: two-pass reduction only works for "
                     "single-output reduction ops.");
         }
-        int64_t num_workloads = indexer.NumWorkloads();
-        int64_t num_threads = utility::EstimateMaxThreads();
-        int64_t workload_per_thread =
+        int32_t num_workloads = indexer.NumWorkloads();
+        int32_t num_threads = utility::EstimateMaxThreads();
+        int32_t workload_per_thread =
                 (num_workloads + num_threads - 1) / num_threads;
         std::vector<scalar_t> thread_results(num_threads, identity);
 
 #pragma omp parallel for schedule(static) \
         num_threads(utility::EstimateMaxThreads())
-        for (int64_t thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
-            int64_t start = thread_idx * workload_per_thread;
-            int64_t end = std::min(start + workload_per_thread, num_workloads);
-            for (int64_t workload_idx = start; workload_idx < end;
+        for (int32_t thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+            int32_t start = thread_idx * workload_per_thread;
+            int32_t end = std::min(start + workload_per_thread, num_workloads);
+            for (int32_t workload_idx = start; workload_idx < end;
                  ++workload_idx) {
                 scalar_t* src = reinterpret_cast<scalar_t*>(
                         indexer.GetInputPtr(0, workload_idx));
@@ -150,7 +150,7 @@ private:
             }
         }
         scalar_t* dst = reinterpret_cast<scalar_t*>(indexer.GetOutputPtr(0));
-        for (int64_t thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+        for (int32_t thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
             *dst = element_kernel(thread_results[thread_idx], *dst);
         }
     }
@@ -159,16 +159,16 @@ private:
     static void LaunchReductionParallelDim(const Indexer& indexer,
                                            func_t element_kernel) {
         // Prefers outer dimension >= num_threads.
-        const int64_t* indexer_shape = indexer.GetMasterShape();
-        const int64_t num_dims = indexer.NumDims();
-        int64_t num_threads = utility::EstimateMaxThreads();
+        const int32_t* indexer_shape = indexer.GetMasterShape();
+        const int32_t num_dims = indexer.NumDims();
+        int32_t num_threads = utility::EstimateMaxThreads();
 
         // Init best_dim as the outer-most non-reduction dim.
-        int64_t best_dim = num_dims - 1;
+        int32_t best_dim = num_dims - 1;
         while (best_dim >= 0 && indexer.IsReductionDim(best_dim)) {
             best_dim--;
         }
-        for (int64_t dim = best_dim; dim >= 0 && !indexer.IsReductionDim(dim);
+        for (int32_t dim = best_dim; dim >= 0 && !indexer.IsReductionDim(dim);
              --dim) {
             if (indexer_shape[dim] >= num_threads) {
                 best_dim = dim;
@@ -185,7 +185,7 @@ private:
 
 #pragma omp parallel for schedule(static) \
         num_threads(utility::EstimateMaxThreads())
-        for (int64_t i = 0; i < indexer_shape[best_dim]; ++i) {
+        for (int32_t i = 0; i < indexer_shape[best_dim]; ++i) {
             Indexer sub_indexer(indexer);
             sub_indexer.ShrinkDim(best_dim, i, 1);
             LaunchReductionKernelSerial<scalar_t>(sub_indexer, element_kernel);
@@ -208,22 +208,22 @@ public:
         // sub-iterations. Each output elemnent corresponds to multiple input
         // elements. We need to keep track of the indices within each
         // sub-iteration.
-        int64_t num_output_elements = indexer_.NumOutputElements();
+        int32_t num_output_elements = indexer_.NumOutputElements();
 
 #pragma omp parallel for schedule(static) \
         num_threads(utility::EstimateMaxThreads())
-        for (int64_t output_idx = 0; output_idx < num_output_elements;
+        for (int32_t output_idx = 0; output_idx < num_output_elements;
              output_idx++) {
             // sub_indexer.NumWorkloads() == ipo.
             // sub_indexer's workload_idx is indexer_'s ipo_idx.
             Indexer sub_indexer = indexer_.GetPerOutputIndexer(output_idx);
             scalar_t dst_val = identity;
-            for (int64_t workload_idx = 0;
+            for (int32_t workload_idx = 0;
                  workload_idx < sub_indexer.NumWorkloads(); workload_idx++) {
-                int64_t src_idx = workload_idx;
+                int32_t src_idx = workload_idx;
                 scalar_t* src_val = reinterpret_cast<scalar_t*>(
                         sub_indexer.GetInputPtr(0, workload_idx));
-                int64_t* dst_idx = reinterpret_cast<int64_t*>(
+                int32_t* dst_idx = reinterpret_cast<int32_t*>(
                         sub_indexer.GetOutputPtr(0, workload_idx));
                 std::tie(*dst_idx, dst_val) =
                         reduce_func(src_idx, *src_val, *dst_idx, dst_val);

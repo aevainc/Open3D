@@ -42,7 +42,7 @@ ispc::TensorRef TensorRef::ToISPC() const {
     ispc_tensor_ref.data_ptr_ = data_ptr_;
     ispc_tensor_ref.ndims_ = ndims_;
     ispc_tensor_ref.dtype_byte_size_ = dtype_byte_size_;
-    for (int64_t i = 0; i < ndims_; ++i) {
+    for (int32_t i = 0; i < ndims_; ++i) {
         ispc_tensor_ref.shape_[i] = shape_[i];
         ispc_tensor_ref.byte_strides_[i] = byte_strides_[i];
     }
@@ -65,8 +65,8 @@ Indexer::Indexer(const std::vector<Tensor>& input_tensors,
                  DtypePolicy dtype_policy,
                  const SizeVector& reduction_dims) {
     // Check the number of inputs and outputs.
-    num_inputs_ = static_cast<int64_t>(input_tensors.size());
-    num_outputs_ = static_cast<int64_t>(output_tensors.size());
+    num_inputs_ = static_cast<int32_t>(input_tensors.size());
+    num_outputs_ = static_cast<int32_t>(output_tensors.size());
     if (num_inputs_ < 1) {
         utility::LogError("Indexer must have at least one input.");
     }
@@ -133,10 +133,10 @@ Indexer::Indexer(const std::vector<Tensor>& input_tensors,
     }
 
     // Convert to TensorRef.
-    for (int64_t i = 0; i < num_inputs_; ++i) {
+    for (int32_t i = 0; i < num_inputs_; ++i) {
         inputs_[i] = TensorRef(input_tensors[i]);
     }
-    for (int64_t i = 0; i < num_outputs_; ++i) {
+    for (int32_t i = 0; i < num_outputs_; ++i) {
         outputs_[i] = TensorRef(output_tensors[i]);
     }
 
@@ -159,7 +159,7 @@ Indexer::Indexer(const std::vector<Tensor>& input_tensors,
                     "Internal error: reduction op can only have 1 inputs.");
         }
 
-        for (int64_t i = 0; i < num_outputs_; ++i) {
+        for (int32_t i = 0; i < num_outputs_; ++i) {
             // Sanity check. The indexer only handles keepdim == true.
             // This also ensures that reduction is not mixed with broadcasting.
             if (shape_util::ReductionShape(input_tensors[0].GetShape(),
@@ -184,7 +184,7 @@ Indexer::Indexer(const std::vector<Tensor>& input_tensors,
         ReorderDimensions(reduction_dims);
 
         // Fill global shape
-        for (int64_t i = 0; i < ndims_; ++i) {
+        for (int32_t i = 0; i < ndims_; ++i) {
             master_shape_[i] = inputs_[0].shape_[i];
         }
 
@@ -194,7 +194,7 @@ Indexer::Indexer(const std::vector<Tensor>& input_tensors,
         // Broadcast inputs to match output shape, by resetting input's
         // shape and strides.
         // outputs_[0] is used since all outputs have the same shape.
-        for (int64_t i = 0; i < num_inputs_; ++i) {
+        for (int32_t i = 0; i < num_inputs_; ++i) {
             BroadcastRestride(inputs_[i], outputs_[0].ndims_,
                               outputs_[0].shape_);
         }
@@ -202,7 +202,7 @@ Indexer::Indexer(const std::vector<Tensor>& input_tensors,
         // Fill global shape.
         // outputs_[0] is used since all outputs have the same shape.
         ndims_ = outputs_[0].ndims_;
-        for (int64_t i = 0; i < ndims_; ++i) {
+        for (int32_t i = 0; i < ndims_; ++i) {
             master_shape_[i] = outputs_[0].shape_[i];
         }
     }
@@ -215,15 +215,15 @@ Indexer::Indexer(const std::vector<Tensor>& input_tensors,
 
 bool Indexer::CanUse32BitIndexing() const {
     // 2^31 - 1 = 2147483647
-    int64_t max_value = std::numeric_limits<int32_t>::max();
+    int32_t max_value = std::numeric_limits<int32_t>::max();
 
     if (NumWorkloads() > max_value) {
         return false;
     }
 
     // Check inputs
-    for (int64_t i = 0; i < num_inputs_; i++) {
-        int64_t max_offset = 1;
+    for (int32_t i = 0; i < num_inputs_; i++) {
+        int32_t max_offset = 1;
         for (int dim = 0; dim < ndims_; dim++) {
             max_offset +=
                     (master_shape_[dim] - 1) * inputs_[i].byte_strides_[dim];
@@ -234,8 +234,8 @@ bool Indexer::CanUse32BitIndexing() const {
     }
 
     // Check outputs
-    for (int64_t i = 0; i < num_outputs_; i++) {
-        int64_t max_offset = 1;
+    for (int32_t i = 0; i < num_outputs_; i++) {
+        int32_t max_offset = 1;
         for (int dim = 0; dim < ndims_; dim++) {
             max_offset +=
                     (master_shape_[dim] - 1) * outputs_[i].byte_strides_[dim];
@@ -264,14 +264,14 @@ std::unique_ptr<Indexer> Indexer::SplitLargestDim() {
                           master_shape_[ndims_ - 1]);
         return nullptr;
     }
-    int64_t max_extent = -1;
-    int64_t dim_to_split = -1;
-    for (int64_t dim = ndims_ - 1; dim >= 0; dim--) {
-        int64_t size = master_shape_[dim];
+    int32_t max_extent = -1;
+    int32_t dim_to_split = -1;
+    for (int32_t dim = ndims_ - 1; dim >= 0; dim--) {
+        int32_t size = master_shape_[dim];
 
         // Inputs
-        for (int64_t i = 0; i < num_inputs_; i++) {
-            int64_t extent = (size - 1) * inputs_[i].byte_strides_[dim];
+        for (int32_t i = 0; i < num_inputs_; i++) {
+            int32_t extent = (size - 1) * inputs_[i].byte_strides_[dim];
             if (extent > max_extent) {
                 max_extent = extent;
                 dim_to_split = dim;
@@ -279,8 +279,8 @@ std::unique_ptr<Indexer> Indexer::SplitLargestDim() {
         }
 
         // Outputs
-        for (int64_t i = 0; i < num_outputs_; i++) {
-            int64_t extent = (size - 1) * outputs_[i].byte_strides_[dim];
+        for (int32_t i = 0; i < num_outputs_; i++) {
+            int32_t extent = (size - 1) * outputs_[i].byte_strides_[dim];
             if (extent > max_extent) {
                 max_extent = extent;
                 dim_to_split = dim;
@@ -318,7 +318,7 @@ std::unique_ptr<Indexer> Indexer::SplitLargestDim() {
     return copy;
 }
 
-Indexer Indexer::GetPerOutputIndexer(int64_t output_idx) const {
+Indexer Indexer::GetPerOutputIndexer(int32_t output_idx) const {
     // E.g. input_shape = (4, 3, 2), output_shape = (1, 3, 2), reduce_dim = 0.
     // Then, output_idx = 0 -> inputs (*, 0, 0) -> offset_indices (0, 0, 0)
     //       output_idx = 1 -> inputs (*, 0, 1) -> offset_indices (0, 0, 1)
@@ -326,31 +326,31 @@ Indexer Indexer::GetPerOutputIndexer(int64_t output_idx) const {
     //       output_idx = 3 -> inputs (*, 1, 1) -> offset_indices (0, 1, 1)
     //       output_idx = 4 -> inputs (*, 2, 0) -> offset_indices (0, 2, 0)
     //       output_idx = 5 -> inputs (*, 2, 1) -> offset_indices (0, 2, 1)
-    int64_t output_shape[MAX_DIMS] = {0};
-    int64_t output_default_strides[MAX_DIMS] = {0};
-    int64_t offset_indices[MAX_DIMS] = {0};
+    int32_t output_shape[MAX_DIMS] = {0};
+    int32_t output_default_strides[MAX_DIMS] = {0};
+    int32_t offset_indices[MAX_DIMS] = {0};
 
-    for (int64_t i = 0; i < ndims_; ++i) {
+    for (int32_t i = 0; i < ndims_; ++i) {
         if (IsReductionDim(i)) {
             output_shape[i] = 1;
         } else {
             output_shape[i] = master_shape_[i];
         }
     }
-    int64_t stride = 1;
-    for (int64_t i = ndims_ - 1; i >= 0; --i) {
+    int32_t stride = 1;
+    for (int32_t i = ndims_ - 1; i >= 0; --i) {
         output_default_strides[i] = stride;
         // Handles 0-sized dimensions
         stride = output_shape[i] > 1 ? stride * output_shape[i] : stride;
     }
-    for (int64_t i = 0; i < ndims_; ++i) {
+    for (int32_t i = 0; i < ndims_; ++i) {
         offset_indices[i] = output_idx / output_default_strides[i];
         output_idx = output_idx % output_default_strides[i];
     }
 
     Indexer sub_indexer = *this;
-    for (int64_t dim = 0; dim < sub_indexer.ndims_; ++dim) {
-        for (int64_t i = 0; i < sub_indexer.num_inputs_; ++i) {
+    for (int32_t dim = 0; dim < sub_indexer.ndims_; ++dim) {
+        for (int32_t i = 0; i < sub_indexer.num_inputs_; ++i) {
             sub_indexer.inputs_[i].data_ptr_ =
                     ((char*)sub_indexer.inputs_[i].data_ptr_) +
                     sub_indexer.inputs_[i].byte_strides_[dim] *
@@ -359,7 +359,7 @@ Indexer Indexer::GetPerOutputIndexer(int64_t output_idx) const {
                 sub_indexer.inputs_[i].shape_[dim] = 1;
             }
         }
-        for (int64_t i = 0; i < sub_indexer.num_outputs_; ++i) {
+        for (int32_t i = 0; i < sub_indexer.num_outputs_; ++i) {
             sub_indexer.outputs_[i].data_ptr_ =
                     ((char*)sub_indexer.outputs_[i].data_ptr_) +
                     sub_indexer.outputs_[i].byte_strides_[dim] *
@@ -379,7 +379,7 @@ Indexer Indexer::GetPerOutputIndexer(int64_t output_idx) const {
     return sub_indexer;
 }
 
-void Indexer::ShrinkDim(int64_t dim, int64_t start, int64_t size) {
+void Indexer::ShrinkDim(int32_t dim, int32_t start, int32_t size) {
     // inputs_ and output_'s shapes are not important.
     if (!(dim >= 0 && dim < ndims_)) {
         utility::LogError("0 <= dim < {} required, but got {}.", ndims_, dim);
@@ -390,12 +390,12 @@ void Indexer::ShrinkDim(int64_t dim, int64_t start, int64_t size) {
         return;
     }
     // Inputs
-    for (int64_t i = 0; i < num_inputs_; ++i) {
+    for (int32_t i = 0; i < num_inputs_; ++i) {
         inputs_[i].data_ptr_ = static_cast<char*>(inputs_[i].data_ptr_) +
                                inputs_[i].byte_strides_[dim] * start;
     }
     // Outputs
-    for (int64_t i = 0; i < num_outputs_; ++i) {
+    for (int32_t i = 0; i < num_outputs_; ++i) {
         outputs_[i].data_ptr_ = static_cast<char*>(outputs_[i].data_ptr_) +
                                 outputs_[i].byte_strides_[dim] * start;
     }
@@ -410,10 +410,10 @@ void Indexer::ShrinkDim(int64_t dim, int64_t start, int64_t size) {
     }
 }
 
-int64_t Indexer::NumReductionDims() const {
+int32_t Indexer::NumReductionDims() const {
     // All outputs have the same shape, so  it's okay to use outputs_[0].
-    int64_t count = 0;
-    for (int64_t dim = 0; dim < ndims_; dim++) {
+    int32_t count = 0;
+    for (int32_t dim = 0; dim < ndims_; dim++) {
         if (outputs_[0].byte_strides_[dim] == 0) {
             count++;
         }
@@ -421,18 +421,18 @@ int64_t Indexer::NumReductionDims() const {
     return count;
 }
 
-int64_t Indexer::NumWorkloads() const {
-    int64_t num_workloads = 1;
-    for (int64_t i = 0; i < ndims_; ++i) {
+int32_t Indexer::NumWorkloads() const {
+    int32_t num_workloads = 1;
+    for (int32_t i = 0; i < ndims_; ++i) {
         num_workloads *= master_shape_[i];
     }
     return num_workloads;
 }
 
-int64_t Indexer::NumOutputElements() const {
+int32_t Indexer::NumOutputElements() const {
     // All outputs have the same shape, so  it's okay to use outputs_[0].
-    int64_t num_output_elements = 1;
-    for (int64_t i = 0; i < ndims_; ++i) {
+    int32_t num_output_elements = 1;
+    for (int32_t i = 0; i < ndims_; ++i) {
         if (outputs_[0].byte_strides_[i] != 0 || master_shape_[i] == 0) {
             num_output_elements *= master_shape_[i];
         }
@@ -445,19 +445,19 @@ void Indexer::CoalesceDimensions() {
         return;
     }
 
-    auto can_coalesce = [&](int64_t dim0, int64_t dim1) {
+    auto can_coalesce = [&](int32_t dim0, int32_t dim1) {
         auto shape0 = master_shape_[dim0];
         auto shape1 = master_shape_[dim1];
         if (shape0 == 1 || shape1 == 1) {
             return true;
         }
-        for (int64_t i = 0; i < num_inputs_; i++) {
+        for (int32_t i = 0; i < num_inputs_; i++) {
             auto& stride = inputs_[i].byte_strides_;
             if (shape0 * stride[dim0] != stride[dim1]) {
                 return false;
             }
         }
-        for (int64_t i = 0; i < num_outputs_; i++) {
+        for (int32_t i = 0; i < num_outputs_; i++) {
             auto& stride = outputs_[i].byte_strides_;
             if (shape0 * stride[dim0] != stride[dim1]) {
                 return false;
@@ -468,17 +468,17 @@ void Indexer::CoalesceDimensions() {
     };
 
     // Replace each operands stride at dim0 with its stride at dim1.
-    auto replace_stride = [&](int64_t dim0, int64_t dim1) {
-        for (int64_t i = 0; i < num_inputs_; i++) {
+    auto replace_stride = [&](int32_t dim0, int32_t dim1) {
+        for (int32_t i = 0; i < num_inputs_; i++) {
             inputs_[i].byte_strides_[dim0] = inputs_[i].byte_strides_[dim1];
         }
-        for (int64_t i = 0; i < num_outputs_; i++) {
+        for (int32_t i = 0; i < num_outputs_; i++) {
             outputs_[i].byte_strides_[dim0] = outputs_[i].byte_strides_[dim1];
         }
     };
 
-    int64_t prev_dim = 0;
-    for (int64_t dim = 1; dim < ndims_; dim++) {
+    int32_t prev_dim = 0;
+    for (int32_t dim = 1; dim < ndims_; dim++) {
         if (can_coalesce(prev_dim, dim)) {
             if (master_shape_[prev_dim] == 1) {
                 replace_stride(prev_dim, dim);
@@ -494,10 +494,10 @@ void Indexer::CoalesceDimensions() {
     }
 
     ndims_ = prev_dim + 1;
-    for (int64_t i = 0; i < num_inputs_; i++) {
+    for (int32_t i = 0; i < num_inputs_; i++) {
         inputs_[i].ndims_ = ndims_;
     }
-    for (int64_t i = 0; i < num_outputs_; i++) {
+    for (int32_t i = 0; i < num_outputs_; i++) {
         outputs_[i].ndims_ = ndims_;
     }
 
@@ -517,9 +517,9 @@ void Indexer::ReorderDimensions(const SizeVector& reduction_dims) {
     // Returns -1 / 0 / 1 indicates no_swap / tbd / swap dim0 with dim1.
     auto ShouldSwap = [&](size_t dim0, size_t dim1) {
         // Outputs
-        for (int64_t i = 0; i < num_outputs_; i++) {
-            int64_t stride0 = outputs_[i].byte_strides_[dim0];
-            int64_t stride1 = outputs_[i].byte_strides_[dim1];
+        for (int32_t i = 0; i < num_outputs_; i++) {
+            int32_t stride0 = outputs_[i].byte_strides_[dim0];
+            int32_t stride1 = outputs_[i].byte_strides_[dim1];
             if (stride0 == 0 && stride1 != 0) {
                 return -1;
             } else if (stride1 == 0 && stride0 != 0) {
@@ -534,9 +534,9 @@ void Indexer::ReorderDimensions(const SizeVector& reduction_dims) {
         }
 
         // Inputs
-        for (int64_t i = 0; i < num_inputs_; i++) {
-            int64_t stride0 = inputs_[i].byte_strides_[dim0];
-            int64_t stride1 = inputs_[i].byte_strides_[dim1];
+        for (int32_t i = 0; i < num_inputs_; i++) {
+            int32_t stride0 = inputs_[i].byte_strides_[dim0];
+            int32_t stride1 = inputs_[i].byte_strides_[dim1];
             if (stride0 == 0 || stride1 == 0) {
                 continue;
             } else if (stride0 <= stride1) {
@@ -563,17 +563,17 @@ void Indexer::ReorderDimensions(const SizeVector& reduction_dims) {
         }
     }
 
-    for (int64_t i = 0; i < num_inputs_; i++) {
+    for (int32_t i = 0; i < num_inputs_; i++) {
         inputs_[i].Permute(permute);
     }
-    for (int64_t i = 0; i < num_outputs_; i++) {
+    for (int32_t i = 0; i < num_outputs_; i++) {
         outputs_[i].Permute(permute);
     }
 }
 
 void Indexer::UpdateMasterStrides() {
-    int64_t stride = 1;
-    for (int64_t i = ndims_ - 1; i >= 0; --i) {
+    int32_t stride = 1;
+    for (int32_t i = ndims_ - 1; i >= 0; --i) {
         master_strides_[i] = stride;
         // Handles 0-sized dimensions
         stride = master_shape_[i] > 1 ? stride * master_shape_[i] : stride;
@@ -581,34 +581,34 @@ void Indexer::UpdateMasterStrides() {
 }
 
 void Indexer::UpdateContiguousFlags() {
-    for (int64_t i = 0; i < num_inputs_; ++i) {
+    for (int32_t i = 0; i < num_inputs_; ++i) {
         inputs_contiguous_[i] = inputs_[i].IsContiguous();
     }
 
-    for (int64_t i = 0; i < num_outputs_; ++i) {
+    for (int32_t i = 0; i < num_outputs_; ++i) {
         outputs_contiguous_[i] = outputs_[i].IsContiguous();
     }
 }
 
 void Indexer::BroadcastRestride(TensorRef& src,
-                                int64_t dst_ndims,
-                                const int64_t* dst_shape) {
-    int64_t src_ndims = src.ndims_;
+                                int32_t dst_ndims,
+                                const int32_t* dst_shape) {
+    int32_t src_ndims = src.ndims_;
 
     // Fill omitted dimensions.
-    int64_t ndims_omitted = dst_ndims - src_ndims;
-    for (int64_t i = src_ndims - 1; i >= 0; --i) {
+    int32_t ndims_omitted = dst_ndims - src_ndims;
+    for (int32_t i = src_ndims - 1; i >= 0; --i) {
         src.shape_[ndims_omitted + i] = src.shape_[i];
         src.byte_strides_[ndims_omitted + i] = src.byte_strides_[i];
     }
-    for (int64_t i = 0; i < ndims_omitted; ++i) {
+    for (int32_t i = 0; i < ndims_omitted; ++i) {
         src.shape_[i] = 1;
         src.byte_strides_[i] = 0;
     }
     src.ndims_ = dst_ndims;
 
     // Fill broadcasted dimensions.
-    for (int64_t i = 0; i < dst_ndims; ++i) {
+    for (int32_t i = 0; i < dst_ndims; ++i) {
         // It is okay if src.shape_[i] != 1 && dst.shape[i] == 1 for
         // reduction.
         if (src.shape_[i] == 1 && dst_shape[i] != 1) {
@@ -618,14 +618,14 @@ void Indexer::BroadcastRestride(TensorRef& src,
 }
 
 void Indexer::ReductionRestride(TensorRef& dst,
-                                int64_t src_ndims,
-                                const int64_t* src_shape,
+                                int32_t src_ndims,
+                                const int32_t* src_shape,
                                 const SizeVector& reduction_dims) {
     if (dst.ndims_ != src_ndims) {
         utility::LogError("Internal error, src ndims {} != dst ndims {}",
                           src_ndims, dst.ndims_);
     }
-    for (int64_t i = 0; i < dst.ndims_; ++i) {
+    for (int32_t i = 0; i < dst.ndims_; ++i) {
         if (dst.shape_[i] == 1 && src_shape[i] != 1) {
             dst.byte_strides_[i] = 0;
         }
@@ -638,15 +638,15 @@ ispc::Indexer Indexer::ToISPC() const {
 
     ispc_indexer.num_inputs_ = NumInputs();
     ispc_indexer.num_outputs_ = NumOutputs();
-    for (int64_t i = 0; i < NumInputs(); ++i) {
+    for (int32_t i = 0; i < NumInputs(); ++i) {
         ispc_indexer.inputs_[i] = GetInput(i).ToISPC();
         ispc_indexer.inputs_contiguous_[i] = GetInput(i).IsContiguous();
     }
-    for (int64_t i = 0; i < NumOutputs(); ++i) {
+    for (int32_t i = 0; i < NumOutputs(); ++i) {
         ispc_indexer.outputs_[i] = GetOutput(i).ToISPC();
         ispc_indexer.outputs_contiguous_[i] = GetOutput(i).IsContiguous();
     }
-    for (int64_t i = 0; i < NumDims(); ++i) {
+    for (int32_t i = 0; i < NumDims(); ++i) {
         ispc_indexer.master_shape_[i] = GetMasterShape()[i];
         ispc_indexer.master_strides_[i] = GetMasterStrides()[i];
     }

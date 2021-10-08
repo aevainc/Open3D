@@ -49,7 +49,7 @@ template <typename element_func_t>
 static void LaunchUnaryEWKernel(const Indexer& indexer,
                                 const element_func_t& element_func) {
     ParallelFor(Device("CPU:0"), indexer.NumWorkloads(),
-                [&indexer, &element_func](int64_t i) {
+                [&indexer, &element_func](int32_t i) {
                     element_func(indexer.GetInputPtr(0, i),
                                  indexer.GetOutputPtr(i));
                 });
@@ -59,7 +59,7 @@ template <typename src_t, typename dst_t, typename element_func_t>
 static void LaunchUnaryEWKernel(const Indexer& indexer,
                                 const element_func_t& element_func) {
     ParallelFor(Device("CPU:0"), indexer.NumWorkloads(),
-                [&indexer, &element_func](int64_t i) {
+                [&indexer, &element_func](int32_t i) {
                     element_func(indexer.GetInputPtr<src_t>(0, i),
                                  indexer.GetOutputPtr<dst_t>(i));
                 });
@@ -74,7 +74,7 @@ static void LaunchUnaryEWKernel(const Indexer& indexer,
                                 const vec_func_t& vec_func) {
     ParallelFor(
             Device("CPU:0"), indexer.NumWorkloads(),
-            [&indexer, &element_func](int64_t i) {
+            [&indexer, &element_func](int32_t i) {
                 element_func(indexer.GetInputPtr<src_t>(0, i),
                              indexer.GetOutputPtr<dst_t>(i));
             },
@@ -89,7 +89,7 @@ static void CPUCopyElementKernel(const void* src, void* dst) {
 
 static void CPUCopyObjectElementKernel(const void* src,
                                        void* dst,
-                                       int64_t object_byte_size) {
+                                       int32_t object_byte_size) {
     const char* src_bytes = static_cast<const char*>(src);
     char* dst_bytes = static_cast<char*>(dst);
     memcpy(dst_bytes, src_bytes, object_byte_size);
@@ -191,20 +191,20 @@ void CopyCPU(const Tensor& src, Tensor& dst) {
                               src_dtype.ByteSize() * shape.NumElements());
     } else if (dst.NumElements() > 1 && dst.IsContiguous() &&
                src.NumElements() == 1 && !src_dtype.IsObject()) {
-        int64_t num_elements = dst.NumElements();
+        int32_t num_elements = dst.NumElements();
 
         DISPATCH_DTYPE_TO_TEMPLATE_WITH_BOOL(dst_dtype, [&]() {
             scalar_t scalar_element = src.To(dst_dtype).Item<scalar_t>();
             scalar_t* dst_ptr = static_cast<scalar_t*>(dst.GetDataPtr());
             ParallelFor(Device("CPU:0"), num_elements,
-                        [&](int64_t workload_idx) {
+                        [&](int32_t workload_idx) {
                             dst_ptr[workload_idx] = scalar_element;
                         });
         });
     } else {
         Indexer indexer({src}, dst, DtypePolicy::NONE);
         if (src.GetDtype().IsObject()) {
-            int64_t object_byte_size = src.GetDtype().ByteSize();
+            int32_t object_byte_size = src.GetDtype().ByteSize();
             LaunchUnaryEWKernel(indexer, [&](const void* src, void* dst) {
                 CPUCopyObjectElementKernel(src, dst, object_byte_size);
             });

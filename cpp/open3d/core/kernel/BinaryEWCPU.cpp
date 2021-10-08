@@ -46,7 +46,7 @@ template <typename src_t, typename dst_t, typename element_func_t>
 static void LaunchBinaryEWKernel(const Indexer& indexer,
                                  const element_func_t& element_func) {
     ParallelFor(Device("CPU:0"), indexer.NumWorkloads(),
-                [&indexer, &element_func](int64_t i) {
+                [&indexer, &element_func](int32_t i) {
                     element_func(indexer.GetInputPtr<src_t>(0, i),
                                  indexer.GetInputPtr<src_t>(1, i),
                                  indexer.GetOutputPtr<dst_t>(i));
@@ -62,7 +62,7 @@ static void LaunchBinaryEWKernel(const Indexer& indexer,
                                  const vec_func_t& vec_func) {
     ParallelFor(
             Device("CPU:0"), indexer.NumWorkloads(),
-            [&indexer, &element_func](int64_t i) {
+            [&indexer, &element_func](int32_t i) {
                 element_func(indexer.GetInputPtr<src_t>(0, i),
                              indexer.GetInputPtr<src_t>(1, i),
                              indexer.GetOutputPtr<dst_t>(i));
