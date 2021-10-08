@@ -41,6 +41,30 @@
 OPEN3D_INSTANTIATE_TEMPLATE()
 #undef TEMPLATE
 
+static inline void GetPtr(float** input_ptr) { *input_ptr = NULL; }
+
+static inline void CPUAddElement_New() {
+    float* lhs;
+    float** lhs_ref = &lhs;
+    GetPtr(lhs_ref);
+}
+
+// #define TEMPLATE(T)                                           \
+//     static inline void OPEN3D_SPECIALIZED(T, CPUAddElement)(  \
+//             int64_t idx, uniform Indexer * uniform indexer) { \
+//         T* lhs;                                               \
+//         T* rhs;                                               \
+//         T* dst;                                               \
+//         T** lhs_ref = &lhs;                                   \
+//         T** rhs_ref = &rhs;                                   \
+//         T** dst_ref = &dst;                                   \
+//         OPEN3D_SPECIALIZED(T, Indexer_GetInputOutputPtrs_2_1) \
+//         (indexer, lhs_ref, rhs_ref, dst_ref, idx);            \
+//     }
+// #pragma ignore warning(perf)
+// OPEN3D_INSTANTIATE_TEMPLATE()
+// #undef TEMPLATE
+
 #define TEMPLATE(T)                                                          \
     static inline void OPEN3D_SPECIALIZED(T, CPUSubElement)(                 \
             int64_t idx, uniform Indexer * uniform indexer) {                \
