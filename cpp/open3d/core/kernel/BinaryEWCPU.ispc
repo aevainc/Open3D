@@ -28,7 +28,7 @@
 #include "open3d/core/ParallelFor.isph"
 
 #define TEMPLATE(T)                                                          \
-    static inline void OPEN3D_SPECIALIZED(T, CPUAddElement)(                 \
+    static inline void OPEN3D_SPECIALIZED(T, CPUAddElementOld)(              \
             int64_t idx, uniform Indexer * uniform indexer) {                \
         const T* lhs =                                                       \
                 OPEN3D_SPECIALIZED(T, Indexer_GetInputPtr)(indexer, 0, idx); \
@@ -42,7 +42,7 @@ OPEN3D_INSTANTIATE_TEMPLATE()
 #undef TEMPLATE
 
 #define TEMPLATE(T)                                               \
-    static inline void OPEN3D_SPECIALIZED(T, CPUAddElementNew)(   \
+    static inline void OPEN3D_SPECIALIZED(T, CPUAddElement)(      \
             int64_t idx, uniform Indexer * uniform indexer) {     \
         BinyEWPtrs ptrs = OPEN3D_SPECIALIZED(                     \
                 T, Indexer_GetInputOutputPtrs_2_1)(indexer, idx); \
