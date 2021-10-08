@@ -46,7 +46,7 @@ OPEN3D_INSTANTIATE_TEMPLATE()
             int64_t idx, uniform Indexer * uniform indexer) {     \
         BinyEWPtrs ptrs = OPEN3D_SPECIALIZED(                     \
                 T, Indexer_GetInputOutputPtrs_2_1)(indexer, idx); \
-        *ptrs.out_ = *ptrs.lhs_ + *ptrs.rhs_;                     \
+        *((T*)ptrs.out_) = *((T*)ptrs.lhs_) + *((T*)ptrs.rhs_);   \
     }
 #pragma ignore warning(perf)
 OPEN3D_INSTANTIATE_TEMPLATE()
