@@ -49,6 +49,12 @@ struct TensorRef {
     int64_t byte_strides_[MAX_DIMS];
 };
 
+struct BinyEWPtrs {
+    uint8_t* lhs_;
+    uint8_t* rhs_;
+    uint8_t* out_;
+};
+
 /// Indexing engine for elementwise ops with broadcasting support.
 ///
 /// Fancy indexing is supported by restriding input tensor and treating the
