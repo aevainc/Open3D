@@ -223,6 +223,8 @@ int GetCUDACurrentWarpSize();
 /// Returns the texture alignment in bytes for the current device.
 int GetCUDACurrentDeviceTextureAlignment();
 
+void GetCUDAMemoryInfo(size_t&, size_t&);
+
 #endif
 
 namespace cuda {

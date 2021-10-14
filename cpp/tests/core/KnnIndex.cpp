@@ -43,6 +43,21 @@ using namespace std;
 namespace open3d {
 namespace tests {
 
+// TEST(KnnIndex, Test) {
+//     // a = np.ones((2,3));
+//     core::Tensor a = core::Tensor::Ones({3, 4}, core::Int32);
+
+//     core::Tensor b = core::Tensor::
+//             // b = a[:1, ]
+//             core::Tensor b = a.Slice(0, 0, 1);
+//     core::Tensor c = b.Slice(1, 0, 2);
+//     c.Mul_(2);
+
+//     for (auto &it : a.ToFlatVector<int32_t>()) {
+//         std::cout << it << ", ";
+//     }
+// }
+
 TEST(KnnIndex, KnnSearch) {
     // Define test data.
     core::Device device = core::Device("CUDA:0");
@@ -75,7 +90,19 @@ TEST(KnnIndex, KnnSearch) {
     gt_distances = core::Tensor::Init<float>(
             {{0.00626358, 0.00747938, 0.0108912}}, device);
 
-    std::tie(indices, distances) = knn_index.SearchKnn(query_points, 3);
+    std::tie(indices, distances) = knn_index.SearchKnn(query_points, 3, true);
+
+    std::cout << "indices: ";
+    for (auto &it : indices.ToFlatVector<int32_t>()) {
+        std::cout << it << ", ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "distances: ";
+    for (auto &it : distances.ToFlatVector<float>()) {
+        std::cout << it << ", ";
+    }
+    std::cout << std::endl;
 
     EXPECT_EQ(indices.GetShape(), shape);
     EXPECT_EQ(distances.GetShape(), shape);

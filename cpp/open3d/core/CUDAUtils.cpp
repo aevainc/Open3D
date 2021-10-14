@@ -286,6 +286,10 @@ int GetCUDACurrentWarpSize() {
     return value;
 }
 
+void GetCUDAMemoryInfo(size_t& free, size_t& total) {
+    OPEN3D_CUDA_CHECK(cudaMemGetInfo(&free, &total));
+}
+
 #endif
 
 }  // namespace core

@@ -26,13 +26,126 @@
 
 #include "open3d/core/CUDAUtils.h"
 #include "open3d/core/Tensor.h"
+#include "open3d/core/linalg/Matmul.h"
 #include "open3d/core/nns/KnnIndex.h"
 #include "open3d/core/nns/KnnSearchImplNew.cuh"
 #include "open3d/core/nns/NeighborSearchAllocator.h"
+#include "open3d/utility/Logging.h"
+#include "open3d/utility/Timer.h"
 
 namespace open3d {
 namespace core {
 namespace nns {
+
+template <class T>
+void KnnSearchCUDASingle(const cudaStream_t stream,
+                         const Tensor& points,
+                         const Tensor& queries,
+                         int knn,
+                         Tensor& neighbors_index,
+                         Tensor& neighbors_distance) {
+    int num_points = points.GetShape(0);
+    int num_queries = queries.GetShape(0);
+    int ndim = points.GetShape(1);
+
+    knn = num_points > knn ? knn : num_points;
+
+    Device device = points.GetDevice();
+    NeighborSearchAllocator<T> output_allocator(device);
+
+    int32_t* indices_ptr;
+    T* distances_ptr;
+    utility::Timer timer;
+
+    output_allocator.AllocIndices(&indices_ptr, num_queries * knn);
+    output_allocator.AllocDistances(&distances_ptr, num_queries * knn);
+
+    Tensor points_norm = points.Mul(points).Sum({1});
+    Tensor queries_norm = queries.Mul(queries).Sum({1}, true);
+
+    int tileRow, tileCol;
+    impl::chooseTileSize(num_queries, num_points, ndim, sizeof(T), tileRow,
+                         tileCol);
+
+    int numCol = utility::DivUp(num_points, tileCol);
+
+    Tensor temp_dist = Tensor::Empty({tileRow, num_points}, points.GetDtype(),
+                                     points.GetDevice());
+
+    double outer_slice = 0.0;
+    double inner_slice = 0.0;
+    double matmul = 0.0;
+    double mul = 0.0;
+    double add_point = 0.0;
+    double add_query = 0.0;
+    double heap = 0.0;
+
+    for (int i = 0; i < num_queries; i += tileRow) {
+        int num_queries_i = std::min(tileRow, num_queries - i);
+
+        int32_t* indices_ptr_i = &indices_ptr[i * knn];
+        T* distances_ptr_i = &distances_ptr[i * knn];
+
+        timer.Start();
+        Tensor queries_norm_i = queries_norm.Slice(0, i, i + num_queries_i);
+        Tensor queries_i = queries.Slice(0, i, i + num_queries_i);
+        Tensor temp_dist_row_view = temp_dist.Slice(0, 0, num_queries_i);
+        timer.Stop();
+        outer_slice += timer.GetDuration();
+
+        for (int j = 0; j < num_points; j += tileCol) {
+            int num_points_j = std::min(tileCol, num_points - j);
+
+            timer.Start();
+            Tensor points_i = points.Slice(0, j, j + num_points_j);
+            Tensor temp_dist_col_view =
+                    temp_dist_row_view.Slice(1, j, j + num_points_j);
+            Tensor points_norm_j = points_norm.Slice(0, j, j + num_points_j);
+            timer.Stop();
+            inner_slice += timer.GetDuration();
+
+            timer.Start();
+            Tensor matmul_output;
+            Matmul(queries_i, points_i.T(), matmul_output);
+            temp_dist_col_view.AsRvalue() = matmul_output;
+            timer.Stop();
+            matmul += timer.GetDuration();
+
+            timer.Start();
+            temp_dist_col_view.Mul_(-2);
+            timer.Stop();
+            mul += timer.GetDuration();
+
+            timer.Start();
+            temp_dist_col_view.Add_(points_norm_j);
+            timer.Stop();
+            add_point += timer.GetDuration();
+        }
+        timer.Start();
+        temp_dist_row_view.Add_(queries_norm_i);
+        timer.Stop();
+        add_query += timer.GetDuration();
+
+        timer.Start();
+        impl::HeapSortCUDA<T>(stream, indices_ptr_i, distances_ptr_i,
+                              temp_dist_row_view.GetDataPtr<T>(), num_points,
+                              num_queries_i, ndim, knn);
+        timer.Stop();
+        heap += timer.GetDuration();
+    }
+    utility::LogInfo("{} {:.2f} ms.", "outer_slice", outer_slice);
+    utility::LogInfo("{} {:.2f} ms.", "inner_slice", inner_slice);
+    utility::LogInfo("{} {:.2f} ms.", "matmul", matmul);
+    utility::LogInfo("{} {:.2f} ms.", "mul", mul);
+    utility::LogInfo("{} {:.2f} ms.", "add_point", add_point);
+    utility::LogInfo("{} {:.2f} ms.", "add_query", add_query);
+    utility::LogInfo("{} {:.2f} ms.", "heap_sort", heap);
+    std::cout << std::endl;
+    neighbors_index =
+            output_allocator.NeighborsIndex().View({num_queries, knn});
+    neighbors_distance =
+            output_allocator.NeighborsDistance().View({num_queries, knn});
+}
 
 template <class T>
 void KnnSearchCUDANew(const Tensor& points,
@@ -44,25 +157,40 @@ void KnnSearchCUDANew(const Tensor& points,
                       Tensor& neighbors_distance) {
     const cudaStream_t stream = cuda::GetStream();
 
-    Device device = points.GetDevice();
-    NeighborSearchAllocator<T> output_allocator(device);
+    //     Device device = points.GetDevice();
+    //     NeighborSearchAllocator<T> output_allocator(device);
 
-    int ndim = points.GetShape(1);
-    int num_points = points.GetShape(0);
-    int num_queries = queries.GetShape(0);
-    knn = num_points > knn ? knn : num_points;
+    //     int ndim = points.GetShape(1);
+    //     int num_points = points.GetShape(0);
+    //     int num_queries = queries.GetShape(0);
+    //     knn = num_points > knn ? knn : num_points;
 
-    impl::KnnSearchCUDA(
-            stream, ndim, num_points, points.GetDataPtr<T>(), num_queries,
-            queries.GetDataPtr<T>(), points_row_splits.GetShape(0),
-            points_row_splits.GetDataPtr<int64_t>(),
-            queries_row_splits.GetShape(0),
-            queries_row_splits.GetDataPtr<int64_t>(), knn, output_allocator);
+    int64_t num_batch = points_row_splits.GetShape()[0] - 1;
 
-    neighbors_index =
-            output_allocator.NeighborsIndex().View({num_queries, knn});
-    neighbors_distance =
-            output_allocator.NeighborsDistance().View({num_queries, knn});
+    for (auto i = 0; i < num_batch; ++i) {
+        Tensor point_i = points.Slice(0, points_row_splits[i].Item<int64_t>(),
+                                      points_row_splits[i + 1].Item<int64_t>());
+        Tensor query_i =
+                queries.Slice(0, queries_row_splits[i].Item<int64_t>(),
+                              queries_row_splits[i + 1].Item<int64_t>());
+
+        // Tensor norm_point_i = point_i.Mul(point_i).Sum({1});
+        // Tensor norm_query_i = query_i.Mul(query_i).Sum({1});
+
+        // Tensor point_query = query_i.Matmul(point_i.T());
+        // Tensor distance = norm_query_i - 2 * point_query + norm_point_i;
+
+        // impl::HeapSortCUDA(stream, num_points, distance.GetDataPtr<T>(),
+        //                    num_queries, ndim, knn, output_allocator);
+        KnnSearchCUDASingle<T>(stream, point_i, query_i, knn, neighbors_index,
+                               neighbors_distance);
+    }
+
+    //     neighbors_index =
+    //             output_allocator.NeighborsIndex().View({num_queries, knn});
+    //     neighbors_distance =
+    //             output_allocator.NeighborsDistance().View({num_queries,
+    //             knn});
 }
 
 #define INSTANTIATE(T)                                                        \

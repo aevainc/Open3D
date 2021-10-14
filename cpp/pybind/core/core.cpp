@@ -55,6 +55,7 @@ void pybind_core(py::module& m) {
     py::module m_nns = m_core.def_submodule("nns");
     nns::pybind_core_nns(m_nns);
     nns::pybind_core_knn(m_nns);
+    // nns::pybind_core_faiss(m_nns);
 }
 
 }  // namespace core

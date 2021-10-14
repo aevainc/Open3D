@@ -40,8 +40,8 @@ namespace impl {
 namespace {
 
 template <class T>
-inline __device__ T Abs(T a) {
-    return a > 0 ? a : -a;
+inline __device__ T Abs(T x) {
+    return x > 0 ? x : -x;
 }
 
 template <class T>
@@ -51,23 +51,55 @@ inline __device__ void Swap(T *x, T *y) {
     *y = tmp;
 }
 
-template <int METRIC = L2, class T>
+template <int METRIC = L2, class T, int CHUNK = 64>
 inline __device__ T NeighborsDist(const T *p1, const T *p2, const int ndim) {
     T dist = 0;
-    T dist_tmp = 0;
+    T dist_vec[CHUNK];
+    int cnt = 0;
+
     if (METRIC == Linf) {
-        for (int i = 0; i < ndim; ++i) {
-            dist_tmp = Abs<T>(p1[i] - p2[i]);
+        while (ndim - cnt > CHUNK) {
+            for (int j = 0; j < CHUNK; ++j) {
+                dist_vec[j] = Abs(p1[cnt + j] - p2[cnt + j]);
+            }
+            for (int j = 0; j < CHUNK; ++j) {
+                dist = dist > dist_vec[j] ? dist : dist_vec[j];
+                cnt += 1;
+            }
+        }
+        for (int i = cnt; i < ndim; ++i) {
+            T dist_tmp = Abs(p1[i] - p2[i]);
             dist = dist > dist_tmp ? dist : dist_tmp;
         }
+
     } else if (METRIC == L1) {
-        for (int i = 0; i < ndim; ++i) {
-            dist_tmp = Abs<T>(p1[i] - p2[i]);
+        while (ndim - cnt > CHUNK) {
+            for (int j = 0; j < CHUNK; ++j) {
+                dist_vec[j] = Abs(p1[cnt + j] - p2[cnt + j]);
+            }
+            for (int j = 0; j < CHUNK; ++j) {
+                dist += dist_vec[j];
+                cnt += 1;
+            }
+        }
+        for (int i = cnt; i < ndim; ++i) {
+            T dist_tmp = Abs(p1[i] - p2[i]);
             dist += dist_tmp;
         }
     } else {
-        for (int i = 0; i < ndim; ++i) {
-            dist_tmp = p1[i] - p2[i];
+        while (ndim - cnt > CHUNK) {
+#pragma unroll
+            for (int j = 0; j < CHUNK; ++j) {
+                dist_vec[j] = p1[cnt + j] - p2[cnt + j];
+            }
+#pragma unroll
+            for (int j = 0; j < CHUNK; ++j) {
+                dist += dist_vec[j] * dist_vec[j];
+                cnt += 1;
+            }
+        }
+        for (int i = cnt; i < ndim; ++i) {
+            T dist_tmp = p1[i] - p2[i];
             dist_tmp = dist_tmp * dist_tmp;
             dist += dist_tmp;
         }
@@ -123,9 +155,11 @@ __global__ void KnnQueryKernel(TIndex *__restrict__ indices_ptr,
         best_idx[i] = 0;
     }
 
+    constexpr int chunk_size = 128;
+    const T *queries_i = queries + ndim * query_idx;
     for (int i = 0; i < num_points; i++) {
-        T dist = NeighborsDist<METRIC>(&queries[ndim * query_idx],
-                                       &points[ndim * i], ndim);
+        T dist = NeighborsDist<METRIC, T, chunk_size>(queries_i,
+                                                      points + ndim * i, ndim);
         if (dist < best_dist[0]) {
             best_dist[0] = dist;
             best_idx[0] = i;
@@ -136,6 +170,59 @@ __global__ void KnnQueryKernel(TIndex *__restrict__ indices_ptr,
     for (int i = 0; i < knn; i++) {
         indices_ptr[i + knn * query_idx] = best_idx[i];
         distances_ptr[i + knn * query_idx] = best_dist[i];
+    }
+}
+
+template <class T, class TIndex>
+__global__ void HeapSortKernel(TIndex *__restrict__ indices_ptr,
+                               T *__restrict__ distances_ptr,
+                               T *__restrict__ in_distances_ptr,
+                               size_t num_points,
+                               size_t num_queries,
+                               int knn) {
+    int query_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (query_idx >= num_queries) return;
+
+    T best_dist[100];
+    int best_idx[100];
+
+    for (int i = 0; i < knn; i++) {
+        best_dist[i] = 1e10;
+        best_idx[i] = 0;
+    }
+
+    for (int i = 0; i < num_points; i++) {
+        T dist = in_distances_ptr[query_idx * num_points + i];
+        if (dist < best_dist[0]) {
+            best_dist[0] = dist;
+            best_idx[0] = i;
+            Heapify(best_dist, best_idx, 0, knn);
+        }
+    }
+    HeapSort(best_dist, best_idx, knn);
+    for (int i = 0; i < knn; i++) {
+        indices_ptr[i + knn * query_idx] = best_idx[i];
+        distances_ptr[i + knn * query_idx] = best_dist[i];
+    }
+}
+
+template <class T, class TIndex>
+void HeapSort(const cudaStream_t &stream,
+              TIndex *__restrict__ indices_ptr,
+              T *__restrict__ distances_ptr,
+              T *__restrict__ in_distances_ptr,
+              size_t num_points,
+              size_t num_queries,
+              int knn) {
+    const int BLOCKSIZE = 256;
+    dim3 block(BLOCKSIZE, 1, 1);
+    dim3 grid(0, 1, 1);
+    grid.x = utility::DivUp(num_queries, block.x);
+
+    if (grid.x) {
+        HeapSortKernel<T, TIndex><<<grid, block, 0, stream>>>(
+                indices_ptr, distances_ptr, in_distances_ptr, num_points,
+                num_queries, knn);
     }
 }
 
@@ -163,6 +250,62 @@ void KnnQuery(const cudaStream_t &stream,
 }
 
 }  // namespace
+
+inline void chooseTileSize(int num_queries,
+                           int num_points,
+                           int dim,
+                           int elementSize,
+                           int &tileRows,
+                           int &tileCols) {
+    // The matrix multiplication should be large enough to be efficient, but if
+    // it is too large, we seem to lose efficiency as opposed to
+    // double-streaming. Each tile size here defines 1/2 of the memory use due
+    // to double streaming. We ignore available temporary memory, as that is
+    // adjusted independently by the user and can thus meet these requirements
+    // (or not). For <= 4 GB GPUs, prefer 512 MB of usage. For <= 8 GB GPUs,
+    // prefer 768 MB of usage. Otherwise, prefer 1 GB of usage.
+    size_t free, total;
+    GetCUDAMemoryInfo(free, total);
+
+    int64_t targetUsage = 0;
+
+    if (total <= ((size_t)4) * 1024 * 1024 * 1024) {
+        targetUsage = 512 * 1024 * 1024;
+    } else if (total <= ((size_t)8) * 1024 * 1024 * 1024) {
+        targetUsage = 768 * 1024 * 1024;
+    } else {
+        targetUsage = 1024 * 1024 * 1024;
+    }
+
+    targetUsage /= 2 * elementSize;
+
+    // 512 seems to be a batch size sweetspot for float32.
+    // If we are on float16, increase to 512.
+    // If the k size (vec dim) of the matrix multiplication is small (<= 32),
+    // increase to 1024.
+    int preferredTileRows = 512 * 4;
+    if (dim <= 32) {
+        preferredTileRows = 1024 * 4;
+    }
+
+    tileRows = std::min(preferredTileRows, num_queries);
+
+    // tileCols is the remainder size
+    tileCols = std::min(int(targetUsage / preferredTileRows), num_points);
+}
+
+template <class T>
+void HeapSortCUDA(const cudaStream_t &stream,
+                  int32_t *__restrict__ out_indices_ptr,
+                  T *__restrict__ out_distances_ptr,
+                  T *__restrict__ in_distances_ptr,
+                  size_t num_points,
+                  size_t num_queries,
+                  int dim,
+                  int knn) {
+    HeapSort<T, int32_t>(stream, out_indices_ptr, out_distances_ptr,
+                         in_distances_ptr, num_points, num_queries, knn);
+}
 
 template <class T, class OUTPUT_ALLOCATOR>
 void KnnSearchCUDA(const cudaStream_t stream,
