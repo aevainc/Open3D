@@ -126,7 +126,7 @@ inline __device__ void Heapify(T *dist, TIndex *idx, int root, int k) {
 }
 
 template <class T, class TIndex>
-__device__ void HeapSort(T *dist, TIndex *idx, int k) {
+__device__ void SortHeap(T *dist, TIndex *idx, int k) {
     int i;
     for (i = k - 1; i > 0; i--) {
         Swap<T>(&dist[0], &dist[i]);
@@ -166,7 +166,7 @@ __global__ void KnnQueryKernel(TIndex *__restrict__ indices_ptr,
             Heapify(best_dist, best_idx, 0, knn);
         }
     }
-    HeapSort(best_dist, best_idx, knn);
+    SortHeap(best_dist, best_idx, knn);
     for (int i = 0; i < knn; i++) {
         indices_ptr[i + knn * query_idx] = best_idx[i];
         distances_ptr[i + knn * query_idx] = best_dist[i];
@@ -199,7 +199,7 @@ __global__ void HeapSortKernel(TIndex *__restrict__ indices_ptr,
             Heapify(best_dist, best_idx, 0, knn);
         }
     }
-    HeapSort(best_dist, best_idx, knn);
+    SortHeap(best_dist, best_idx, knn);
     for (int i = 0; i < knn; i++) {
         indices_ptr[i + knn * query_idx] = best_idx[i];
         distances_ptr[i + knn * query_idx] = best_dist[i];
