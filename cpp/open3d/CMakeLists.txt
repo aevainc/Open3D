@@ -4,7 +4,6 @@ target_sources(Open3D PRIVATE
     Timer.cpp
 )
 
-# Source group for Visual Studio
 open3d_show_and_abort_on_warning(Open3D)
 open3d_set_global_properties(Open3D)
 open3d_link_3rdparty_libraries(Open3D)
