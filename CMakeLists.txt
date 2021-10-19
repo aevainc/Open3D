@@ -26,15 +26,6 @@ option(WITH_OPENMP                "Use OpenMP multi-threading"               ON 
 # 3rd-party build options
 option(USE_BLAS                   "Use BLAS/LAPACK instead of MKL"           ON )
 
-
-
-find_program(CCACHE "ccache")
-if (CCACHE)
-    message(STATUS "ccache found at ${CCACHE}")
-    set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE})
-    set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
-endif()
-
 # In ExternalProject_Add, if OPEN3D_THIRD_PARTY_DOWNLOAD_DIR is specified, CMake will
 # use this directory to cache downloaded 3rd party dependencies and automatically skip
 # downloading from the Internet if the files are available. This is only supported by
@@ -42,22 +33,12 @@ endif()
 set(OPEN3D_THIRD_PARTY_DOWNLOAD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty_downloads")
 message(STATUS "Downloading 3rdparty dependencies to ${OPEN3D_THIRD_PARTY_DOWNLOAD_DIR}")
 
-set(FILAMENT_PRECOMPILED_ROOT "" CACHE PATH "Path to precompiled Filament library (used if BUILD_FILAMENT_FROM_SOURCE=OFF)")
-
-# Set OpenGL policy
-if(NOT USE_SYSTEM_GLFW)
-    cmake_policy(SET CMP0072 OLD)
-endif()
-cmake_policy(GET CMP0072 CMP0072_VALUE)
-
 project(Open3D VERSION 0.13 LANGUAGES C CXX)
 
 # CMake modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CMake")
-
-string(CONCAT PROJECT_VERSION_THREE_NUMBER "${OPEN3D_VERSION_MAJOR}"
-                                           ".${OPEN3D_VERSION_MINOR}"
-                                           ".${OPEN3D_VERSION_PATCH}")
+list(APPEND CMAKE_MODULE_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CMake")
 
 # Set installation paths
 if(UNIX)
@@ -79,10 +60,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 # Global Security options (including 3rd party code)
 # Add -fPIC for library and -fPIE for executable to compiler and linker. Does not add -pie !
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-include(Open3DMakeHardeningFlags)
-open3d_make_hardening_flags(HARDENING_CFLAGS HARDENING_LDFLAGS)
-open3d_make_hardening_definitions(HARDENING_DEFINITIONS)
 
 message(STATUS "Using security hardening compiler flags: ${HARDENING_CFLAGS}")
 message(STATUS "Using security hardening linker flags: ${HARDENING_LDFLAGS}")
