@@ -27,9 +27,9 @@
 #include <cstring>
 #include <string>
 
-#include "open3d/core/TensorFunction.h"
+#include "open3d/utility/Timer.h"
 
 int main(int argc, char** argv) {
     using namespace open3d;
-    core::RunSYCLDemo();
+    utility::RunSYCLDemo();
 }

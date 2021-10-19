@@ -31,6 +31,8 @@
 namespace open3d {
 namespace utility {
 
+void RunSYCLDemo();
+
 class Timer {
 public:
     Timer();
