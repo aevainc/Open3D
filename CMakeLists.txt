@@ -43,7 +43,6 @@ option(BUILD_SHARED_LIBS          "Build shared libraries"                   OFF
 option(BUILD_EXAMPLES             "Build Open3D examples programs"           OFF)
 option(BUILD_UNIT_TESTS           "Build Open3D unit tests"                  OFF)
 option(BUILD_BENCHMARKS           "Build the micro benchmarks"               OFF)
-option(BUILD_PYTHON_MODULE        "Build the python module"                  ON )
 option(WITH_OPENMP                "Use OpenMP multi-threading"               ON )
 cmake_dependent_option(
        STATIC_WINDOWS_RUNTIME     "Use static (MT/MTd) Windows runtime"      ON
@@ -109,11 +108,6 @@ message(STATUS "Downloading 3rdparty dependencies to ${OPEN3D_THIRD_PARTY_DOWNLO
 
 set(FILAMENT_PRECOMPILED_ROOT "" CACHE PATH "Path to precompiled Filament library (used if BUILD_FILAMENT_FROM_SOURCE=OFF)")
 
-if (PREFER_OSX_HOMEBREW)
-    set(CMAKE_FIND_FRAMEWORK LAST)
-    set(CMAKE_FIND_APPBUNDLE LAST)
-endif()
-
 # Set OpenGL policy
 if(NOT USE_SYSTEM_GLFW)
     cmake_policy(SET CMP0072 OLD)
@@ -122,10 +116,6 @@ cmake_policy(GET CMP0072 CMP0072_VALUE)
 
 
 # Catch a few incompatible build options
-if (APPLE AND ENABLE_HEADLESS_RENDERING)
-    message(WARNING "Headless rendering is not supported on Mac OS")
-    set(ENABLE_HEADLESS_RENDERING OFF)
-endif()
 if(ENABLE_HEADLESS_RENDERING AND BUILD_GUI)
     message(WARNING "Headless rendering disables the Open3D GUI")
     set(BUILD_GUI OFF)
@@ -189,20 +179,6 @@ add_compile_definitions("${HARDENING_DEFINITIONS}")
 # Explicitly specifiy the preference of using -pthread over -lpthread.
 # This must be defined here since CUDA calls find_package(Threads) internally.
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-
-# Overwrites property for Thread::Threads in find_package(Threads)
-# For CUDA, "-pthread" is replaced with "-Xcompiler -pthread" (CMake's default)
-# For ISPC, "-pthread" is disabled
-macro(open3d_patch_findthreads_module_)
-    if(TARGET Threads::Threads AND THREADS_HAVE_PTHREAD_ARG)
-        set_property(TARGET Threads::Threads
-                     PROPERTY INTERFACE_COMPILE_OPTIONS
-                     "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:SHELL:-Xcompiler -pthread>"
-                     "$<$<AND:$<NOT:$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>>,$<NOT:$<COMPILE_LANGUAGE:ISPC>>>:-pthread>")
-    endif()
-endmacro()
-cmake_language(EVAL CODE "cmake_language(DEFER CALL open3d_patch_findthreads_module_)")
-
 
 # Folder view for project files
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
