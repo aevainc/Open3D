@@ -26,10 +26,8 @@
 
 #include "open3d/Open3DConfig.h"
 
-#include "open3d/utility/Logging.h"
-
 namespace open3d {
 
-void PrintOpen3DVersion() { utility::LogInfo("Open3D {}", OPEN3D_VERSION); }
+void PrintOpen3DVersion() {}
 
 }  // namespace open3d
