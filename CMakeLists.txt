@@ -21,53 +21,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Open3D build options
 option(BUILD_SHARED_LIBS          "Build shared libraries"                   OFF)
 option(BUILD_EXAMPLES             "Build Open3D examples programs"           OFF)
-option(BUILD_UNIT_TESTS           "Build Open3D unit tests"                  OFF)
-option(BUILD_BENCHMARKS           "Build the micro benchmarks"               OFF)
 option(WITH_OPENMP                "Use OpenMP multi-threading"               ON )
-option(GLIBCXX_USE_CXX11_ABI      "Set -D_GLIBCXX_USE_CXX11_ABI=1"           OFF)
 
 # 3rd-party build options
 option(USE_BLAS                   "Use BLAS/LAPACK instead of MKL"           ON )
-option(USE_SYSTEM_EIGEN3          "Use system pre-installed eigen3"          OFF)
-option(USE_SYSTEM_FMT             "Use system pre-installed fmt"             OFF)
-option(USE_SYSTEM_GLEW            "Use system pre-installed glew"            OFF)
-option(USE_SYSTEM_GLFW            "Use system pre-installed glfw"            OFF)
-option(USE_SYSTEM_IMGUI           "Use system pre-installed imgui"           OFF)
-option(USE_SYSTEM_JPEG            "Use system pre-installed jpeg"            OFF)
-option(USE_SYSTEM_LIBLZF          "Use system pre-installed liblzf"          OFF)
-option(USE_SYSTEM_PNG             "Use system pre-installed png"             OFF)
-option(USE_SYSTEM_PYBIND11        "Use system pre-installed pybind11"        OFF)
-option(USE_SYSTEM_QHULLCPP        "Use system pre-installed qhullcpp"        OFF)
-option(USE_SYSTEM_TINYGLTF        "Use system pre-installed tinygltf"        OFF)
-option(USE_SYSTEM_TINYOBJLOADER   "Use system pre-installed tinyobjloader"   OFF)
-option(BUILD_FILAMENT_FROM_SOURCE "Build filament from source"               OFF)
-option(PREFER_OSX_HOMEBREW        "Prefer Homebrew libs over frameworks"     ON )
-option(WITH_FAISS                 "Enable Faiss"                             ON )
 
-# Sensor options
-option(BUILD_LIBREALSENSE         "Build support for Intel RealSense camera" OFF)
-option(USE_SYSTEM_LIBREALSENSE    "Use system pre-installed librealsense"    OFF)
-option(BUILD_AZURE_KINECT         "Build support for Azure Kinect sensor"    OFF)
 
-# ML library options
-option(BUILD_TENSORFLOW_OPS       "Build ops for TensorFlow"                 OFF)
-option(BUILD_PYTORCH_OPS          "Build ops for PyTorch"                    OFF)
-option(BUNDLE_OPEN3D_ML           "Includes the Open3D-ML repo in the wheel" OFF)
-
-# Default build type on single-config generators.
-# For multi-config generators (e.g. Visual Studio), CMAKE_CONFIGURATION_TYPES
-# will be set, and we don't specify a default CMAKE_BUILD_TYPE.
-# https://blog.kitware.com/cmake-and-the-default-build-type/
-if(NOT CMAKE_CONFIGURATION_TYPES)
-    if(NOT CMAKE_BUILD_TYPE)
-        message(STATUS "Setting build type to RelWithDebInfo as none was specified.")
-        set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose the type of build." FORCE)
-        # Set the possible values of build type for cmake-gui.
-        set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-                    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-    endif()
-    message(STATUS "CMAKE_BUILD_TYPE is set to ${CMAKE_BUILD_TYPE}.")
-endif()
 
 find_program(CCACHE "ccache")
 if (CCACHE)

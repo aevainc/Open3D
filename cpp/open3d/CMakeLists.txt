@@ -8,8 +8,6 @@ open3d_show_and_abort_on_warning(Open3D)
 open3d_set_global_properties(Open3D)
 open3d_link_3rdparty_libraries(Open3D)
 
-add_library(Open3D::Open3D ALIAS Open3D)
-
 include(CMakePackageConfigHelpers)
 
 
