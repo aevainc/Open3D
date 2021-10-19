@@ -49,12 +49,6 @@ cmake_dependent_option(
        STATIC_WINDOWS_RUNTIME     "Use static (MT/MTd) Windows runtime"      ON
        "NOT BUILD_SHARED_LIBS"                                               OFF)
 option(GLIBCXX_USE_CXX11_ABI      "Set -D_GLIBCXX_USE_CXX11_ABI=1"           OFF)
-if(WIN32 OR UNIX AND NOT LINUX_AARCH64)
-    cmake_dependent_option(BUILD_WEBRTC "Build WebRTC visualizer" ON "BUILD_GUI" OFF)
-else()
-    option(BUILD_WEBRTC           "Build WebRTC visualizer"                  OFF)
-endif()
-option(BUILD_JUPYTER_EXTENSION    "Build Jupyter, requires BUILD_WEBRTC=ON"  OFF)
 
 # 3rd-party build options
 option(USE_BLAS                   "Use BLAS/LAPACK instead of MKL"           ON )
@@ -144,13 +138,6 @@ endif()
 if(BUNDLE_OPEN3D_ML AND NOT (BUILD_TENSORFLOW_OPS OR BUILD_PYTORCH_OPS))
     message(SEND_ERROR "3DML depends on TensorFlow or PyTorch Ops. Enable them with -DBUILD_TENSORFLOW_OPS=ON or -DBUILD_PYTORCH_OPS=ON")
 endif()
-if(BUILD_WEBRTC AND LINUX_AARCH64)
-    message(FATAL_ERROR "BUILD_WEBRTC=ON is not yet supported on ARM Linux")
-endif()
-if(BUILD_WEBRTC AND NOT BUILD_GUI)
-    message(FATAL_ERROR "BUILD_WEBRTC=ON requires BUILD_GUI=ON")
-endif()
-
 
 project(Open3D VERSION 0.13 LANGUAGES C CXX)
 
