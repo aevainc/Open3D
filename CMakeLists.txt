@@ -9,34 +9,14 @@ cmake_minimum_required(VERSION 3.19.2)
 # - use first-class language support for ISPC (3.19.2 patch release required)
 
 option(USE_ONE_API                "Use Intel OneAPI BaseKit"                 ON )
-if (USE_ONE_API)
-    if(UNIX)
-        set(CMAKE_C_COMPILER clang)
-        set(CMAKE_CXX_COMPILER clang++)
-    endif(UNIX)
+if(UNIX)
+    set(CMAKE_C_COMPILER clang)
+    set(CMAKE_CXX_COMPILER clang++)
+endif(UNIX)
 
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (APPLE)
-set (CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING
-    "Minimum OS X deployment version" FORCE)
-endif()
-
-if(UNIX AND NOT APPLE)
-    # CMAKE_HOST_SYSTEM_PROCESSOR is only available after calling project(),
-    # which depends on ${OPEN3D_VERSION}, which depends on ${DEVELOPER_BUILD}.
-    execute_process(COMMAND uname -p
-        OUTPUT_VARIABLE PROCESSOR_ARCH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    if(PROCESSOR_ARCH STREQUAL "aarch64")
-        set(LINUX_AARCH64 TRUE)
-    endif()
-endif()
-
-include(CMakeDependentOption)
 
 # Open3D build options
 option(BUILD_SHARED_LIBS          "Build shared libraries"                   OFF)
@@ -44,9 +24,6 @@ option(BUILD_EXAMPLES             "Build Open3D examples programs"           OFF
 option(BUILD_UNIT_TESTS           "Build Open3D unit tests"                  OFF)
 option(BUILD_BENCHMARKS           "Build the micro benchmarks"               OFF)
 option(WITH_OPENMP                "Use OpenMP multi-threading"               ON )
-cmake_dependent_option(
-       STATIC_WINDOWS_RUNTIME     "Use static (MT/MTd) Windows runtime"      ON
-       "NOT BUILD_SHARED_LIBS"                                               OFF)
 option(GLIBCXX_USE_CXX11_ABI      "Set -D_GLIBCXX_USE_CXX11_ABI=1"           OFF)
 
 # 3rd-party build options
@@ -114,7 +91,6 @@ if(NOT USE_SYSTEM_GLFW)
 endif()
 cmake_policy(GET CMP0072 CMP0072_VALUE)
 
-
 project(Open3D VERSION 0.13 LANGUAGES C CXX)
 
 # CMake modules
@@ -125,17 +101,12 @@ string(CONCAT PROJECT_VERSION_THREE_NUMBER "${OPEN3D_VERSION_MAJOR}"
                                            ".${OPEN3D_VERSION_PATCH}")
 
 # Set installation paths
-if(UNIX OR CYGWIN)
+if(UNIX)
     include(GNUInstallDirs)
     set(Open3D_INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
     set(Open3D_INSTALL_BIN_DIR "${CMAKE_INSTALL_BINDIR}")
     set(Open3D_INSTALL_LIB_DIR "${CMAKE_INSTALL_LIBDIR}")
     set(Open3D_INSTALL_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
-else()
-    set(Open3D_INSTALL_INCLUDE_DIR include)
-    set(Open3D_INSTALL_BIN_DIR bin)
-    set(Open3D_INSTALL_LIB_DIR lib)
-    set(Open3D_INSTALL_CMAKE_DIR CMake)
 endif()
 
 # Put build results in some predictable places
