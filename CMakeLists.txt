@@ -44,16 +44,7 @@ option(BUILD_EXAMPLES             "Build Open3D examples programs"           OFF
 option(BUILD_UNIT_TESTS           "Build Open3D unit tests"                  OFF)
 option(BUILD_BENCHMARKS           "Build the micro benchmarks"               OFF)
 option(BUILD_PYTHON_MODULE        "Build the python module"                  ON )
-if(NOT LINUX_AARCH64)
-    option(BUILD_ISPC_MODULE          "Build the ISPC module"                    ON )
-else()
-    option(BUILD_ISPC_MODULE          "Build the ISPC module"                    OFF)
-endif()
-option(BUILD_COMMON_ISPC_ISAS     "Build for common ISPC ISAs (for release)" OFF)
-option(BUILD_GUI                  "Builds new GUI"                           OFF)
 option(WITH_OPENMP                "Use OpenMP multi-threading"               ON )
-option(WITH_IPPICV                "Use Intel Performance Primitives"         ON )
-option(ENABLE_HEADLESS_RENDERING  "Use OSMesa for headless rendering"        OFF)
 cmake_dependent_option(
        STATIC_WINDOWS_RUNTIME     "Use static (MT/MTd) Windows runtime"      ON
        "NOT BUILD_SHARED_LIBS"                                               OFF)
@@ -137,9 +128,6 @@ cmake_policy(GET CMP0072 CMP0072_VALUE)
 
 
 # Catch a few incompatible build options
-if (LINUX_AARCH64 AND BUILD_ISPC_MODULE)
-    message(FATAL_ERROR "ISPC module is not yet supported on ARM Linux")
-endif()
 if (APPLE AND ENABLE_HEADLESS_RENDERING)
     message(WARNING "Headless rendering is not supported on Mac OS")
     set(ENABLE_HEADLESS_RENDERING OFF)
@@ -162,13 +150,6 @@ endif()
 if(BUILD_WEBRTC AND NOT BUILD_GUI)
     message(FATAL_ERROR "BUILD_WEBRTC=ON requires BUILD_GUI=ON")
 endif()
-if(BUILD_JUPYTER_EXTENSION AND NOT BUILD_WEBRTC)
-    # BUILD_JUPYTER_EXTENSION transitively depends on BUILD_GUI
-    message(FATAL_ERROR "BUILD_JUPYTER_EXTENSION=ON requires BUILD_WEBRTC=ON")
-endif()
-if(BUILD_JUPYTER_EXTENSION AND NOT BUILD_PYTHON_MODULE)
-    message(FATAL_ERROR "BUILD_JUPYTER_EXTENSION=ON requires BUILD_PYTHON_MODULE=ON")
-endif()
 
 
 project(Open3D VERSION 0.13 LANGUAGES C CXX)
@@ -176,48 +157,9 @@ project(Open3D VERSION 0.13 LANGUAGES C CXX)
 # CMake modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CMake")
 
-# Setup Python executable
-if(NOT DEFINED Python3_FIND_REGISTRY)
-    # Only consider PATH variable on Windows by default
-    set(Python3_FIND_REGISTRY NEVER)
-endif()
-find_package(Python3 3.6...<3.10
-             COMPONENTS Interpreter Development
-)
-if (Python3_FOUND)
-    # Setup PYTHON_EXECUTABLE for 3rdparty modules
-    # which still use the deprecated find_package(PythonInterp)
-    set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE} CACHE STRING
-        "Deprecated path to the Python executable (for 3rdparty only)" FORCE)
-else()
-    if (BUILD_PYTHON_MODULE)
-        message(FATAL_ERROR "BUILD_PYTHON_MODULE=ON requires Python 3.6-3.9. Please ensure it is in PATH.")
-    endif()
-endif()
-
-# npm version has to be MAJOR.MINOR.PATCH
 string(CONCAT PROJECT_VERSION_THREE_NUMBER "${OPEN3D_VERSION_MAJOR}"
                                            ".${OPEN3D_VERSION_MINOR}"
                                            ".${OPEN3D_VERSION_PATCH}")
-
-# PyPI package name controls specifies the repository name on PyPI. The default
-# name is "open3d". In the past, for historical reasons, we've used the
-# following names for PyPI, while they are now deprecated:
-# - open3d-python
-# - py3d
-# - open3d-original
-# - open3d-official
-# - open-3d
-if(NOT DEFINED PYPI_PACKAGE_NAME)
-    set(PYPI_PACKAGE_NAME "open3d")
-endif()
-
-# Set additional info
-set(PROJECT_EMAIL   "info@open3d.org")
-set(PROJECT_HOME    "http://www.open3d.org")
-set(PROJECT_DOCS    "http://www.open3d.org/docs")
-set(PROJECT_CODE    "https://github.com/isl-org/Open3D")
-set(PROJECT_ISSUES  "https://github.com/isl-org/Open3D/issues")
 
 # Set installation paths
 if(UNIX OR CYGWIN)
