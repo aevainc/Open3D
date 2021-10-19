@@ -1,4 +1,4 @@
-open3d_ispc_add_executable(tests)
+add_executable(tests)
 
 target_sources(tests PRIVATE
     Main.cpp
