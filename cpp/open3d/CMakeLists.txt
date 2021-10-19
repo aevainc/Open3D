@@ -16,19 +16,10 @@ function(open3d_set_open3d_lib_properties target)
     else ()
         target_compile_definitions(${target} PRIVATE OPEN3D_ENABLE_DLL_EXPORTS)
     endif()
-
 endfunction()
 
 
 add_library(Open3D)
-
-if (BUILD_GUI)
-    add_subdirectory(visualization/gui)
-endif()
-
-if (BUILD_WEBRTC)
-    add_subdirectory(visualization/webrtc_server)
-endif()
 
 # note: adding at least one real source file to any target that references
 # reference: https://cmake.org/cmake/help/v3.12/command/add_library.html#object-libraries
@@ -36,29 +27,11 @@ target_sources(Open3D PRIVATE
     Timer.cpp
 )
 
-if (BUILD_GUI)
-    open3d_ispc_target_sources_TARGET_OBJECTS(Open3D PRIVATE
-        GUI
-    )
-endif()
-
-if (BUILD_WEBRTC)
-    open3d_ispc_target_sources_TARGET_OBJECTS(Open3D PRIVATE
-        webrtc_server
-    )
-endif()
-
 # Source group for Visual Studio
 open3d_show_and_abort_on_warning(Open3D)
 open3d_set_global_properties(Open3D)
 open3d_set_open3d_lib_properties(Open3D)
 open3d_link_3rdparty_libraries(Open3D)
-
-# If we are building a STATIC_LIBRARY, hide symbols coming from 3rd party static
-# libraries that are not hidden during compilation. Don't propagate beyond
-# direct consumers of libOpen3D.a
-target_link_options(Open3D INTERFACE
-    $<$<STREQUAL:$<TARGET_PROPERTY:Open3D,TYPE>,STATIC_LIBRARY>:$<LINK_ONLY:${OPEN3D_HIDDEN_3RDPARTY_LINK_OPTIONS}>>)
 
 add_library(Open3D::Open3D ALIAS Open3D)
 
@@ -66,33 +39,4 @@ include(CMakePackageConfigHelpers)
 
 
 
-# find_package Open3D Version
-write_basic_package_version_file("${PROJECT_BINARY_DIR}/Open3DConfigVersion.cmake"
-                                 VERSION ${PROJECT_VERSION}
-                                 COMPATIBILITY ExactVersion)
 
-# Installation
-install(TARGETS Open3D EXPORT Open3DTargets
-        RUNTIME DESTINATION ${Open3D_INSTALL_BIN_DIR}
-        LIBRARY DESTINATION ${Open3D_INSTALL_LIB_DIR}
-        ARCHIVE DESTINATION ${Open3D_INSTALL_LIB_DIR}
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    DESTINATION ${Open3D_INSTALL_INCLUDE_DIR}
-    FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.cuh"
-)
-
-# Install the Open3DConfig.cmake and Open3DConfigVersion.cmake
-install(FILES
-        "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Open3DConfig.cmake"
-        "${PROJECT_BINARY_DIR}/Open3DConfigVersion.cmake"
-        DESTINATION "${Open3D_INSTALL_CMAKE_DIR}" COMPONENT dev)
-
-
-
-# Export GUI_RESOURCE_FILES to parent CMake context (cpp/open3d/)
-set(GUI_RESOURCE_FILES ${GUI_RESOURCE_FILES} PARENT_SCOPE)
-set(GUI_RESOURCE_DIR ${GUI_RESOURCE_DIR} PARENT_SCOPE)
