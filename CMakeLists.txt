@@ -62,11 +62,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 
-# Check if the compiler defines the _GLIBCXX_USE_CXX11_ABI macro
-include(CheckCXXSourceCompiles)
-check_cxx_source_compiles("#include <cxxabi.h>
-int main() { return _GLIBCXX_USE_CXX11_ABI; }" HAS_GLIBCXX_USE_CXX11_ABI)
-
 # Include convenience functions
 include(Open3DLink3rdpartyLibraries)
 include(Open3DSetGlobalProperties)
