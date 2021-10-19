@@ -471,23 +471,6 @@ if(WITH_OPENMP)
     endif()
 endif()
 
-# Googletest
-if (BUILD_UNIT_TESTS)
-    include(${Open3D_3RDPARTY_DIR}/googletest/googletest.cmake)
-    open3d_build_3rdparty_library(3rdparty_googletest DIRECTORY ${GOOGLETEST_SOURCE_DIR}
-        SOURCES
-            googletest/src/gtest-all.cc
-            googlemock/src/gmock-all.cc
-        INCLUDE_DIRS
-            googletest/include/
-            googletest/
-            googlemock/include/
-            googlemock/
-        DEPENDS
-            ext_googletest
-    )
-endif()
-
 if (USE_ONE_API)
     # # DPC++ compiler
     # list(APPEND CMAKE_MODULE_PATH /opt/intel/oneapi/compiler/latest/linux/cmake/SYCL)
