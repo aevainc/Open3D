@@ -115,20 +115,6 @@ endif()
 cmake_policy(GET CMP0072 CMP0072_VALUE)
 
 
-# Catch a few incompatible build options
-if(ENABLE_HEADLESS_RENDERING AND BUILD_GUI)
-    message(WARNING "Headless rendering disables the Open3D GUI")
-    set(BUILD_GUI OFF)
-endif()
-if(ENABLE_HEADLESS_RENDERING AND (USE_SYSTEM_GLEW OR USE_SYSTEM_GLFW))
-    message(WARNING "Headless rendering requires customized GLEW and GLFW builds")
-    set(USE_SYSTEM_GLEW OFF)
-    set(USE_SYSTEM_GLFW OFF)
-endif()
-if(BUNDLE_OPEN3D_ML AND NOT (BUILD_TENSORFLOW_OPS OR BUILD_PYTORCH_OPS))
-    message(SEND_ERROR "3DML depends on TensorFlow or PyTorch Ops. Enable them with -DBUILD_TENSORFLOW_OPS=ON or -DBUILD_PYTORCH_OPS=ON")
-endif()
-
 project(Open3D VERSION 0.13 LANGUAGES C CXX)
 
 # CMake modules
