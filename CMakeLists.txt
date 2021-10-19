@@ -60,21 +60,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 # Global Security options (including 3rd party code)
 # Add -fPIC for library and -fPIE for executable to compiler and linker. Does not add -pie !
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-message(STATUS "Using security hardening compiler flags: ${HARDENING_CFLAGS}")
-message(STATUS "Using security hardening linker flags: ${HARDENING_LDFLAGS}")
-message(STATUS "Using security hardening compiler definitions: ${HARDENING_DEFINITIONS}")
-
-add_compile_options("${HARDENING_CFLAGS}")
-add_link_options("${HARDENING_LDFLAGS}")
-add_compile_definitions("${HARDENING_DEFINITIONS}")
-
-# Explicitly specifiy the preference of using -pthread over -lpthread.
-# This must be defined here since CUDA calls find_package(Threads) internally.
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-
-# Folder view for project files
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Check if the compiler defines the _GLIBCXX_USE_CXX11_ABI macro
 include(CheckCXXSourceCompiles)
