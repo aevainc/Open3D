@@ -1,6 +1,0 @@
-build
-tags
-.clangd
-.vscode
-docs/_static/build
-docs/_out
