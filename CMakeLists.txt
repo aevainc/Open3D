@@ -44,9 +44,6 @@ option(BUILD_EXAMPLES             "Build Open3D examples programs"           OFF
 option(BUILD_UNIT_TESTS           "Build Open3D unit tests"                  OFF)
 option(BUILD_BENCHMARKS           "Build the micro benchmarks"               OFF)
 option(BUILD_PYTHON_MODULE        "Build the python module"                  ON )
-option(BUILD_CUDA_MODULE          "Build the CUDA module"                    OFF)
-option(BUILD_COMMON_CUDA_ARCHS    "Build for common CUDA GPUs (for release)" OFF)
-option(BUILD_CACHED_CUDA_MANAGER  "Build the cached CUDA memory manager"     ON )
 if(NOT LINUX_AARCH64)
     option(BUILD_ISPC_MODULE          "Build the ISPC module"                    ON )
 else()
@@ -96,15 +93,6 @@ option(BUILD_TENSORFLOW_OPS       "Build ops for TensorFlow"                 OFF
 option(BUILD_PYTORCH_OPS          "Build ops for PyTorch"                    OFF)
 option(BUNDLE_OPEN3D_ML           "Includes the Open3D-ML repo in the wheel" OFF)
 
-# Release build options
-option(DEVELOPER_BUILD      "Add +commit_hash to the project version number" ON )
-if (NOT DEVELOPER_BUILD)
-    if (NOT BUILD_COMMON_CUDA_ARCHS)
-        set(BUILD_COMMON_CUDA_ARCHS ON CACHE BOOL "Build for common CUDA GPUs (for release)" FORCE)
-        message(WARNING "Setting BUILD_COMMON_CUDA_ARCHS=ON since DEVELOPER_BUILD is OFF.")
-    endif()
-endif()
-
 # Default build type on single-config generators.
 # For multi-config generators (e.g. Visual Studio), CMAKE_CONFIGURATION_TYPES
 # will be set, and we don't specify a default CMAKE_BUILD_TYPE.
@@ -125,9 +113,6 @@ if (CCACHE)
     message(STATUS "ccache found at ${CCACHE}")
     set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE})
     set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
-    if(BUILD_CUDA_MODULE)
-        set(CMAKE_CUDA_COMPILER_LAUNCHER ${CCACHE})
-    endif()
 endif()
 
 # In ExternalProject_Add, if OPEN3D_THIRD_PARTY_DOWNLOAD_DIR is specified, CMake will
@@ -187,19 +172,6 @@ endif()
 
 
 project(Open3D VERSION 0.13 LANGUAGES C CXX)
-
-# FIXME: Remove this workaround once a fixed Visual Studio 16.10 version is released.
-if (BUILD_CUDA_MODULE
-    AND CMAKE_CXX_COMPILER MATCHES "MSVC"
-    AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29"
-)
-    # Keep C++14 standard for unaffected C++ files, but use C++17 for CUDA files.
-    set(CMAKE_CUDA_STANDARD 17)
-    # Suppress warnings for deprecated C++17 functions.
-    add_compile_definitions($<$<COMPILE_LANGUAGE:CUDA>:_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING>)
-    message(WARNING "Visual Studio 16.10 (MSVC 19.29) introduced a compiler bug when compiling CUDA code with C++14. "
-        "Workaround this bug by setting the CUDA standard to C++17.")
-endif()
 
 # CMake modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CMake")
