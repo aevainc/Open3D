@@ -274,19 +274,6 @@ macro(open3d_patch_findthreads_module_)
 endmacro()
 cmake_language(EVAL CODE "cmake_language(DEFER CALL open3d_patch_findthreads_module_)")
 
-# Build CUDA module by default if CUDA is available
-if(BUILD_CUDA_MODULE)
-    include(Open3DMakeCudaArchitectures)
-    open3d_make_cuda_architectures(CUDA_ARCHS)
-    set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCHS})
-
-    message(STATUS "Using CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
-    enable_language(CUDA)
-
-    if (CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA" AND CMAKE_CUDA_COMPILER_VERSION VERSION_LESS "10.1")
-        message(FATAL_ERROR "CUDA 10.0 and older are not supported. Please upgrade to CUDA 10.1 or newer.")
-    endif()
-endif ()
 
 # ISPC language emulation support
 include(Open3DISPC)
@@ -319,29 +306,6 @@ if (BUILD_ISPC_MODULE)
 
     if (NOT CMAKE_ISPC_COMPILER_ID)
         message(FATAL_ERROR "Unknown ISPC compiler.")
-    endif()
-endif()
-
-# OS specific settings
-if(WIN32)
-    # Windows defaults to hidden symbol visibility, override that
-    # TODO: It would be better to explictly export symbols.
-    #       Then, we could use -fvisibility=hidden for Linux as well
-    SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-    if(MSVC)
-        # Make sure we don't hit the 65535 object member limit with MSVC
-        #
-        # /bigobj allows object files with more than 65535 members
-        # /Ob2 enables function inlining, because MSVC is particularly
-        # verbose with inline members
-        #
-        # See: https://github.com/tensorflow/tensorflow/pull/10962
-        add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/bigobj;/Ob2>")
-    endif()
-    if (STATIC_WINDOWS_RUNTIME)
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    else()
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     endif()
 endif()
 
@@ -380,8 +344,3 @@ include(3rdparty/find_dependencies.cmake)
 
 # Open3D library
 add_subdirectory(cpp)
-
-# Install CMake configuration files
-install(EXPORT ${PROJECT_NAME}Targets NAMESPACE ${PROJECT_NAME}:: DESTINATION ${Open3D_INSTALL_CMAKE_DIR})
-export(EXPORT ${PROJECT_NAME}Targets NAMESPACE ${PROJECT_NAME}::)
-
