@@ -317,21 +317,6 @@ include(CheckCXXSourceCompiles)
 check_cxx_source_compiles("#include <cxxabi.h>
 int main() { return _GLIBCXX_USE_CXX11_ABI; }" HAS_GLIBCXX_USE_CXX11_ABI)
 
-macro(add_source_group module_name)
-    file(GLOB MODULE_HEADER_FILES "${module_name}/*.h")
-    source_group("Header Files\\${module_name}" FILES ${MODULE_HEADER_FILES})
-    file(GLOB MODULE_SOURCE_FILES "${module_name}/*.cpp")
-    source_group("Source Files\\${module_name}" FILES ${MODULE_SOURCE_FILES})
-    file(GLOB MODULE_ISPC_HEADER_FILES "${module_name}/*.isph")
-    source_group("Header Files\\ISPC" FILES ${MODULE_ISPC_HEADER_FILES})
-    file(GLOB MODULE_ISPC_SOURCE_FILES "${module_name}/*.ispc")
-    source_group("Source Files\\ISPC" FILES ${MODULE_ISPC_SOURCE_FILES})
-    file(GLOB MODULE_SHADER_FILES "${module_name}/*.glsl")
-    source_group("Source Files\\Shader\\GLSL" FILES ${MODULE_SHADER_FILES})
-    file(GLOB MODULE_MATERIAL_FILES "${module_name}/*.mat")
-    source_group("Source Files\\Material" FILES ${MODULE_MATERIAL_FILES})
-endmacro()
-
 # Include convenience functions
 include(Open3DLink3rdpartyLibraries)
 include(Open3DSetGlobalProperties)
