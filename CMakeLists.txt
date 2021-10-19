@@ -185,30 +185,8 @@ if(BUILD_JUPYTER_EXTENSION AND NOT BUILD_PYTHON_MODULE)
     message(FATAL_ERROR "BUILD_JUPYTER_EXTENSION=ON requires BUILD_PYTHON_MODULE=ON")
 endif()
 
-# Parse Open3D version number
-file(STRINGS "cpp/open3d/version.txt" OPEN3D_VERSION_READ)
-foreach(ver ${OPEN3D_VERSION_READ})
-    if (ver MATCHES "OPEN3D_VERSION_(MAJOR|MINOR|PATCH) +([^ ]+)$")
-        set(OPEN3D_VERSION_${CMAKE_MATCH_1} "${CMAKE_MATCH_2}" CACHE INTERNAL "")
-    endif()
-endforeach()
-set(OPEN3D_VERSION_DEVHASH "")
-if(DEVELOPER_BUILD)
-    execute_process(COMMAND git -C "${CMAKE_SOURCE_DIR}" log --pretty=format:%h -n 1
-        OUTPUT_VARIABLE GIT_REV)
-    if (GIT_REV)
-        set(OPEN3D_VERSION_DEVHASH "+${GIT_REV}")
-    endif()
-endif()
-string(CONCAT OPEN3D_VERSION
-    "${OPEN3D_VERSION_MAJOR}"
-    ".${OPEN3D_VERSION_MINOR}"
-    ".${OPEN3D_VERSION_PATCH}"
-)
-set(OPEN3D_VERSION_FULL "${OPEN3D_VERSION}${OPEN3D_VERSION_DEVHASH}")
 
-project(Open3D VERSION ${OPEN3D_VERSION} LANGUAGES C CXX)
-message(STATUS "Open3D ${OPEN3D_VERSION_FULL}")
+project(Open3D VERSION 0.13 LANGUAGES C CXX)
 
 # FIXME: Remove this workaround once a fixed Visual Studio 16.10 version is released.
 if (BUILD_CUDA_MODULE

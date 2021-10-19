@@ -19,16 +19,8 @@ function(open3d_set_open3d_lib_properties target)
 
 endfunction()
 
-# Configure a header file to pass the version settings to the source code
-configure_file("${PROJECT_SOURCE_DIR}/cpp/open3d/Open3D.h.in"
-               "${PROJECT_SOURCE_DIR}/cpp/open3d/Open3D.h")
-configure_file("${PROJECT_SOURCE_DIR}/cpp/open3d/Open3DConfig.h.in"
-               "${PROJECT_SOURCE_DIR}/cpp/open3d/Open3DConfig.h")
-
 
 add_library(Open3D)
-
-add_subdirectory(utility)
 
 if (BUILD_GUI)
     add_subdirectory(visualization/gui)
@@ -41,11 +33,7 @@ endif()
 # note: adding at least one real source file to any target that references
 # reference: https://cmake.org/cmake/help/v3.12/command/add_library.html#object-libraries
 target_sources(Open3D PRIVATE
-    Open3DConfig.cpp
-)
-
-open3d_ispc_target_sources_TARGET_OBJECTS(Open3D PRIVATE
-    utility
+    Timer.cpp
 )
 
 if (BUILD_GUI)
@@ -61,8 +49,6 @@ if (BUILD_WEBRTC)
 endif()
 
 # Source group for Visual Studio
-add_source_group(utility)
-
 open3d_show_and_abort_on_warning(Open3D)
 open3d_set_global_properties(Open3D)
 open3d_set_open3d_lib_properties(Open3D)
@@ -78,13 +64,7 @@ add_library(Open3D::Open3D ALIAS Open3D)
 
 include(CMakePackageConfigHelpers)
 
-# find_package Open3D
-configure_package_config_file(Open3DConfig.cmake.in
-                              "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Open3DConfig.cmake"
-                              INSTALL_DESTINATION ${Open3D_INSTALL_CMAKE_DIR}
-                              PATH_VARS Open3D_INSTALL_INCLUDE_DIR
-                              NO_CHECK_REQUIRED_COMPONENTS_MACRO
-)
+
 
 # find_package Open3D Version
 write_basic_package_version_file("${PROJECT_BINARY_DIR}/Open3DConfigVersion.cmake"
@@ -111,15 +91,7 @@ install(FILES
         "${PROJECT_BINARY_DIR}/Open3DConfigVersion.cmake"
         DESTINATION "${Open3D_INSTALL_CMAKE_DIR}" COMPONENT dev)
 
-# uninstall target
-if(NOT TARGET uninstall)
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
-                   "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-                   IMMEDIATE @ONLY)
 
-    add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P
-                      ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
-endif()
 
 # Export GUI_RESOURCE_FILES to parent CMake context (cpp/open3d/)
 set(GUI_RESOURCE_FILES ${GUI_RESOURCE_FILES} PARENT_SCOPE)
