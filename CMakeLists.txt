@@ -395,13 +395,6 @@ if(WIN32)
     endif()
 endif()
 
-# Downloads files from https://github.com/isl-org/open3d_downloads to
-# Open3D/examples/test_data/open3d_downloads.
-add_custom_target(open3d_downloads
-    COMMAND ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/examples/test_data/download_test_data.cmake
-    COMMENT ""
-)
-
 # Folder view for project files
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -438,49 +431,7 @@ include(3rdparty/find_dependencies.cmake)
 # Open3D library
 add_subdirectory(cpp)
 
-# Examples
-add_subdirectory(examples)
-
-# Documentation
-add_subdirectory(docs)
-
 # Install CMake configuration files
 install(EXPORT ${PROJECT_NAME}Targets NAMESPACE ${PROJECT_NAME}:: DESTINATION ${Open3D_INSTALL_CMAKE_DIR})
 export(EXPORT ${PROJECT_NAME}Targets NAMESPACE ${PROJECT_NAME}::)
 
-if (Python3_EXECUTABLE)
-    # `make check-style` checks style for c++/cuda/python/ipynb files
-    add_custom_target(check-style
-        COMMAND ${Python3_EXECUTABLE}
-        ${CMAKE_CURRENT_SOURCE_DIR}/util/check_style.py
-        COMMENT "Python executable used for style check: ${Python3_EXECUTABLE}."
-    )
-
-    # `make apply-style` applies style for c++/cuda/python/ipynb files
-    add_custom_target(apply-style
-        COMMAND ${Python3_EXECUTABLE}
-        ${CMAKE_CURRENT_SOURCE_DIR}/util/check_style.py --do_apply_style
-        COMMENT "Python executable used for style check: ${Python3_EXECUTABLE}."
-    )
-endif()
-
-# `make check-cpp-style` checks style for c++/cuda files.
-# This works outside of python virtualenv.
-add_custom_target(check-cpp-style
-    COMMAND ${CMAKE_COMMAND}
-    -DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-    -DDO_APPLY_STYLE=OFF
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/util/check_cpp_style.cmake
-)
-
-# `make apply-cpp-style` applies style for c++/cuda files.
-# This works outside of python virtualenv.
-add_custom_target(apply-cpp-style
-    COMMAND ${CMAKE_COMMAND}
-    -DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-    -DDO_APPLY_STYLE=ON
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/util/check_cpp_style.cmake
-)
-
-include(Open3DPrintConfigurationSummary)
-open3d_print_configuration_summary()
