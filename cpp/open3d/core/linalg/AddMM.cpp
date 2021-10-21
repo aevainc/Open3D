@@ -125,7 +125,7 @@ void AddMM(const Tensor& A, const Tensor& B, Tensor& output, T alpha, T beta) {
         utility::LogError("Unimplemented device.");
 #endif
     } else {
-        utility::LogError("Unimplemented device.");
+        AddMMCPU(B_data, A_data, C_data, m, k, n, alpha, beta, lda, ldb, ldc);
     }
 
     output = output.To(dtype_original);

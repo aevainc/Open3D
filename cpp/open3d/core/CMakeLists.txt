@@ -63,6 +63,7 @@ target_sources(core PRIVATE
     linalg/Tri.cpp
     linalg/TriCPU.cpp
     linalg/AddMM.cpp
+    linalg/AddMMCPU.cpp
 )
 
 target_sources(core PRIVATE

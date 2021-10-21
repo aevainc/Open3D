@@ -24,31 +24,13 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#pragma once
-
-#include "open3d/core/Tensor.h"
+#include "open3d/core/linalg/AddMM.h"
+#include "open3d/core/linalg/BlasWrapper.h"
+#include "open3d/core/linalg/LinalgUtils.h"
+#include "open3d/utility/Logging.h"
 
 namespace open3d {
 namespace core {
-
-/// Computes matrix multiplication C = AB.
-template <class T>
-void AddMM(const Tensor& A, const Tensor& B, Tensor& C, T alpha, T beta);
-
-#ifdef BUILD_CUDA_MODULE
-template <class T>
-void AddMMCUDA(void* A_data,
-               void* B_data,
-               void* C_data,
-               int64_t m,
-               int64_t k,
-               int64_t n,
-               T alpha,
-               T beta,
-               int lda,
-               int ldb,
-               int ldc);
-#endif
 
 template <class T>
 void AddMMCPU(void* A_data,
@@ -61,6 +43,35 @@ void AddMMCPU(void* A_data,
               T beta,
               int lda,
               int ldb,
-              int ldc);
+              int ldc) {
+    gemm_cpu<T>(CblasColMajor, CblasTrans, CblasNoTrans, m, n, k, alpha,
+                static_cast<const T*>(A_data), lda,
+                static_cast<const T*>(B_data), ldb, beta,
+                static_cast<T*>(C_data), ldc);
+}
+
+template void AddMMCPU(void* A_data,
+                       void* B_data,
+                       void* C_data,
+                       int64_t m,
+                       int64_t k,
+                       int64_t n,
+                       float alpha,
+                       float beta,
+                       int lda,
+                       int ldb,
+                       int ldc);
+
+template void AddMMCPU(void* A_data,
+                       void* B_data,
+                       void* C_data,
+                       int64_t m,
+                       int64_t k,
+                       int64_t n,
+                       double alpha,
+                       double beta,
+                       int lda,
+                       int ldb,
+                       int ldc);
 }  // namespace core
 }  // namespace open3d
