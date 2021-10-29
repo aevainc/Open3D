@@ -17,13 +17,8 @@ endif(UNIX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
 # Open3D build options
-option(BUILD_SHARED_LIBS          "Build shared libraries"                   OFF)
-option(WITH_OPENMP                "Use OpenMP multi-threading"               ON )
-
-# 3rd-party build options
-option(USE_BLAS                   "Use BLAS/LAPACK instead of MKL"           ON )
+option(BUILD_SHARED_LIBS          "Build shared libraries"                   ON )
 
 # In ExternalProject_Add, if OPEN3D_THIRD_PARTY_DOWNLOAD_DIR is specified, CMake will
 # use this directory to cache downloaded 3rd party dependencies and automatically skip
