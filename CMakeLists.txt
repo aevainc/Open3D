@@ -14,8 +14,6 @@ project(Open3D VERSION 0.13 LANGUAGES C CXX)
 
 set(Open3D_3RDPARTY_PRIVATE_TARGETS)
 
-find_package(PkgConfig QUIET)
-
 function(open3d_link_3rdparty_libraries target)
     target_link_libraries(${target} PRIVATE ${Open3D_3RDPARTY_PRIVATE_TARGETS})
 endfunction()
