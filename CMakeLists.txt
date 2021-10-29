@@ -10,7 +10,7 @@ option(GLIBCXX_USE_CXX11_ABI "Set -D_GLIBCXX_USE_CXX11_ABI=1 or O" OFF)
 
 project(Open3D)
 
-add_executable(main Main.cpp Open3D.cpp)
+add_executable(main Main.cpp)
 target_compile_options(main PRIVATE -fsycl -fsycl-unnamed-lambda)
 target_link_libraries(main PRIVATE sycl -fsycl)
 
