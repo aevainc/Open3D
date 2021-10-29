@@ -29,9 +29,7 @@
 #include <chrono>
 #include <iostream>
 
-namespace open3d {
-
-void RunSYCLDemo() {
+int main() {
     using namespace sycl;
 
     std::cout << "Hello RunSYCLDemo()" << std::endl;
@@ -53,7 +51,3 @@ void RunSYCLDemo() {
         std::cout << "data[" << i << "] = " << A[i] << "\n";
     }
 }
-
-}  // namespace open3d
-
-int main() { open3d::RunSYCLDemo(); }
