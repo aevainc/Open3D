@@ -22,6 +22,26 @@ set(Open3D_3RDPARTY_PRIVATE_TARGETS)
 
 find_package(PkgConfig QUIET)
 
+function(open3d_link_3rdparty_libraries target)
+    # Directly pass public and private dependencies to the target.
+    target_link_libraries(${target} PRIVATE ${Open3D_3RDPARTY_PRIVATE_TARGETS})
+    target_link_libraries(${target} PUBLIC ${Open3D_3RDPARTY_PUBLIC_TARGETS})
+endfunction()
+
+function(open3d_set_global_properties target)
+    target_include_directories(${target} PUBLIC
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/cpp>
+        $<INSTALL_INTERFACE:${Open3D_INSTALL_INCLUDE_DIR}>
+    )
+
+    if (GLIBCXX_USE_CXX11_ABI)
+        target_compile_definitions(${target} PUBLIC _GLIBCXX_USE_CXX11_ABI=1)
+    else()
+        target_compile_definitions(${target} PUBLIC _GLIBCXX_USE_CXX11_ABI=0)
+    endif()
+endfunction()
+
+
 # DPC++
 add_library(SYCL INTERFACE)
 target_compile_options(SYCL INTERFACE

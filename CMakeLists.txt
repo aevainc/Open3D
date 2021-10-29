@@ -55,10 +55,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 
-# Include convenience functions
-include(Open3DLink3rdpartyLibraries)
-include(Open3DSetGlobalProperties)
-
 # Enumerate all third-party libraries which we need later
 # This creates the necessary targets and sets the
 # Open3D_3RDPARTY_*_TARGETS variables we use in open3d_link_3rdparty_libraries
