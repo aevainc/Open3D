@@ -9,19 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(BUILD_SHARED_LIBS          "Build shared libraries"                   ON )
 option(GLIBCXX_USE_CXX11_ABI      "Set -D_GLIBCXX_USE_CXX11_ABI=1 or O"      OFF)
 
-# In ExternalProject_Add, if OPEN3D_THIRD_PARTY_DOWNLOAD_DIR is specified, CMake will
-# use this directory to cache downloaded 3rd party dependencies and automatically skip
-# downloading from the Internet if the files are available. This is only supported by
-# a limited number of 3rd party libraries.
-set(OPEN3D_THIRD_PARTY_DOWNLOAD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty_downloads")
-message(STATUS "Downloading 3rdparty dependencies to ${OPEN3D_THIRD_PARTY_DOWNLOAD_DIR}")
-
 project(Open3D VERSION 0.13 LANGUAGES C CXX)
-
-# CMake modules
-list(APPEND CMAKE_MODULE_PATH
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
-    "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CMake")
 
 # Set installation paths
 if(UNIX)
@@ -45,10 +33,62 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 
-# Enumerate all third-party libraries which we need later
-# This creates the necessary targets and sets the
-# Open3D_3RDPARTY_*_TARGETS variables we use in open3d_link_3rdparty_libraries
-include(3rdparty/find_dependencies.cmake)
+#
+# Open3D 3rd party library integration
+#
+set(Open3D_3RDPARTY_DIR "${CMAKE_CURRENT_LIST_DIR}")
+
+# EXTERNAL_MODULES
+# CMake modules we depend on in our public interface. These are modules we
+# need to find_package() in our CMake config script, because we will use their
+# targets.
+set(Open3D_3RDPARTY_EXTERNAL_MODULES)
+
+# PUBLIC_TARGETS
+# CMake targets we link against in our public interface. They are
+# either locally defined and installed, or imported from an external module
+# (see above).
+set(Open3D_3RDPARTY_PUBLIC_TARGETS)
+
+# PRIVATE_TARGETS
+# CMake targets for dependencies which are not exposed in the public API. This
+# will include anything else we use internally.
+set(Open3D_3RDPARTY_PRIVATE_TARGETS)
+
+find_package(PkgConfig QUIET)
+
+function(open3d_link_3rdparty_libraries target)
+    # Directly pass public and private dependencies to the target.
+    target_link_libraries(${target} PRIVATE ${Open3D_3RDPARTY_PRIVATE_TARGETS})
+    target_link_libraries(${target} PUBLIC ${Open3D_3RDPARTY_PUBLIC_TARGETS})
+endfunction()
+
+function(open3d_set_global_properties target)
+    target_include_directories(${target} PUBLIC
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/cpp>
+        $<INSTALL_INTERFACE:${Open3D_INSTALL_INCLUDE_DIR}>
+    )
+
+    if (GLIBCXX_USE_CXX11_ABI)
+        target_compile_definitions(${target} PUBLIC _GLIBCXX_USE_CXX11_ABI=1)
+    else()
+        target_compile_definitions(${target} PUBLIC _GLIBCXX_USE_CXX11_ABI=0)
+    endif()
+endfunction()
+
+
+# DPC++
+add_library(SYCL INTERFACE)
+target_compile_options(SYCL INTERFACE
+    $<$<AND:$<CXX_COMPILER_ID:IntelLLVM>,$<NOT:$<COMPILE_LANGUAGE:ISPC>>>:-fsycl -fsycl-unnamed-lambda>)
+target_link_libraries(SYCL INTERFACE
+    $<$<AND:$<CXX_COMPILER_ID:IntelLLVM>,$<NOT:$<LINK_LANGUAGE:ISPC>>>:sycl -fsycl>)
+add_library(Open3D::SYCL ALIAS SYCL)
+list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Open3D::SYCL)
+
+# Compactify list of external modules.
+# This must be called after all dependencies are processed.
+list(REMOVE_DUPLICATES Open3D_3RDPARTY_EXTERNAL_MODULES)
 
 # Open3D library
 add_subdirectory(cpp)
