@@ -364,117 +364,44 @@ if (USE_ONE_API)
     #     message(FATAL_ERROR "IntelDPCPP_FOUND cannot be found.")
     # endif()
 
-    # find_package(IntelSYCL)
-    # if(IntelSYCL_FOUND)
-    #     set(SYCL_TARGET Intel::SYCL)
-    #     set(SYCL_FLAGS ${INTEL_SYCL_FLAGS})
-    #     set(SYCL_INCLUDE_DIRS ${INTEL_SYCL_INCLUDE_DIRS})
-    #     set(SYCL_LIBRARIES ${INTEL_SYCL_LIBRARIES})
-    #     message(STATUS "SYCL_FLAGS: ${INTEL_SYCL_FLAGS}")
-    #     message(STATUS "SYCL_INCLUDE_DIRS: ${INTEL_SYCL_INCLUDE_DIRS}")
-    #     message(STATUS "SYCL_LIBRARIES: ${INTEL_SYCL_LIBRARIES}")
-    #     target_compile_options(Intel::SYCL INTERFACE ${SYCL_FLAGS})
-    #     # target_link_options(Intel::SYCL INTERFACE ${SYCL_FLAGS})
-    #     list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Intel::SYCL)
-    # else()
-    #     message(FATAL_ERROR "IntelSYCL cannot be found.")
-    # endif()
-
+    # DPC++
     add_library(SYCL INTERFACE)
-    target_compile_options(SYCL INTERFACE -fsycl -fsycl-unnamed-lambda)
-    target_link_libraries(SYCL INTERFACE sycl -fsycl)
+    target_compile_options(SYCL INTERFACE
+        $<$<AND:$<CXX_COMPILER_ID:IntelLLVM>,$<NOT:$<COMPILE_LANGUAGE:ISPC>>>:-fsycl -fsycl-unnamed-lambda>)
+    target_link_libraries(SYCL INTERFACE
+        $<$<AND:$<CXX_COMPILER_ID:IntelLLVM>,$<NOT:$<LINK_LANGUAGE:ISPC>>>:sycl -fsycl>)
     add_library(Open3D::SYCL ALIAS SYCL)
     list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Open3D::SYCL)
 
+    # oneTBB
     list(APPEND CMAKE_MODULE_PATH /opt/intel/oneapi/tbb/latest/lib/cmake/tbb)
     find_package(TBB REQUIRED)
     message(STATUS "TBB_FOUND: ${TBB_FOUND}")
     message(STATUS "TBB_IMPORTED_TARGETS: ${TBB_IMPORTED_TARGETS}")
     list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS ${TBB_IMPORTED_TARGETS})
 
+    # oneDPL
     list(APPEND CMAKE_MODULE_PATH /opt/intel/oneapi/dpl/latest/lib/cmake/oneDPL)
     find_package(oneDPL REQUIRED)
+    target_compile_definitions(oneDPL INTERFACE _GLIBCXX_USE_TBB_PAR_BACKEND=0)
+    target_compile_definitions(oneDPL INTERFACE PSTL_USE_PARALLEL_POLICIES=0)
     list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS oneDPL)
 
-endif()
-
-if (NOT USE_ONE_API)
-    # TBB
-    include(${Open3D_3RDPARTY_DIR}/mkl/tbb.cmake)
-    open3d_import_3rdparty_library(3rdparty_tbb
-        INCLUDE_DIRS ${STATIC_TBB_INCLUDE_DIR}
-        LIB_DIR      ${STATIC_TBB_LIB_DIR}
-        LIBRARIES    ${STATIC_TBB_LIBRARIES}
-        DEPENDS      ext_tbb
+    # oneMKL
+    set(MKL_THREADING tbb_thread)
+    list(APPEND CMAKE_MODULE_PATH /opt/intel/oneapi/mkl/latest/lib/cmake/mkl)
+    find_package(MKL CONFIG REQUIRED)
+    add_library(3rdparty_mkl INTERFACE)
+    target_include_directories(3rdparty_mkl INTERFACE ${MKL_INCLUDE})
+    target_link_libraries(3rdparty_mkl INTERFACE
+        MKL::mkl_intel_ilp64
+        MKL::mkl_core
+        MKL::mkl_tbb_thread
     )
-    list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Open3D::3rdparty_tbb)
-endif()
-
-if (NOT USE_ONE_API)
-    # parallelstl
-    include(${Open3D_3RDPARTY_DIR}/parallelstl/parallelstl.cmake)
-    open3d_import_3rdparty_library(3rdparty_parallelstl
-        PUBLIC
-        INCLUDE_DIRS ${PARALLELSTL_INCLUDE_DIRS}
-        INCLUDE_ALL
-        DEPENDS      ext_parallelstl
-    )
-    list(APPEND Open3D_3RDPARTY_PUBLIC_TARGETS Open3D::3rdparty_parallelstl)
-endif()
-
-
-# MKL/BLAS
-if(USE_BLAS)
-    find_package(BLAS)
-    find_package(LAPACK)
-    find_package(LAPACKE)
-    if(BLAS_FOUND AND LAPACK_FOUND AND LAPACKE_FOUND)
-        message(STATUS "Using system BLAS/LAPACK")
-        # OpenBLAS/LAPACK/LAPACKE are shared libraries. This is uncommon for
-        # Open3D. When building with this option, the Python wheel is less
-        # portable as it depends on the external shared libraries.
-        list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS
-            ${BLAS_LIBRARIES}
-            ${LAPACK_LIBRARIES}
-            ${LAPACKE_LIBRARIES}
-        )
-    else()
-        # Install gfortran first for compiling OpenBLAS/Lapack from source.
-        message(STATUS "Building OpenBLAS with LAPACK from source")
-        set(BLAS_BUILD_FROM_SOURCE ON)
-
-        include(${Open3D_3RDPARTY_DIR}/openblas/openblas.cmake)
-        open3d_import_3rdparty_library(3rdparty_blas
-            HIDDEN
-            INCLUDE_DIRS ${OPENBLAS_INCLUDE_DIR}
-            LIB_DIR      ${OPENBLAS_LIB_DIR}
-            LIBRARIES    ${OPENBLAS_LIBRARIES}
-            DEPENDS      ext_openblas
-        )
-        target_link_libraries(3rdparty_blas INTERFACE Threads::Threads gfortran)
-        list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Open3D::3rdparty_blas)
-    endif()
+    add_library(Open3D::3rdparty_mkl ALIAS 3rdparty_mkl)
+    list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Open3D::3rdparty_mkl)
 else()
-    if(NOT USE_ONE_API)
-        include(${Open3D_3RDPARTY_DIR}/mkl/mkl.cmake)
-        # MKL, cuSOLVER, cuBLAS
-        # We link MKL statically. For MKL link flags, refer to:
-        # https://software.intel.com/content/www/us/en/develop/articles/intel-mkl-link-line-advisor.html
-        message(STATUS "Using MKL to support BLAS and LAPACK functionalities.")
-        open3d_import_3rdparty_library(3rdparty_blas
-            HIDDEN
-            INCLUDE_DIRS ${STATIC_MKL_INCLUDE_DIR}
-            LIB_DIR      ${STATIC_MKL_LIB_DIR}
-            LIBRARIES    ${STATIC_MKL_LIBRARIES}
-            DEPENDS      ext_tbb ext_mkl_include ext_mkl
-        )
-        if(UNIX)
-            target_compile_options(3rdparty_blas INTERFACE "$<$<COMPILE_LANGUAGE:CXX>:-m64>")
-            target_link_libraries(3rdparty_blas INTERFACE Open3D::3rdparty_threads ${CMAKE_DL_LIBS})
-        endif()
-        target_compile_definitions(3rdparty_blas INTERFACE "$<$<COMPILE_LANGUAGE:CXX>:MKL_ILP64>")
-        list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Open3D::3rdparty_blas)
-    endif()
+    message(FATAL_ERROR "Must use OneAPI")
 endif()
 
 # Compactify list of external modules.
