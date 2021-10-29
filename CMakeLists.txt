@@ -79,13 +79,13 @@ target_sources(Open3D PRIVATE
 open3d_set_global_properties(Open3D)
 open3d_link_3rdparty_libraries(Open3D)
 
-add_executable(tests)
-target_sources(tests PRIVATE
-    Tests.cpp
+add_executable(main)
+target_sources(main PRIVATE
+    Main.cpp
 )
-target_link_libraries(tests PRIVATE
+target_link_libraries(main PRIVATE
     Open3D
 )
-open3d_set_global_properties(tests)
+open3d_set_global_properties(main)
 
 
