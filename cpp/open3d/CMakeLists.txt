@@ -1,7 +1,7 @@
 add_library(Open3D)
 
 target_sources(Open3D PRIVATE
-    Timer.cpp
+    Open3D.cpp
 )
 
 open3d_set_global_properties(Open3D)

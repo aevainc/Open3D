@@ -24,12 +24,6 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include <cstring>
-#include <string>
+#include "open3d/Open3D.h"
 
-#include "open3d/Timer.h"
-
-int main(int argc, char** argv) {
-    using namespace open3d;
-    utility::RunSYCLDemo();
-}
+int main(int argc, char** argv) { open3d::RunSYCLDemo(); }

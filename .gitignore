@@ -5,7 +5,6 @@ CMakeSettings.json
 .travis/*.tar.gz
 
 # CMake configured files
-cpp/open3d/Open3D.h
 cpp/open3d/Open3DConfig.h
 cpp/open3d/visualization/shader/Shader.h
 util/pip_package/setup.py
