@@ -34,7 +34,7 @@ int main() {
 
     std::cout << "Hello RunSYCLDemo()" << std::endl;
 
-    constexpr int size = 16;
+    constexpr int size = 8;
     std::array<int, size> data;
     // Create queue on implementation-chosen default device
     sycl::queue Q;
