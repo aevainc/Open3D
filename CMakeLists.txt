@@ -8,10 +8,9 @@ cmake_minimum_required(VERSION 3.19.2)
 # - parse JSON files for downloading files from the open3d_downloads repository
 # - use first-class language support for ISPC (3.19.2 patch release required)
 
-option(USE_ONE_API                "Use Intel OneAPI BaseKit"                 ON )
 if(UNIX)
-    set(CMAKE_C_COMPILER clang)
-    set(CMAKE_CXX_COMPILER clang++)
+    set(CMAKE_C_COMPILER icx)
+    set(CMAKE_CXX_COMPILER icpx)
 endif(UNIX)
 
 set(CMAKE_CXX_STANDARD 17)
