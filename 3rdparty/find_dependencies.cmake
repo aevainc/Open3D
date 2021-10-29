@@ -125,38 +125,25 @@ endfunction()
 # party dependencies. Only needed with GCC, not AppleClang.
 set(OPEN3D_HIDDEN_3RDPARTY_LINK_OPTIONS)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL AppleClang)
-    find_library(LexLIB libl.a)    # test archive in macOS
-    if (LexLIB)
-        include(CheckCXXSourceCompiles)
-        set(CMAKE_REQUIRED_LINK_OPTIONS -load_hidden ${LexLIB})
-        check_cxx_source_compiles("int main() {return 0;}" FLAG_load_hidden)
-        unset(CMAKE_REQUIRED_LINK_OPTIONS)
-    endif()
-endif()
-if (NOT FLAG_load_hidden)
-    set(FLAG_load_hidden 0)
-endif()
+# # Threads
+# open3d_find_package_3rdparty_library(3rdparty_threads
+#     REQUIRED
+#     PACKAGE Threads
+#     TARGETS Threads::Threads
+# )
 
-# Threads
-open3d_find_package_3rdparty_library(3rdparty_threads
-    REQUIRED
-    PACKAGE Threads
-    TARGETS Threads::Threads
-)
-
-# OpenMP
-if(WITH_OPENMP)
-    open3d_find_package_3rdparty_library(3rdparty_openmp
-        PACKAGE OpenMP
-        PACKAGE_VERSION_VAR OpenMP_CXX_VERSION
-        TARGETS OpenMP::OpenMP_CXX
-    )
-    if(3rdparty_openmp_FOUND)
-        message(STATUS "Building with OpenMP")
-        list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Open3D::3rdparty_openmp)
-    endif()
-endif()
+# # OpenMP
+# if(WITH_OPENMP)
+#     open3d_find_package_3rdparty_library(3rdparty_openmp
+#         PACKAGE OpenMP
+#         PACKAGE_VERSION_VAR OpenMP_CXX_VERSION
+#         TARGETS OpenMP::OpenMP_CXX
+#     )
+#     if(3rdparty_openmp_FOUND)
+#         message(STATUS "Building with OpenMP")
+#         list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Open3D::3rdparty_openmp)
+#     endif()
+# endif()
 
 if (USE_ONE_API)
     # # DPC++ compiler
