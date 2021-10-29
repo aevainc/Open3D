@@ -24,6 +24,6 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include "open3d/Open3D.h"
+#include "Open3D.h"
 
 int main(int argc, char** argv) { open3d::RunSYCLDemo(); }
