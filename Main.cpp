@@ -26,4 +26,4 @@
 
 #include "Open3D.h"
 
-int main(int argc, char** argv) { open3d::RunSYCLDemo(); }
+int main() { open3d::RunSYCLDemo(); }
