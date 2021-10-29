@@ -72,5 +72,20 @@ list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Open3D::SYCL)
 # This must be called after all dependencies are processed.
 list(REMOVE_DUPLICATES Open3D_3RDPARTY_EXTERNAL_MODULES)
 
-# Open3D library
-add_subdirectory(cpp)
+add_library(Open3D)
+target_sources(Open3D PRIVATE
+    Open3D.cpp
+)
+open3d_set_global_properties(Open3D)
+open3d_link_3rdparty_libraries(Open3D)
+
+add_executable(tests)
+target_sources(tests PRIVATE
+    Tests.cpp
+)
+target_link_libraries(tests PRIVATE
+    Open3D
+)
+open3d_set_global_properties(tests)
+
+
