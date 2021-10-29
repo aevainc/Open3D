@@ -6,7 +6,6 @@ set(CMAKE_CXX_COMPILER icpx)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(BUILD_SHARED_LIBS          "Build shared libraries"                   ON )
 option(GLIBCXX_USE_CXX11_ABI      "Set -D_GLIBCXX_USE_CXX11_ABI=1 or O"      OFF)
 
 project(Open3D)
