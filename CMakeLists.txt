@@ -20,7 +20,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Open3D build options
 option(BUILD_SHARED_LIBS          "Build shared libraries"                   OFF)
-option(BUILD_EXAMPLES             "Build Open3D examples programs"           OFF)
 option(WITH_OPENMP                "Use OpenMP multi-threading"               ON )
 
 # 3rd-party build options
