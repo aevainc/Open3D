@@ -11,27 +11,9 @@ option(GLIBCXX_USE_CXX11_ABI      "Set -D_GLIBCXX_USE_CXX11_ABI=1 or O"      OFF
 
 project(Open3D VERSION 0.13 LANGUAGES C CXX)
 
-# Set installation paths
-if(UNIX)
-    include(GNUInstallDirs)
-    set(Open3D_INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
-    set(Open3D_INSTALL_BIN_DIR "${CMAKE_INSTALL_BINDIR}")
-    set(Open3D_INSTALL_LIB_DIR "${CMAKE_INSTALL_LIBDIR}")
-    set(Open3D_INSTALL_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
-endif()
-
-# Put build results in some predictable places
-# The $<CONFIG> generator expression makes sure that XCode or Visual Studio do not
-# append additional path components, as we need to know *exactly* where the build results
-# end up.
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/$<CONFIG>)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/$<CONFIG>)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
-
-# Global Security options (including 3rd party code)
-# Add -fPIC for library and -fPIE for executable to compiler and linker. Does not add -pie !
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 
 #
 # Open3D 3rd party library integration
