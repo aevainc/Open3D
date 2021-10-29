@@ -15,14 +15,6 @@ set(Open3D_3RDPARTY_EXTERNAL_MODULES)
 # (see above).
 set(Open3D_3RDPARTY_PUBLIC_TARGETS)
 
-# HEADER_TARGETS
-# CMake targets we use in our public interface, but as a special case we only
-# need to link privately against the library. This simplifies dependencies
-# where we merely expose declared data types from other libraries in our
-# public headers, so it would be overkill to require all library users to link
-# against that dependency.
-set(Open3D_3RDPARTY_HEADER_TARGETS)
-
 # PRIVATE_TARGETS
 # CMake targets for dependencies which are not exposed in the public API. This
 # will include anything else we use internally.
