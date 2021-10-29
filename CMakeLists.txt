@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(BUILD_SHARED_LIBS          "Build shared libraries"                   ON )
 option(GLIBCXX_USE_CXX11_ABI      "Set -D_GLIBCXX_USE_CXX11_ABI=1 or O"      OFF)
 
-project(Open3D VERSION 0.13 LANGUAGES C CXX)
+project(Open3D)
 
 function(open3d_set_global_properties target)
     if (GLIBCXX_USE_CXX11_ABI)
