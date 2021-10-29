@@ -1,23 +1,13 @@
-cmake_minimum_required(VERSION 3.19.2)
-# If you're using Ubuntu 18.04, we suggest you install the latest CMake from the
-# official repository https://apt.kitware.com/.  CMake 3.19+ is required to:
-# - allow linking with OBJECT libraries
-# - prevent erroneous -gencode option deduplication with CUDA
-# - simplify generator expressions for selecting compile flags and setting
-#   global hardened link flags
-# - parse JSON files for downloading files from the open3d_downloads repository
-# - use first-class language support for ISPC (3.19.2 patch release required)
+cmake_minimum_required(VERSION 3.20)
 
-if(UNIX)
-    set(CMAKE_C_COMPILER icx)
-    set(CMAKE_CXX_COMPILER icpx)
-endif(UNIX)
+set(CMAKE_C_COMPILER icx)
+set(CMAKE_CXX_COMPILER icpx)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Open3D build options
 option(BUILD_SHARED_LIBS          "Build shared libraries"                   ON )
+option(GLIBCXX_USE_CXX11_ABI      "Set -D_GLIBCXX_USE_CXX11_ABI=1 or O"      OFF)
 
 # In ExternalProject_Add, if OPEN3D_THIRD_PARTY_DOWNLOAD_DIR is specified, CMake will
 # use this directory to cache downloaded 3rd party dependencies and automatically skip
