@@ -42,39 +42,62 @@ print_env() {
 }
 
 cpp_python_linking_uninstall_test() {
-    # C++ test
-    echo "gtest is randomized, add --gtest_random_seed=SEED to repeat the test sequence."
+    # Continue to buile Docker container (comile Open3D inside Docker)
     docker run -i --rm --gpus all ${DOCKER_TAG} /bin/bash -c "\
         cd build \
-     && ./bin/tests --gtest_shuffle \
+     && cmake -DBUILD_SHARED_LIBS="${SHARED}" \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DBUILD_LIBREALSENSE=ON \
+             -DBUILD_CUDA_MODULE=ON \
+             -DBUILD_COMMON_CUDA_ARCHS=ON \
+             -DBUILD_COMMON_ISPC_ISAS=ON \
+             -DBUILD_TENSORFLOW_OPS="${BUILD_TENSORFLOW_OPS}" \
+             -DBUILD_PYTORCH_OPS="${BUILD_PYTORCH_OPS}" \
+             -DBUILD_UNIT_TESTS=ON \
+             -DBUILD_BENCHMARKS=ON \
+             -DBUILD_EXAMPLES=ON \
+             -DCMAKE_INSTALL_PREFIX=~/open3d_install \
+             .. \
+     && make VERBOSE=1 -j$(nproc) \
+     && make install-pip-package -j$(nproc) \
+     && make install -j$(nproc) \
     "
 
-    # Python test
-    echo "pytest is randomized, add --rondomly-seed=SEED to repeat the test sequence."
-    pytest_args=""
-    if [ "$BUILD_PYTORCH_OPS" == "OFF" ] || [ "$BUILD_TENSORFLOW_OPS" == "OFF" ]; then
-        pytest_args="${pytest_args} --ignore python/test/ml_ops/"
-    fi
-    docker run -i --rm --gpus all "${DOCKER_TAG}" /bin/bash -c "\
-        pytest python/test ${pytest_args} \
-    "
+    # Disable tests for now. ##################################################
+    #
+    # # C++ test
+    # echo "gtest is randomized, add --gtest_random_seed=SEED to repeat the test sequence."
+    # docker run -i --rm --gpus all ${DOCKER_TAG} /bin/bash -c "\
+    #     cd build \
+    #  && ./bin/tests --gtest_shuffle \
+    # "
 
-    # C++ linking
-    docker run -i --rm --gpus all "${DOCKER_TAG}" /bin/bash -c "\
-        git clone https://github.com/isl-org/open3d-cmake-find-package.git \
-     && cd open3d-cmake-find-package \
-     && mkdir build \
-     && cd build \
-     && cmake -DCMAKE_INSTALL_PREFIX=~/open3d_install .. \
-     && make -j$(nproc) VERBOSE=1 \
-     && ./Draw --skip-for-unit-test \
-    "
+    # # Python test
+    # echo "pytest is randomized, add --rondomly-seed=SEED to repeat the test sequence."
+    # pytest_args=""
+    # if [ "$BUILD_PYTORCH_OPS" == "OFF" ] || [ "$BUILD_TENSORFLOW_OPS" == "OFF" ]; then
+    #     pytest_args="${pytest_args} --ignore python/test/ml_ops/"
+    # fi
+    # docker run -i --rm --gpus all "${DOCKER_TAG}" /bin/bash -c "\
+    #     pytest python/test ${pytest_args} \
+    # "
 
-    # Uninstall
-    docker run -i --rm --gpus all "${DOCKER_TAG}" /bin/bash -c "\
-        cd build \
-     && make uninstall \
-    "
+    # # C++ linking
+    # docker run -i --rm --gpus all "${DOCKER_TAG}" /bin/bash -c "\
+    #     git clone https://github.com/isl-org/open3d-cmake-find-package.git \
+    #  && cd open3d-cmake-find-package \
+    #  && mkdir build \
+    #  && cd build \
+    #  && cmake -DCMAKE_INSTALL_PREFIX=~/open3d_install .. \
+    #  && make -j$(nproc) VERBOSE=1 \
+    #  && ./Draw --skip-for-unit-test \
+    # "
+
+    # # Uninstall
+    # docker run -i --rm --gpus all "${DOCKER_TAG}" /bin/bash -c "\
+    #     cd build \
+    #  && make uninstall \
+    # "
 }
 
 if [[ "$#" -ne 1 ]]; then

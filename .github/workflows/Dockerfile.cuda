@@ -125,33 +125,33 @@ RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
 RUN npm install -g yarn \
  && yarn --version
 
-# Build all
-RUN mkdir build \
- && cd build \
- && cmake -DBUILD_SHARED_LIBS="${SHARED}" \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_LIBREALSENSE=ON \
-          -DBUILD_CUDA_MODULE=ON \
-          -DBUILD_COMMON_CUDA_ARCHS=ON \
-          -DBUILD_COMMON_ISPC_ISAS=ON \
-          -DBUILD_TENSORFLOW_OPS="${BUILD_TENSORFLOW_OPS}" \
-          -DBUILD_PYTORCH_OPS="${BUILD_PYTORCH_OPS}" \
-          -DBUILD_UNIT_TESTS=ON \
-          -DBUILD_BENCHMARKS=ON \
-          -DBUILD_EXAMPLES=ON \
-          -DCMAKE_INSTALL_PREFIX=~/open3d_install \
-          .. \
- && make VERBOSE=1 -j$(nproc) \
- && make install-pip-package -j$(nproc) \
- && make install -j$(nproc)
+# # Build all
+# RUN mkdir build \
+#  && cd build \
+#  && cmake -DBUILD_SHARED_LIBS="${SHARED}" \
+#           -DCMAKE_BUILD_TYPE=Release \
+#           -DBUILD_LIBREALSENSE=ON \
+#           -DBUILD_CUDA_MODULE=ON \
+#           -DBUILD_COMMON_CUDA_ARCHS=ON \
+#           -DBUILD_COMMON_ISPC_ISAS=ON \
+#           -DBUILD_TENSORFLOW_OPS="${BUILD_TENSORFLOW_OPS}" \
+#           -DBUILD_PYTORCH_OPS="${BUILD_PYTORCH_OPS}" \
+#           -DBUILD_UNIT_TESTS=ON \
+#           -DBUILD_BENCHMARKS=ON \
+#           -DBUILD_EXAMPLES=ON \
+#           -DCMAKE_INSTALL_PREFIX=~/open3d_install \
+#           .. \
+#  && make VERBOSE=1 -j$(nproc) \
+#  && make install-pip-package -j$(nproc) \
+#  && make install -j$(nproc)
 
-# Compress ccache folder, move to / directory
-RUN ccache -s \
- && CCACHE_DIR=$(ccache -p | grep cache_dir | grep -oE "[^ ]+$") \
- && CCACHE_DIR_NAME=$(basename ${CCACHE_DIR}) \
- && CCACHE_DIR_PARENT=$(dirname ${CCACHE_DIR}) \
- && cd ${CCACHE_DIR_PARENT} \
- && tar -czf /${CCACHE_TAR_NAME}.tar.gz ${CCACHE_DIR_NAME} \
- && ls -alh /
+# # Compress ccache folder, move to / directory
+# RUN ccache -s \
+#  && CCACHE_DIR=$(ccache -p | grep cache_dir | grep -oE "[^ ]+$") \
+#  && CCACHE_DIR_NAME=$(basename ${CCACHE_DIR}) \
+#  && CCACHE_DIR_PARENT=$(dirname ${CCACHE_DIR}) \
+#  && cd ${CCACHE_DIR_PARENT} \
+#  && tar -czf /${CCACHE_TAR_NAME}.tar.gz ${CCACHE_DIR_NAME} \
+#  && ls -alh /
 
-RUN echo "Docker build done."
+# RUN echo "Docker build done."
