@@ -159,9 +159,9 @@ cuda_build() {
         -f .github/workflows/Dockerfile.cuda .
     popd
 
-    docker run -v "${PWD}:/opt/mount" --rm "${DOCKER_TAG}" \
-        bash -c "cp /${CCACHE_TAR_NAME}.tar.gz /opt/mount && \
-                 chown $(id -u):$(id -g) /opt/mount/*"
+    # docker run -v "${PWD}:/opt/mount" --rm "${DOCKER_TAG}" \
+    #     bash -c "cp /${CCACHE_TAR_NAME}.tar.gz /opt/mount && \
+    #              chown $(id -u):$(id -g) /opt/mount/*"
 }
 
 2-bionic_export_env() {
