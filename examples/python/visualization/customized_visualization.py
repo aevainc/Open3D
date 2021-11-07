@@ -141,7 +141,7 @@ def custom_draw_geometry_with_camera_trajectory(pcd):
         glb.index = glb.index + 1
         if glb.index < len(glb.trajectory.parameters):
             ctr.convert_from_pinhole_camera_parameters(
-                glb.trajectory.parameters[glb.index])
+                glb.trajectory.parameters[glb.index], allow_arbitrary=True)
         else:
             custom_draw_geometry_with_camera_trajectory.vis.\
                     register_animation_callback(None)
