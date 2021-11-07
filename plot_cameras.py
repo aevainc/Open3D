@@ -75,7 +75,7 @@ if __name__ == "__main__":
     Ts = [param.extrinsic for param in trajectory.parameters]
 
     camera_centers_ls = get_camera_centers_lineset(Ts)
-    camera_frames = get_camera_frames(Ts, size=0.02)
+    camera_frames = get_camera_frames(Ts, size=0.05)
     pcd = o3d.io.read_point_cloud(str(pcd_path))
 
     o3d.visualization.draw_geometries([pcd, camera_centers_ls, camera_frames])
