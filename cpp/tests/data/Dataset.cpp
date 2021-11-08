@@ -26,6 +26,7 @@
 
 #include "open3d/data/Dataset.h"
 
+#include "open3d/utility/Helper.h"
 #include "open3d/utility/Logging.h"
 #include "tests/Tests.h"
 
@@ -34,7 +35,10 @@ namespace tests {
 
 TEST(Dataset, LocateDataRoot) {
     data::Dataset ds;
-    utility::LogInfo("Open3D data root: {}", ds.GetDataRoot());
+    EXPECT_TRUE(utility::StringEndsWith(ds.GetDataRoot(), "open3d_data"));
+
+    data::Dataset ds_custom("/my/custom");
+    EXPECT_EQ(ds_custom.GetDataRoot(), "/my/custom/open3d_data");
 }
 
 }  // namespace tests
