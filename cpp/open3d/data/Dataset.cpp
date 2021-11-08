@@ -28,10 +28,21 @@
 
 #include <string>
 
+#include "open3d/utility/FileSystem.h"
+
 namespace open3d {
 namespace data {
 
-std::string Dataset::LocateDataRoot() { return ""; }
+std::string Dataset::LocateDataRoot() {
+    std::string data_root = "";
+    if (const char *env_p = std::getenv("OPEN3D_DATA_ROOT")) {
+        data_root = std::string(env_p);
+    }
+    if (data_root.empty()) {
+        data_root = utility::filesystem::GetHomeDirectory() + "/open3d_data";
+    }
+    return data_root;
+}
 
 }  // namespace data
 }  // namespace open3d
