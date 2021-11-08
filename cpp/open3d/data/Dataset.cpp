@@ -29,6 +29,7 @@
 #include <string>
 
 #include "open3d/utility/FileSystem.h"
+#include "open3d/utility/Logging.h"
 
 namespace open3d {
 namespace data {
@@ -41,6 +42,7 @@ std::string Dataset::LocateDataRoot() {
     if (data_root.empty()) {
         data_root = utility::filesystem::GetHomeDirectory() + "/open3d_data";
     }
+    utility::LogInfo("Open3D data root: {}", data_root);
     return data_root;
 }
 
