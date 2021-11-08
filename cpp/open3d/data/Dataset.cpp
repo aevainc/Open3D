@@ -34,17 +34,34 @@
 namespace open3d {
 namespace data {
 
-std::string Dataset::LocateDataRoot() {
+/// A dataset class locates the data root directory in the following order:
+///
+/// (a) User-specified by `data_root` when instantiating a dataset object.
+/// (b) OPEN3D_DATA_ROOT environment variable.
+/// (c) $HOME/open3d_data.
+///
+/// LocateDataRoot() shall be called when the user-specified is not set,
+/// i.e. case (b) and (c).
+static std::string LocateDataRoot() {
     std::string data_root = "";
-    if (const char *env_p = std::getenv("OPEN3D_DATA_ROOT")) {
+    if (const char* env_p = std::getenv("OPEN3D_DATA_ROOT")) {
         data_root = std::string(env_p);
     }
     if (data_root.empty()) {
         data_root = utility::filesystem::GetHomeDirectory() + "/open3d_data";
     }
-    utility::LogInfo("Open3D data root: {}", data_root);
     return data_root;
 }
+
+Dataset::Dataset(const std::string& data_root) {
+    if (data_root.empty()) {
+        data_root_ = LocateDataRoot();
+    } else {
+        data_root_ = data_root;
+    }
+}
+
+std::string Dataset::GetDataRoot() const { return data_root_; }
 
 }  // namespace data
 }  // namespace open3d

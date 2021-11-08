@@ -32,14 +32,9 @@
 namespace open3d {
 namespace tests {
 
-// Expose private function of the parent class.
-class DatasetTester : public data::Dataset {
-public:
-    static std::string LocateDataRoot() { return Dataset::LocateDataRoot(); }
-};
-
 TEST(Dataset, LocateDataRoot) {
-    utility::LogInfo("Open3D data root: {}", DatasetTester::LocateDataRoot());
+    data::Dataset ds;
+    utility::LogInfo("Open3D data root: {}", ds.GetDataRoot());
 }
 
 }  // namespace tests

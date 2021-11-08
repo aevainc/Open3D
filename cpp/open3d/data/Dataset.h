@@ -34,9 +34,10 @@ namespace data {
 /// \class Dataset
 /// \brief Base Open3D dataset class.
 ///
-/// The Dataset classes in Open3D are designed for convenient access to example
-/// and test data. You'll need internet access to use the dataset classes. The
-/// downloaded data will be stored in the Open3D's data root directory.
+/// The Dataset classes in Open3D are designed for convenient access to
+/// "built-in" example and test data. You'll need internet access to use the
+/// dataset classes. The downloaded data will be stored in the Open3D's data
+/// root directory.
 ///
 /// - A dataset class locates the data root directory in the following order:
 ///   (a) User-specified by `data_root` when instantiating a dataset object.
@@ -53,18 +54,16 @@ namespace data {
 ///   the code and load their own data in a similar way.
 class Dataset {
 public:
-    virtual ~Dataset() = 0;
+    Dataset(const std::string& data_root = "");
+    virtual ~Dataset() {}
+
+    /// Get data root directory. The data root is set at construction time or
+    /// automatically determined.
+    std::string GetDataRoot() const;
 
 protected:
-    /// A dataset class locates the data root directory in the following order:
-    ///
-    /// (a) User-specified by `data_root` when instantiating a dataset object.
-    /// (b) OPEN3D_DATA_ROOT environment variable.
-    /// (c) $HOME/open3d_data.
-    ///
-    /// LocateDataRoot() shall be called when the user-specified is not set,
-    /// i.e. case (b) and (c).
-    static std::string LocateDataRoot();
+    /// Open3D data root.
+    std::string data_root_;
 };
 
 }  // namespace data
