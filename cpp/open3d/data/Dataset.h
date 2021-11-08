@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <string>
+
 namespace open3d {
 namespace data {
 
@@ -51,7 +53,18 @@ namespace data {
 ///   the code and load their own data in a similar way.
 class Dataset {
 public:
-    virtual ~Dataset() = default;
+    virtual ~Dataset() = 0;
+
+protected:
+    /// A dataset class locates the data root directory in the following order:
+    ///
+    /// (a) User-specified by `data_root` when instantiating a dataset object.
+    /// (b) OPEN3D_DATA_ROOT environment variable.
+    /// (c) $HOME/open3d_data.
+    ///
+    /// LocateDataRoot() shall be called when the user-specified is not set,
+    /// i.e. case (b) and (c).
+    static std::string LocateDataRoot();
 };
 
 }  // namespace data

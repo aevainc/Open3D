@@ -26,6 +26,12 @@
 
 #include "open3d/data/Dataset.h"
 
+#include <string>
+
 namespace open3d {
-namespace data {}
+namespace data {
+
+std::string Dataset::LocateDataRoot() { return ""; }
+
+}  // namespace data
 }  // namespace open3d
