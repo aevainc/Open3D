@@ -120,6 +120,20 @@ void Project(
     }
 }
 
+void ScatterMean(const t::geometry::TensorMap& src,
+                 const core::Tensor& indices,
+                 t::geometry::TensorMap& dst) {
+    const core::Device device = indices.GetDevice();
+    const core::Device::DeviceType device_type = device.GetType();
+    if (device_type == core::Device::DeviceType::CPU) {
+        ScatterMeanCPU(src, indices, dst);
+    } else if (device_type == core::Device::DeviceType::CUDA) {
+        CUDA_CALL(ScatterMeanCUDA, src, indices, dst);
+    } else {
+        utility::LogError("Unimplemented device");
+    }
+}
+
 }  // namespace pointcloud
 }  // namespace kernel
 }  // namespace geometry

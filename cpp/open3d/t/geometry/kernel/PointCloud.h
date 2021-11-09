@@ -29,6 +29,7 @@
 #include <unordered_map>
 
 #include "open3d/core/Tensor.h"
+#include "open3d/t/geometry/TensorMap.h"
 
 namespace open3d {
 namespace t {
@@ -57,6 +58,10 @@ void Project(
         float depth_scale,
         float depth_max);
 
+void ScatterMean(const t::geometry::TensorMap& src,
+                 const core::Tensor& indices,
+                 t::geometry::TensorMap& dst);
+
 void UnprojectCPU(
         const core::Tensor& depth,
         utility::optional<std::reference_wrapper<const core::Tensor>>
@@ -78,6 +83,10 @@ void ProjectCPU(
         const core::Tensor& extrinsics,
         float depth_scale,
         float depth_max);
+
+void ScatterMeanCPU(const t::geometry::TensorMap& src,
+                    const core::Tensor& indices,
+                    t::geometry::TensorMap& dst);
 
 #ifdef BUILD_CUDA_MODULE
 void UnprojectCUDA(
@@ -101,6 +110,11 @@ void ProjectCUDA(
         const core::Tensor& extrinsics,
         float depth_scale,
         float depth_max);
+
+void ScatterMeanCUDA(const t::geometry::TensorMap& src,
+                     const core::Tensor& indices,
+                     t::geometry::TensorMap& dst);
+
 #endif
 
 void EstimateCovariancesUsingHybridSearchCPU(const core::Tensor& points,

@@ -64,11 +64,13 @@ if (TARGET Open3D::3rdparty_openmp)
 else()
     open3d_add_example(TrimMeshBasedOnPointCloud)
 endif()
+open3d_add_example(TVoxelDownsample)
 open3d_add_example(ViewDistances)
 open3d_add_example(ViewPCDMatch)
 open3d_add_example(Visualizer)
 open3d_add_example(DenseSLAM)
 open3d_add_example(Voxelization)
+
 
 if (BUILD_GUI)
     open3d_add_example(Draw)

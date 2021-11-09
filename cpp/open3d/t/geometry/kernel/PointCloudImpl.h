@@ -42,6 +42,22 @@
 #include "open3d/t/geometry/kernel/PointCloud.h"
 #include "open3d/utility/Logging.h"
 
+#define DISPATCH_ATOMIC_DTYPE_TO_TEMPLATE(DTYPE, ...)    \
+    [&] {                                                \
+        if (DTYPE == open3d::core::Float32) {            \
+            using scalar_t = float;                      \
+            return __VA_ARGS__();                        \
+        } else if (DTYPE == open3d::core::Float64) {     \
+            using scalar_t = double;                     \
+            return __VA_ARGS__();                        \
+        } else if (DTYPE == open3d::core::Int32) {       \
+            using scalar_t = int32_t;                    \
+            return __VA_ARGS__();                        \
+        } else {                                         \
+            utility::LogError("Unsupported data type."); \
+        }                                                \
+    }()
+
 namespace open3d {
 namespace t {
 namespace geometry {
@@ -150,6 +166,85 @@ void UnprojectCPU
     if (have_colors) {
         colors.value().get() =
                 colors.value().get().Slice(0, 0, total_pts_count);
+    }
+}
+
+#if defined(__CUDACC__)
+void ScatterMeanCUDA
+#else
+void ScatterMeanCPU
+#endif
+        (const t::geometry::TensorMap& src,
+         const core::Tensor& indices,
+         t::geometry::TensorMap& dst) {
+
+    const core::Device device = indices.GetDevice();
+    int64_t n_full = indices.GetLength();
+    int64_t n_down = dst.at("positions").GetLength();
+
+    // Count per downsampled anchor point (index)
+    core::Tensor count =
+            core::Tensor::Zeros({dst.at("positions").GetLength()},
+                                core::Dtype::Int32, indices.GetDevice());
+    int* count_ptr = count.GetDataPtr<int>();
+    const int* indices_ptr = indices.GetDataPtr<int>();
+    core::ParallelFor(device, n_full, [=] OPEN3D_DEVICE(int64_t i) {
+#ifdef __CUDACC__
+        atomicAdd(count_ptr + indices_ptr[i], 1);
+#else  // TODO(wei): verify if it works with TBB
+        count_ptr[indices_ptr[i]] += 1;
+#endif
+    });
+    count.Save("counts.npy");
+
+    for (auto& item : src) {
+        auto& k = item.first;
+
+        // Implicitly assert that their length are n_full / n_down
+        core::Tensor v_src = item.second.Reshape({n_full, -1});
+        core::Tensor v_dst = dst.at(k).Reshape({n_down, -1});
+
+        auto v_src_shape = v_src.GetShape();
+        auto v_dst_shape = v_dst.GetShape();
+
+        int64_t v_channel = v_src_shape[1];
+        if (v_channel != v_dst_shape[1]) {
+            utility::LogError("Channels mismatch between src and dst.");
+        }
+
+        core::Dtype v_dtype = v_src.GetDtype();
+        if (v_dtype != v_dst.GetDtype()) {
+            utility::LogError("Dtypes mismatch between src and dst.");
+        }
+
+        DISPATCH_ATOMIC_DTYPE_TO_TEMPLATE(v_dtype, [&]() {
+            scalar_t* v_src_ptr = v_src.GetDataPtr<scalar_t>();
+            scalar_t* v_dst_ptr = v_dst.GetDataPtr<scalar_t>();
+
+            // Pass 1: sum
+            core::ParallelFor(device, n_full, [=] OPEN3D_DEVICE(int64_t i) {
+                int i_src_offset = i * v_channel;
+                int i_dst_offset = indices_ptr[i] * v_channel;
+
+                for (int c = 0; c < v_channel; ++c) {
+#ifdef __CUDACC__
+                    atomicAdd(v_dst_ptr + (i_dst_offset + c),
+                              v_src_ptr[i_src_offset + c]);
+#else  // TODO(wei): update to critical (?)
+                    v_dst_ptr[i_dst_offset + c] += v_src_ptr[i_src_offset + c];
+#endif
+                }
+            });
+
+            // Pass 2: mean
+            core::ParallelFor(device, n_down, [=] OPEN3D_DEVICE(int64_t i) {
+                int i_offset = i * v_channel;
+
+                for (int c = 0; c < v_channel; ++c) {
+                    v_dst_ptr[i_offset + c] /= static_cast<float>(count_ptr[i]);
+                }
+            });
+        });
     }
 }
 

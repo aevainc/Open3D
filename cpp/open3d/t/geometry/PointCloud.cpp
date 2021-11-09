@@ -226,19 +226,40 @@ PointCloud PointCloud::VoxelDownSample(
     core::Tensor buf_indices, masks;
     points_voxeli_hashset.Insert(points_voxeli, buf_indices, masks);
 
-    PointCloud pcd_down(GetPointPositions().GetDevice());
-    for (auto &kv : point_attr_) {
-        if (kv.first == "positions") {
-            pcd_down.SetPointAttr(kv.first,
-                                  points_voxeli.IndexGet({masks}).To(
-                                          GetPointPositions().GetDtype()) *
-                                          voxel_size);
-        } else {
-            pcd_down.SetPointAttr(kv.first, kv.second.IndexGet({masks}));
+    if (false) {  // nearest
+        PointCloud pcd_down(GetPointPositions().GetDevice());
+        for (auto &kv : point_attr_) {
+            if (kv.first == "positions") {
+                pcd_down.SetPointAttr(kv.first,
+                                      points_voxeli.IndexGet({masks}).To(
+                                              GetPointPositions().GetDtype()) *
+                                              voxel_size);
+            } else {
+                pcd_down.SetPointAttr(kv.first, kv.second.IndexGet({masks}));
+            }
         }
-    }
 
-    return pcd_down;
+        return pcd_down;
+    } else {  // mean
+        points_voxeli_hashset.Find(points_voxeli, buf_indices, masks);
+
+        int64_t n = points_voxeli_hashset.Size();
+        TensorMap down_point_attr("positions");
+        for (auto &kv : point_attr_) {
+            auto shape = kv.second.GetShape();
+            shape[0] = n;
+            if (kv.first == "positions") {
+                down_point_attr[kv.first] = core::Tensor::Zeros(
+                        shape, kv.second.GetDtype(), kv.second.GetDevice());
+            }
+            down_point_attr.emplace(
+                    kv.first, core::Tensor::Zeros(shape, kv.second.GetDtype(),
+                                                  kv.second.GetDevice()));
+        }
+        kernel::pointcloud::ScatterMean(/*src*/ point_attr_, buf_indices,
+                                        /*dst*/ down_point_attr);
+        return t::geometry::PointCloud(down_point_attr);
+    }
 }
 
 void PointCloud::EstimateNormals(
