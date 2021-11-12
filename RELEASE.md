@@ -9,15 +9,11 @@ We are excited to present the new Open3D version 0.14.0! In this release, you wi
 ## Installation and Build system
 
 - Open3D now works with Python 3.9. We release Open3D pre-compiled Python packages in Python 3.6, 3.7 3.8 and 3.9.
-- Open3D-ML is now recommended to be used along with [PyTorch](https://pytorch.org/) 1.8.1 and/or [Tensorflow](https://www.tensorflow.org/) 2.5.0.
-- Open3D 0.14 is the last version that supports conda installation. Starting from version 0.15, users will need to install Open3D with `pip install open3d`. A recommended practice is to create a conda virtual environment and `pip install` the package.
+- Open3D 0.14 is the last version that supports conda installation. Starting from version 0.15, users will need to install Open3D with `pip install open3d`. We recommend installing Open3D with `pip` inside a conda virtual environment.
 - Git submodules are no longer required in Open3D. You can now clone Open3D with `git clone https://github.com/isl-org/Open3D.git` without the `--recursive` flag.
+- Open3D-ML is now recommended to be used along with [PyTorch](https://github.com/isl-org/Open3D-ML/blob/master/requirements-tensorflow.txt) 1.8.1 and/or [Tensorflow](https://github.com/isl-org/Open3D-ML/blob/master/requirements-tensorflow.txt) 2.5.0. Checkout [Open3D-ML](https://github.com/isl-org/Open3D-ML/) for more information.
 
-## New Features
-
-### Visualization
-
-#### Tensorboard
+## Tensorboard Integration
 
 Now you can use Open3D within [Tensorboard](https://www.tensorflow.org/tensorboard) for interactive 3D visualization! At a glance, you can:
 
@@ -27,7 +23,7 @@ Now you can use Open3D within [Tensorboard](https://www.tensorflow.org/tensorboa
 
 For more details on how to use TensorBoard with Open3D, check out this [tutorial](link). **[TODO:@Sameer is there a doc link, or is this gif self-included?]**![img](https://lh4.googleusercontent.com/UN0_Yzb-9PintyBA5o2HmZUAUpHbR0Bp5jEVnfGOQuoQYIffgMJmzke0gMujUr8kQkLaPL9C6SHeH2YdovCTZl886bG6Kh-vuwYMWvkanTuYTgGp9XUbXeH4NN400ywUKg3sQKZo)
 
-#### GUI visualizer
+## GUI Visualizer
 
 Further enhancements have been added to the GUI viewer. Now you can:
 
@@ -36,9 +32,7 @@ Further enhancements have been added to the GUI viewer. Now you can:
 - Use all the functionality in Tensorboard!
   ![img](https://lh3.googleusercontent.com/MRYlCK2LFxZaZ7GlgKfSvZg47K_Hj94Xhad3jTzomAf4z4vDBixbYBy2_QABhu3XiwMCpriShG30gdBZp7jTs0gwa9TOunigLM_FDiQ6WAJfeHFz5va4d9gHv7UnoSJdRFUTZ1QW)
 
-
-
-### Core
+## Core
 
 - Open3D now supports [Intel ISPC compiler](https://ispc.github.io/). It automatically generates vectorized code to accelerate tensor operations. 
 - Linear Algebra performance have been optimized for small matrices, especially on 4x4 transformations.
@@ -51,19 +45,19 @@ Further enhancements have been added to the GUI viewer. Now you can:
   mesh.triangle['indices'] = [[0,1,2]]
   ```
 
-### I/O
+## I/O
 
 - We now support I/O from/to numpy compatible `.npz` `.npy` formats for Open3D tensors and tensor maps. It is now easier to convert between Open3D geometry classes and numpy properties.
 - We have improved I/O performance for tensor-based point cloud and triangle-mesh file-formats, including `.ply`, `.pcd`, `.pts`. Geometry loading time is hence improved for the stand-alone visualizer app.
 
-### Geometry
+## Geometry
 
 - We introduce a new class `RaycastingScene` with basic ray intersections functions and distance transform for meshes, utilizing the award winning [Intel Embree library](https://www.embree.org/). 
   ![](http://www.open3d.org/docs/latest/_images/distance_field_animation.gif)
 - Normal estimation for tensor `PointCloud` is supported with the tensor-compatible nearest neighbor search modules.
 - Customizable tensor based `TriangleMesh` and `VoxelBlockGrid` are implemented that allows user-defined properties.
 
-### Pipelines
+## Pipelines
 
 - We have enhanced point cloud registration (ICP) with a tensor interface:
   - Float64 (double) precision point cloud is supported for a higher numerical stability
@@ -73,11 +67,10 @@ Further enhancements have been added to the GUI viewer. Now you can:
 - We also provide with an initial tensor-based reconstruction system in Python, including
   - Customizable volumetric RGB-D integration;
   - Dense RGB-D SLAM with a GUI;
-  - Upgraded [tutorial](http://www.open3d.org/docs/latest/tutorial/t_reconstruction_system/index.html ).
+  - Upgraded [tutorial](http://www.open3d.org/docs/latest/tutorial/t_reconstruction_system/index.html ).  
 
-  
 
-### Open3D-ML
+## Open3D-ML
 
 The Open3D-ML library welcomes more state-of-the-art models and operators that are ready to use for advanced 3D perception, especially semantic segmentation, including
 
@@ -88,6 +81,6 @@ The Open3D-ML library welcomes more state-of-the-art models and operators that a
 - Update requirements for PyTorch and Tensorflow **[TODO: @Sanskar put instructions here]**
 
 
-### Acknowledgment
+## Acknowledgment
 
 We thank all contributors for this release. **[TODO: @yixing gather all community contributors' github id]**.
