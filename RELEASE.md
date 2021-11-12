@@ -34,7 +34,6 @@ Further enhancements have been added to the GUI viewer. Now you can:
 - Directly visualize tensor-based geometry classes including `PointCloud`, `TriangleMesh`, and `LineSet`.
 - Use physically based rendering (PBR) materials that deliver appealing appearance.
 - Use all the functionality in Tensorboard!
-
   ![img](https://lh3.googleusercontent.com/MRYlCK2LFxZaZ7GlgKfSvZg47K_Hj94Xhad3jTzomAf4z4vDBixbYBy2_QABhu3XiwMCpriShG30gdBZp7jTs0gwa9TOunigLM_FDiQ6WAJfeHFz5va4d9gHv7UnoSJdRFUTZ1QW)
 
 
