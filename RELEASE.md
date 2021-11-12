@@ -38,7 +38,7 @@ For more details on how to use TensorBoard with Open3D, check out this [tutorial
 
 Further enhancements have been added to the GUI viewer. Now you can:
 
-- Direct visualize tensor-based geometry classes including `PointCloud`, `TriangleMesh`, and `LineSet`.
+- Directly visualize tensor-based geometry classes including `PointCloud`, `TriangleMesh`, and `LineSet`.
 
 - Use physically based rendering (PBR) materials that deliver appealing appearance.
 
@@ -54,7 +54,7 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 - Linear Algebra performance have been optimized for small matrices, especially on 4x4 transformations.
 
-- A major upgrade of Parallel HashMap is done. Now you can choose from multi-valued HashMap and HashSet depending your value types. A comprehensive [tutorial](http://www.open3d.org/docs/release/tutorial/core/hashmap.html) is also available.
+- A major upgrade of Parallel `HashMap` is done. Now you can choose from multi-valued `HashMap` and `HashSet` depending your value types. A comprehensive [tutorial](http://www.open3d.org/docs/release/tutorial/core/hashmap.html) is also available.
 
 - Semantics for tensor and tensor-based geometry have been improved, especially on device selection.
 
@@ -71,22 +71,24 @@ Further enhancements have been added to the GUI viewer. Now you can:
 ### I/O
 
 - We now support I/O from/to numpy compatible `.npz` `.npy` formats for Open3D tensors and tensor maps. It is now easier to convert between Open3D geometry classes and numpy properties.
-- We improved I/O performance for tensor-based point cloud and triangle-mesh file-formats, including `.ply`, `.pcd`, `.pts`. Geometry loading time is hence improved for the stand-alone visualizer app.
+- We have improved I/O performance for tensor-based point cloud and triangle-mesh file-formats, including `.ply`, `.pcd`, `.pts`. Geometry loading time is hence improved for the stand-alone visualizer app.
 
 
 
 ### Geometry
 
 - We introduce a new class `RaycastingScene` with basic ray intersections functions and distance transform for meshes, utilizing the award winning [Intel Embree library](https://www.embree.org/). 
+  
   ![](http://www.open3d.org/docs/latest/_images/distance_field_animation.gif)
 - Normal estimation for tensor `PointCloud` is supported with the tensor-compatible nearest neighbor search modules.
+
 - Customizable tensor based `TriangleMesh` and `VoxelBlockGrid` are implemented that allows user-defined properties.
 
 
 
 ### Pipelines
 
-- We enhanced point cloud registration (ICP) with a tensor interface:
+- We have enhanced point cloud registration (ICP) with a tensor interface:
 
   - Float64 (double) precision point cloud is supported for a higher numerical stability
   - Robust Kernels, including Huber, Tuckey, and GM losses are supported for robust registration.
