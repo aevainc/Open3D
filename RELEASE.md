@@ -9,10 +9,11 @@ We are excited to present the new Open3D version 0.14.0! In this release, you wi
 
 ## Installation and Build system
 
-- `Open3D` now works with Python 3.9. 
-- `Open3D-ML` is now recommended to be used along with [PyTorch](https://pytorch.org/) 1.8.1 and/or [Tensorflow](https://www.tensorflow.org/) 2.5.0.
+- Open3D now works with Python 3.9. We release Open3D pre-compiled Python packages in Python 3.6, 3.7 3.8 and 3.9.
 
-- `Open3D` 0.14 is the last version that supports conda installation. Starting from version 0.15, users will need to install Open3D with `pip install open3d`. A recommended practice is to create a conda virtual environment and `pip install` the package.
+- Open3D-ML is now recommended to be used along with [PyTorch](https://pytorch.org/) 1.8.1 and/or [Tensorflow](https://www.tensorflow.org/) 2.5.0.
+
+- Open3D 0.14 is the last version that supports conda installation. Starting from version 0.15, users will need to install Open3D with `pip install open3d`. A recommended practice is to create a conda virtual environment and `pip install` the package.
 
 - The CMake build system of Open3D is refactored. Git submodules are no longer required in Open3D, i.e., the `--recursive` flag is no longer used; `git clone https://github.com/isl-org/Open3D.git` should suffice.
 
