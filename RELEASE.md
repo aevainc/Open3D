@@ -2,7 +2,8 @@
 
 ## Summary
 
-We are excited to present the new Open3D version 0.14.0! In this release, you will find Tensorboard visualization support along with an upgraded GUI, accelerated Tensor and IO performance, new state-of-the-art 3D learning models in Open3D-ML, and many more. 
+We are excited to present the new Open3D version 0.14.0! In this release, you will find TensorBoard visualization, upgraded GUI, accelerated Tensor and IO performance, new state-of-the-art 3D learning models in Open3D-ML, and many more. 
+
 **[TODO: any other highlights that we want to put here?]**
 
 
