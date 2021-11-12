@@ -78,7 +78,6 @@ The Open3D-ML library welcomes more state-of-the-art models and operators that a
 - Highly Efficient Point-Voxel Convolution for Semantic Segmentation **[TODO: @Sanskar put image and reference here]**
 - RaggedTensor integration that enables batch SparseConvolution and SparseConvolutionTranspose along with PyTorch.
 - Batched voxelization for fast point-voxel conversions.
-- Update requirements for PyTorch and Tensorflow **[TODO: @Sanskar put instructions here]**
 
 
 ## Acknowledgment
