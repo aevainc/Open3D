@@ -11,7 +11,7 @@ We are excited to present the new Open3D version 0.14.0! In this release, you wi
 - Open3D now works with Python 3.9. We release Open3D pre-compiled Python packages in Python 3.6, 3.7 3.8 and 3.9.
 - Open3D 0.14 is the last version that supports conda installation. Starting from version 0.15, users will need to install Open3D with `pip install open3d`. We recommend installing Open3D with `pip` inside a conda virtual environment.
 - Git submodules are no longer required in Open3D. You can now clone Open3D with `git clone https://github.com/isl-org/Open3D.git` without the `--recursive` flag.
-- Open3D-ML is now recommended to be used along with [PyTorch](https://github.com/isl-org/Open3D-ML/blob/master/requirements-tensorflow.txt) 1.8.1 and/or [Tensorflow](https://github.com/isl-org/Open3D-ML/blob/master/requirements-tensorflow.txt) 2.5.0. Checkout [Open3D-ML](https://github.com/isl-org/Open3D-ML/) for more information.
+- Open3D-ML is now recommended to be used along with [PyTorch](https://github.com/isl-org/Open3D-ML/blob/master/requirements-tensorflow.txt) 1.8.2 and/or [Tensorflow](https://github.com/isl-org/Open3D-ML/blob/master/requirements-tensorflow.txt) 2.5.2. Checkout [Open3D-ML](https://github.com/isl-org/Open3D-ML/) for more information.
 
 ## Tensorboard Integration
 
