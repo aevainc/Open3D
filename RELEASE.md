@@ -16,9 +16,7 @@ We are excited to present the new Open3D version 0.14.0! In this release, you wi
 
 - Open3D 0.14 is the last version that supports conda installation. Starting from version 0.15, users will need to install Open3D with `pip install open3d`. A recommended practice is to create a conda virtual environment and `pip install` the package.
 
-- The CMake build system of Open3D is refactored. Git submodules are no longer required in Open3D, i.e., the `--recursive` flag is no longer used; `git clone https://github.com/isl-org/Open3D.git` should suffice.
-
-
+- Git submodules are no longer required in Open3D. You can now clone Open3D with `git clone https://github.com/isl-org/Open3D.git` without the `--recursive` flag.
 
 ## New Features
 
