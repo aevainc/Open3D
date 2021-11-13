@@ -36,20 +36,25 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 - The Open3D Tensor class received a major performance boost with the help of [Intel ISPC compiler](https://ispc.github.io/) and optimization for the contiguous code path.
   ![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/0.13_vs_0.14.png)
-  (See `python/benchmarks/core` for the benchmark scripts. The chart above shows geometric mean of all supported data types. The time is measured with Intel i9-10980XE CPU.)
-- Linear Algebra performance have been optimized for small matrices, especially on 4x4 transformations.
+  (See `python/benchmarks/core` for the benchmark scripts. For each operation, the geometric mean of run times with different data types is reported. The time is measured with Intel i9-10980XE CPU.)
 - A major upgrade of Parallel `HashMap` is done. Now you can choose from multi-valued `HashMap` and `HashSet` depending your value types. A comprehensive [tutorial](http://www.open3d.org/docs/release/tutorial/core/hashmap.html) is also available.
+- Linear Algebra performance have been optimized for small matrices, especially on 4x4 transformations.
 - Semantics for tensor and tensor-based geometry have been improved, especially on device selection.
-- Functions expecting a Tensor now accept numpy arrays and Python lists.
+- Functions expecting a Tensor now accept Numpy arrays and Python lists. For example:
   ```python
+  import open3d as o3d
+  import numpy as np
+
   mesh = o3d.t.geometry.TriangleMesh()
-  mesh.vertex['positions'] = np.array([[0,0,0], [0,0,1], [0,1,1]], dtype=np.float32)
-  mesh.triangle['indices'] = [[0,1,2]]
+  mesh.vertex['positions'] = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0]], dtype=np.float32)
+  mesh.vertex['colors'] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
+  mesh.triangle['indices'] = [[0, 1, 2]]
+  o3d.visualization.draw(mesh)
   ```
 
 ## I/O
 
-- We now support I/O from/to numpy compatible `.npz` `.npy` formats for Open3D tensors and tensor maps. It is now easier to convert between Open3D geometry classes and numpy properties.
+- We now support I/O from/to Numpy compatible `.npz` `.npy` formats for Open3D tensors and tensor maps. It is now easier to convert between Open3D geometry classes and Numpy properties.
 - We have improved I/O performance for tensor-based point cloud and triangle-mesh file-formats, including `.ply`, `.pcd`, `.pts`. Geometry loading time is hence improved for the stand-alone visualizer app.
 
 ## Geometry
