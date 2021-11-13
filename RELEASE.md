@@ -2,7 +2,7 @@
 
 ## Summary
 
-We are excited to present the new Open3D version 0.14.0! In this release, you will find TensorBoard visualization, upgraded GUI, accelerated Tensor and IO performance, new state-of-the-art 3D learning models in Open3D-ML, and many more. 
+We are excited to present the new Open3D version 0.14.0! In this release, you will find TensorBoard visualization, upgraded GUI, accelerated Tensor and IO performance, new state-of-the-art 3D learning models in Open3D-ML, and many more.
 
 **[TODO: any other highlights that we want to put here?]**
 
@@ -34,7 +34,8 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 ## Core
 
-- Open3D now supports [Intel ISPC compiler](https://ispc.github.io/). It automatically generates vectorized code to accelerate tensor operations. 
+- Open3D now supports [Intel ISPC compiler](https://ispc.github.io/). It automatically generates vectorized code to accelerate tensor operations.
+  ![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/0.13_vs_0.14.png)
 - Linear Algebra performance have been optimized for small matrices, especially on 4x4 transformations.
 - A major upgrade of Parallel `HashMap` is done. Now you can choose from multi-valued `HashMap` and `HashSet` depending your value types. A comprehensive [tutorial](http://www.open3d.org/docs/release/tutorial/core/hashmap.html) is also available.
 - Semantics for tensor and tensor-based geometry have been improved, especially on device selection.
@@ -52,7 +53,7 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 ## Geometry
 
-- We introduce a new class `RaycastingScene` with basic ray intersections functions and distance transform for meshes, utilizing the award winning [Intel Embree library](https://www.embree.org/). 
+- We introduce a new class `RaycastingScene` with basic ray intersections functions and distance transform for meshes, utilizing the award winning [Intel Embree library](https://www.embree.org/).
   ![](http://www.open3d.org/docs/latest/_images/distance_field_animation.gif)
 - Normal estimation for tensor `PointCloud` is supported with the tensor-compatible nearest neighbor search modules.
 - Customizable tensor based `TriangleMesh` and `VoxelBlockGrid` are implemented that allows user-defined properties.
@@ -67,7 +68,7 @@ Further enhancements have been added to the GUI viewer. Now you can:
 - We also provide with an initial tensor-based reconstruction system in Python, including
   - Customizable volumetric RGB-D integration;
   - Dense RGB-D SLAM with a GUI;
-  - Upgraded [tutorial](http://www.open3d.org/docs/latest/tutorial/t_reconstruction_system/index.html ).  
+  - Upgraded [tutorial](http://www.open3d.org/docs/latest/tutorial/t_reconstruction_system/index.html ).
 
 
 ## Open3D-ML
