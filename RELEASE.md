@@ -2,7 +2,7 @@
 
 ## Summary
 
-We are excited to present the new Open3D version 0.14.0! In this release, you will find TensorBoard visualization, upgraded GUI, accelerated Tensor and IO performance, new state-of-the-art 3D learning models in Open3D-ML, and many more.
+We are excited to present the new Open3D version 0.14.0! In this release, you will find TensorBoard visualization, upgraded GUI, accelerated Tensor and I/O performance, new state-of-the-art 3D learning models in Open3D-ML, and many more.
 
 **[TODO: any other highlights that we want to put here?]**
 
@@ -34,8 +34,9 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 ## Core
 
-- Open3D now supports [Intel ISPC compiler](https://ispc.github.io/). It automatically generates vectorized code to accelerate tensor operations.
+- The Open3D Tensor class received a major performance boost with the help of [Intel ISPC compiler](https://ispc.github.io/) and optimization for the contiguous code path.
   ![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/0.13_vs_0.14.png)
+  (See `python/benchmarks/core` for the benchmark scripts. The chart above shows geometric mean of all supported data types. The time is measured with Intel i9-10980XE CPU.)
 - Linear Algebra performance have been optimized for small matrices, especially on 4x4 transformations.
 - A major upgrade of Parallel `HashMap` is done. Now you can choose from multi-valued `HashMap` and `HashSet` depending your value types. A comprehensive [tutorial](http://www.open3d.org/docs/release/tutorial/core/hashmap.html) is also available.
 - Semantics for tensor and tensor-based geometry have been improved, especially on device selection.
