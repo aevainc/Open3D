@@ -84,8 +84,10 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 The Open3D-ML library welcomes more state-of-the-art models and operators that are ready to use for advanced 3D perception, especially semantic segmentation, including
 
-- New state-of-the-art [Point Transformer](https://arxiv.org/abs/2012.09164) for Semantic Segmentation. 
-- Highly Efficient [Point-Voxel Convolution](https://arxiv.org/abs/1907.03739) for Semantic Segmentation. **[Pending: @Sanskar put images here]**
+- New state-of-the-art [Point Transformer](https://arxiv.org/abs/2012.09164) for Semantic Segmentation.
+![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/PointTransformer_S3DIS.png)
+- Highly Efficient [Point-Voxel Convolution](https://arxiv.org/abs/1907.03739) for Semantic Segmentation.
+![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/PVCNN_S3DIS.png)
 - RaggedTensor integration that enables batch `SparseConvolution` and `SparseConvolutionTranspose` along with PyTorch.
 - Batched voxelization for fast point-voxel conversions.
 
