@@ -2,7 +2,7 @@
 
 ## Summary
 
-We are excited to present the new Open3D version 0.14.0! In this release, you will find TensorBoard visualization, upgraded GUI, accelerated Tensor and I/O performance, new state-of-the-art 3D learning models in Open3D-ML, and many more.
+We are excited to present the new Open3D version 0.14! In this release, you will find TensorBoard visualization, upgraded GUI, accelerated Tensor and I/O performance, new state-of-the-art 3D learning models in Open3D-ML, and many more.
 
 **[TODO: any other highlights that we want to put here?]**
 
@@ -19,9 +19,12 @@ Now you can use Open3D within [Tensorboard](https://www.tensorflow.org/tensorboa
 
 - *Sequentially* save and visualize geometry along with their properties. This enables interactive visualization and debugging of training 3D models.
 - Visualize 3D semantic segmentation and object detection with input data, ground truth, and predictions. In addition, any *customized* properties for a `PointCloud`, from scalar to vector, can be easily visualized.
-- *Synchronize* time steps and viewpoints during different runs. This helps debugging and monitoring the effect of parameter tuning.
+- *Synchronize* time steps and viewpoints during different runs. This helps debug and monitor the effect of parameter tuning.
 
-For more details on how to use TensorBoard with Open3D, check out this [tutorial](link). **[TODO:@Sameer is there a doc link, or is this gif self-included?]**![img](https://lh4.googleusercontent.com/UN0_Yzb-9PintyBA5o2HmZUAUpHbR0Bp5jEVnfGOQuoQYIffgMJmzke0gMujUr8kQkLaPL9C6SHeH2YdovCTZl886bG6Kh-vuwYMWvkanTuYTgGp9XUbXeH4NN400ywUKg3sQKZo)
+For more details on how to use TensorBoard with Open3D, check out this [tutorial](link). 
+**[Pending: link to doc from #4285 once merged]**![img](https://lh4.googleusercontent.com/UN0_Yzb-9PintyBA5o2HmZUAUpHbR0Bp5jEVnfGOQuoQYIffgMJmzke0gMujUr8kQkLaPL9C6SHeH2YdovCTZl886bG6Kh-vuwYMWvkanTuYTgGp9XUbXeH4NN400ywUKg3sQKZo)
+
+
 
 ## GUI Visualizer
 
@@ -34,9 +37,9 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 ## Core
 
-- The Open3D Tensor class received a major performance boost with the help of [Intel ISPC compiler](https://ispc.github.io/) and optimization for the contiguous code path.
+- The Open3D `Tensor` class received a major performance boost with the help of [Intel ISPC compiler](https://ispc.github.io/) and optimization for the contiguous code path.
   ![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/0.13_vs_0.14.png)
-  (See `python/benchmarks/core` for the benchmark scripts. For each operation, the geometric mean of run times with different data types is reported. The time is measured with Intel i9-10980XE CPU.)
+  (See `python/benchmarks/core` for the benchmark scripts. For each operation, the geometric mean of run times with different data types is reported. The time is measured with an Intel i9-10980XE CPU.)
 - A major upgrade of Parallel `HashMap` is done. Now you can choose from multi-valued `HashMap` and `HashSet` depending your value types. A comprehensive [tutorial](http://www.open3d.org/docs/release/tutorial/core/hashmap.html) is also available.
 - Linear Algebra performance have been optimized for small matrices, especially on 4x4 transformations.
 - Semantics for tensor and tensor-based geometry have been improved, especially on device selection.
@@ -44,7 +47,7 @@ Further enhancements have been added to the GUI viewer. Now you can:
   ```python
   import open3d as o3d
   import numpy as np
-
+  
   mesh = o3d.t.geometry.TriangleMesh()
   mesh.vertex['positions'] = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0]], dtype=np.float32)
   mesh.vertex['colors'] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
@@ -62,15 +65,15 @@ Further enhancements have been added to the GUI viewer. Now you can:
 - We introduce a new class `RaycastingScene` with basic ray intersections functions and distance transform for meshes, utilizing the award winning [Intel Embree library](https://www.embree.org/).
   ![](http://www.open3d.org/docs/latest/_images/distance_field_animation.gif)
 - Normal estimation for tensor `PointCloud` is supported with the tensor-compatible nearest neighbor search modules.
-- Customizable tensor based `TriangleMesh` and `VoxelBlockGrid` are implemented that allows user-defined properties.
+- Customizable tensor based `TriangleMesh` and `VoxelBlockGrid` are implemented that allow user-defined properties.
 
 ## Pipelines
 
 - We have enhanced point cloud registration (ICP) with a tensor interface:
   - Float64 (double) precision point cloud is supported for a higher numerical stability
-  - Robust Kernels, including Huber, Tuckey, and GM losses are supported for robust registration.
-  - Colored-ICP is now supported in the unified tensor geometry API.
-  - **[TODO: link once the tutorial is finished]**
+  - Robust Kernels, including Huber, Tukey, and GM losses are supported for robust registration.
+  - Colored-ICP is now supported in the unified tensor-based API.
+  - Upgraded [tutorial](http://www.open3d.org/docs/latest/tutorial/t_pipelines/index.html).
 - We also provide with an initial tensor-based reconstruction system in Python, including
   - Customizable volumetric RGB-D integration;
   - Dense RGB-D SLAM with a GUI;
@@ -81,12 +84,29 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 The Open3D-ML library welcomes more state-of-the-art models and operators that are ready to use for advanced 3D perception, especially semantic segmentation, including
 
-- New state of the art [Point Transformer](https://arxiv.org/abs/2012.09164) for Semantic Segmentation. **[TODO: @Sanskar put image here]**
-- Highly Efficient Point-Voxel Convolution for Semantic Segmentation **[TODO: @Sanskar put image and reference here]**
-- RaggedTensor integration that enables batch SparseConvolution and SparseConvolutionTranspose along with PyTorch.
+- New state-of-the-art [Point Transformer](https://arxiv.org/abs/2012.09164) for Semantic Segmentation. 
+- Highly Efficient [Point-Voxel Convolution](https://arxiv.org/abs/1907.03739) for Semantic Segmentation. **[Pending: @Sanskar put images here]**
+- RaggedTensor integration that enables batch `SparseConvolution` and `SparseConvolutionTranspose` along with PyTorch.
 - Batched voxelization for fast point-voxel conversions.
 
 
 ## Acknowledgment
 
-We thank all contributors for this release. **[TODO: @yixing gather all community contributors' github id]**.
+We thank all the community contributors for this release (please let us know if we omitted your name)!
+
+- [Chunibyo](https://github.com/chunibyo-wly)
+- [Christian Clauss](https://github.com/cclauss)
+
+- [Parker Lusk](https://github.com/plusk01)
+- [Carl Mueller-Roemer](https://github.com/SoftwareApe)
+- [stanleyshly](https://github.com/stanleyshly)
+- [Marco Venturelli](https://github.com/marcov868)
+- [Nobuo Tsukamoto](https://github.com/NobuoTsukamoto)
+- [muskie](https://github.com/muskie82)
+- [li6in9muyou](https://github.com/li6in9muyou)
+- [George Sakkis](https://github.com/gsakkis)
+- [Marco Salathe](https://github.com/cosama)
+- [Ignacio Vizzo](https://github.com/nachovizzo)
+- [Leonardo Mariga](https://github.com/leomariga)
+- [Michael Beale](https://github.com/michaelbeale-IL)
+- [applesauce49](https://github.com/applesauce49)
