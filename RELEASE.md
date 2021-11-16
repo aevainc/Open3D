@@ -96,31 +96,31 @@ The Open3D-ML library welcomes more state-of-the-art models and operators that a
 
 We thank all the community contributors for this release (please let us know if we omitted your name)!
 
-@benjaminum        
-@cclauss           
-@chrockey          
-@chunibyo-wly      
-@cosama            
-@errissa           
-@gsakkis           
-@junha-l           
-@leomariga         
-@li6in9muyou       
-@marcov868         
-@michaelbeale-IL   
-@muskie82          
-@nachovizzo        
-@NobuoTsukamoto    
-@plusk01           
-@reyanshsolis      
-@sanskar107        
-@ShubhamAgarwal12  
-@SoftwareApe       
-@ssheorey          
-@stanleyshly       
-@stotko            
-@theNded           
-@yxlao             
+@benjaminum
+@cclauss
+@chrockey
+@chunibyo-wly
+@cosama
+@errissa
+@gsakkis
+@junha-l
+@leomariga
+@li6in9muyou
+@marcov868
+@michaelbeale-IL
+@muskie82
+@nachovizzo
+@NobuoTsukamoto
+@plusk01
+@reyanshsolis
+@sanskar107
+@ShubhamAgarwal12
+@SoftwareApe
+@ssheorey
+@stanleyshly
+@stotko
+@theNded
+@yxlao
 
 - [Chunibyo](https://github.com/chunibyo-wly)
 - [Christian Clauss](https://github.com/cclauss)
