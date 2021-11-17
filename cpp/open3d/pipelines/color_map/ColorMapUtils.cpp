@@ -222,6 +222,14 @@ void SetProxyIntensityForVertex(
                         images_gray[j], warping_fields.value()[j],
                         mesh.vertices_[i], camera_trajectory.parameters_[j],
                         utility::nullopt, image_boundary_margin);
+                if (i == 21719 && iter == 2) {
+                    utility::LogInfo("iter: {}", iter);
+                    utility::LogInfo("i: {}", i);
+                    utility::LogInfo("j: {}", j);
+                    utility::LogInfo("gray: {:.20f}", gray);
+                    utility::LogInfo("valid: {}", valid);
+                }
+
             } else {
                 std::tie(valid, gray) = QueryImageIntensity<float>(
                         images_gray[j], utility::nullopt, mesh.vertices_[i],
@@ -232,13 +240,6 @@ void SetProxyIntensityForVertex(
             if (valid) {
                 sum += 1.0;
                 proxy_intensity[i] += gray;
-            }
-            if (i == 21719 && iter == 2) {
-                utility::LogInfo("iter: {}", iter);
-                utility::LogInfo("i: {}", i);
-                utility::LogInfo("j: {}", j);
-                utility::LogInfo("gray: {:.20f}", gray);
-                utility::LogInfo("valid: {}", valid);
             }
         }
         if (sum > 0) {
