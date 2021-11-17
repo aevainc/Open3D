@@ -61,17 +61,17 @@ if __name__ == "__main__":
     option = o3d.pipelines.color_map.ColorMapOptimizationOption()
 
     # Rigid Optimization
-    option.maximum_iteration = 1
+    option.maximum_iteration = 10
     option.non_rigid_camera_coordinate = False
     with o3d.utility.VerbosityContextManager(
             o3d.utility.VerbosityLevel.Debug) as cm:
         o3d.pipelines.color_map.color_map_optimization(mesh, rgbd_images,
                                                        camera, option)
 
-    # # Non-rigid Optimization
-    # option.maximum_iteration = 100
-    # option.non_rigid_camera_coordinate = True
-    # with o3d.utility.VerbosityContextManager(
-    #         o3d.utility.VerbosityLevel.Debug) as cm:
-    #     o3d.pipelines.color_map.color_map_optimization(mesh, rgbd_images,
-    #                                                    camera, option)
+    # Non-rigid Optimization
+    option.maximum_iteration = 10
+    option.non_rigid_camera_coordinate = True
+    with o3d.utility.VerbosityContextManager(
+            o3d.utility.VerbosityLevel.Debug) as cm:
+        o3d.pipelines.color_map.color_map_optimization(mesh, rgbd_images,
+                                                       camera, option)
