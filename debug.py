@@ -62,7 +62,7 @@ def load_fountain_dataset():
     return mesh, rgbd_images, camera_trajectory
 
 
-def test_color_map():
+if __name__ == "__main__":
     # Load dataset
     mesh, rgbd_images, camera_trajectory = load_fountain_dataset()
 
@@ -72,15 +72,15 @@ def test_color_map():
             o3d.utility.VerbosityLevel.Debug) as cm:
         mesh_optimized = o3d.pipelines.color_map.run_rigid_optimizer(
             mesh, rgbd_images, camera_trajectory,
-            o3d.pipelines.color_map.RigidOptimizerOption(maximum_iteration=100))
+            o3d.pipelines.color_map.RigidOptimizerOption(maximum_iteration=1))
     print(f"Rigid optimization takes {time.time() - start}")
 
-    # Non-rigid Optimization
-    start = time.time()
-    with o3d.utility.VerbosityContextManager(
-            o3d.utility.VerbosityLevel.Debug) as cm:
-        mesh_optimized = o3d.pipelines.color_map.run_non_rigid_optimizer(
-            mesh, rgbd_images, camera_trajectory,
-            o3d.pipelines.color_map.NonRigidOptimizerOption(
-                maximum_iteration=100))
-    print(f"Non-rigid optimization takes {time.time() - start}")
+    # # Non-rigid Optimization
+    # start = time.time()
+    # with o3d.utility.VerbosityContextManager(
+    #         o3d.utility.VerbosityLevel.Debug) as cm:
+    #     mesh_optimized = o3d.pipelines.color_map.run_non_rigid_optimizer(
+    #         mesh, rgbd_images, camera_trajectory,
+    #         o3d.pipelines.color_map.NonRigidOptimizerOption(
+    #             maximum_iteration=100))
+    # print(f"Non-rigid optimization takes {time.time() - start}")
