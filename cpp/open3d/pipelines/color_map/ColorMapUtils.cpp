@@ -71,8 +71,8 @@ static std::tuple<bool, T> QueryImageIntensity(
             v = static_cast<float>(uv_shift(1));
         }
         if (img.TestImageBoundary(u, v, image_boundary_margin)) {
-            int u_round = int(u);
-            int v_round = int(v);
+            int u_round = int(round(u));
+            int v_round = int(round(v));
             if (channel.has_value()) {
                 return std::make_tuple(
                         true,
@@ -156,7 +156,8 @@ CreateVertexAndImageVisibility(
             float u, v, d;
             std::tie(u, v, d) = Project3DPointAndGetUVDepth(
                     X, camera_trajectory.parameters_[camera_id]);
-            int u_d = int(round(u)), v_d = int(round(v));
+            int u_d = int(round(u));
+            int v_d = int(round(v));
             // Skip if vertex in image boundary.
             if (d < 0.0 ||
                 !images_depth[camera_id].TestImageBoundary(u_d, v_d)) {
