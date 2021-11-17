@@ -60,18 +60,24 @@ if __name__ == "__main__":
 
     option = o3d.pipelines.color_map.ColorMapOptimizationOption()
 
+    print(camera.parameters[0].extrinsic)
+
     # Rigid Optimization
-    option.maximum_iteration = 10
+    option.maximum_iteration = 5
     option.non_rigid_camera_coordinate = False
     with o3d.utility.VerbosityContextManager(
             o3d.utility.VerbosityLevel.Debug) as cm:
         o3d.pipelines.color_map.color_map_optimization(mesh, rgbd_images,
                                                        camera, option)
 
+    print(camera.parameters[0].extrinsic)
+
     # Non-rigid Optimization
-    option.maximum_iteration = 10
+    option.maximum_iteration = 5
     option.non_rigid_camera_coordinate = True
     with o3d.utility.VerbosityContextManager(
             o3d.utility.VerbosityLevel.Debug) as cm:
         o3d.pipelines.color_map.color_map_optimization(mesh, rgbd_images,
                                                        camera, option)
+
+    print(camera.parameters[0].extrinsic)
