@@ -305,7 +305,6 @@ RunNonRigidOptimizer(const geometry::TriangleMesh& mesh,
         proxy_intensity_sum += proxy_intensity[i];
         // std::cout << proxy_intensity[i] << " ";
     }
-    std::cout << std::endl;
     utility::LogDebug("[ColorMapOptimization] Proxy Intensity Sum: {:.20f}",
                       proxy_intensity_sum);
     for (int itr = 0; itr < option.maximum_iteration_; itr++) {
@@ -385,6 +384,14 @@ RunNonRigidOptimizer(const geometry::TriangleMesh& mesh,
                                    opt_camera_trajectory,
                                    visibility_vertex_to_image, proxy_intensity,
                                    option.image_boundary_margin_);
+
+        double proxy_intensity_sum = 0;
+        for (size_t i = 0; i < proxy_intensity.size(); ++i) {
+            proxy_intensity_sum += proxy_intensity[i];
+            // std::cout << proxy_intensity[i] << " ";
+        }
+        utility::LogDebug("[ColorMapOptimization] Proxy Intensity Sum: {:.20f}",
+                          proxy_intensity_sum);
 
         if (!option.debug_output_dir_.empty()) {
             // Save opt_mesh.
