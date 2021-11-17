@@ -219,10 +219,11 @@ void SetProxyIntensityForVertex(
             float gray;
             bool valid = false;
             if (warping_fields.has_value()) {
+                bool verbose = (i == 21719 && iter == 2);
                 std::tie(valid, gray) = QueryImageIntensity<float>(
                         images_gray[j], warping_fields.value()[j],
                         mesh.vertices_[i], camera_trajectory.parameters_[j],
-                        utility::nullopt, image_boundary_margin);
+                        utility::nullopt, image_boundary_margin, verbose);
                 if (i == 21719 && iter == 2) {
                     utility::LogInfo("iter: {}", iter);
                     utility::LogInfo("i: {}", i);
