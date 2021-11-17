@@ -59,7 +59,8 @@ static std::tuple<bool, T> QueryImageIntensity(
         const Eigen::Vector3d& V,
         const camera::PinholeCameraParameters& camera_parameter,
         utility::optional<int> channel,
-        int image_boundary_margin) {
+        int image_boundary_margin,
+        bool verbose = false) {
     float u, v, depth;
     std::tie(u, v, depth) = Project3DPointAndGetUVDepth(V, camera_parameter);
     // TODO: check why we use the u, ve before warpping for TestImageBoundary.
