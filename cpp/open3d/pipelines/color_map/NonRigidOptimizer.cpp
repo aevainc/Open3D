@@ -306,7 +306,7 @@ RunNonRigidOptimizer(const geometry::TriangleMesh& mesh,
         // std::cout << proxy_intensity[i] << " ";
     }
     std::cout << std::endl;
-    utility::LogDebug("[ColorMapOptimization] Proxy Intensity Sum: {:.10f}",
+    utility::LogDebug("[ColorMapOptimization] Proxy Intensity Sum: {:.20f}",
                       proxy_intensity_sum);
     for (int itr = 0; itr < option.maximum_iteration_; itr++) {
         utility::LogDebug("[Iteration {:04d}] ", itr + 1);
@@ -379,7 +379,7 @@ RunNonRigidOptimizer(const geometry::TriangleMesh& mesh,
                 residual_reg += rr_reg;
             }
         }
-        utility::LogDebug("Residual error : {:.10f}, reg : {:.10f}", residual,
+        utility::LogDebug("Residual error : {:.20f}, reg : {:.20f}", residual,
                           residual_reg);
         SetProxyIntensityForVertex(opt_mesh, images_gray, warping_fields,
                                    opt_camera_trajectory,
