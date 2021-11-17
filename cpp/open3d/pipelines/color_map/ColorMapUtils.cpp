@@ -209,8 +209,6 @@ void SetProxyIntensityForVertex(
     auto n_vertex = mesh.vertices_.size();
     proxy_intensity.resize(n_vertex);
 
-#pragma omp parallel for schedule(static) \
-        num_threads(utility::EstimateMaxThreads())
     for (int i = 0; i < int(n_vertex); i++) {
         proxy_intensity[i] = 0.0;
         float sum = 0.0;
@@ -238,6 +236,10 @@ void SetProxyIntensityForVertex(
         }
         if (sum > 0) {
             proxy_intensity[i] /= sum;
+        }
+        if (i % 10000 == 0) {
+            utility::LogInfo("proxy_intensity[{}]: {:.20f}", i,
+                             proxy_intensity[i]);
         }
     }
 }
