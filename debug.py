@@ -65,6 +65,7 @@ def load_fountain_dataset():
 if __name__ == "__main__":
     # Load dataset
     mesh, rgbd_images, camera_trajectory = load_fountain_dataset()
+    print(camera_trajectory.parameters[0].extrinsic)
 
     # Rigid Optimization
     start = time.time()
@@ -74,6 +75,7 @@ if __name__ == "__main__":
             mesh, rgbd_images, camera_trajectory,
             o3d.pipelines.color_map.RigidOptimizerOption(maximum_iteration=10))
     print(f"Rigid optimization takes {time.time() - start}")
+    print(camera_trajectory.parameters[0].extrinsic)
 
     # Non-rigid Optimization
     start = time.time()
@@ -84,3 +86,4 @@ if __name__ == "__main__":
             o3d.pipelines.color_map.NonRigidOptimizerOption(
                 maximum_iteration=10))
     print(f"Non-rigid optimization takes {time.time() - start}")
+    print(camera_trajectory.parameters[0].extrinsic)
