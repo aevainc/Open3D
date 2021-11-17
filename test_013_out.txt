@@ -4,12 +4,12 @@ benchmark: 3.4.1 (defaults: timer=time.perf_counter disable_gc=False min_rounds=
 rootdir: /home/yixing/repo/Open3D
 plugins: anyio-3.3.4, benchmark-3.4.1
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/normal_map.npy already exists, skipped.
-[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/raycast_vtx_004.npy already exists, skipped.
+[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/vertex_map.npy already exists, skipped.
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/bunnyData.pts already exists, skipped.
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/point_cloud_sample1.pts already exists, skipped.
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/point_cloud_sample2.pts already exists, skipped.
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/cube.obj already exists, skipped.
-[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/vertex_map.npy already exists, skipped.
+[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/raycast_vtx_004.npy already exists, skipped.
 Testing with Open3D version 0.13.0
 collected 1 item
 
@@ -133,162 +133,12 @@ test_013.py [Open3D DEBUG] [ColorMapOptimization] CreateUtilImagesFromRGBD
 [Open3D DEBUG] Residual error : 18683.535543 (avg : 0.003971)
 [Open3D DEBUG] [Iteration 0025] 
 [Open3D DEBUG] Residual error : 18555.310304 (avg : 0.003944)
-[Open3D DEBUG] [Iteration 0026] 
-[Open3D DEBUG] Residual error : 18428.480050 (avg : 0.003917)
-[Open3D DEBUG] [Iteration 0027] 
-[Open3D DEBUG] Residual error : 18302.292648 (avg : 0.003890)
-[Open3D DEBUG] [Iteration 0028] 
-[Open3D DEBUG] Residual error : 18176.003003 (avg : 0.003863)
-[Open3D DEBUG] [Iteration 0029] 
-[Open3D DEBUG] Residual error : 18050.662666 (avg : 0.003837)
-[Open3D DEBUG] [Iteration 0030] 
-[Open3D DEBUG] Residual error : 17928.724788 (avg : 0.003811)
-[Open3D DEBUG] [Iteration 0031] 
-[Open3D DEBUG] Residual error : 17806.341459 (avg : 0.003785)
-[Open3D DEBUG] [Iteration 0032] 
-[Open3D DEBUG] Residual error : 17684.321191 (avg : 0.003759)
-[Open3D DEBUG] [Iteration 0033] 
-[Open3D DEBUG] Residual error : 17563.525345 (avg : 0.003733)
-[Open3D DEBUG] [Iteration 0034] 
-[Open3D DEBUG] Residual error : 17442.620612 (avg : 0.003707)
-[Open3D DEBUG] [Iteration 0035] 
-[Open3D DEBUG] Residual error : 17322.229361 (avg : 0.003682)
-[Open3D DEBUG] [Iteration 0036] 
-[Open3D DEBUG] Residual error : 17203.051716 (avg : 0.003657)
-[Open3D DEBUG] [Iteration 0037] 
-[Open3D DEBUG] Residual error : 17083.485888 (avg : 0.003631)
-[Open3D DEBUG] [Iteration 0038] 
-[Open3D DEBUG] Residual error : 16963.400151 (avg : 0.003606)
-[Open3D DEBUG] [Iteration 0039] 
-[Open3D DEBUG] Residual error : 16843.721927 (avg : 0.003580)
-[Open3D DEBUG] [Iteration 0040] 
-[Open3D DEBUG] Residual error : 16724.689459 (avg : 0.003555)
-[Open3D DEBUG] [Iteration 0041] 
-[Open3D DEBUG] Residual error : 16604.259230 (avg : 0.003529)
-[Open3D DEBUG] [Iteration 0042] 
-[Open3D DEBUG] Residual error : 16482.077998 (avg : 0.003503)
-[Open3D DEBUG] [Iteration 0043] 
-[Open3D DEBUG] Residual error : 16360.160882 (avg : 0.003477)
-[Open3D DEBUG] [Iteration 0044] 
-[Open3D DEBUG] Residual error : 16238.261874 (avg : 0.003451)
-[Open3D DEBUG] [Iteration 0045] 
-[Open3D DEBUG] Residual error : 16116.022172 (avg : 0.003425)
-[Open3D DEBUG] [Iteration 0046] 
-[Open3D DEBUG] Residual error : 15993.560906 (avg : 0.003399)
-[Open3D DEBUG] [Iteration 0047] 
-[Open3D DEBUG] Residual error : 15870.841273 (avg : 0.003373)
-[Open3D DEBUG] [Iteration 0048] 
-[Open3D DEBUG] Residual error : 15747.508383 (avg : 0.003347)
-[Open3D DEBUG] [Iteration 0049] 
-[Open3D DEBUG] Residual error : 15624.043721 (avg : 0.003321)
-[Open3D DEBUG] [Iteration 0050] 
-[Open3D DEBUG] Residual error : 15498.809047 (avg : 0.003294)
-[Open3D DEBUG] [Iteration 0051] 
-[Open3D DEBUG] Residual error : 15372.425292 (avg : 0.003267)
-[Open3D DEBUG] [Iteration 0052] 
-[Open3D DEBUG] Residual error : 15245.945698 (avg : 0.003241)
-[Open3D DEBUG] [Iteration 0053] 
-[Open3D DEBUG] Residual error : 15120.460506 (avg : 0.003214)
-[Open3D DEBUG] [Iteration 0054] 
-[Open3D DEBUG] Residual error : 14996.276825 (avg : 0.003187)
-[Open3D DEBUG] [Iteration 0055] 
-[Open3D DEBUG] Residual error : 14870.819924 (avg : 0.003161)
-[Open3D DEBUG] [Iteration 0056] 
-[Open3D DEBUG] Residual error : 14745.745950 (avg : 0.003134)
-[Open3D DEBUG] [Iteration 0057] 
-[Open3D DEBUG] Residual error : 14617.409084 (avg : 0.003107)
-[Open3D DEBUG] [Iteration 0058] 
-[Open3D DEBUG] Residual error : 14489.343290 (avg : 0.003080)
-[Open3D DEBUG] [Iteration 0059] 
-[Open3D DEBUG] Residual error : 14361.090899 (avg : 0.003052)
-[Open3D DEBUG] [Iteration 0060] 
-[Open3D DEBUG] Residual error : 14235.470107 (avg : 0.003026)
-[Open3D DEBUG] [Iteration 0061] 
-[Open3D DEBUG] Residual error : 14110.088918 (avg : 0.002999)
-[Open3D DEBUG] [Iteration 0062] 
-[Open3D DEBUG] Residual error : 13983.411903 (avg : 0.002972)
-[Open3D DEBUG] [Iteration 0063] 
-[Open3D DEBUG] Residual error : 13859.823273 (avg : 0.002946)
-[Open3D DEBUG] [Iteration 0064] 
-[Open3D DEBUG] Residual error : 13735.825969 (avg : 0.002920)
-[Open3D DEBUG] [Iteration 0065] 
-[Open3D DEBUG] Residual error : 13611.919735 (avg : 0.002893)
-[Open3D DEBUG] [Iteration 0066] 
-[Open3D DEBUG] Residual error : 13492.939772 (avg : 0.002868)
-[Open3D DEBUG] [Iteration 0067] 
-[Open3D DEBUG] Residual error : 13375.699357 (avg : 0.002843)
-[Open3D DEBUG] [Iteration 0068] 
-[Open3D DEBUG] Residual error : 13260.441747 (avg : 0.002819)
-[Open3D DEBUG] [Iteration 0069] 
-[Open3D DEBUG] Residual error : 13149.756262 (avg : 0.002795)
-[Open3D DEBUG] [Iteration 0070] 
-[Open3D DEBUG] Residual error : 13042.937041 (avg : 0.002772)
-[Open3D DEBUG] [Iteration 0071] 
-[Open3D DEBUG] Residual error : 12938.885393 (avg : 0.002750)
-[Open3D DEBUG] [Iteration 0072] 
-[Open3D DEBUG] Residual error : 12837.531895 (avg : 0.002729)
-[Open3D DEBUG] [Iteration 0073] 
-[Open3D DEBUG] Residual error : 12739.910178 (avg : 0.002708)
-[Open3D DEBUG] [Iteration 0074] 
-[Open3D DEBUG] Residual error : 12646.880074 (avg : 0.002688)
-[Open3D DEBUG] [Iteration 0075] 
-[Open3D DEBUG] Residual error : 12559.326413 (avg : 0.002669)
-[Open3D DEBUG] [Iteration 0076] 
-[Open3D DEBUG] Residual error : 12477.512131 (avg : 0.002652)
-[Open3D DEBUG] [Iteration 0077] 
-[Open3D DEBUG] Residual error : 12400.306834 (avg : 0.002636)
-[Open3D DEBUG] [Iteration 0078] 
-[Open3D DEBUG] Residual error : 12328.079947 (avg : 0.002620)
-[Open3D DEBUG] [Iteration 0079] 
-[Open3D DEBUG] Residual error : 12262.156732 (avg : 0.002606)
-[Open3D DEBUG] [Iteration 0080] 
-[Open3D DEBUG] Residual error : 12197.378295 (avg : 0.002593)
-[Open3D DEBUG] [Iteration 0081] 
-[Open3D DEBUG] Residual error : 12139.665316 (avg : 0.002580)
-[Open3D DEBUG] [Iteration 0082] 
-[Open3D DEBUG] Residual error : 12084.585445 (avg : 0.002569)
-[Open3D DEBUG] [Iteration 0083] 
-[Open3D DEBUG] Residual error : 12036.436616 (avg : 0.002558)
-[Open3D DEBUG] [Iteration 0084] 
-[Open3D DEBUG] Residual error : 11992.554331 (avg : 0.002549)
-[Open3D DEBUG] [Iteration 0085] 
-[Open3D DEBUG] Residual error : 11951.178495 (avg : 0.002540)
-[Open3D DEBUG] [Iteration 0086] 
-[Open3D DEBUG] Residual error : 11912.576748 (avg : 0.002532)
-[Open3D DEBUG] [Iteration 0087] 
-[Open3D DEBUG] Residual error : 11881.828894 (avg : 0.002525)
-[Open3D DEBUG] [Iteration 0088] 
-[Open3D DEBUG] Residual error : 11850.267835 (avg : 0.002519)
-[Open3D DEBUG] [Iteration 0089] 
-[Open3D DEBUG] Residual error : 11823.207592 (avg : 0.002513)
-[Open3D DEBUG] [Iteration 0090] 
-[Open3D DEBUG] Residual error : 11799.682955 (avg : 0.002508)
-[Open3D DEBUG] [Iteration 0091] 
-[Open3D DEBUG] Residual error : 11779.739890 (avg : 0.002504)
-[Open3D DEBUG] [Iteration 0092] 
-[Open3D DEBUG] Residual error : 11760.136434 (avg : 0.002500)
-[Open3D DEBUG] [Iteration 0093] 
-[Open3D DEBUG] Residual error : 11744.660979 (avg : 0.002496)
-[Open3D DEBUG] [Iteration 0094] 
-[Open3D DEBUG] Residual error : 11729.589894 (avg : 0.002493)
-[Open3D DEBUG] [Iteration 0095] 
-[Open3D DEBUG] Residual error : 11713.728185 (avg : 0.002490)
-[Open3D DEBUG] [Iteration 0096] 
-[Open3D DEBUG] Residual error : 11701.653424 (avg : 0.002487)
-[Open3D DEBUG] [Iteration 0097] 
-[Open3D DEBUG] Residual error : 11688.472633 (avg : 0.002484)
-[Open3D DEBUG] [Iteration 0098] 
-[Open3D DEBUG] Residual error : 11675.702870 (avg : 0.002482)
-[Open3D DEBUG] [Iteration 0099] 
-[Open3D DEBUG] Residual error : 11661.661477 (avg : 0.002479)
-[Open3D DEBUG] [Iteration 0100] 
-[Open3D DEBUG] Residual error : 11650.320407 (avg : 0.002476)
 [Open3D DEBUG] [ColorMapOptimization] Set Mesh Color
 [Open3D DEBUG] [RemoveDuplicatedVertices] 0 vertices have been removed.
 [Open3D DEBUG] [RemoveDuplicatedTriangles] 0 triangles have been removed.
-[Open3D DEBUG] [RemoveUnreferencedVertices] 728 vertices have been removed.
+[Open3D DEBUG] [RemoveUnreferencedVertices] 731 vertices have been removed.
 [Open3D DEBUG] [RemoveDegenerateTriangles] 0 triangles have been removed.
-[Open3D DEBUG] Triangle mesh sampled from 536872 vertices and 1033745 triangles to 504099 vertices and 976179 triangles.
+[Open3D DEBUG] Triangle mesh sampled from 536872 vertices and 1033745 triangles to 504150 vertices and 976283 triangles.
 F
 
 =================================== FAILURES ===================================
@@ -304,10 +154,10 @@ ________________________________ test_color_map ________________________________
                 o3d.utility.VerbosityLevel.Debug) as cm:
             mesh, camera_trajectory = o3d.pipelines.color_map.run_rigid_optimizer(
                 mesh, rgbd_images, camera_trajectory,
->               o3d.pipelines.color_map.RigidOptimizerOption(maximum_iteration=100))
+>               o3d.pipelines.color_map.RigidOptimizerOption(maximum_iteration=25))
 E           TypeError: 'open3d.cuda.pybind.geometry.TriangleMesh' object is not iterable
 
 test_013.py:75: TypeError
 =========================== short test summary info ============================
 FAILED test_013.py::test_color_map - TypeError: 'open3d.cuda.pybind.geometry....
-========================= 1 failed in 65.87s (0:01:05) =========================
+============================== 1 failed in 20.51s ==============================
