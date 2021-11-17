@@ -61,19 +61,32 @@ static std::tuple<bool, T> QueryImageIntensity(
         utility::optional<int> channel,
         int image_boundary_margin,
         bool verbose = false) {
-    float u, v, depth;
+    // double -> float -> int can be different from double -> int.
+    // We use double here for u, v such that it is consistent with 0.12 release
+    // numerically.
+    double u, v, depth;
     std::tie(u, v, depth) = Project3DPointAndGetUVDepth(V, camera_parameter);
+    if (verbose) {
+        utility::LogInfo("u: {:.20f}, v: {:.20f}, depth: {:.20f}", u, v, depth);
+    }
+
     // TODO: check why we use the u, ve before warpping for TestImageBoundary.
     if (img.TestImageBoundary(u, v, image_boundary_margin)) {
         if (optional_warping_field.has_value()) {
             Eigen::Vector2d uv_shift =
                     optional_warping_field.value().GetImageWarpingField(u, v);
-            u = static_cast<float>(uv_shift(0));
-            v = static_cast<float>(uv_shift(1));
+            u = uv_shift(0);
+            v = uv_shift(1);
+            if (verbose) {
+                utility::LogInfo("[shifted] u: {:.20f}, v: {:.20f}", u, v);
+            }
         }
         if (img.TestImageBoundary(u, v, image_boundary_margin)) {
             int u_round = int(round(u));
             int v_round = int(round(v));
+            if (verbose) {
+                utility::LogInfo("u_round: {}, v_round: {}", u_round, v_round);
+            }
             if (channel.has_value()) {
                 return std::make_tuple(
                         true,
