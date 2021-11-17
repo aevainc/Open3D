@@ -73,7 +73,7 @@ if __name__ == "__main__":
     # print(camera.parameters[0].extrinsic)
 
     # Non-rigid Optimization
-    option.maximum_iteration = 5
+    option.maximum_iteration = 1
     option.non_rigid_camera_coordinate = True
     with o3d.utility.VerbosityContextManager(
             o3d.utility.VerbosityLevel.Debug) as cm:
