@@ -206,7 +206,7 @@ void SetProxyIntensityForVertex(
     double proxy_intensity_sum = 0;
     for (size_t i = 0; i < proxy_intensity.size(); ++i) {
         proxy_intensity_sum += proxy_intensity[i];
-        if (i >= 21718 || i <= 21719) {
+        if (i >= 21718 && i <= 21719) {
             utility::LogInfo("proxy_intensity sum to [{}]: {:.20f}", i,
                              proxy_intensity_sum);
         }
