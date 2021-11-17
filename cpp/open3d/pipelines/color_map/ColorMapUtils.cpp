@@ -233,6 +233,13 @@ void SetProxyIntensityForVertex(
                 sum += 1.0;
                 proxy_intensity[i] += gray;
             }
+            if (i == 21719 && iter == 2) {
+                utility::LogInfo("iter: {}", iter);
+                utility::LogInfo("i: {}", i);
+                utility::LogInfo("j: {}", j);
+                utility::LogInfo("gray: {:.20f}", gray);
+                utility::LogInfo("valid: {}", valid);
+            }
         }
         if (sum > 0) {
             proxy_intensity[i] /= sum;
