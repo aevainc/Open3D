@@ -67,15 +67,15 @@ if __name__ == "__main__":
     mesh, rgbd_images, camera_trajectory = load_fountain_dataset()
     print(camera_trajectory.parameters[0].extrinsic)
 
-    # Rigid Optimization
-    start = time.time()
-    with o3d.utility.VerbosityContextManager(
-            o3d.utility.VerbosityLevel.Debug) as cm:
-        mesh, camera_trajectory = o3d.pipelines.color_map.run_rigid_optimizer(
-            mesh, rgbd_images, camera_trajectory,
-            o3d.pipelines.color_map.RigidOptimizerOption(maximum_iteration=5))
-    print(f"Rigid optimization takes {time.time() - start}")
-    print(camera_trajectory.parameters[0].extrinsic)
+    # # Rigid Optimization
+    # start = time.time()
+    # with o3d.utility.VerbosityContextManager(
+    #         o3d.utility.VerbosityLevel.Debug) as cm:
+    #     mesh, camera_trajectory = o3d.pipelines.color_map.run_rigid_optimizer(
+    #         mesh, rgbd_images, camera_trajectory,
+    #         o3d.pipelines.color_map.RigidOptimizerOption(maximum_iteration=5))
+    # print(f"Rigid optimization takes {time.time() - start}")
+    # print(camera_trajectory.parameters[0].extrinsic)
 
     # Non-rigid Optimization
     start = time.time()
