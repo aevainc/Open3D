@@ -69,8 +69,22 @@ def test_color_map():
     vertex_mean = np.mean(np.asarray(mesh.vertex_colors), axis=0)
     extrinsic_mean = np.array([c.extrinsic for c in camera.parameters
                               ]).mean(axis=0)
-    print(f"vertex_mean: \n{vertex_mean}")
-    print(f"extrinsic_mean: \n{extrinsic_mean}")
+    np.testing.assert_allclose(vertex_mean,
+                               np.array([
+                                   0.40322907,
+                                   0.37276872,
+                                   0.54375919,
+                               ]),
+                               rtol=1e-06)
+    np.testing.assert_allclose(
+        extrinsic_mean,
+        np.array([
+            [0.77003829, -0.10813595, 0.06467495, -0.56212008],
+            [0.19100387, 0.86225833, -0.14664845, -0.81434887],
+            [-0.05557141, 0.16504166, 0.82036438, 0.27867426],
+            [0., 0., 0., 1.],
+        ]),
+        rtol=1e-06)
 
     # Rigid Optimization
     option.maximum_iteration = 10
@@ -82,8 +96,22 @@ def test_color_map():
     vertex_mean = np.mean(np.asarray(mesh.vertex_colors), axis=0)
     extrinsic_mean = np.array([c.extrinsic for c in camera.parameters
                               ]).mean(axis=0)
-    print(f"vertex_mean: \n{vertex_mean}")
-    print(f"extrinsic_mean: \n{extrinsic_mean}")
+    np.testing.assert_allclose(vertex_mean,
+                               np.array([
+                                   0.40294861,
+                                   0.37250299,
+                                   0.54338467,
+                               ]),
+                               rtol=1e-06)
+    np.testing.assert_allclose(
+        extrinsic_mean,
+        np.array([
+            [0.7699379, -0.10768808, 0.06543989, -0.56320637],
+            [0.19119488, 0.8619734, -0.14717332, -0.8137762],
+            [-0.05608781, 0.16546427, 0.81995183, 0.27725451],
+            [0., 0., 0., 1.],
+        ]),
+        rtol=1e-06)
 
     # Non-rigid Optimization
     option.maximum_iteration = 10
@@ -95,5 +123,19 @@ def test_color_map():
     vertex_mean = np.mean(np.asarray(mesh.vertex_colors), axis=0)
     extrinsic_mean = np.array([c.extrinsic for c in camera.parameters
                               ]).mean(axis=0)
-    print(f"vertex_mean: \n{vertex_mean}")
-    print(f"extrinsic_mean: \n{extrinsic_mean}")
+    np.testing.assert_allclose(vertex_mean,
+                               np.array([
+                                   0.4028204,
+                                   0.37237733,
+                                   0.54322786,
+                               ]),
+                               rtol=1e-06)
+    np.testing.assert_allclose(
+        extrinsic_mean,
+        np.array([
+            [0.76967962, -0.10824218, 0.0674025, -0.56381652],
+            [0.19129921, 0.86245618, -0.14634957, -0.81500831],
+            [-0.05765316, 0.16483281, 0.82054672, 0.27526268],
+            [0., 0., 0., 1.],
+        ]),
+        rtol=1e-06)
