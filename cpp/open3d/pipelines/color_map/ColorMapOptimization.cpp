@@ -67,7 +67,7 @@ static void OptimizeImageCoorNonrigid(
         // std::cout << proxy_intensity[i] << " ";
     }
     std::cout << std::endl;
-    utility::LogDebug("[ColorMapOptimization] Proxy Intensity Sum: {:.10f}",
+    utility::LogDebug("[ColorMapOptimization] Proxy Intensity Sum: {:.20f}",
                       proxy_intensity_sum);
     for (int itr = 0; itr < option.maximum_iteration_; itr++) {
         utility::LogDebug("[Iteration {:04d}] ", itr + 1);
@@ -139,7 +139,7 @@ static void OptimizeImageCoorNonrigid(
                 residual_reg += rr_reg;
             }
         }
-        utility::LogDebug("Residual error : {:.10f}, reg : {:.10f}", residual,
+        utility::LogDebug("Residual error : {:.20f}, reg : {:.20f}", residual,
                           residual_reg);
         SetProxyIntensityForVertex(mesh, images_gray, warping_fields, camera,
                                    visibility_vertex_to_image, proxy_intensity,
@@ -207,7 +207,7 @@ static void OptimizeImageCoorRigid(
                 total_num_ += int(visibility_image_to_vertex[c].size());
             }
         }
-        utility::LogDebug("Residual error : {:.10f} (avg : {:.10f})", residual,
+        utility::LogDebug("Residual error : {:.20f} (avg : {:.20f})", residual,
                           residual / total_num_);
         SetProxyIntensityForVertex(mesh, images_gray, camera,
                                    visibility_vertex_to_image, proxy_intensity,
