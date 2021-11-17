@@ -10,6 +10,7 @@ plugins: anyio-3.3.4, benchmark-3.4.1
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/point_cloud_sample2.pts already exists, skipped.
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/cube.obj already exists, skipped.
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/raycast_vtx_004.npy already exists, skipped.
+Testing with Open3D version 0.13.0
 collected 1 item
 
 test_013.py [Open3D DEBUG] [ColorMapOptimization] CreateUtilImagesFromRGBD
@@ -288,7 +289,7 @@ test_013.py [Open3D DEBUG] [ColorMapOptimization] CreateUtilImagesFromRGBD
 [Open3D DEBUG] [RemoveUnreferencedVertices] 728 vertices have been removed.
 [Open3D DEBUG] [RemoveDegenerateTriangles] 0 triangles have been removed.
 [Open3D DEBUG] Triangle mesh sampled from 536872 vertices and 1033745 triangles to 504099 vertices and 976179 triangles.
-Rigid optimization takes 16.51624298095703
+Rigid optimization takes 15.767946243286133
 [Open3D DEBUG] [ColorMapOptimization] CreateUtilImagesFromRGBD
 [Open3D DEBUG] [ColorMapOptimization] CreateDepthBoundaryMasks
 [Open3D DEBUG] [MakeDepthMasks] geometry::Image 0/33
@@ -565,7 +566,7 @@ Rigid optimization takes 16.51624298095703
 [Open3D DEBUG] [RemoveUnreferencedVertices] 729 vertices have been removed.
 [Open3D DEBUG] [RemoveDegenerateTriangles] 0 triangles have been removed.
 [Open3D DEBUG] Triangle mesh sampled from 536872 vertices and 1033745 triangles to 504103 vertices and 976187 triangles.
-Non-rigid optimization takes 38.9262433052063
+Non-rigid optimization takes 35.45593452453613
 .
 
-============================== 1 passed in 57.14s ==============================
+============================== 1 passed in 52.96s ==============================
