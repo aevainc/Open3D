@@ -379,7 +379,7 @@ RunNonRigidOptimizer(const geometry::TriangleMesh& mesh,
                 residual_reg += rr_reg;
             }
         }
-        utility::LogDebug("Residual error : {:.6f}, reg : {:.6f}", residual,
+        utility::LogDebug("Residual error : {:10f}, reg : {:10f}", residual,
                           residual_reg);
         SetProxyIntensityForVertex(opt_mesh, images_gray, warping_fields,
                                    opt_camera_trajectory,
