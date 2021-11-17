@@ -155,12 +155,22 @@ std::tuple<bool, T> QueryImageIntensity(
         bool verbose /*= false*/) {
     float u, v, depth;
     std::tie(u, v, depth) = Project3DPointAndGetUVDepth(V, camera, camid);
+    if (verbose) {
+        utility::LogInfo("u: {:.20f}, v: {:.20f}, depth: {:.20f}", u, v, depth);
+    }
     if (img.TestImageBoundary(u, v, image_boundary_margin)) {
         Eigen::Vector2d uv_shift = field.GetImageWarpingField(u, v);
+        if (verbose) {
+            utility::LogInfo("[shifted] u: {:.20f}, v: {:.20f}", uv_shift(0),
+                             uv_shift(1));
+        }
         if (img.TestImageBoundary(uv_shift(0), uv_shift(1),
                                   image_boundary_margin)) {
             int u_shift = int(round(uv_shift(0)));
             int v_shift = int(round(uv_shift(1)));
+            if (verbose) {
+                utility::LogInfo("u_round: {}, v_round: {}", u_shift, v_shift);
+            }
             if (ch == -1) {
                 return std::make_tuple(true,
                                        *img.PointerAt<T>(u_shift, v_shift));
