@@ -84,6 +84,6 @@ if __name__ == "__main__":
         mesh, camera_trajectory = o3d.pipelines.color_map.run_non_rigid_optimizer(
             mesh, rgbd_images, camera_trajectory,
             o3d.pipelines.color_map.NonRigidOptimizerOption(
-                maximum_iteration=5))
+                maximum_iteration=1))
     print(f"Non-rigid optimization takes {time.time() - start}")
     print(camera_trajectory.parameters[0].extrinsic)
