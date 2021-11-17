@@ -60,6 +60,15 @@ static void OptimizeImageCoorNonrigid(
     SetProxyIntensityForVertex(mesh, images_gray, warping_fields, camera,
                                visibility_vertex_to_image, proxy_intensity,
                                option.image_boundary_margin_);
+
+    double proxy_intensity_sum = 0;
+    for (size_t i = 0; i < proxy_intensity.size(); ++i) {
+        proxy_intensity_sum += proxy_intensity[i];
+        // std::cout << proxy_intensity[i] << " ";
+    }
+    std::cout << std::endl;
+    utility::LogDebug("[ColorMapOptimization] Proxy Intensity Sum: {:.10f}",
+                      proxy_intensity_sum);
     for (int itr = 0; itr < option.maximum_iteration_; itr++) {
         utility::LogDebug("[Iteration {:04d}] ", itr + 1);
         double residual = 0.0;
