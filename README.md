@@ -1,3 +1,20 @@
+# 0.12 vs 0.13 debug
+
+```bash
+pip install pytest
+git checkout yixing/issue-4266
+
+pip install -U open3d==0.12.0
+pytest test_012.py -s > test_012_out.txt
+
+pip install -U open3d==0.13.0
+pytest test_013.py -s > test_013_out.txt
+
+wget https://storage.googleapis.com/open3d-releases-master/python-wheels/open3d-0.13.0+dd076ba-cp36-cp36m-manylinux_2_27_x86_64.whl
+pip install open3d-0.13.0+dd076ba-cp36-cp36m-manylinux_2_27_x86_64.whl
+pytest test_013.py -s > test_master_dd076ba.txt
+```
+
 <p align="center">
 <img src="https://raw.githubusercontent.com/isl-org/Open3D/master/docs/_static/open3d_logo_horizontal.png" width="320" />
 </p>

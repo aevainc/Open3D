@@ -1,0 +1,571 @@
+============================= test session starts ==============================
+platform linux -- Python 3.6.13, pytest-6.2.5, py-1.11.0, pluggy-1.0.0
+benchmark: 3.4.1 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /home/yixing/repo/Open3D
+plugins: anyio-3.3.4, benchmark-3.4.1
+[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/normal_map.npy already exists, skipped.
+[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/raycast_vtx_004.npy already exists, skipped.
+[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/bunnyData.pts already exists, skipped.
+[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/point_cloud_sample1.pts already exists, skipped.
+[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/point_cloud_sample2.pts already exists, skipped.
+[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/cube.obj already exists, skipped.
+[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/vertex_map.npy already exists, skipped.
+collected 1 item
+
+test_013.py [Open3D DEBUG] [ColorMapOptimization] CreateUtilImagesFromRGBD
+[Open3D DEBUG] [ColorMapOptimization] CreateDepthBoundaryMasks
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 0/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 1/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 2/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 3/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 4/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 5/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 6/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 7/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 8/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 9/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 10/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 11/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 12/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 13/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 14/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 15/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 16/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 17/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 18/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 19/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 20/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 21/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 22/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 23/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 24/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 25/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 26/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 27/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 28/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 29/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 30/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 31/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 32/33
+[Open3D DEBUG] [ColorMapOptimization] CreateVertexAndImageVisibility
+[Open3D DEBUG] [cam 0]: 238774/536872 (44.47503%) vertices are visible
+[Open3D DEBUG] [cam 1]: 264228/536872 (49.21620%) vertices are visible
+[Open3D DEBUG] [cam 2]: 32910/536872 (6.12995%) vertices are visible
+[Open3D DEBUG] [cam 3]: 207076/536872 (38.57083%) vertices are visible
+[Open3D DEBUG] [cam 4]: 208953/536872 (38.92045%) vertices are visible
+[Open3D DEBUG] [cam 5]: 121789/536872 (22.68492%) vertices are visible
+[Open3D DEBUG] [cam 6]: 139892/536872 (26.05686%) vertices are visible
+[Open3D DEBUG] [cam 7]: 94112/536872 (17.52969%) vertices are visible
+[Open3D DEBUG] [cam 8]: 136523/536872 (25.42934%) vertices are visible
+[Open3D DEBUG] [cam 9]: 88157/536872 (16.42049%) vertices are visible
+[Open3D DEBUG] [cam 10]: 119823/536872 (22.31873%) vertices are visible
+[Open3D DEBUG] [cam 11]: 183991/536872 (34.27092%) vertices are visible
+[Open3D DEBUG] [cam 12]: 238849/536872 (44.48900%) vertices are visible
+[Open3D DEBUG] [cam 13]: 222246/536872 (41.39646%) vertices are visible
+[Open3D DEBUG] [cam 14]: 220761/536872 (41.11986%) vertices are visible
+[Open3D DEBUG] [cam 15]: 257217/536872 (47.91030%) vertices are visible
+[Open3D DEBUG] [cam 16]: 123058/536872 (22.92129%) vertices are visible
+[Open3D DEBUG] [cam 17]: 155657/536872 (28.99332%) vertices are visible
+[Open3D DEBUG] [cam 18]: 109616/536872 (20.41753%) vertices are visible
+[Open3D DEBUG] [cam 19]: 132968/536872 (24.76717%) vertices are visible
+[Open3D DEBUG] [cam 20]: 125766/536872 (23.42570%) vertices are visible
+[Open3D DEBUG] [cam 21]: 118639/536872 (22.09819%) vertices are visible
+[Open3D DEBUG] [cam 22]: 112538/536872 (20.96179%) vertices are visible
+[Open3D DEBUG] [cam 23]: 76603/536872 (14.26839%) vertices are visible
+[Open3D DEBUG] [cam 24]: 74932/536872 (13.95714%) vertices are visible
+[Open3D DEBUG] [cam 25]: 79252/536872 (14.76181%) vertices are visible
+[Open3D DEBUG] [cam 26]: 107727/536872 (20.06568%) vertices are visible
+[Open3D DEBUG] [cam 27]: 114058/536872 (21.24491%) vertices are visible
+[Open3D DEBUG] [cam 28]: 128703/536872 (23.97275%) vertices are visible
+[Open3D DEBUG] [cam 29]: 149558/536872 (27.85729%) vertices are visible
+[Open3D DEBUG] [cam 30]: 165234/536872 (30.77717%) vertices are visible
+[Open3D DEBUG] [cam 31]: 104629/536872 (19.48863%) vertices are visible
+[Open3D DEBUG] [cam 32]: 50546/536872 (9.41491%) vertices are visible
+[Open3D DEBUG] [ColorMapOptimization] Rigid Optimization
+[Open3D DEBUG] [Iteration 0001] 
+[Open3D DEBUG] Residual error : 22019.629087 (avg : 0.004680)
+[Open3D DEBUG] [Iteration 0002] 
+[Open3D DEBUG] Residual error : 21860.129151 (avg : 0.004646)
+[Open3D DEBUG] [Iteration 0003] 
+[Open3D DEBUG] Residual error : 21700.324888 (avg : 0.004612)
+[Open3D DEBUG] [Iteration 0004] 
+[Open3D DEBUG] Residual error : 21541.525404 (avg : 0.004579)
+[Open3D DEBUG] [Iteration 0005] 
+[Open3D DEBUG] Residual error : 21384.342631 (avg : 0.004545)
+[Open3D DEBUG] [Iteration 0006] 
+[Open3D DEBUG] Residual error : 21229.219415 (avg : 0.004512)
+[Open3D DEBUG] [Iteration 0007] 
+[Open3D DEBUG] Residual error : 21074.654167 (avg : 0.004479)
+[Open3D DEBUG] [Iteration 0008] 
+[Open3D DEBUG] Residual error : 20920.363204 (avg : 0.004447)
+[Open3D DEBUG] [Iteration 0009] 
+[Open3D DEBUG] Residual error : 20769.744653 (avg : 0.004415)
+[Open3D DEBUG] [Iteration 0010] 
+[Open3D DEBUG] Residual error : 20619.985196 (avg : 0.004383)
+[Open3D DEBUG] [Iteration 0011] 
+[Open3D DEBUG] Residual error : 20472.118623 (avg : 0.004351)
+[Open3D DEBUG] [Iteration 0012] 
+[Open3D DEBUG] Residual error : 20325.903801 (avg : 0.004320)
+[Open3D DEBUG] [Iteration 0013] 
+[Open3D DEBUG] Residual error : 20180.989852 (avg : 0.004289)
+[Open3D DEBUG] [Iteration 0014] 
+[Open3D DEBUG] Residual error : 20037.396197 (avg : 0.004259)
+[Open3D DEBUG] [Iteration 0015] 
+[Open3D DEBUG] Residual error : 19896.330045 (avg : 0.004229)
+[Open3D DEBUG] [Iteration 0016] 
+[Open3D DEBUG] Residual error : 19755.580464 (avg : 0.004199)
+[Open3D DEBUG] [Iteration 0017] 
+[Open3D DEBUG] Residual error : 19616.100149 (avg : 0.004169)
+[Open3D DEBUG] [Iteration 0018] 
+[Open3D DEBUG] Residual error : 19477.364777 (avg : 0.004140)
+[Open3D DEBUG] [Iteration 0019] 
+[Open3D DEBUG] Residual error : 19339.755016 (avg : 0.004111)
+[Open3D DEBUG] [Iteration 0020] 
+[Open3D DEBUG] Residual error : 19203.414816 (avg : 0.004082)
+[Open3D DEBUG] [Iteration 0021] 
+[Open3D DEBUG] Residual error : 19071.606465 (avg : 0.004054)
+[Open3D DEBUG] [Iteration 0022] 
+[Open3D DEBUG] Residual error : 18941.066810 (avg : 0.004026)
+[Open3D DEBUG] [Iteration 0023] 
+[Open3D DEBUG] Residual error : 18811.969677 (avg : 0.003998)
+[Open3D DEBUG] [Iteration 0024] 
+[Open3D DEBUG] Residual error : 18683.535543 (avg : 0.003971)
+[Open3D DEBUG] [Iteration 0025] 
+[Open3D DEBUG] Residual error : 18555.310304 (avg : 0.003944)
+[Open3D DEBUG] [Iteration 0026] 
+[Open3D DEBUG] Residual error : 18428.480050 (avg : 0.003917)
+[Open3D DEBUG] [Iteration 0027] 
+[Open3D DEBUG] Residual error : 18302.292648 (avg : 0.003890)
+[Open3D DEBUG] [Iteration 0028] 
+[Open3D DEBUG] Residual error : 18176.003003 (avg : 0.003863)
+[Open3D DEBUG] [Iteration 0029] 
+[Open3D DEBUG] Residual error : 18050.662666 (avg : 0.003837)
+[Open3D DEBUG] [Iteration 0030] 
+[Open3D DEBUG] Residual error : 17928.724788 (avg : 0.003811)
+[Open3D DEBUG] [Iteration 0031] 
+[Open3D DEBUG] Residual error : 17806.341459 (avg : 0.003785)
+[Open3D DEBUG] [Iteration 0032] 
+[Open3D DEBUG] Residual error : 17684.321191 (avg : 0.003759)
+[Open3D DEBUG] [Iteration 0033] 
+[Open3D DEBUG] Residual error : 17563.525345 (avg : 0.003733)
+[Open3D DEBUG] [Iteration 0034] 
+[Open3D DEBUG] Residual error : 17442.620612 (avg : 0.003707)
+[Open3D DEBUG] [Iteration 0035] 
+[Open3D DEBUG] Residual error : 17322.229361 (avg : 0.003682)
+[Open3D DEBUG] [Iteration 0036] 
+[Open3D DEBUG] Residual error : 17203.051716 (avg : 0.003657)
+[Open3D DEBUG] [Iteration 0037] 
+[Open3D DEBUG] Residual error : 17083.485888 (avg : 0.003631)
+[Open3D DEBUG] [Iteration 0038] 
+[Open3D DEBUG] Residual error : 16963.400151 (avg : 0.003606)
+[Open3D DEBUG] [Iteration 0039] 
+[Open3D DEBUG] Residual error : 16843.721927 (avg : 0.003580)
+[Open3D DEBUG] [Iteration 0040] 
+[Open3D DEBUG] Residual error : 16724.689459 (avg : 0.003555)
+[Open3D DEBUG] [Iteration 0041] 
+[Open3D DEBUG] Residual error : 16604.259230 (avg : 0.003529)
+[Open3D DEBUG] [Iteration 0042] 
+[Open3D DEBUG] Residual error : 16482.077998 (avg : 0.003503)
+[Open3D DEBUG] [Iteration 0043] 
+[Open3D DEBUG] Residual error : 16360.160882 (avg : 0.003477)
+[Open3D DEBUG] [Iteration 0044] 
+[Open3D DEBUG] Residual error : 16238.261874 (avg : 0.003451)
+[Open3D DEBUG] [Iteration 0045] 
+[Open3D DEBUG] Residual error : 16116.022172 (avg : 0.003425)
+[Open3D DEBUG] [Iteration 0046] 
+[Open3D DEBUG] Residual error : 15993.560906 (avg : 0.003399)
+[Open3D DEBUG] [Iteration 0047] 
+[Open3D DEBUG] Residual error : 15870.841273 (avg : 0.003373)
+[Open3D DEBUG] [Iteration 0048] 
+[Open3D DEBUG] Residual error : 15747.508383 (avg : 0.003347)
+[Open3D DEBUG] [Iteration 0049] 
+[Open3D DEBUG] Residual error : 15624.043721 (avg : 0.003321)
+[Open3D DEBUG] [Iteration 0050] 
+[Open3D DEBUG] Residual error : 15498.809047 (avg : 0.003294)
+[Open3D DEBUG] [Iteration 0051] 
+[Open3D DEBUG] Residual error : 15372.425292 (avg : 0.003267)
+[Open3D DEBUG] [Iteration 0052] 
+[Open3D DEBUG] Residual error : 15245.945698 (avg : 0.003241)
+[Open3D DEBUG] [Iteration 0053] 
+[Open3D DEBUG] Residual error : 15120.460506 (avg : 0.003214)
+[Open3D DEBUG] [Iteration 0054] 
+[Open3D DEBUG] Residual error : 14996.276825 (avg : 0.003187)
+[Open3D DEBUG] [Iteration 0055] 
+[Open3D DEBUG] Residual error : 14870.819924 (avg : 0.003161)
+[Open3D DEBUG] [Iteration 0056] 
+[Open3D DEBUG] Residual error : 14745.745950 (avg : 0.003134)
+[Open3D DEBUG] [Iteration 0057] 
+[Open3D DEBUG] Residual error : 14617.409084 (avg : 0.003107)
+[Open3D DEBUG] [Iteration 0058] 
+[Open3D DEBUG] Residual error : 14489.343290 (avg : 0.003080)
+[Open3D DEBUG] [Iteration 0059] 
+[Open3D DEBUG] Residual error : 14361.090899 (avg : 0.003052)
+[Open3D DEBUG] [Iteration 0060] 
+[Open3D DEBUG] Residual error : 14235.470107 (avg : 0.003026)
+[Open3D DEBUG] [Iteration 0061] 
+[Open3D DEBUG] Residual error : 14110.088918 (avg : 0.002999)
+[Open3D DEBUG] [Iteration 0062] 
+[Open3D DEBUG] Residual error : 13983.411903 (avg : 0.002972)
+[Open3D DEBUG] [Iteration 0063] 
+[Open3D DEBUG] Residual error : 13859.823273 (avg : 0.002946)
+[Open3D DEBUG] [Iteration 0064] 
+[Open3D DEBUG] Residual error : 13735.825969 (avg : 0.002920)
+[Open3D DEBUG] [Iteration 0065] 
+[Open3D DEBUG] Residual error : 13611.919735 (avg : 0.002893)
+[Open3D DEBUG] [Iteration 0066] 
+[Open3D DEBUG] Residual error : 13492.939772 (avg : 0.002868)
+[Open3D DEBUG] [Iteration 0067] 
+[Open3D DEBUG] Residual error : 13375.699357 (avg : 0.002843)
+[Open3D DEBUG] [Iteration 0068] 
+[Open3D DEBUG] Residual error : 13260.441747 (avg : 0.002819)
+[Open3D DEBUG] [Iteration 0069] 
+[Open3D DEBUG] Residual error : 13149.756262 (avg : 0.002795)
+[Open3D DEBUG] [Iteration 0070] 
+[Open3D DEBUG] Residual error : 13042.937041 (avg : 0.002772)
+[Open3D DEBUG] [Iteration 0071] 
+[Open3D DEBUG] Residual error : 12938.885393 (avg : 0.002750)
+[Open3D DEBUG] [Iteration 0072] 
+[Open3D DEBUG] Residual error : 12837.531895 (avg : 0.002729)
+[Open3D DEBUG] [Iteration 0073] 
+[Open3D DEBUG] Residual error : 12739.910178 (avg : 0.002708)
+[Open3D DEBUG] [Iteration 0074] 
+[Open3D DEBUG] Residual error : 12646.880074 (avg : 0.002688)
+[Open3D DEBUG] [Iteration 0075] 
+[Open3D DEBUG] Residual error : 12559.326413 (avg : 0.002669)
+[Open3D DEBUG] [Iteration 0076] 
+[Open3D DEBUG] Residual error : 12477.512131 (avg : 0.002652)
+[Open3D DEBUG] [Iteration 0077] 
+[Open3D DEBUG] Residual error : 12400.306834 (avg : 0.002636)
+[Open3D DEBUG] [Iteration 0078] 
+[Open3D DEBUG] Residual error : 12328.079947 (avg : 0.002620)
+[Open3D DEBUG] [Iteration 0079] 
+[Open3D DEBUG] Residual error : 12262.156732 (avg : 0.002606)
+[Open3D DEBUG] [Iteration 0080] 
+[Open3D DEBUG] Residual error : 12197.378295 (avg : 0.002593)
+[Open3D DEBUG] [Iteration 0081] 
+[Open3D DEBUG] Residual error : 12139.665316 (avg : 0.002580)
+[Open3D DEBUG] [Iteration 0082] 
+[Open3D DEBUG] Residual error : 12084.585445 (avg : 0.002569)
+[Open3D DEBUG] [Iteration 0083] 
+[Open3D DEBUG] Residual error : 12036.436616 (avg : 0.002558)
+[Open3D DEBUG] [Iteration 0084] 
+[Open3D DEBUG] Residual error : 11992.554331 (avg : 0.002549)
+[Open3D DEBUG] [Iteration 0085] 
+[Open3D DEBUG] Residual error : 11951.178495 (avg : 0.002540)
+[Open3D DEBUG] [Iteration 0086] 
+[Open3D DEBUG] Residual error : 11912.576748 (avg : 0.002532)
+[Open3D DEBUG] [Iteration 0087] 
+[Open3D DEBUG] Residual error : 11881.828894 (avg : 0.002525)
+[Open3D DEBUG] [Iteration 0088] 
+[Open3D DEBUG] Residual error : 11850.267835 (avg : 0.002519)
+[Open3D DEBUG] [Iteration 0089] 
+[Open3D DEBUG] Residual error : 11823.207592 (avg : 0.002513)
+[Open3D DEBUG] [Iteration 0090] 
+[Open3D DEBUG] Residual error : 11799.682955 (avg : 0.002508)
+[Open3D DEBUG] [Iteration 0091] 
+[Open3D DEBUG] Residual error : 11779.739890 (avg : 0.002504)
+[Open3D DEBUG] [Iteration 0092] 
+[Open3D DEBUG] Residual error : 11760.136434 (avg : 0.002500)
+[Open3D DEBUG] [Iteration 0093] 
+[Open3D DEBUG] Residual error : 11744.660979 (avg : 0.002496)
+[Open3D DEBUG] [Iteration 0094] 
+[Open3D DEBUG] Residual error : 11729.589894 (avg : 0.002493)
+[Open3D DEBUG] [Iteration 0095] 
+[Open3D DEBUG] Residual error : 11713.728185 (avg : 0.002490)
+[Open3D DEBUG] [Iteration 0096] 
+[Open3D DEBUG] Residual error : 11701.653424 (avg : 0.002487)
+[Open3D DEBUG] [Iteration 0097] 
+[Open3D DEBUG] Residual error : 11688.472633 (avg : 0.002484)
+[Open3D DEBUG] [Iteration 0098] 
+[Open3D DEBUG] Residual error : 11675.702870 (avg : 0.002482)
+[Open3D DEBUG] [Iteration 0099] 
+[Open3D DEBUG] Residual error : 11661.661477 (avg : 0.002479)
+[Open3D DEBUG] [Iteration 0100] 
+[Open3D DEBUG] Residual error : 11650.320407 (avg : 0.002476)
+[Open3D DEBUG] [ColorMapOptimization] Set Mesh Color
+[Open3D DEBUG] [RemoveDuplicatedVertices] 0 vertices have been removed.
+[Open3D DEBUG] [RemoveDuplicatedTriangles] 0 triangles have been removed.
+[Open3D DEBUG] [RemoveUnreferencedVertices] 728 vertices have been removed.
+[Open3D DEBUG] [RemoveDegenerateTriangles] 0 triangles have been removed.
+[Open3D DEBUG] Triangle mesh sampled from 536872 vertices and 1033745 triangles to 504099 vertices and 976179 triangles.
+Rigid optimization takes 16.618921995162964
+[Open3D DEBUG] [ColorMapOptimization] CreateUtilImagesFromRGBD
+[Open3D DEBUG] [ColorMapOptimization] CreateDepthBoundaryMasks
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 0/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 1/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 2/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 3/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 4/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 5/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 6/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 7/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 8/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 9/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 10/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 11/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 12/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 13/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 14/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 15/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 16/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 17/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 18/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 19/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 20/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 21/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 22/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 23/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 24/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 25/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 26/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 27/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 28/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 29/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 30/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 31/33
+[Open3D DEBUG] [MakeDepthMasks] geometry::Image 32/33
+[Open3D DEBUG] [ColorMapOptimization] CreateVertexAndImageVisibility
+[Open3D DEBUG] [cam 0]: 238774/536872 (44.47503%) vertices are visible
+[Open3D DEBUG] [cam 1]: 264228/536872 (49.21620%) vertices are visible
+[Open3D DEBUG] [cam 2]: 32910/536872 (6.12995%) vertices are visible
+[Open3D DEBUG] [cam 3]: 207076/536872 (38.57083%) vertices are visible
+[Open3D DEBUG] [cam 4]: 208953/536872 (38.92045%) vertices are visible
+[Open3D DEBUG] [cam 5]: 121789/536872 (22.68492%) vertices are visible
+[Open3D DEBUG] [cam 6]: 139892/536872 (26.05686%) vertices are visible
+[Open3D DEBUG] [cam 7]: 94112/536872 (17.52969%) vertices are visible
+[Open3D DEBUG] [cam 8]: 136523/536872 (25.42934%) vertices are visible
+[Open3D DEBUG] [cam 9]: 88157/536872 (16.42049%) vertices are visible
+[Open3D DEBUG] [cam 10]: 119823/536872 (22.31873%) vertices are visible
+[Open3D DEBUG] [cam 11]: 183991/536872 (34.27092%) vertices are visible
+[Open3D DEBUG] [cam 12]: 238849/536872 (44.48900%) vertices are visible
+[Open3D DEBUG] [cam 13]: 222246/536872 (41.39646%) vertices are visible
+[Open3D DEBUG] [cam 14]: 220761/536872 (41.11986%) vertices are visible
+[Open3D DEBUG] [cam 15]: 257217/536872 (47.91030%) vertices are visible
+[Open3D DEBUG] [cam 16]: 123058/536872 (22.92129%) vertices are visible
+[Open3D DEBUG] [cam 17]: 155657/536872 (28.99332%) vertices are visible
+[Open3D DEBUG] [cam 18]: 109616/536872 (20.41753%) vertices are visible
+[Open3D DEBUG] [cam 19]: 132968/536872 (24.76717%) vertices are visible
+[Open3D DEBUG] [cam 20]: 125766/536872 (23.42570%) vertices are visible
+[Open3D DEBUG] [cam 21]: 118639/536872 (22.09819%) vertices are visible
+[Open3D DEBUG] [cam 22]: 112538/536872 (20.96179%) vertices are visible
+[Open3D DEBUG] [cam 23]: 76603/536872 (14.26839%) vertices are visible
+[Open3D DEBUG] [cam 24]: 74932/536872 (13.95714%) vertices are visible
+[Open3D DEBUG] [cam 25]: 79252/536872 (14.76181%) vertices are visible
+[Open3D DEBUG] [cam 26]: 107727/536872 (20.06568%) vertices are visible
+[Open3D DEBUG] [cam 27]: 114058/536872 (21.24491%) vertices are visible
+[Open3D DEBUG] [cam 28]: 128703/536872 (23.97275%) vertices are visible
+[Open3D DEBUG] [cam 29]: 149558/536872 (27.85729%) vertices are visible
+[Open3D DEBUG] [cam 30]: 165234/536872 (30.77717%) vertices are visible
+[Open3D DEBUG] [cam 31]: 104629/536872 (19.48863%) vertices are visible
+[Open3D DEBUG] [cam 32]: 50546/536872 (9.41491%) vertices are visible
+[Open3D DEBUG] [ColorMapOptimization] Non-Rigid Optimization
+[Open3D DEBUG] [Iteration 0001] 
+[Open3D DEBUG] Residual error : 22019.629087, reg : 0.000000
+[Open3D DEBUG] [Iteration 0002] 
+[Open3D DEBUG] Residual error : 21592.007162, reg : 13.924645
+[Open3D DEBUG] [Iteration 0003] 
+[Open3D DEBUG] Residual error : 21174.229724, reg : 42.281652
+[Open3D DEBUG] [Iteration 0004] 
+[Open3D DEBUG] Residual error : 20770.177211, reg : 78.984898
+[Open3D DEBUG] [Iteration 0005] 
+[Open3D DEBUG] Residual error : 20375.370123, reg : 121.584011
+[Open3D DEBUG] [Iteration 0006] 
+[Open3D DEBUG] Residual error : 19992.551505, reg : 168.238845
+[Open3D DEBUG] [Iteration 0007] 
+[Open3D DEBUG] Residual error : 19621.617027, reg : 217.362807
+[Open3D DEBUG] [Iteration 0008] 
+[Open3D DEBUG] Residual error : 19262.932805, reg : 268.501416
+[Open3D DEBUG] [Iteration 0009] 
+[Open3D DEBUG] Residual error : 18917.843174, reg : 320.833083
+[Open3D DEBUG] [Iteration 0010] 
+[Open3D DEBUG] Residual error : 18585.548002, reg : 373.173650
+[Open3D DEBUG] [Iteration 0011] 
+[Open3D DEBUG] Residual error : 18264.904869, reg : 424.660518
+[Open3D DEBUG] [Iteration 0012] 
+[Open3D DEBUG] Residual error : 17958.380845, reg : 476.070889
+[Open3D DEBUG] [Iteration 0013] 
+[Open3D DEBUG] Residual error : 17660.469849, reg : 527.558726
+[Open3D DEBUG] [Iteration 0014] 
+[Open3D DEBUG] Residual error : 17374.578751, reg : 578.844007
+[Open3D DEBUG] [Iteration 0015] 
+[Open3D DEBUG] Residual error : 17099.794988, reg : 629.350789
+[Open3D DEBUG] [Iteration 0016] 
+[Open3D DEBUG] Residual error : 16833.598417, reg : 679.080676
+[Open3D DEBUG] [Iteration 0017] 
+[Open3D DEBUG] Residual error : 16580.451374, reg : 727.919537
+[Open3D DEBUG] [Iteration 0018] 
+[Open3D DEBUG] Residual error : 16336.871061, reg : 775.861268
+[Open3D DEBUG] [Iteration 0019] 
+[Open3D DEBUG] Residual error : 16103.365268, reg : 822.895500
+[Open3D DEBUG] [Iteration 0020] 
+[Open3D DEBUG] Residual error : 15879.482536, reg : 869.447384
+[Open3D DEBUG] [Iteration 0021] 
+[Open3D DEBUG] Residual error : 15666.788573, reg : 915.507493
+[Open3D DEBUG] [Iteration 0022] 
+[Open3D DEBUG] Residual error : 15459.085099, reg : 960.731928
+[Open3D DEBUG] [Iteration 0023] 
+[Open3D DEBUG] Residual error : 15258.477887, reg : 1004.856844
+[Open3D DEBUG] [Iteration 0024] 
+[Open3D DEBUG] Residual error : 15064.945810, reg : 1048.007980
+[Open3D DEBUG] [Iteration 0025] 
+[Open3D DEBUG] Residual error : 14879.771056, reg : 1090.003378
+[Open3D DEBUG] [Iteration 0026] 
+[Open3D DEBUG] Residual error : 14698.644732, reg : 1130.909772
+[Open3D DEBUG] [Iteration 0027] 
+[Open3D DEBUG] Residual error : 14524.624978, reg : 1170.986277
+[Open3D DEBUG] [Iteration 0028] 
+[Open3D DEBUG] Residual error : 14357.057957, reg : 1210.455128
+[Open3D DEBUG] [Iteration 0029] 
+[Open3D DEBUG] Residual error : 14199.422440, reg : 1249.235081
+[Open3D DEBUG] [Iteration 0030] 
+[Open3D DEBUG] Residual error : 14043.909058, reg : 1287.282624
+[Open3D DEBUG] [Iteration 0031] 
+[Open3D DEBUG] Residual error : 13889.888070, reg : 1324.214586
+[Open3D DEBUG] [Iteration 0032] 
+[Open3D DEBUG] Residual error : 13743.815120, reg : 1360.154430
+[Open3D DEBUG] [Iteration 0033] 
+[Open3D DEBUG] Residual error : 13604.765548, reg : 1395.347540
+[Open3D DEBUG] [Iteration 0034] 
+[Open3D DEBUG] Residual error : 13470.188576, reg : 1429.604212
+[Open3D DEBUG] [Iteration 0035] 
+[Open3D DEBUG] Residual error : 13339.749093, reg : 1462.963991
+[Open3D DEBUG] [Iteration 0036] 
+[Open3D DEBUG] Residual error : 13215.086414, reg : 1495.500083
+[Open3D DEBUG] [Iteration 0037] 
+[Open3D DEBUG] Residual error : 13092.690605, reg : 1527.300410
+[Open3D DEBUG] [Iteration 0038] 
+[Open3D DEBUG] Residual error : 12976.737975, reg : 1558.536244
+[Open3D DEBUG] [Iteration 0039] 
+[Open3D DEBUG] Residual error : 12860.858123, reg : 1589.201824
+[Open3D DEBUG] [Iteration 0040] 
+[Open3D DEBUG] Residual error : 12745.652484, reg : 1619.184706
+[Open3D DEBUG] [Iteration 0041] 
+[Open3D DEBUG] Residual error : 12634.719382, reg : 1648.565045
+[Open3D DEBUG] [Iteration 0042] 
+[Open3D DEBUG] Residual error : 12525.230920, reg : 1677.536285
+[Open3D DEBUG] [Iteration 0043] 
+[Open3D DEBUG] Residual error : 12420.346158, reg : 1706.066816
+[Open3D DEBUG] [Iteration 0044] 
+[Open3D DEBUG] Residual error : 12313.149600, reg : 1734.239719
+[Open3D DEBUG] [Iteration 0045] 
+[Open3D DEBUG] Residual error : 12211.230765, reg : 1761.895817
+[Open3D DEBUG] [Iteration 0046] 
+[Open3D DEBUG] Residual error : 12111.452902, reg : 1789.224749
+[Open3D DEBUG] [Iteration 0047] 
+[Open3D DEBUG] Residual error : 12014.334014, reg : 1816.263982
+[Open3D DEBUG] [Iteration 0048] 
+[Open3D DEBUG] Residual error : 11919.292356, reg : 1842.894107
+[Open3D DEBUG] [Iteration 0049] 
+[Open3D DEBUG] Residual error : 11826.228356, reg : 1869.170225
+[Open3D DEBUG] [Iteration 0050] 
+[Open3D DEBUG] Residual error : 11736.303964, reg : 1895.197920
+[Open3D DEBUG] [Iteration 0051] 
+[Open3D DEBUG] Residual error : 11652.151633, reg : 1920.880985
+[Open3D DEBUG] [Iteration 0052] 
+[Open3D DEBUG] Residual error : 11566.680074, reg : 1946.362060
+[Open3D DEBUG] [Iteration 0053] 
+[Open3D DEBUG] Residual error : 11483.541164, reg : 1971.617194
+[Open3D DEBUG] [Iteration 0054] 
+[Open3D DEBUG] Residual error : 11404.938148, reg : 1996.432899
+[Open3D DEBUG] [Iteration 0055] 
+[Open3D DEBUG] Residual error : 11326.357436, reg : 2020.811940
+[Open3D DEBUG] [Iteration 0056] 
+[Open3D DEBUG] Residual error : 11250.083911, reg : 2044.875482
+[Open3D DEBUG] [Iteration 0057] 
+[Open3D DEBUG] Residual error : 11177.627384, reg : 2068.396822
+[Open3D DEBUG] [Iteration 0058] 
+[Open3D DEBUG] Residual error : 11109.819337, reg : 2091.247980
+[Open3D DEBUG] [Iteration 0059] 
+[Open3D DEBUG] Residual error : 11043.589402, reg : 2113.744017
+[Open3D DEBUG] [Iteration 0060] 
+[Open3D DEBUG] Residual error : 10981.223836, reg : 2135.777902
+[Open3D DEBUG] [Iteration 0061] 
+[Open3D DEBUG] Residual error : 10920.264023, reg : 2157.563722
+[Open3D DEBUG] [Iteration 0062] 
+[Open3D DEBUG] Residual error : 10859.545378, reg : 2179.233033
+[Open3D DEBUG] [Iteration 0063] 
+[Open3D DEBUG] Residual error : 10798.273881, reg : 2200.863858
+[Open3D DEBUG] [Iteration 0064] 
+[Open3D DEBUG] Residual error : 10740.957991, reg : 2222.130226
+[Open3D DEBUG] [Iteration 0065] 
+[Open3D DEBUG] Residual error : 10687.502952, reg : 2243.343884
+[Open3D DEBUG] [Iteration 0066] 
+[Open3D DEBUG] Residual error : 10631.306189, reg : 2264.346642
+[Open3D DEBUG] [Iteration 0067] 
+[Open3D DEBUG] Residual error : 10578.772572, reg : 2285.203097
+[Open3D DEBUG] [Iteration 0068] 
+[Open3D DEBUG] Residual error : 10528.461359, reg : 2305.806073
+[Open3D DEBUG] [Iteration 0069] 
+[Open3D DEBUG] Residual error : 10477.374160, reg : 2326.338746
+[Open3D DEBUG] [Iteration 0070] 
+[Open3D DEBUG] Residual error : 10427.332324, reg : 2346.673493
+[Open3D DEBUG] [Iteration 0071] 
+[Open3D DEBUG] Residual error : 10378.052772, reg : 2366.847750
+[Open3D DEBUG] [Iteration 0072] 
+[Open3D DEBUG] Residual error : 10330.686864, reg : 2386.787252
+[Open3D DEBUG] [Iteration 0073] 
+[Open3D DEBUG] Residual error : 10286.071353, reg : 2406.768253
+[Open3D DEBUG] [Iteration 0074] 
+[Open3D DEBUG] Residual error : 10241.860498, reg : 2426.502016
+[Open3D DEBUG] [Iteration 0075] 
+[Open3D DEBUG] Residual error : 10200.859389, reg : 2446.343633
+[Open3D DEBUG] [Iteration 0076] 
+[Open3D DEBUG] Residual error : 10159.518001, reg : 2466.042816
+[Open3D DEBUG] [Iteration 0077] 
+[Open3D DEBUG] Residual error : 10117.551459, reg : 2485.992594
+[Open3D DEBUG] [Iteration 0078] 
+[Open3D DEBUG] Residual error : 10076.316182, reg : 2505.882350
+[Open3D DEBUG] [Iteration 0079] 
+[Open3D DEBUG] Residual error : 10038.716869, reg : 2525.906600
+[Open3D DEBUG] [Iteration 0080] 
+[Open3D DEBUG] Residual error : 9999.426848, reg : 2545.878780
+[Open3D DEBUG] [Iteration 0081] 
+[Open3D DEBUG] Residual error : 9961.823677, reg : 2565.890743
+[Open3D DEBUG] [Iteration 0082] 
+[Open3D DEBUG] Residual error : 9929.431638, reg : 2585.594285
+[Open3D DEBUG] [Iteration 0083] 
+[Open3D DEBUG] Residual error : 9895.167496, reg : 2605.373863
+[Open3D DEBUG] [Iteration 0084] 
+[Open3D DEBUG] Residual error : 9861.035279, reg : 2624.721090
+[Open3D DEBUG] [Iteration 0085] 
+[Open3D DEBUG] Residual error : 9827.357201, reg : 2644.070661
+[Open3D DEBUG] [Iteration 0086] 
+[Open3D DEBUG] Residual error : 9796.440531, reg : 2662.945723
+[Open3D DEBUG] [Iteration 0087] 
+[Open3D DEBUG] Residual error : 9770.268590, reg : 2681.812373
+[Open3D DEBUG] [Iteration 0088] 
+[Open3D DEBUG] Residual error : 9741.695059, reg : 2700.549806
+[Open3D DEBUG] [Iteration 0089] 
+[Open3D DEBUG] Residual error : 9717.822924, reg : 2719.359007
+[Open3D DEBUG] [Iteration 0090] 
+[Open3D DEBUG] Residual error : 9689.784363, reg : 2737.906999
+[Open3D DEBUG] [Iteration 0091] 
+[Open3D DEBUG] Residual error : 9661.180090, reg : 2756.548409
+[Open3D DEBUG] [Iteration 0092] 
+[Open3D DEBUG] Residual error : 9632.318526, reg : 2774.844325
+[Open3D DEBUG] [Iteration 0093] 
+[Open3D DEBUG] Residual error : 9607.426769, reg : 2793.052709
+[Open3D DEBUG] [Iteration 0094] 
+[Open3D DEBUG] Residual error : 9582.326142, reg : 2810.986921
+[Open3D DEBUG] [Iteration 0095] 
+[Open3D DEBUG] Residual error : 9561.895354, reg : 2828.914230
+[Open3D DEBUG] [Iteration 0096] 
+[Open3D DEBUG] Residual error : 9540.770473, reg : 2846.606878
+[Open3D DEBUG] [Iteration 0097] 
+[Open3D DEBUG] Residual error : 9517.323735, reg : 2864.368542
+[Open3D DEBUG] [Iteration 0098] 
+[Open3D DEBUG] Residual error : 9500.448856, reg : 2882.013982
+[Open3D DEBUG] [Iteration 0099] 
+[Open3D DEBUG] Residual error : 9483.721428, reg : 2899.757523
+[Open3D DEBUG] [Iteration 0100] 
+[Open3D DEBUG] Residual error : 9467.417427, reg : 2917.346550
+[Open3D DEBUG] [ColorMapOptimization] Set Mesh Color
+[Open3D DEBUG] [RemoveDuplicatedVertices] 0 vertices have been removed.
+[Open3D DEBUG] [RemoveDuplicatedTriangles] 0 triangles have been removed.
+[Open3D DEBUG] [RemoveUnreferencedVertices] 729 vertices have been removed.
+[Open3D DEBUG] [RemoveDegenerateTriangles] 0 triangles have been removed.
+[Open3D DEBUG] Triangle mesh sampled from 536872 vertices and 1033745 triangles to 504103 vertices and 976187 triangles.
+Non-rigid optimization takes 38.807180881500244
+.
+
+============================== 1 passed in 57.12s ==============================
