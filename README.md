@@ -4,20 +4,20 @@
 pip install pytest
 git checkout yixing/issue-4266
 
-pip install -U open3d==0.12.0
-pytest test_012.py -s > test_012_out.txt
+pip uninstall open3d --yes && pip install -U open3d==0.12.0
+OMP_NUM_THREADS=1 pytest test_012.py -s > test_012_out.txt
 
-pip install -U open3d==0.13.0
-pytest test_013.py -s > test_013_out.txt
+pip uninstall open3d --yes && pip install -U open3d==0.13.0
+OMP_NUM_THREADS=1 pytest test_013.py -s > test_013_out.txt
 
 wget https://storage.googleapis.com/open3d-releases-master/python-wheels/open3d-0.13.0+dd076ba-cp36-cp36m-manylinux_2_27_x86_64.whl
-pip install open3d-0.13.0+dd076ba-cp36-cp36m-manylinux_2_27_x86_64.whl
-pytest test_013.py -s > test_master_dd076ba.txt
+pip uninstall open3d --yes && pip install open3d-0.13.0+dd076ba-cp36-cp36m-manylinux_2_27_x86_64.whl
+OMP_NUM_THREADS=1 pytest test_013.py -s > test_master_dd076ba.txt
 
 cd build
-make install-pip-package -j$(nproc)
+pip uninstall open3d --yes && make install-pip-package -j$(nproc)
 cd ..
-pytest test_013.py -s > test_current_branch.txt
+OMP_NUM_THREADS=1 pytest test_013.py -s > test_current_branch.txt
 ```
 
 <p align="center">

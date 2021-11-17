@@ -2,14 +2,14 @@
 platform linux -- Python 3.6.13, pytest-6.2.5, py-1.11.0, pluggy-1.0.0
 benchmark: 3.4.1 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
 rootdir: /home/yixing/repo/Open3D
-plugins: benchmark-3.4.1
-[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/raycast_vtx_004.npy already exists, skipped.
+plugins: anyio-3.3.4, benchmark-3.4.1
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/normal_map.npy already exists, skipped.
+[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/vertex_map.npy already exists, skipped.
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/bunnyData.pts already exists, skipped.
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/point_cloud_sample1.pts already exists, skipped.
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/point_cloud_sample2.pts already exists, skipped.
 [download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/tests/cube.obj already exists, skipped.
-[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/vertex_map.npy already exists, skipped.
+[download_utils.py] /home/yixing/repo/Open3D/examples/test_data/open3d_downloads/RGBD/raycast_vtx_004.npy already exists, skipped.
 Testing with Open3D version 0.12.0
 collected 1 item
 
@@ -565,4 +565,4 @@ test_012.py [Open3D DEBUG] [ColorMapOptimization]
 [Open3D DEBUG] Triangle mesh sampled from 536872 vertices and 1033745 triangles to 509770 vertices and 984365 triangles.
 .
 
-============================== 1 passed in 50.52s ==============================
+======================== 1 passed in 280.49s (0:04:40) =========================

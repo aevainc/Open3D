@@ -289,7 +289,7 @@ test_013.py [Open3D DEBUG] [ColorMapOptimization] CreateUtilImagesFromRGBD
 [Open3D DEBUG] [RemoveUnreferencedVertices] 734 vertices have been removed.
 [Open3D DEBUG] [RemoveDegenerateTriangles] 0 triangles have been removed.
 [Open3D DEBUG] Triangle mesh sampled from 536872 vertices and 1033745 triangles to 504121 vertices and 976218 triangles.
-Rigid optimization takes 11.188565731048584
+Rigid optimization takes 63.995657444000244
 [Open3D DEBUG] [ColorMapOptimization] CreateUtilImagesFromRGBD
 [Open3D DEBUG] [ColorMapOptimization] CreateDepthBoundaryMasks
 [Open3D DEBUG] [MakeDepthMasks] geometry::Image 0/33
@@ -566,7 +566,7 @@ Rigid optimization takes 11.188565731048584
 [Open3D DEBUG] [RemoveUnreferencedVertices] 768 vertices have been removed.
 [Open3D DEBUG] [RemoveDegenerateTriangles] 0 triangles have been removed.
 [Open3D DEBUG] Triangle mesh sampled from 536872 vertices and 1033745 triangles to 509770 vertices and 984365 triangles.
-Non-rigid optimization takes 41.06775522232056
+Non-rigid optimization takes 297.6989574432373
 .
 
-============================== 1 passed in 53.35s ==============================
+======================== 1 passed in 362.88s (0:06:02) =========================
