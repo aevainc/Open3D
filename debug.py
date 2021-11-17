@@ -81,7 +81,7 @@ if __name__ == "__main__":
     start = time.time()
     with o3d.utility.VerbosityContextManager(
             o3d.utility.VerbosityLevel.Debug) as cm:
-        mesh = o3d.pipelines.color_map.run_non_rigid_optimizer(
+        mesh, camera_trajectory = o3d.pipelines.color_map.run_non_rigid_optimizer(
             mesh, rgbd_images, camera_trajectory,
             o3d.pipelines.color_map.NonRigidOptimizerOption(
                 maximum_iteration=5))
