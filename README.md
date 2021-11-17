@@ -13,6 +13,11 @@ pytest test_013.py -s > test_013_out.txt
 wget https://storage.googleapis.com/open3d-releases-master/python-wheels/open3d-0.13.0+dd076ba-cp36-cp36m-manylinux_2_27_x86_64.whl
 pip install open3d-0.13.0+dd076ba-cp36-cp36m-manylinux_2_27_x86_64.whl
 pytest test_013.py -s > test_master_dd076ba.txt
+
+cd build
+make install-pip-package -j$(nproc)
+cd ..
+pytest test_013.py -s > test_current_branch.txt
 ```
 
 <p align="center">
