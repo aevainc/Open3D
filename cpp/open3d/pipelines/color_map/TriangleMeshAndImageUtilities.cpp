@@ -151,7 +151,8 @@ std::tuple<bool, T> QueryImageIntensity(
         const camera::PinholeCameraTrajectory& camera,
         int camid,
         int ch /*= -1*/,
-        int image_boundary_margin /*= 10*/) {
+        int image_boundary_margin /*= 10*/,
+        bool verbose /*= false*/) {
     float u, v, depth;
     std::tie(u, v, depth) = Project3DPointAndGetUVDepth(V, camera, camid);
     if (img.TestImageBoundary(u, v, image_boundary_margin)) {

@@ -73,7 +73,8 @@ std::tuple<bool, T> QueryImageIntensity(
         const camera::PinholeCameraTrajectory& camera,
         int camid,
         int ch = -1,
-        int image_boundary_margin = 10);
+        int image_boundary_margin = 10,
+        bool verbose = false);
 
 void SetProxyIntensityForVertex(
         const geometry::TriangleMesh& mesh,
