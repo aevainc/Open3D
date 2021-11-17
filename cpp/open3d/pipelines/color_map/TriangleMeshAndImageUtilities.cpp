@@ -202,11 +202,17 @@ void SetProxyIntensityForVertex(
         if (sum > 0) {
             proxy_intensity[i] /= sum;
         }
-        if (i % 10000 == 0) {
-            utility::LogInfo("proxy_intensity[{}]: {:.20f}", i,
-                             proxy_intensity[i]);
+    }
+    double proxy_intensity_sum = 0;
+    for (size_t i = 0; i < proxy_intensity.size(); ++i) {
+        proxy_intensity_sum += proxy_intensity[i];
+        if (i > 21000 && i < 22000) {
+            utility::LogInfo("proxy_intensity sum to[{}]: {:.20f}", i,
+                             proxy_intensity_sum);
         }
     }
+    utility::LogDebug("[ColorMapOptimization] Proxy Intensity Sum: {:.20f}",
+                      proxy_intensity_sum);
 }
 
 void SetProxyIntensityForVertex(
