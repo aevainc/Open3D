@@ -139,7 +139,7 @@ static void OptimizeImageCoorNonrigid(
                 residual_reg += rr_reg;
             }
         }
-        utility::LogDebug("Residual error : {:.6f}, reg : {:.6f}", residual,
+        utility::LogDebug("Residual error : {:.10f}, reg : {:.10f}", residual,
                           residual_reg);
         SetProxyIntensityForVertex(mesh, images_gray, warping_fields, camera,
                                    visibility_vertex_to_image, proxy_intensity,
@@ -207,7 +207,7 @@ static void OptimizeImageCoorRigid(
                 total_num_ += int(visibility_image_to_vertex[c].size());
             }
         }
-        utility::LogDebug("Residual error : {:.6f} (avg : {:.6f})", residual,
+        utility::LogDebug("Residual error : {:.10f} (avg : {:.10f})", residual,
                           residual / total_num_);
         SetProxyIntensityForVertex(mesh, images_gray, camera,
                                    visibility_vertex_to_image, proxy_intensity,
