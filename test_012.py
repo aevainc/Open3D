@@ -61,7 +61,7 @@ def test_color_map():
     option = o3d.pipelines.color_map.ColorMapOptimizationOption()
 
     # Rigid Optimization
-    option.maximum_iteration = 100
+    option.maximum_iteration = 25
     option.non_rigid_camera_coordinate = False
     with o3d.utility.VerbosityContextManager(
             o3d.utility.VerbosityLevel.Debug) as cm:
@@ -69,7 +69,7 @@ def test_color_map():
                                                        camera, option)
 
     # Non-rigid Optimization
-    option.maximum_iteration = 100
+    option.maximum_iteration = 25
     option.non_rigid_camera_coordinate = True
     with o3d.utility.VerbosityContextManager(
             o3d.utility.VerbosityLevel.Debug) as cm:
