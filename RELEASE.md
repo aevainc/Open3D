@@ -17,14 +17,18 @@ We are excited to present the new Open3D version 0.14! In this release, you will
 
 Now you can use Open3D within [Tensorboard](https://www.tensorflow.org/tensorboard) for interactive 3D visualization! At a glance, you can:
 
-- *Sequentially* save and visualize geometry along with their properties. This enables interactive visualization and debugging of training 3D models.
-- Visualize 3D semantic segmentation and object detection with input data, ground truth, and predictions. In addition, any *customized* properties for a `PointCloud`, from scalar to vector, can be easily visualized.
+- Save and visualize geometry sequences and their properties. This enables interactive visualization and debugging of 3D data and 3DML model training.
+- Visualize 3D semantic segmentation and object detection with input data, ground truth, and predictions. In addition, any *custom* properties for a `PointCloud`, from scalar to vector, can be easily visualized.
 - *Synchronize* time steps and viewpoints during different runs. This helps debug and monitor the effect of parameter tuning.
 
-For more details on how to use TensorBoard with Open3D, check out this [tutorial](link). 
-**[Pending: link to doc from #4285 once merged]**![img](https://lh4.googleusercontent.com/UN0_Yzb-9PintyBA5o2HmZUAUpHbR0Bp5jEVnfGOQuoQYIffgMJmzke0gMujUr8kQkLaPL9C6SHeH2YdovCTZl886bG6Kh-vuwYMWvkanTuYTgGp9XUbXeH4NN400ywUKg3sQKZo)
+#### Rich PBR materials
+![tensorboard_demo_scene](https://user-images.githubusercontent.com/41028320/142651184-03e9fd59-e821-47c8-b470-f99a09a80757.png)
+#### Object detection
+![tensorboard_objdet_full_2_vp9 webm](https://user-images.githubusercontent.com/41028320/142651663-db1cbfcf-f0f6-4089-bf32-11696f408d5b.jpg)
+#### Semantic segmentation
+![tensorboard_sync_view_vp9](https://user-images.githubusercontent.com/41028320/142651665-a4c155c1-a4a1-4f9a-80e6-e13cdc1e5569.jpg)
 
-
+For more details on how to use TensorBoard with Open3D, check out this [tutorial](http://www.open3d.org/docs/release/tutorial/visualization/tensorboard_plugin.html). 
 
 ## GUI Visualizer
 
