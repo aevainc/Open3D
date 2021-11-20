@@ -37,6 +37,7 @@ Further enhancements have been added to the GUI viewer. Now you can:
 - Directly visualize tensor-based geometry classes including `PointCloud`, `TriangleMesh`, and `LineSet`.
 - Use physically based rendering (PBR) materials that deliver appealing appearance.
 - Use all the functionality in Tensorboard!
+
   ![img](https://lh3.googleusercontent.com/MRYlCK2LFxZaZ7GlgKfSvZg47K_Hj94Xhad3jTzomAf4z4vDBixbYBy2_QABhu3XiwMCpriShG30gdBZp7jTs0gwa9TOunigLM_FDiQ6WAJfeHFz5va4d9gHv7UnoSJdRFUTZ1QW)
 
 ## Core
@@ -89,9 +90,13 @@ Further enhancements have been added to the GUI viewer. Now you can:
 The Open3D-ML library welcomes more state-of-the-art models and operators that are ready to use for advanced 3D perception, especially semantic segmentation, including
 
 - New state-of-the-art [Point Transformer](https://arxiv.org/abs/2012.09164) for Semantic Segmentation.
+
 ![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/PointTransformer_S3DIS.png)
+
 - Highly Efficient [Point-Voxel Convolution](https://arxiv.org/abs/1907.03739) for Semantic Segmentation.
+
 ![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/PVCNN_S3DIS.png)
+
 - RaggedTensor integration that enables batch `SparseConvolution` and `SparseConvolutionTranspose` along with PyTorch.
 - Batched voxelization for fast point-voxel conversions.
 
