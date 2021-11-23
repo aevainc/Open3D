@@ -2,7 +2,7 @@
 
 ## Summary
 
-We are excited to present the new Open3D version 0.14! In this release, you will find TensorBoard visualization, upgraded GUI, improved Tensor and I/O performance, new state-of-the-art 3D learning models in Open3D-ML, and many more.
+We are excited to present the new Open3D version 0.14! In this release, you will find TensorBoard visualization, upgraded GUI, improved Tensor and I/O performance, new state-of-the-art 3D learning models in Open3D-ML, improved interoperability with Numpy and many more.
 
 **[TODO: any other highlights that we want to put here?]**
 
@@ -10,7 +10,8 @@ We are excited to present the new Open3D version 0.14! In this release, you will
 
 - Open3D now works with Python 3.9. We release Open3D pre-compiled Python packages in Python 3.6, 3.7 3.8 and 3.9.
 - Open3D 0.14 is the last version that supports conda installation. Starting from version 0.15, users will need to install Open3D with `pip install open3d`. We recommend installing Open3D with `pip` inside a conda virtual environment.
-- Git submodules are no longer required in Open3D. You can now clone Open3D with `git clone https://github.com/isl-org/Open3D.git` without the `--recursive` flag.
+- Git submodules are no longer required in Open3D. You can now clone Open3D with `git clone https://github.com/isl-org/Open3D.git` without the `--recursive` flag. Also please note the updated Github URL.
+- Open3D will now build in `Release` mode by default if `CMAKE_BUILD_TYPE` is not specified. `Python` is no longer required for building Open3D for C++ users.
 - Open3D-ML is now recommended to be used along with [PyTorch](https://github.com/isl-org/Open3D-ML/blob/master/requirements-tensorflow.txt) 1.8.2 and/or [Tensorflow](https://github.com/isl-org/Open3D-ML/blob/master/requirements-tensorflow.txt) 2.5.2. Checkout [Open3D-ML](https://github.com/isl-org/Open3D-ML/) for more information.
 
 ## Tensorboard Integration
@@ -28,9 +29,23 @@ Now you can use Open3D within [Tensorboard](https://www.tensorflow.org/tensorboa
 #### Semantic segmentation
 ![tensorboard_sync_view_vp9](https://user-images.githubusercontent.com/41028320/142651665-a4c155c1-a4a1-4f9a-80e6-e13cdc1e5569.jpg)
 
-(@sameer: add code snippet on how to save the checkpoint and start the tensorboard)
+To get started, write some sample geometry data to a TensorBoard summary with this snippet:
 
-For more details on how to use TensorBoard with Open3D, check out this [tutorial](http://www.open3d.org/docs/release/tutorial/visualization/tensorboard_plugin.html). 
+```python
+from torch.utils.tensorboard import SummaryWriter  # TensorFlow also works, see docs.
+import open3d as o3d
+from open3d.visualization.tensorboard_plugin import summary
+from open3d.visualization.tensorboard_plugin.util import to_dict_batch
+writer = SummaryWriter("demo_logs/")
+cube = o3d.geometry.TriangleMesh.create_box(1, 2, 4)
+cube.compute_vertex_normals()
+colors = [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)]
+for step in range(3):
+    cube.paint_uniform_color(colors[step])
+    writer.add_3d('cube', to_dict_batch([cube]), step=step)
+```
+
+Now you can visualize this in TensorBoard with `tensorboard --logdir demo_logs`. For more details on how to use TensorBoard with Open3D, check out this [tutorial](http://www.open3d.org/docs/release/tutorial/visualization/tensorboard_plugin.html).
 
 ## Visualizer
 
@@ -38,6 +53,7 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 - Directly visualize tensor-based geometry classes including `PointCloud`, `TriangleMesh`, and `LineSet`.
 - Use physically based rendering (PBR) materials that deliver appealing appearance.
+- All new skybox (@errissa - please update).
 - Use all the functionality in Tensorboard!
 
 (@rene: add code)
@@ -57,7 +73,7 @@ Further enhancements have been added to the GUI viewer. Now you can:
   ```python
   import open3d as o3d
   import numpy as np
-  
+
   mesh = o3d.t.geometry.TriangleMesh()
   mesh.vertex['positions'] = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0]], dtype=np.float32)
   mesh.vertex['colors'] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
@@ -69,11 +85,12 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 - We now support I/O from/to Numpy compatible `.npz` `.npy` formats for Open3D tensors and tensor maps. It is now easier to convert between Open3D geometry classes and Numpy properties.
 - We have improved I/O performance for tensor-based point cloud and triangle-mesh file-formats, including `.ply`, `.pcd`, `.pts`. Geometry loading time is hence improved for the stand-alone visualizer app.
+- We now support exchanging material data with other applications with the MessagePack format over ZeroMQ. (@benjamin please check).
 
 ## Geometry
 
-- We introduce a new class `RaycastingScene` with basic ray intersections functions and distance transform for meshes, utilizing the award winning [Intel Embree library](https://www.embree.org/). 
-  
+- We introduce a new class `RaycastingScene` with basic ray intersections functions and distance transform for meshes, utilizing the award winning [Intel Embree library](https://www.embree.org/).
+
   Example code for rendering a depth map:
   ```python
   import open3d as o3d
@@ -93,9 +110,9 @@ Further enhancements have been added to the GUI viewer. Now you can:
   plt.imshow(ans['t_hit'].numpy())
   ```
   Distance transform generated with `RaycastingScene`:
-  
+
   ![](http://www.open3d.org/docs/release/_images/distance_field_animation.gif)
-  
+
   See the tutorials for more information ([Ray casting](http://www.open3d.org/docs/release/tutorial/geometry/ray_casting.html), [Distance queries](http://www.open3d.org/docs/release/tutorial/geometry/distance_queries.html)).
 
 - Normal estimation for tensor `PointCloud` is supported with the tensor-compatible nearest neighbor search modules.
@@ -113,7 +130,7 @@ Further enhancements have been added to the GUI viewer. Now you can:
 - We also provide with an initial tensor-based reconstruction system in Python, including
   - Customizable volumetric RGB-D integration;
   - Dense RGB-D SLAM with a GUI;
-  - Upgraded [tutorial](http://www.open3d.org/docs/latest/tutorial/t_reconstruction_system/index.html ).
+  - Upgraded [tutorial](http://www.open3d.org/docs/latest/tutorial/t_reconstruction_system/index.html).
 
 
 ## Open3D-ML
