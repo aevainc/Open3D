@@ -72,9 +72,32 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 ## Geometry
 
-- We introduce a new class `RaycastingScene` with basic ray intersections functions and distance transform for meshes, utilizing the award winning [Intel Embree library](https://www.embree.org/).
-  ![](http://www.open3d.org/docs/latest/_images/distance_field_animation.gif)
-  (@benjamin, add code snippets, and point to the tutorial at the end)
+- We introduce a new class `RaycastingScene` with basic ray intersections functions and distance transform for meshes, utilizing the award winning [Intel Embree library](https://www.embree.org/). 
+  
+  Example code for rendering a depth map:
+  ```python
+  import open3d as o3d
+  import matplotlib.pyplot as plt
+
+  # Create scene and add a cube
+  cube = o3d.t.geometry.TriangleMesh.from_legacy(o3d.geometry.TriangleMesh.create_box())
+  scene = o3d.t.geometry.RaycastingScene()
+  scene.add_triangles(cube)
+
+  # Use a helper function to create rays for a pinhole camera.
+  rays = scene.create_rays_pinhole(fov_deg=60, center=[0.5,0.5,0.5], eye=[-1,-1,-1], up=[0,0,1],
+                                   width_px=320, height_px=240)
+
+  # Compute the ray intersections and visualize the hit distance (depth)
+  ans = scene.cast_rays(rays)
+  plt.imshow(ans['t_hit'].numpy())
+  ```
+  Distance transform generated with `RaycastingScene`:
+  
+  ![](http://www.open3d.org/docs/release/_images/distance_field_animation.gif)
+  
+  See the tutorials for more information ([Ray casting](http://www.open3d.org/docs/release/tutorial/geometry/ray_casting.html), [Distance queries](http://www.open3d.org/docs/release/tutorial/geometry/distance_queries.html)).
+
 - Normal estimation for tensor `PointCloud` is supported with the tensor-compatible nearest neighbor search modules.
 - Customizable tensor based `TriangleMesh`, `VoxelBlockGrid`, and `LineSet` are implemented that allow user-defined properties.
   (@yixing: add code snippets on how to set properties of geometries.)
