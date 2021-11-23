@@ -85,7 +85,8 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 - We now support I/O from/to Numpy compatible `.npz` `.npy` formats for Open3D tensors and tensor maps. It is now easier to convert between Open3D geometry classes and Numpy properties.
 - We have improved I/O performance for tensor-based point cloud and triangle-mesh file-formats, including `.ply`, `.pcd`, `.pts`. Geometry loading time is hence improved for the stand-alone visualizer app.
-- We now support exchanging material data with other applications with the MessagePack format over ZeroMQ. (@benjamin please check).
+- We added support for material data to the MessagePack serialization format of the RPC module.
+
 
 ## Geometry
 
