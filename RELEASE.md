@@ -30,7 +30,7 @@ Now you can use Open3D within [Tensorboard](https://www.tensorflow.org/tensorboa
 
 For more details on how to use TensorBoard with Open3D, check out this [tutorial](http://www.open3d.org/docs/release/tutorial/visualization/tensorboard_plugin.html). 
 
-## GUI Visualizer
+## Visualizer
 
 Further enhancements have been added to the GUI viewer. Now you can:
 
