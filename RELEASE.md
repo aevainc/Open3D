@@ -28,6 +28,8 @@ Now you can use Open3D within [Tensorboard](https://www.tensorflow.org/tensorboa
 #### Semantic segmentation
 ![tensorboard_sync_view_vp9](https://user-images.githubusercontent.com/41028320/142651665-a4c155c1-a4a1-4f9a-80e6-e13cdc1e5569.jpg)
 
+(@sameer: add code snippet on how to save the checkpoint and start the tensorboard)
+
 For more details on how to use TensorBoard with Open3D, check out this [tutorial](http://www.open3d.org/docs/release/tutorial/visualization/tensorboard_plugin.html). 
 
 ## Visualizer
@@ -37,6 +39,9 @@ Further enhancements have been added to the GUI viewer. Now you can:
 - Directly visualize tensor-based geometry classes including `PointCloud`, `TriangleMesh`, and `LineSet`.
 - Use physically based rendering (PBR) materials that deliver appealing appearance.
 - Use all the functionality in Tensorboard!
+
+(@rene: add code)
+(@rene: updated image such that objects are larger)
 
   ![img](https://lh3.googleusercontent.com/MRYlCK2LFxZaZ7GlgKfSvZg47K_Hj94Xhad3jTzomAf4z4vDBixbYBy2_QABhu3XiwMCpriShG30gdBZp7jTs0gwa9TOunigLM_FDiQ6WAJfeHFz5va4d9gHv7UnoSJdRFUTZ1QW)
 
@@ -69,12 +74,15 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 - We introduce a new class `RaycastingScene` with basic ray intersections functions and distance transform for meshes, utilizing the award winning [Intel Embree library](https://www.embree.org/).
   ![](http://www.open3d.org/docs/latest/_images/distance_field_animation.gif)
+  (@benjamin, add code snippets, and point to the tutorial at the end)
 - Normal estimation for tensor `PointCloud` is supported with the tensor-compatible nearest neighbor search modules.
-- Customizable tensor based `TriangleMesh` and `VoxelBlockGrid` are implemented that allow user-defined properties.
+- Customizable tensor based `TriangleMesh`, `VoxelBlockGrid`, and `LineSet` are implemented that allow user-defined properties.
+  (@yixing: add code snippets on how to set properties of geometries.)
 
 ## Pipelines
 
 - We have enhanced point cloud registration (ICP) with a tensor interface:
+  (@rishabh: add code snippets)
   - Float64 (double) precision point cloud is supported for a higher numerical stability
   - Robust Kernels, including Huber, Tukey, and GM losses are supported for robust registration.
   - Colored-ICP is now supported in the unified tensor-based API.
@@ -90,16 +98,12 @@ Further enhancements have been added to the GUI viewer. Now you can:
 The Open3D-ML library welcomes more state-of-the-art models and operators that are ready to use for advanced 3D perception, especially semantic segmentation, including
 
 - New state-of-the-art [Point Transformer](https://arxiv.org/abs/2012.09164) for Semantic Segmentation.
-
-![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/PointTransformer_S3DIS.png)
-
+  ![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/PointTransformer_S3DIS.png)
 - Highly Efficient [Point-Voxel Convolution](https://arxiv.org/abs/1907.03739) for Semantic Segmentation.
-
-![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/PVCNN_S3DIS.png)
-
+  ![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/PVCNN_S3DIS.png)
 - RaggedTensor integration that enables batch `SparseConvolution` and `SparseConvolutionTranspose` along with PyTorch.
 - Batched voxelization for fast point-voxel conversions.
-
+- @sanskar: point to the documentation
 
 ## Acknowledgment
 
