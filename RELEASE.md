@@ -53,13 +53,31 @@ Further enhancements have been added to the GUI viewer. Now you can:
 
 - Directly visualize tensor-based geometry classes including `PointCloud`, `TriangleMesh`, and `LineSet`.
 - Use physically based rendering (PBR) materials that deliver appealing appearance.
-- All new skybox (@errissa - please update).
+- New default lighting environment and skybox improves visual appeal
 - Use all the functionality in Tensorboard!
 
-(@rene: add code)
-(@rene: updated image such that objects are larger)
+  ![img](https://user-images.githubusercontent.com/3722407/143294455-46800d35-3cab-4124-9df9-cb6fdc3d9e7b.png)
 
-  ![img](https://lh3.googleusercontent.com/MRYlCK2LFxZaZ7GlgKfSvZg47K_Hj94Xhad3jTzomAf4z4vDBixbYBy2_QABhu3XiwMCpriShG30gdBZp7jTs0gwa9TOunigLM_FDiQ6WAJfeHFz5va4d9gHv7UnoSJdRFUTZ1QW)
+``` python
+import open3d as o3d
+import open3d.visualization as vis
+a_sphere = o3d.geometry.TriangleMesh.create_sphere(2.5, create_uv_map=True)
+a_sphere.compute_vertex_normals()
+a_sphere = o3d.t.geometry.TriangleMesh.from_legacy(a_sphere)
+# Compare this...
+vis.draw(a_sphere)
+a_sphere.material = vis.Material('defaultLit')
+a_sphere.material.texture_maps['albedo'] =
+    o3d.t.io.read_image('examples/test_data/demo_scene_assets/Tiles074_Color.jpg')
+a_sphere.material.texture_maps['roughness'] =
+    o3d.t.io.read_image('examples/test_data/demo_scene_assets/Tiles074_Roughness.jpg')
+a_sphere.material.texture_maps['normal'] =
+    o3d.t.io.read_image('examples/test_data/demo_scene_assets/Tiles074_NormalDX.jpg')
+# With this!
+vis.draw(a_sphere)
+```
+
+A complete, complex demo scene can be found at `examples/python/gui/demo-scene.py` 
 
 ## Core
 
