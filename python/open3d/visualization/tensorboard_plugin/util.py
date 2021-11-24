@@ -30,6 +30,7 @@ from copy import deepcopy
 from collections import OrderedDict
 import logging
 import threading
+from functools import partial
 
 import numpy as np
 from tensorboard.backend.event_processing.plugin_event_multiplexer import EventMultiplexer
@@ -38,6 +39,7 @@ from tensorboard.compat.tensorflow_stub.pywrap_tensorflow import masked_crc32c
 
 import open3d as o3d
 from open3d.visualization import rendering
+from open3d.visualization import gui
 from open3d.ml.vis import Colormap
 from open3d.ml.vis import LabelLUT
 from . import plugin_data_pb2
@@ -54,8 +56,8 @@ _log.propagate = False
 _stream_handler = logging.StreamHandler()
 _stream_handler.setFormatter(
     logging.Formatter('[%(name)s %(levelname)s T:%(threadName)s] %(message)s'))
-_stream_handler.setLevel(logging.WARNING)
-_log.setLevel(logging.WARNING)
+_stream_handler.setLevel(logging.DEBUG)
+_log.setLevel(logging.DEBUG)
 _log.addHandler(_stream_handler)
 
 
@@ -112,8 +114,7 @@ class LRUCache:
     """
 
     def __init__(self, max_items=128):
-        """
-        Args:
+        """Args:
             max_items (int): Max items in cache.
         """
         self.cache = OrderedDict()
@@ -446,8 +447,7 @@ class RenderUpdate:
         for color in LabelLUT.get_colors(mode='lightbg'))
 
     def __init__(self, window_scaling, message, label_to_names):
-        from open3d.visualization.async_event_loop import async_event_loop
-        self._gui = async_event_loop
+        self._app = gui.Application.instance
         self._window_scaling = window_scaling
         self._label_to_names = label_to_names
         render_state = message.get("render_state", {
@@ -561,11 +561,11 @@ class RenderUpdate:
         def backup(self, tm, prop, clone=False, shape=None, dtype=None):
             """Args:
 
-                    tm (TensorMap): tensormap, such as PointCloud.point
-                    prop (str): property key, such as 'indices'
-                    clone (bool): Backup should be a clone, else empty tensor.
-                    shape, dtype: sape, dtype if property and backup are absent
-                        and a new empty tensor should be created.
+                tm (TensorMap): tensormap, such as PointCloud.point
+                prop (str): property key, such as 'indices'
+                clone (bool): Backup should be a clone, else empty tensor.
+                shape, dtype: sape, dtype if property and backup are absent and
+                    a new empty tensor should be created.
             """
             if prop in tm:
                 if "__" + prop in tm:  # swap
@@ -749,18 +749,24 @@ class RenderUpdate:
 
         if o3dvis.scene.has_geometry(geometry_name):
             if material_update_flag > 0:
-                self._gui.run_sync(
-                    o3dvis.modify_geometry_material, geometry_name, material
+                self._app.post_to_main_thread(
+                    o3dvis,
+                    partial(o3dvis.modify_geometry_material, geometry_name,
+                            material)
                 )  # does not do force_redraw(), so also need update_geometry()
-            self._gui.run_sync(o3dvis.update_geometry, geometry_name, geometry,
-                               geometry_update_flag)
+            self._app.post_to_main_thread(
+                o3dvis,
+                partial(o3dvis.update_geometry, geometry_name, geometry,
+                        geometry_update_flag))
             _log.debug(
                 f"Geometry {geometry_name} updated with flags "
                 f"Geo:{geometry_update_flag:b}, Mat:{material_update_flag:b}")
         else:
-            self._gui.run_sync(o3dvis.add_geometry, geometry_name, geometry,
-                               material if material_update_flag else None)
-        self._gui.run_sync(o3dvis.post_redraw)
+            self._app.post_to_main_thread(
+                o3dvis,
+                partial(o3dvis.add_geometry, geometry_name, geometry,
+                        material if material_update_flag else None))
+        self._app.post_to_main_thread(o3dvis, o3dvis.post_redraw)
 
         swap.restore()
         _log.debug(f"apply complete: {geometry_name} with "
