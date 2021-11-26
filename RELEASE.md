@@ -162,7 +162,8 @@ The Open3D-ML library welcomes more state-of-the-art models and operators that a
   ![img](https://raw.githubusercontent.com/isl-org/Open3D/wei/doc-014/PVCNN_S3DIS.png)
 - RaggedTensor integration that enables batch `SparseConvolution` and `SparseConvolutionTranspose` along with PyTorch.
 - Batched voxelization for fast point-voxel conversions.
-- @sanskar: point to the documentation
+
+Refer to the tutorial for training and inference on new models. ([PyTorch](https://github.com/isl-org/Open3D-ML/blob/master/docs/tutorial/notebook/train_ss_model_using_pytorch.rst) [TensorFlow](https://github.com/isl-org/Open3D-ML/blob/master/docs/tutorial/notebook/train_ss_model_using_tensorflow.rst)).
 
 ## Acknowledgment
 
