@@ -141,7 +141,6 @@ A complete, complex demo scene can be found at `examples/python/gui/demo-scene.p
 ## Pipelines
 
 - We have enhanced point cloud registration (ICP) with a tensor interface:
-  (@rishabh: add code snippets)
   - Float64 (double) precision point cloud is supported for a higher numerical stability
   - Robust Kernels, including Huber, Tukey, and GM losses are supported for robust registration.
   - Colored-ICP is now supported in the unified tensor-based API.
@@ -165,6 +164,7 @@ target.point["colors"] = target.point["colors"].to(o3d.core.float32) / 255.0
 # To use the GPU, transfer the pointclouds to the GPU device.
 source = source.cuda(0)
 target = target.cuda(0)
+
 # 2. Setup the parameters.
 # Initial alignment.
 init_source_to_target = np.identity(4)
@@ -187,12 +187,24 @@ max_correspondence_distances = o3d.utility.DoubleVector([0.08, 0.04, 0.02])
 voxel_sizes = o3d.utility.DoubleVector([0.04, 0.02, 0.01])
 # Save loss logs.
 save_loss_log = True
+
 # 3. Get `registration_result`.
 registration_result = treg.multi_scale_icp(source, target, voxel_sizes,
                                            criteria_list,
                                            max_correspondence_distances,
                                            init_source_to_target, estimation,
                                            save_loss_log)
+
+# 4. Visualize the registration result.
+o3d.visualization.draw(
+    [source.clone().transform(registration_result.transformation), target])
+
+# 5. Visualize the loss-logs
+from matplotlib import pyplot as plt
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(20, 5))
+axes.set_title("Inlier RMSE vs Iteration")
+axes.plot(registration_result.loss_log["index"].numpy(),
+          registration_result.loss_log["inlier_rmse"].numpy())
 ```
 
 # 4. Visualize the registration result.
