@@ -145,7 +145,7 @@ A complete, complex demo scene can be found at `examples/python/gui/demo-scene.p
   - Robust Kernels, including Huber, Tukey, and GM losses are supported for robust registration.
   - Colored-ICP is now supported in the unified tensor-based API.
 
-Detailed explanations are available at [registration tutorial](http://www.open3d.org/docs/0.14.1/tutorial/t_pipelines/t_icp_registration.html).
+Detailed explanations are available at the upgraded [registration tutorials](http://www.open3d.org/docs/0.14.1/tutorial/t_pipelines/t_icp_registration.html).
 ```python
 import open3d as o3d
 if o3d.__DEVICE_API__ == 'cuda':
@@ -194,18 +194,6 @@ registration_result = treg.multi_scale_icp(source, target, voxel_sizes,
                                            max_correspondence_distances,
                                            init_source_to_target, estimation,
                                            save_loss_log)
-
-# 4. Visualize the registration result.
-o3d.visualization.draw(
-    [source.clone().transform(registration_result.transformation), target])
-
-# 5. Visualize the loss-logs
-from matplotlib import pyplot as plt
-fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(20, 5))
-axes.set_title("Inlier RMSE vs Iteration")
-axes.plot(registration_result.loss_log["index"].numpy(),
-          registration_result.loss_log["inlier_rmse"].numpy())
-```
 
 # 4. Visualize the registration result.
 o3d.visualization.draw(
