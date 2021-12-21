@@ -49,7 +49,7 @@ Open3D: A Modern Library for 3D Data Processing
     :maxdepth: 1
     :caption: Contribute
 
-    contribute/contribute
+    contributing
     contribute/contribution_recipes
     contribute/styleguide
 
