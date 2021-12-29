@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: 'Open3D: A Modern Library for 3D Data Processing'
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Qian-Yi
+    family-names: Zhou
+  - given-names: Jaesik
+    family-names: Park
+  - given-names: Vladlen
+    family-names: Koltun
+identifiers:
+  - type: url
+    value: 'https://arxiv.org/abs/1801.09847'
+repository-code: 'https://github.com/isl-org/Open3D'
+url: 'http://www.open3d.org'
+date-released: 2018-01-30
+license: MIT
