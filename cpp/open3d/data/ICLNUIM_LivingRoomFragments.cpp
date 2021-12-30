@@ -42,7 +42,7 @@ const std::string url =
         "https://github.com/isl-org/open3d_downloads/releases/"
         "download/data/ICLNUIM_LivingRoomFragments.zip";
 const std::string download_cache_sha256 =
-        "1f67f1dee630cf42bbb535e45160101e15b1aeebee3032399738d18ac7018db4";
+        "4bb14c4f15cae1d35cb77ef8a81806e5ad1aa04aedbdb8742e2d3927b0a3bf95";
 const std::unordered_map<std::string, std::string> file_name_to_file_sha256{
         {"cloud_bin_0.pcd",
          "e1e100802c29ef454c6b523084668ee0e2f365ec52eaeebe79ae804c20447b15"},
@@ -67,7 +67,6 @@ ICLNUIM_LivingRoomFragments::ICLNUIM_LivingRoomFragments(
         data_root_ = data_root;
     }
     const std::string download_dir = data_root_ + "/download_cache";
-    download_cache_path_ = download_dir + "/" + prefix;
     data_path_ = data_root_ + "/data/" + prefix;
 
     // Check if files already present.
@@ -75,8 +74,8 @@ ICLNUIM_LivingRoomFragments::ICLNUIM_LivingRoomFragments(
         // Check cached download.
         if (!VerifyFiles(download_dir, {{prefix, download_cache_sha256}})) {
             // Download Data.
-            DownloadFromURL(url, download_cache_sha256, download_dir,
-                            data_root_);
+            download_cache_path_ = DownloadFromURL(
+                    url, download_cache_sha256, "download_cache", data_root_);
         }
         // Extract data.
         Extract(download_cache_path_, data_path_);
@@ -91,7 +90,9 @@ void ICLNUIM_LivingRoomFragments::DeleteData() const {
     utility::filesystem::DeleteDirectory(data_path_);
 }
 
-void ICLNUIM_LivingRoomFragments::DisplayDataTree(const int max_depth) {}
+void ICLNUIM_LivingRoomFragments::DisplayDataTree(const int depth_level) {
+    utility::filesystem::DisplayDirectoryTree(data_path_, depth_level);
+}
 
 }  // namespace data
 }  // namespace open3d

@@ -46,11 +46,11 @@ TEST(Extract, ExtractFromZIP) {
             "data-manager/test_data_00.zip";
     std::string file_sha256 =
             "66ea466a02532d61dbc457abf1408afeab360d7a35e15f1479ca91c25e838d30";
-    data::DownloadFromURL(file_url, file_sha256, prefix);
+    std::string download_path =
+            data::DownloadFromURL(file_url, file_sha256, prefix);
 
     // Extract the test zip file.
-    std::string file_path = extract_dir + "/test_data_00.zip";
-    EXPECT_NO_THROW(data::Extract(file_path, extract_dir));
+    EXPECT_NO_THROW(data::Extract(download_path, extract_dir));
     std::string output_file = extract_dir + "/test_data/lena_color.jpg";
     // Check if the extracted file exists.
     EXPECT_TRUE(utility::filesystem::FileExists(output_file));
@@ -61,11 +61,10 @@ TEST(Extract, ExtractFromZIP) {
             "data-manager/test_data_00.tar.xz";
     file_sha256 =
             "e8072ac8c10b73a13a9b72642f3645985e74c3853a71d984d000020455c0b3b7";
-    data::DownloadFromURL(file_url, file_sha256, prefix);
+    download_path = data::DownloadFromURL(file_url, file_sha256, prefix);
 
     // Currently only `.zip` files are supported.
-    file_path = extract_dir + "/test_data_00.tar.xz";
-    EXPECT_ANY_THROW(data::Extract(file_path, extract_dir));
+    EXPECT_ANY_THROW(data::Extract(download_path, extract_dir));
 
     // Clean up.
     EXPECT_TRUE(utility::filesystem::DeleteDirectory(extract_dir));

@@ -46,7 +46,7 @@ TEST(Dataset, LocateDataRoot) {
 TEST(Dataset, ICLNUIM) {
     data::ICLNUIM_LivingRoomFragments icl_frag;
 
-    utility::LogInfo(" Root Path: {}", icl_frag.GetDataRoot());
+    icl_frag.DisplayDataTree();
 }
 
 }  // namespace tests
