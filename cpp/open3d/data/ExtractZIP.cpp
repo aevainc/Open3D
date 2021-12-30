@@ -116,13 +116,14 @@ static int ExtractCurrentFile(unzFile uf,
         if (err == UNZ_OK) {
             std::string file_path = extract_dir + "/" +
                                     static_cast<std::string>(write_filename);
+            utility::LogInfo("Test file_path: {}", file_path);
+
             fout = FOPEN_FUNC(file_path.c_str(), "wb");
 
             // Some zipfile don't contain directory alone before file.
             if ((fout == nullptr) &&
-                (filename_withoutpath != (char *)filename_inzip)) {
-                const std::string dir_path = extract_dir + "/" + filename_inzip;
-                utility::filesystem::MakeDirectoryHierarchy(dir_path);
+                filename_withoutpath == (char *)filename_inzip) {
+                utility::filesystem::MakeDirectoryHierarchy(extract_dir);
 
                 fout = FOPEN_FUNC(file_path.c_str(), "wb");
             }
@@ -130,6 +131,7 @@ static int ExtractCurrentFile(unzFile uf,
             if (fout == nullptr) {
                 utility::LogWarning("Extraction failed. Error opening {}",
                                     file_path);
+                return UNZ_ERRNO;
             }
         }
 
