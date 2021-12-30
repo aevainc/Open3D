@@ -29,6 +29,7 @@
 #include <fcntl.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <sstream>
@@ -238,9 +239,7 @@ bool ChangeWorkingDirectory(const std::string &directory) {
 }
 
 bool DirectoryExists(const std::string &directory) {
-    struct stat info;
-    if (stat(directory.c_str(), &info) == -1) return false;
-    return S_ISDIR(info.st_mode);
+    return fs::is_directory(directory);
 }
 
 bool MakeDirectory(const std::string &directory) {
@@ -277,15 +276,20 @@ bool DeleteDirectory(const std::string &directory) {
 }
 
 bool FileExists(const std::string &filename) {
-#ifdef WINDOWS
-    struct _stat64 info;
-    if (_stat64(filename.c_str(), &info) == -1) return false;
-    return S_ISREG(info.st_mode);
-#else
-    struct stat info;
-    if (stat(filename.c_str(), &info) == -1) return false;
-    return S_ISREG(info.st_mode);
-#endif
+    return (fs::exists(filename) && fs::is_regular_file(filename));
+}
+
+std::uintmax_t ComputeFileSizeInBytes(const std::string &filename) {
+    if (!FileExists(filename)) {
+        utility::LogError("File {} does not exists.", filename);
+    }
+    auto err = std::error_code{};
+    auto filesize = fs::file_size(filename, err);
+    if (filesize != static_cast<uintmax_t>(-1)) {
+        return filesize;
+    }
+
+    return static_cast<uintmax_t>(-1);
 }
 
 bool RemoveFile(const std::string &filename) {
@@ -367,6 +371,55 @@ std::vector<std::string> FindFilesRecursively(
     }
 
     return matches;
+}
+
+// Reference:
+// https://github.com/fenbf/articles/blob/master/cpp17/filesystemTest.cpp
+// Adapted from Modern C++ Programming Cookbook.
+static void DisplayDirectoryTreeImpl(const fs::path &current_path,
+                                     int current_depth,
+                                     int max_depth) {
+    if (fs::exists(current_path) && fs::is_directory(current_path)) {
+        std::string lead_indentation_spaces =
+                std::string(current_depth * 4, ' ');
+        for (const auto &entry : fs::directory_iterator(current_path)) {
+            auto filename = entry.path().filename();
+
+            if (fs::is_directory(entry.status())) {
+                utility::LogInfo("{} [+] {}", lead_indentation_spaces,
+                                 filename);
+                if (current_depth < max_depth) {
+                    DisplayDirectoryTreeImpl(entry, current_depth + 1,
+                                             max_depth);
+                }
+            } else if (fs::is_regular_file(entry.status())) {
+                const time_t cftime = std::chrono::system_clock::to_time_t(
+                        fs::last_write_time(entry));
+                // asctime returns char* in format:
+                // `Sun Sep 16 01:03:52 1973\n\0`
+                // which is converted to string and `\n` is removed.
+                std::string time_str = std::asctime(std::localtime(&cftime));
+                time_str.pop_back();
+                utility::LogInfo("{} {},\t {} bytes,\t last modified time: {}",
+                                 lead_indentation_spaces, filename,
+                                 ComputeFileSizeInBytes(entry.path().string()),
+                                 time_str);
+            } else {
+                utility::LogInfo("{} [?] {}", lead_indentation_spaces,
+                                 filename);
+            }
+        }
+    }
+}
+
+void DisplayDirectoryTree(const std::string &path, int depth_level) {
+    if (path.empty()) {
+        utility::LogError("Path cannot be empty.");
+    }
+    if (!DirectoryExists(path)) {
+        utility::LogError("Directory {} does not exists.", path);
+    }
+    DisplayDirectoryTreeImpl(path, 0, depth_level);
 }
 
 FILE *FOpen(const std::string &filename, const std::string &mode) {
