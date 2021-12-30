@@ -80,6 +80,9 @@ ICLNUIM_LivingRoomFragments::ICLNUIM_LivingRoomFragments(
         // Extract data.
         Extract(download_cache_path_, data_path_);
     }
+
+    // Clean up.
+    if (!cache_download) DeleteDownloadCache();
 }
 
 void ICLNUIM_LivingRoomFragments::DeleteDownloadCache() const {

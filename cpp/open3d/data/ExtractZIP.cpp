@@ -116,8 +116,6 @@ static int ExtractCurrentFile(unzFile uf,
         if (err == UNZ_OK) {
             std::string file_path = extract_dir + "/" +
                                     static_cast<std::string>(write_filename);
-            utility::LogInfo("Test file_path: {}", file_path);
-
             fout = FOPEN_FUNC(file_path.c_str(), "wb");
 
             // Some zipfile don't contain directory alone before file.
