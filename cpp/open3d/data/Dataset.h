@@ -93,7 +93,7 @@ public:
             const std::string& data_root = "",
             const bool cache_download = true);
 
-    void DisplayDataTree(const int max_depth = 1);
+    void DisplayDataTree(const int depth_level = 1);
 
     const std::string GetDownloadCachePath() const {
         return download_cache_path_;

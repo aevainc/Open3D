@@ -65,7 +65,7 @@ bool VerifyFiles(const std::string& data_path,
     for (auto& file : file_name_to_file_sha256) {
         std::string file_path = data_path + "/" + file.first;
         if (!utility::filesystem::FileExists(file_path)) return false;
-        if (GetSHA256(data_path) != file.second) return false;
+        if (GetSHA256(file_path) != file.second) return false;
     }
 
     return false;
