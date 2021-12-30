@@ -47,10 +47,11 @@ std::string GetSHA256(const std::string& file_path);
 /// is used. The default data root is $HOME/open3d_data. For more information,
 /// see open3d::data::Dataset class.
 /// \throw std::runtime_error If the download fails.
-void DownloadFromURL(const std::string& url,
-                     const std::string& sha256,
-                     const std::string& prefix,
-                     const std::string& data_root = "");
+/// \returns Path to downloaded file.
+std::string DownloadFromURL(const std::string& url,
+                            const std::string& sha256,
+                            const std::string& prefix,
+                            const std::string& data_root = "");
 
 }  // namespace data
 }  // namespace open3d

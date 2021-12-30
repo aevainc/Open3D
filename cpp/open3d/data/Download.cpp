@@ -105,10 +105,10 @@ static size_t WriteDataCb(void* ptr, size_t size, size_t nmemb, FILE* stream) {
     return written;
 }
 
-void DownloadFromURL(const std::string& url,
-                     const std::string& sha256,
-                     const std::string& prefix,
-                     const std::string& data_root) {
+std::string DownloadFromURL(const std::string& url,
+                            const std::string& sha256,
+                            const std::string& prefix,
+                            const std::string& data_root) {
     // Always print URL to inform the user. If the download fails, the user
     // knows the URL.
     utility::LogInfo("Downloading {}", url);
@@ -138,7 +138,7 @@ void DownloadFromURL(const std::string& url,
         GetSHA256(file_path) == sha256) {
         utility::LogInfo("{} exists and SHA256 matches. Skipped downloading.",
                          file_path);
-        return;
+        return file_path;
     }
 
     // Download.
@@ -176,6 +176,8 @@ void DownloadFromURL(const std::string& url,
         utility::LogError("Download failed with error code: {}.",
                           curl_easy_strerror(res));
     }
+
+    return file_path;
 }
 
 }  // namespace data

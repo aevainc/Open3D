@@ -44,17 +44,14 @@ TEST(Downloader, DownloadAndVerify) {
 
     std::string prefix = "temp_test";
     std::string file_dir = data::LocateDataRoot() + "/" + prefix;
-    std::string file_path = file_dir + "/" + "test_data_00.zip";
     EXPECT_TRUE(utility::filesystem::DeleteDirectory(file_dir));
 
     // This download shall work.
-    data::DownloadFromURL(url, sha256, prefix);
-    EXPECT_TRUE(utility::filesystem::DirectoryExists(file_dir));
-    EXPECT_TRUE(
-            utility::filesystem::FileExists(file_dir + "/test_data_00.zip"));
+    std::string download_path = data::DownloadFromURL(url, sha256, prefix);
+    EXPECT_TRUE(utility::filesystem::FileExists(download_path));
 
     // This download shall be skipped (look at the message).
-    data::DownloadFromURL(url, sha256, prefix);
+    download_path = data::DownloadFromURL(url, sha256, prefix);
 
     // Mismatch sha256.
     EXPECT_ANY_THROW(data::DownloadFromURL(
