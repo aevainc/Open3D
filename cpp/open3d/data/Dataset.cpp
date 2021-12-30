@@ -28,6 +28,7 @@
 
 #include <string>
 
+#include "open3d/data/Download.h"
 #include "open3d/utility/FileSystem.h"
 #include "open3d/utility/Logging.h"
 
@@ -45,7 +46,10 @@ std::string LocateDataRoot() {
     return data_root;
 }
 
-Dataset::Dataset(const std::string& data_root) {
+Dataset::Dataset(const std::string& prefix,
+                 const std::string& data_root,
+                 const std::string& url,
+                 const std::string& sha256) {
     if (data_root.empty()) {
         data_root_ = LocateDataRoot();
     } else {
@@ -54,6 +58,18 @@ Dataset::Dataset(const std::string& data_root) {
 }
 
 std::string Dataset::GetDataRoot() const { return data_root_; }
+
+bool VerifyFiles(const std::string& data_path,
+                 const std::unordered_map<std::string, std::string>&
+                         file_name_to_file_sha256) {
+    for (auto& file : file_name_to_file_sha256) {
+        std::string file_path = data_path + "/" + file.first;
+        if (!utility::filesystem::FileExists(file_path)) return false;
+        if (GetSHA256(data_path) != file.second) return false;
+    }
+
+    return false;
+}
 
 }  // namespace data
 }  // namespace open3d

@@ -43,5 +43,11 @@ TEST(Dataset, LocateDataRoot) {
     EXPECT_EQ(ds_custom.GetDataRoot(), "/my/custom/data_root");
 }
 
+TEST(Dataset, ICLNUIM) {
+    data::ICLNUIM_LivingRoomFragments icl_frag;
+
+    utility::LogInfo(" Root Path: {}", icl_frag.GetDataRoot());
+}
+
 }  // namespace tests
 }  // namespace open3d

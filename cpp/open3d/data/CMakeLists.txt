@@ -5,6 +5,7 @@ target_sources(data PRIVATE
     Download.cpp
     Extract.cpp
     ExtractZIP.cpp
+    ICLNUIM_LivingRoomFragments.cpp
 )
 
 open3d_show_and_abort_on_warning(data)

@@ -27,6 +27,9 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
+
+#include "open3d/utility/Logging.h"
 
 namespace open3d {
 namespace data {
@@ -54,7 +57,10 @@ namespace data {
 ///   the code and load their own data in a similar way.
 class Dataset {
 public:
-    Dataset(const std::string& data_root = "");
+    Dataset(const std::string& prefix = "",
+            const std::string& data_root = "",
+            const std::string& url = "",
+            const std::string& sha256 = "");
     virtual ~Dataset() {}
 
     /// Get data root directory. The data root is set at construction time or
@@ -75,6 +81,33 @@ protected:
 /// LocateDataRoot() shall be called when the user-specified data root is not
 /// set, i.e. in case (b) and (c).
 std::string LocateDataRoot();
+
+bool VerifyFiles(const std::string& data_path,
+                 const std::unordered_map<std::string, std::string>&
+                         file_name_to_file_sha256);
+
+class ICLNUIM_LivingRoomFragments : public Dataset {
+public:
+    ICLNUIM_LivingRoomFragments(
+            const std::string prefix = "ICLNUIM_LivingRoomFragments",
+            const std::string& data_root = "",
+            const bool cache_download = true);
+
+    void DisplayDataTree(const int max_depth = 1);
+
+    const std::string GetDownloadCachePath() const {
+        return download_cache_path_;
+    }
+    const std::string GetDataPath() const { return data_path_; }
+    void DeleteDownloadCache() const;
+    void DeleteData() const;
+
+private:
+    std::string download_cache_path_;
+    std::string data_path_;
+    const std::unordered_map<std::string, std::string>
+            file_name_to_file_sha256_;
+};
 
 }  // namespace data
 }  // namespace open3d
