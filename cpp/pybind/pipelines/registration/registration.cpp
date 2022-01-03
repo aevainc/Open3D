@@ -32,6 +32,7 @@
 #include "open3d/geometry/PointCloud.h"
 #include "open3d/pipelines/registration/ColoredICP.h"
 #include "open3d/pipelines/registration/CorrespondenceChecker.h"
+#include "open3d/pipelines/registration/DopplerICP.h"
 #include "open3d/pipelines/registration/FastGlobalRegistration.h"
 #include "open3d/pipelines/registration/Feature.h"
 #include "open3d/pipelines/registration/GeneralizedICP.h"
@@ -294,6 +295,52 @@ Sets :math:`c = 1` if ``with_scaling`` is ``False``.
             .def_readwrite("kernel",
                            &TransformationEstimationForColoredICP::kernel_,
                            "Robust Kernel used in the Optimization");
+
+    // open3d.registration.TransformationEstimationForDopplerICP:
+    // TransformationEstimation
+    py::class_<
+            TransformationEstimationForDopplerICP,
+            PyTransformationEstimation<TransformationEstimationForDopplerICP>,
+            TransformationEstimation>
+            te_dop(m, "TransformationEstimationForDopplerICP",
+                   "Class to estimate a transformation between two point "
+                   "clouds using Doppler velocity information");
+    py::detail::bind_default_constructor<TransformationEstimationForDopplerICP>(
+            te_dop);
+    py::detail::bind_copy_functions<TransformationEstimationForDopplerICP>(
+            te_dop);
+    te_dop.def(py::init([](double lambda_geometric,
+                           std::shared_ptr<RobustKernel> geometric_kernel,
+                           std::shared_ptr<RobustKernel> doppler_kernel) {
+                   return new TransformationEstimationForDopplerICP(
+                           lambda_geometric, std::move(geometric_kernel),
+                           std::move(doppler_kernel));
+               }),
+               "lambda_geometric"_a, "goemetric_kernel"_a, "doppler_kernel"_a)
+            .def(py::init([](double lambda_geometric) {
+                     return new TransformationEstimationForDopplerICP(
+                             lambda_geometric);
+                 }),
+                 "lambda_geometric"_a)
+            .def("__repr__",
+                 [](const TransformationEstimationForDopplerICP &te) {
+                     return std::string(
+                                    "TransformationEstimationForDopplerICP ") +
+                            ("with lambda_geometric=" +
+                             std::to_string(te.lambda_geometric_));
+                 })
+            .def_readwrite(
+                    "lambda_geometric",
+                    &TransformationEstimationForDopplerICP::lambda_geometric_,
+                    "lambda_geometric")
+            .def_readwrite(
+                    "geometric_kernel",
+                    &TransformationEstimationForDopplerICP::geometric_kernel_,
+                    "Robust Kernel used in the Geometric Error Optimization")
+            .def_readwrite(
+                    "doppler_kernel",
+                    &TransformationEstimationForDopplerICP::doppler_kernel_,
+                    "Robust Kernel used in the Doppler Error Optimization");
 
     // open3d.registration.TransformationEstimationForGeneralizedICP:
     // TransformationEstimation
@@ -562,15 +609,23 @@ must hold true for all edges.)");
                     "fitness", &RegistrationResult::fitness_,
                     "float: The overlapping area (# of inlier correspondences "
                     "/ # of points in source). Higher is better.")
+            .def_readwrite(
+                    "converged", &RegistrationResult::converged_,
+                    "bool: Specifies whether the algorithm converged or not.")
+            .def_readwrite(
+                    "num_iterations", &RegistrationResult::num_iterations_,
+                    "int: Number of iterations the algorithm took to converge.")
             .def("__repr__", [](const RegistrationResult &rr) {
                 return fmt::format(
                         "RegistrationResult with "
-                        "fitness={:e}"
+                        "converged={}"
+                        ", num_iteration={:d}"
+                        ", fitness={:e}"
                         ", inlier_rmse={:e}"
                         ", and correspondence_set size of {:d}"
                         "\nAccess transformation to get result.",
-                        rr.fitness_, rr.inlier_rmse_,
-                        rr.correspondence_set_.size());
+                        rr.converged_, rr.num_iterations_, rr.fitness_,
+                        rr.inlier_rmse_, rr.correspondence_set_.size());
             });
 }
 
@@ -596,6 +651,7 @@ static const std::unordered_map<std::string, std::string>
                  "(``TransformationEstimationPointToPoint``, "
                  "``TransformationEstimationPointToPlane``, "
                  "``TransformationEstimationForGeneralizedICP``, "
+                 "``TransformationEstimationForDopplerICP``, "
                  "``TransformationEstimationForColoredICP``)"},
                 {"init", "Initial transformation estimation"},
                 {"lambda_geometric", "lambda_geometric value"},
@@ -607,10 +663,16 @@ static const std::unordered_map<std::string, std::string>
                  "Enables mutual filter such that the correspondence of the "
                  "source point's correspondence is itself."},
                 {"option", "Registration option"},
+                {"period",
+                 "Time period (in seconds) between the source and the target "
+                 "point clouds."},
                 {"ransac_n", "Fit ransac with ``ransac_n`` correspondences"},
                 {"seed", "Random seed."},
                 {"source_feature", "Source point cloud feature."},
                 {"source", "The source point cloud."},
+                {"T_V_to_S",
+                 "The 4x4 transformation matrix to transform ``sensor`` to "
+                 "``vehicle`` frame."},
                 {"target_feature", "Target point cloud feature."},
                 {"target", "The target point cloud."},
                 {"transformation",
@@ -644,6 +706,17 @@ void pybind_registration_methods(py::module &m) {
           "estimation_method"_a = TransformationEstimationForColoredICP(0.968),
           "criteria"_a = ICPConvergenceCriteria());
     docstring::FunctionDocInject(m, "registration_colored_icp",
+                                 map_shared_argument_docstrings);
+
+    m.def("registration_doppler_icp", &RegistrationDopplerICP,
+          py::call_guard<py::gil_scoped_release>(),
+          "Function for Doppler ICP registration", "source"_a, "target"_a,
+          "max_correspondence_distance"_a,
+          "init"_a = Eigen::Matrix4d::Identity(),
+          "estimation_method"_a = TransformationEstimationForDopplerICP(0.5),
+          "criteria"_a = ICPConvergenceCriteria(), "period"_a = 0.1F,
+          "T_V_to_S"_a = Eigen::Matrix4d::Identity());
+    docstring::FunctionDocInject(m, "registration_doppler_icp",
                                  map_shared_argument_docstrings);
 
     m.def("registration_generalized_icp", &RegistrationGeneralizedICP,
