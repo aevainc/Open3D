@@ -693,6 +693,18 @@ open3d_import_3rdparty_library(3rdparty_jsoncpp
 )
 list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Open3D::3rdparty_jsoncpp)
 
+# matplotlibcpp
+include(${Open3D_3RDPARTY_DIR}/matplotlibcpp/matplotlibcpp.cmake)
+open3d_import_3rdparty_library(3rdparty_matplotlibcpp
+    INCLUDE_DIRS ${MATPLOTLIBCPP_INCLUDE_DIRS}
+    DEPENDS      ext_matplotlibcpp
+)
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+target_link_libraries(3rdparty_matplotlibcpp INTERFACE Python3::Python Python3::Module)
+find_package(Python3 COMPONENTS NumPy)
+target_link_libraries(3rdparty_matplotlibcpp INTERFACE Python3::NumPy)
+list(APPEND Open3D_3RDPARTY_PRIVATE_TARGETS Open3D::3rdparty_matplotlibcpp)
+
 # liblzf
 if(USE_SYSTEM_LIBLZF)
     open3d_find_package_3rdparty_library(3rdparty_liblzf
