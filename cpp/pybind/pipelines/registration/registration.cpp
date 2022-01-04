@@ -310,13 +310,16 @@ Sets :math:`c = 1` if ``with_scaling`` is ``False``.
     py::detail::bind_copy_functions<TransformationEstimationForDopplerICP>(
             te_dop);
     te_dop.def(py::init([](double lambda_geometric,
+                           double doppler_outlier_threshold,
                            std::shared_ptr<RobustKernel> geometric_kernel,
                            std::shared_ptr<RobustKernel> doppler_kernel) {
                    return new TransformationEstimationForDopplerICP(
-                           lambda_geometric, std::move(geometric_kernel),
+                           lambda_geometric, doppler_outlier_threshold,
+                           std::move(geometric_kernel),
                            std::move(doppler_kernel));
                }),
-               "lambda_geometric"_a, "goemetric_kernel"_a, "doppler_kernel"_a)
+               "lambda_geometric"_a, "doppler_outlier_threshold"_a,
+               "goemetric_kernel"_a, "doppler_kernel"_a)
             .def(py::init([](double lambda_geometric) {
                      return new TransformationEstimationForDopplerICP(
                              lambda_geometric);
@@ -333,6 +336,10 @@ Sets :math:`c = 1` if ``with_scaling`` is ``False``.
                     "lambda_geometric",
                     &TransformationEstimationForDopplerICP::lambda_geometric_,
                     "lambda_geometric")
+            .def_readwrite("doppler_outlier_threshold",
+                           &TransformationEstimationForDopplerICP::
+                                   doppler_outlier_threshold_,
+                           "doppler_outlier_threshold")
             .def_readwrite(
                     "geometric_kernel",
                     &TransformationEstimationForDopplerICP::geometric_kernel_,

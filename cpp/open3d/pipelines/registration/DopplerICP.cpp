@@ -98,14 +98,19 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
         utility::LogError("Time period too small");
     }
 
-    const double sqrt_lambda_geometric = std::sqrt(lambda_geometric_);
     const double lambda_doppler = 1.0 - lambda_geometric_;
-    const double sqrt_lambda_doppler = std::sqrt(lambda_doppler);
-    const double period_inv = 1.F / period;
+    double sqrt_lambda_geometric = std::sqrt(lambda_geometric_);
+    double sqrt_lambda_doppler = std::sqrt(lambda_doppler);
+    double sqrt_lambda_doppler_by_dt = sqrt_lambda_doppler / period;
 
     const Eigen::Vector6d state_vector =
             utility::TransformMatrix4dToVector6d(transformation);
-    const Eigen::Vector3d v_s_in_V = -state_vector.block<3, 1>(3, 0) / period;
+    const Eigen::Matrix3d R_S_to_V = T_V_to_S.block<3, 3>(0, 0).inverse();
+    const Eigen::Vector3d r_v_to_s_in_V = T_V_to_S.block<3, 1>(0, 3);
+    const Eigen::Vector3d w_v_in_V = -state_vector.block<3, 1>(0, 0) / period;
+    const Eigen::Vector3d v_v_in_V = -state_vector.block<3, 1>(3, 0) / period;
+    const Eigen::Vector3d v_s_in_V = v_v_in_V + w_v_in_V.cross(r_v_to_s_in_V);
+    const Eigen::Vector3d v_s_in_S = R_S_to_V * v_s_in_V;
 
     auto compute_jacobian_and_residual =
             [&](int i,
@@ -113,33 +118,46 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
                 std::vector<double> &r, std::vector<double> &w) {
                 const size_t cs = corres[i][0];
                 const size_t ct = corres[i][1];
-                const Eigen::Vector3d &ps = source.points_[cs];
-                const Eigen::Vector3d &pt = target.points_[ct];
-                const Eigen::Vector3d &nt = target.normals_[ct];
-                const double &doppler_s = source.dopplers_[cs];
-                const Eigen::Vector3d direction_s = source_directions[cs];
+                const Eigen::Vector3d &ps_in_V = source.points_[cs];
+                const Eigen::Vector3d &pt_in_V = target.points_[ct];
+                const Eigen::Vector3d &nt_in_V = target.normals_[ct];
+                const Eigen::Vector3d &ds_in_V = source_directions[cs];
+                const double &doppler_in_S = source.dopplers_[cs];
 
                 J_r.resize(2);
                 r.resize(2);
                 w.resize(2);
 
-                // Compute geometric point-to-plane error and Jacobian.
-                r[0] = sqrt_lambda_geometric * (ps - pt).dot(nt);
-                w[0] = geometric_kernel_->Weight(r[0]);
-                J_r[0].block<3, 1>(0, 0) = sqrt_lambda_geometric * ps.cross(nt);
-                J_r[0].block<3, 1>(3, 0) = sqrt_lambda_geometric * nt;
-
                 // Compute predicted Doppler velocity.
-                const double doppler_s_pred = -direction_s.dot(v_s_in_V);
+                const Eigen::Vector3d ds_in_S = R_S_to_V * ds_in_V;
+                const double doppler_pred_in_S = -ds_in_S.dot(v_s_in_S);
+                const double doppler_error = doppler_in_S - doppler_pred_in_S;
+
+                // Doppler compatibility check.
+                if (!first_iteration &&
+                    std::abs(doppler_error) > doppler_outlier_threshold_) {
+                    sqrt_lambda_geometric = 0.F;
+                    sqrt_lambda_doppler = 0.F;
+                    sqrt_lambda_doppler_by_dt = 0.F;
+                }
+
+                // Compute geometric point-to-plane error and Jacobian.
+                r[0] = sqrt_lambda_geometric * (ps_in_V - pt_in_V).dot(nt_in_V);
+                w[0] = geometric_kernel_->Weight(r[0]);
+                J_r[0].block<3, 1>(0, 0) =
+                        sqrt_lambda_geometric * ps_in_V.cross(nt_in_V);
+                J_r[0].block<3, 1>(3, 0) = sqrt_lambda_geometric * nt_in_V;
 
                 // Compute Doppler error and Jacobian.
-                r[1] = sqrt_lambda_doppler * (doppler_s - doppler_s_pred);
+                r[1] = sqrt_lambda_doppler * doppler_error;
                 w[1] = doppler_kernel_->Weight(r[1]);
-                J_r[1].block<3, 1>(0, 0) = Eigen::Vector3d::Zero();
-                J_r[1].block<3, 1>(3, 0) =
-                        sqrt_lambda_doppler * period_inv * -direction_s;
-                // J_r[0](0) = 0;
-                // J_r[0](1) = 0;
+                J_r[1].block<3, 1>(0, 0) = sqrt_lambda_doppler_by_dt *
+                                           -ds_in_S.cross(r_v_to_s_in_V);
+                J_r[1].block<3, 1>(3, 0) = sqrt_lambda_doppler_by_dt * -ds_in_S;
+
+                // J_r[1](0) = 0;
+                // J_r[1](1) = 0;
+                // J_r[1](2) = 0;
                 J_r[1](5) = 0;
             };
 

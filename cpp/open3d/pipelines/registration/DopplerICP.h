@@ -54,11 +54,13 @@ public:
     };
     explicit TransformationEstimationForDopplerICP(
             double lambda_geometric = 0.5,
+            double doppler_outlier_threshold = 0.5,
             std::shared_ptr<RobustKernel> geometric_kernel =
                     std::make_shared<L2Loss>(),
             std::shared_ptr<RobustKernel> doppler_kernel =
                     std::make_shared<L2Loss>())
         : lambda_geometric_(lambda_geometric),
+          doppler_outlier_threshold_(doppler_outlier_threshold),
           geometric_kernel_(std::move(geometric_kernel)),
           doppler_kernel_(std::move(doppler_kernel)) {
         if (lambda_geometric_ < 0 || lambda_geometric_ > 1.0) {
@@ -86,6 +88,7 @@ public:
 
 public:
     double lambda_geometric_ = 0.5;
+    double doppler_outlier_threshold_ = 0.5;
     /// shared_ptr to an Abstract RobustKernel that could mutate at runtime.
     std::shared_ptr<RobustKernel> geometric_kernel_ =
             std::make_shared<L2Loss>();
