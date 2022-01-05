@@ -152,8 +152,8 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
                 r[1] = sqrt_lambda_doppler * doppler_error;
                 w[1] = doppler_kernel_->Weight(r[1]);
                 J_r[1].block<3, 1>(0, 0) = sqrt_lambda_doppler_by_dt *
-                                           -ds_in_S.cross(r_v_to_s_in_V);
-                J_r[1].block<3, 1>(3, 0) = sqrt_lambda_doppler_by_dt * -ds_in_S;
+                                           ds_in_V.cross(r_v_to_s_in_V);
+                J_r[1].block<3, 1>(3, 0) = sqrt_lambda_doppler_by_dt * -ds_in_V;
 
                 // J_r[1](0) = 0;
                 // J_r[1](1) = 0;
