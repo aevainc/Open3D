@@ -67,7 +67,7 @@ public:
           geometric_robust_loss_min_iteration_(
                   geometric_robust_loss_min_iteration),
           doppler_robust_loss_min_iteration_(doppler_robust_loss_min_iteration),
-          check_doppler_compatibility(check_doppler_compatibility_),
+          check_doppler_compatibility_(check_doppler_compatibility),
           geometric_kernel_(std::move(geometric_kernel)),
           doppler_kernel_(std::move(doppler_kernel)) {
         if (lambda_geometric_ < 0 || lambda_geometric_ > 1.0) {
