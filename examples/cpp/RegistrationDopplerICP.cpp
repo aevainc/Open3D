@@ -92,8 +92,8 @@ int main(int argc, char *argv[]) {
 
     auto result = RegistrationDopplerICP(
             *source, *target, 0.3, trans,
-            TransformationEstimationForDopplerICP(0.99, 100.0, geometric_kernel,
-                                                  doppler_kernel),
+            TransformationEstimationForDopplerICP(
+                    0.99, 100.0, 0, 2, false, geometric_kernel, doppler_kernel),
             ICPConvergenceCriteria(1e-6, 1e-6, 200), period, trans);
     trans = result.transformation_;
 
