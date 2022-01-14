@@ -326,7 +326,8 @@ Sets :math:`c = 1` if ``with_scaling`` is ``False``.
                }),
                "lambda_geometric"_a, "doppler_outlier_threshold"_a,
                "geometric_robust_loss_min_iteration"_a,
-               "doppler_robust_loss_min_iteration"_a, "goemetric_kernel"_a,
+               "doppler_robust_loss_min_iteration"_a,
+               "check_doppler_compatibility"_a, "goemetric_kernel"_a,
                "doppler_kernel"_a)
             .def(py::init([](double lambda_geometric) {
                      return new TransformationEstimationForDopplerICP(
