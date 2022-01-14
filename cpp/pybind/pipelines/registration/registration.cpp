@@ -313,7 +313,7 @@ Sets :math:`c = 1` if ``with_scaling`` is ``False``.
                            double doppler_outlier_threshold,
                            size_t geometric_robust_loss_min_iteration,
                            size_t doppler_robust_loss_min_iteration,
-                           bool check_doppler_compatibility.
+                           bool check_doppler_compatibility,
                            std::shared_ptr<RobustKernel> geometric_kernel,
                            std::shared_ptr<RobustKernel> doppler_kernel) {
                    return new TransformationEstimationForDopplerICP(
