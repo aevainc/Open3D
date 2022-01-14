@@ -311,20 +311,41 @@ Sets :math:`c = 1` if ``with_scaling`` is ``False``.
             te_dop);
     te_dop.def(py::init([](double lambda_geometric,
                            double doppler_outlier_threshold,
+                           size_t geometric_robust_loss_min_iteration,
+                           size_t doppler_robust_loss_min_iteration,
+                           bool check_doppler_compatibility.
                            std::shared_ptr<RobustKernel> geometric_kernel,
                            std::shared_ptr<RobustKernel> doppler_kernel) {
                    return new TransformationEstimationForDopplerICP(
                            lambda_geometric, doppler_outlier_threshold,
+                           geometric_robust_loss_min_iteration,
+                           doppler_robust_loss_min_iteration,
+                           check_doppler_compatibility,
                            std::move(geometric_kernel),
                            std::move(doppler_kernel));
                }),
                "lambda_geometric"_a, "doppler_outlier_threshold"_a,
-               "goemetric_kernel"_a, "doppler_kernel"_a)
+               "geometric_robust_loss_min_iteration"_a,
+               "doppler_robust_loss_min_iteration"_a, "goemetric_kernel"_a,
+               "doppler_kernel"_a)
             .def(py::init([](double lambda_geometric) {
                      return new TransformationEstimationForDopplerICP(
                              lambda_geometric);
                  }),
                  "lambda_geometric"_a)
+            .def("compute_transformation",
+                 py::overload_cast<const geometry::PointCloud &,
+                                   const geometry::PointCloud &,
+                                   const CorrespondenceSet &,
+                                   const std::vector<Eigen::Vector3d> &,
+                                   const double, const Eigen::Matrix4d &,
+                                   const Eigen::Matrix4d &, const size_t,
+                                   std::vector<Eigen::Vector3d> &>(
+                         &TransformationEstimationForDopplerICP::
+                                 ComputeTransformation,
+                         py::const_),
+                 "Compute transformation from source to target point cloud "
+                 "given correspondences.")
             .def("__repr__",
                  [](const TransformationEstimationForDopplerICP &te) {
                      return std::string(
@@ -340,6 +361,23 @@ Sets :math:`c = 1` if ``with_scaling`` is ``False``.
                            &TransformationEstimationForDopplerICP::
                                    doppler_outlier_threshold_,
                            "doppler_outlier_threshold")
+            .def_readwrite(
+                    "geometric_robust_loss_min_iteration",
+                    &TransformationEstimationForDopplerICP::
+                            geometric_robust_loss_min_iteration_,
+                    "Minimum iterations after which Robust Kernel is used for "
+                    "the Geometric error")
+            .def_readwrite(
+                    "doppler_robust_loss_min_iteration",
+                    &TransformationEstimationForDopplerICP::
+                            doppler_robust_loss_min_iteration_,
+                    "Minimum iterations after which Robust Kernel is used for "
+                    "the Doppler error")
+            .def_readwrite(
+                    "check_doppler_compatibility",
+                    &TransformationEstimationForDopplerICP::
+                            check_doppler_compatibility_,
+                    "Checks for Doppler compatibility with correspondences")
             .def_readwrite(
                     "geometric_kernel",
                     &TransformationEstimationForDopplerICP::geometric_kernel_,
@@ -622,6 +660,8 @@ must hold true for all edges.)");
             .def_readwrite(
                     "num_iterations", &RegistrationResult::num_iterations_,
                     "int: Number of iterations the algorithm took to converge.")
+            .def_readwrite("errors", &RegistrationResult::errors_,
+                           "error vector")
             .def("__repr__", [](const RegistrationResult &rr) {
                 return fmt::format(
                         "RegistrationResult with "
@@ -694,6 +734,14 @@ void pybind_registration_methods(py::module &m) {
           "transformation"_a = Eigen::Matrix4d::Identity());
     docstring::FunctionDocInject(m, "evaluate_registration",
                                  map_shared_argument_docstrings);
+
+    m.def("get_registration_result_and_correspondences",
+          &GetRegistrationResultAndCorrespondences,
+          py::call_guard<py::gil_scoped_release>(),
+          "Function for evaluating registration between point clouds",
+          "source"_a, "target"_a, "target_kdtree"_a,
+          "max_correspondence_distance"_a,
+          "transformation"_a = Eigen::Matrix4d::Identity());
 
     m.def("registration_icp", &RegistrationICP,
           py::call_guard<py::gil_scoped_release>(),

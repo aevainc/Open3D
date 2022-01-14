@@ -151,6 +151,7 @@ public:
     bool converged_;
     /// Number of iterations the algorithm took to converge.
     size_t num_iterations_;
+    std::vector<double> errors_;
 };
 
 /// \brief Helper function for evaluating registration between point clouds.

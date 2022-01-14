@@ -55,12 +55,19 @@ public:
     explicit TransformationEstimationForDopplerICP(
             double lambda_geometric = 0.5,
             double doppler_outlier_threshold = 0.5,
+            size_t geometric_robust_loss_min_iteration = 0,
+            size_t doppler_robust_loss_min_iteration = 2,
+            bool check_doppler_compatibility = false,
             std::shared_ptr<RobustKernel> geometric_kernel =
                     std::make_shared<L2Loss>(),
             std::shared_ptr<RobustKernel> doppler_kernel =
                     std::make_shared<L2Loss>())
         : lambda_geometric_(lambda_geometric),
           doppler_outlier_threshold_(doppler_outlier_threshold),
+          geometric_robust_loss_min_iteration_(
+                  geometric_robust_loss_min_iteration),
+          doppler_robust_loss_min_iteration_(doppler_robust_loss_min_iteration),
+          check_doppler_compatibility(check_doppler_compatibility_),
           geometric_kernel_(std::move(geometric_kernel)),
           doppler_kernel_(std::move(doppler_kernel)) {
         if (lambda_geometric_ < 0 || lambda_geometric_ > 1.0) {
@@ -84,12 +91,17 @@ public:
             const double period,
             const Eigen::Matrix4d &transformation,
             const Eigen::Matrix4d &T_V_to_S,
-            const bool first_iteration) const;
+            const size_t iteration,
+            std::vector<Eigen::Vector3d> &errors) const;
 
 public:
-    double lambda_geometric_ = 0.5;
-    double doppler_outlier_threshold_ = 0.5;
+    double lambda_geometric_{0.5};
+    double doppler_outlier_threshold_{0.5};
+    size_t geometric_robust_loss_min_iteration_{0};
+    size_t doppler_robust_loss_min_iteration_{2};
+    bool check_doppler_compatibility_{false};
     /// shared_ptr to an Abstract RobustKernel that could mutate at runtime.
+    std::shared_ptr<RobustKernel> default_kernel_ = std::make_shared<L2Loss>();
     std::shared_ptr<RobustKernel> geometric_kernel_ =
             std::make_shared<L2Loss>();
     std::shared_ptr<RobustKernel> doppler_kernel_ = std::make_shared<L2Loss>();

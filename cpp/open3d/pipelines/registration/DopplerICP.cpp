@@ -80,7 +80,8 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
         const double period,
         const Eigen::Matrix4d &transformation,
         const Eigen::Matrix4d &T_V_to_S,
-        const bool first_iteration) const {
+        const size_t iteration,
+        std::vector<Eigen::Vector3d> &errors) const {
     if (corres.empty()) {
         utility::LogError(
                 "No correspondences found between source and target "
@@ -112,6 +113,9 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
     const Eigen::Vector3d v_s_in_V = v_v_in_V + w_v_in_V.cross(r_v_to_s_in_V);
     const Eigen::Vector3d v_s_in_S = R_S_to_V * v_s_in_V;
 
+    errors.clear();
+    errors.reserve(corres.size());
+
     auto compute_jacobian_and_residual =
             [&](int i,
                 std::vector<Eigen::Vector6d, utility::Vector6d_allocator> &J_r,
@@ -134,7 +138,7 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
                 const double doppler_error = doppler_in_S - doppler_pred_in_S;
 
                 // Doppler compatibility check.
-                if (!first_iteration &&
+                if (check_doppler_compatibility_ &&
                     std::abs(doppler_error) > doppler_outlier_threshold_) {
                     sqrt_lambda_geometric = 0.F;
                     sqrt_lambda_doppler = 0.F;
@@ -142,23 +146,30 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
                 }
 
                 // Compute geometric point-to-plane error and Jacobian.
-                r[0] = sqrt_lambda_geometric * (ps_in_V - pt_in_V).dot(nt_in_V);
-                w[0] = geometric_kernel_->Weight(r[0]);
+                const double geometric_error = (ps_in_V - pt_in_V).dot(nt_in_V);
+                r[0] = sqrt_lambda_geometric * geometric_error;
+                w[0] = (iteration >= geometric_robust_loss_min_iteration_)
+                               ? geometric_kernel_->Weight(r[0])
+                               : default_kernel_->Weight(r[0]);
                 J_r[0].block<3, 1>(0, 0) =
                         sqrt_lambda_geometric * ps_in_V.cross(nt_in_V);
                 J_r[0].block<3, 1>(3, 0) = sqrt_lambda_geometric * nt_in_V;
 
                 // Compute Doppler error and Jacobian.
                 r[1] = sqrt_lambda_doppler * doppler_error;
-                w[1] = doppler_kernel_->Weight(r[1]);
+                w[1] = (iteration >= doppler_robust_loss_min_iteration_)
+                               ? doppler_kernel_->Weight(r[1])
+                               : default_kernel_->Weight(r[1]);
                 J_r[1].block<3, 1>(0, 0) = sqrt_lambda_doppler_by_dt *
                                            ds_in_V.cross(r_v_to_s_in_V);
                 J_r[1].block<3, 1>(3, 0) = sqrt_lambda_doppler_by_dt * -ds_in_V;
 
-                // J_r[1](0) = 0;
-                // J_r[1](1) = 0;
-                // J_r[1](2) = 0;
-                J_r[1](5) = 0;
+                double doppler_weight =
+                        (iteration >= doppler_robust_loss_min_iteration_)
+                                ? doppler_kernel_->Weight(doppler_error)
+                                : default_kernel_->Weight(doppler_error);
+                errors.emplace_back(Eigen::Vector3d(doppler_error,
+                                                    doppler_weight, J_r[1](2)));
             };
 
     Eigen::Matrix6d JTJ;
@@ -216,7 +227,6 @@ RegistrationResult RegistrationDopplerICP(
     Eigen::Matrix4d transformation = init;
     geometry::KDTreeFlann kdtree;
     kdtree.SetGeometry(target);
-    // geometry::PointCloud &pcd = *InitializePointCloudForDopplerICP(source);
     geometry::PointCloud pcd = source;
     std::vector<Eigen::Vector3d> source_directions =
             ComputeDirectionVectors(source);
@@ -228,6 +238,8 @@ RegistrationResult RegistrationDopplerICP(
     result = GetRegistrationResultAndCorrespondences(
             pcd, target, kdtree, max_correspondence_distance, transformation);
 
+    std::vector<Eigen::Vector3d> errors;
+
     int i;
     bool converged = false;
     for (i = 0; i < criteria.max_iteration_; i++) {
@@ -235,7 +247,7 @@ RegistrationResult RegistrationDopplerICP(
                           result.fitness_, result.inlier_rmse_);
         Eigen::Matrix4d update = estimation.ComputeTransformation(
                 pcd, target, result.correspondence_set_, source_directions,
-                period, transformation, T_V_to_S, i == 0);
+                period, transformation, T_V_to_S, i == 0, errors);
         transformation = update * transformation;
         pcd.Transform(update);
         RegistrationResult backup = result;
