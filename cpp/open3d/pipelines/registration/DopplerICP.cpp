@@ -100,9 +100,9 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
     }
 
     const double lambda_doppler = 1.0 - lambda_geometric_;
-    double sqrt_lambda_geometric = std::sqrt(lambda_geometric_);
-    double sqrt_lambda_doppler = std::sqrt(lambda_doppler);
-    double sqrt_lambda_doppler_by_dt = sqrt_lambda_doppler / period;
+    const double sqrt_lambda_geometric = std::sqrt(lambda_geometric_);
+    const double sqrt_lambda_doppler = std::sqrt(lambda_doppler);
+    const double sqrt_lambda_doppler_by_dt = sqrt_lambda_doppler / period;
 
     const Eigen::Vector6d state_vector =
             utility::TransformMatrix4dToVector6d(transformation);
@@ -138,38 +138,50 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
                 const double doppler_error = doppler_in_S - doppler_pred_in_S;
 
                 // Doppler compatibility check.
+                bool update = true;
                 if (check_doppler_compatibility_ &&
                     std::abs(doppler_error) > doppler_outlier_threshold_) {
-                    sqrt_lambda_geometric = 0.F;
-                    sqrt_lambda_doppler = 0.F;
-                    sqrt_lambda_doppler_by_dt = 0.F;
+                    update = false;
                 }
 
-                // Compute geometric point-to-plane error and Jacobian.
-                const double geometric_error = (ps_in_V - pt_in_V).dot(nt_in_V);
-                r[0] = sqrt_lambda_geometric * geometric_error;
-                w[0] = (iteration >= geometric_robust_loss_min_iteration_)
-                               ? geometric_kernel_->Weight(r[0])
-                               : default_kernel_->Weight(r[0]);
-                J_r[0].block<3, 1>(0, 0) =
-                        sqrt_lambda_geometric * ps_in_V.cross(nt_in_V);
-                J_r[0].block<3, 1>(3, 0) = sqrt_lambda_geometric * nt_in_V;
+                if (update) {
+                    // Compute geometric point-to-plane error and Jacobian.
+                    const double geometric_error = (ps_in_V - pt_in_V).dot(nt_in_V);
+                    r[0] = sqrt_lambda_geometric * geometric_error;
+                    w[0] = (iteration >= geometric_robust_loss_min_iteration_)
+                                   ? geometric_kernel_->Weight(r[0])
+                                   : default_kernel_->Weight(r[0]);
+                    J_r[0].block<3, 1>(0, 0) =
+                            sqrt_lambda_geometric * ps_in_V.cross(nt_in_V);
+                    J_r[0].block<3, 1>(3, 0) = sqrt_lambda_geometric * nt_in_V;
 
-                // Compute Doppler error and Jacobian.
-                r[1] = sqrt_lambda_doppler * doppler_error;
-                w[1] = (iteration >= doppler_robust_loss_min_iteration_)
-                               ? doppler_kernel_->Weight(r[1])
-                               : default_kernel_->Weight(r[1]);
-                J_r[1].block<3, 1>(0, 0) = sqrt_lambda_doppler_by_dt *
-                                           ds_in_V.cross(r_v_to_s_in_V);
-                J_r[1].block<3, 1>(3, 0) = sqrt_lambda_doppler_by_dt * -ds_in_V;
+                    // Compute Doppler error and Jacobian.
+                    r[1] = sqrt_lambda_doppler * doppler_error;
+                    w[1] = (iteration >= doppler_robust_loss_min_iteration_)
+                                   ? doppler_kernel_->Weight(r[1])
+                                   : default_kernel_->Weight(r[1]);
+                    J_r[1].block<3, 1>(0, 0) = sqrt_lambda_doppler_by_dt *
+                                               ds_in_V.cross(r_v_to_s_in_V);
+                    J_r[1].block<3, 1>(3, 0) = sqrt_lambda_doppler_by_dt * -ds_in_V;
+                } else {
+                    r[0] = 0.F;
+                    w[0] = 0.F;
+                    J_r[0].block<3, 1>(0, 0) = Eigen::Vector3d::Zero();
+                    J_r[0].block<3, 1>(3, 0) = Eigen::Vector3d::Zero();
 
-                double doppler_weight =
-                        (iteration >= doppler_robust_loss_min_iteration_)
-                                ? doppler_kernel_->Weight(doppler_error)
-                                : default_kernel_->Weight(doppler_error);
-                errors.emplace_back(Eigen::Vector3d(doppler_error,
-                                                    doppler_weight, J_r[1](2)));
+                    r[1] = 0.F;
+                    w[1] = 0.F;
+                    J_r[1].block<3, 1>(0, 0) = Eigen::Vector3d::Zero();
+                    J_r[1].block<3, 1>(3, 0) = Eigen::Vector3d::Zero();
+                }
+
+                // double doppler_weight =
+                //         (iteration >= doppler_robust_loss_min_iteration_)
+                //                 ? doppler_kernel_->Weight(doppler_error)
+                //                 : default_kernel_->Weight(doppler_error);
+
+                errors.emplace_back(Eigen::Vector3d(
+                        doppler_error, std::abs(doppler_error), update));
             };
 
     Eigen::Matrix6d JTJ;
