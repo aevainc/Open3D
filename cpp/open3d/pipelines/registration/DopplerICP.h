@@ -44,38 +44,43 @@ namespace registration {
 
 class RegistrationResult;
 
+/// \class TransformationEstimationForDopplerICP
+///
+/// Class to estimate a transformation for DICP with point to plane distance.
 class TransformationEstimationForDopplerICP : public TransformationEstimation {
 public:
     ~TransformationEstimationForDopplerICP() override{};
 
-    TransformationEstimationType GetTransformationEstimationType()
-            const override {
-        return type_;
-    };
+    /// \brief Constructor that takes as input a RobustKernel \param kernel Any
+    /// of the implemented statistical robust kernel for outlier rejection.
     explicit TransformationEstimationForDopplerICP(
-            double lambda_geometric = 0.5,
-            double doppler_outlier_threshold = 0.5,
+            double lambda_doppler = 0.01,
+            bool prune_correspondences = false,
+            double doppler_outlier_threshold = 2.0,
             size_t geometric_robust_loss_min_iteration = 0,
             size_t doppler_robust_loss_min_iteration = 2,
-            bool check_doppler_compatibility = false,
             std::shared_ptr<RobustKernel> geometric_kernel =
                     std::make_shared<L2Loss>(),
             std::shared_ptr<RobustKernel> doppler_kernel =
                     std::make_shared<L2Loss>())
-        : lambda_geometric_(lambda_geometric),
+        : lambda_doppler_(lambda_doppler),
+          prune_correspondences_(prune_correspondences),
           doppler_outlier_threshold_(doppler_outlier_threshold),
           geometric_robust_loss_min_iteration_(
                   geometric_robust_loss_min_iteration),
           doppler_robust_loss_min_iteration_(doppler_robust_loss_min_iteration),
-          check_doppler_compatibility_(check_doppler_compatibility),
           geometric_kernel_(std::move(geometric_kernel)),
           doppler_kernel_(std::move(doppler_kernel)) {
-        if (lambda_geometric_ < 0 || lambda_geometric_ > 1.0) {
-            lambda_geometric_ = 0.5;
+        if (lambda_doppler_ < 0 || lambda_doppler_ > 1.0) {
+            lambda_doppler_ = 0.01;
         }
     }
 
 public:
+    TransformationEstimationType GetTransformationEstimationType()
+            const override {
+        return type_;
+    };
     double ComputeRMSE(const geometry::PointCloud &source,
                        const geometry::PointCloud &target,
                        const CorrespondenceSet &corres) const override;
@@ -91,15 +96,20 @@ public:
             const double period,
             const Eigen::Matrix4d &transformation,
             const Eigen::Matrix4d &T_V_to_S,
-            const size_t iteration,
-            std::vector<Eigen::Vector3d> &errors) const;
+            const size_t iteration) const;
 
 public:
-    double lambda_geometric_{0.5};
-    double doppler_outlier_threshold_{0.5};
+    /// Factor that weighs the Doppler residual term in DICP objective.
+    double lambda_doppler_{0.01};
+    /// Whether or not to prune dynamic point outlier correspondences.
+    bool prune_correspondences_{false};
+    /// Correspondences with Doppler error greater than this threshold are
+    /// rejected from optimization.
+    double doppler_outlier_threshold_{2.0};
+    /// Number of iterations of ICP after which robust loss kicks in.
     size_t geometric_robust_loss_min_iteration_{0};
     size_t doppler_robust_loss_min_iteration_{2};
-    bool check_doppler_compatibility_{false};
+
     /// shared_ptr to an Abstract RobustKernel that could mutate at runtime.
     std::shared_ptr<RobustKernel> default_kernel_ = std::make_shared<L2Loss>();
     std::shared_ptr<RobustKernel> geometric_kernel_ =
@@ -115,12 +125,12 @@ private:
 ///
 /// \param source The source point cloud.
 /// \param target The target point cloud.
-/// \param max_distance Maximum correspondence points-pair distance.
+/// \param max_distance Maximum correspondence points-pair distance (meters).
 /// \param init Initial transformation estimation.
 /// Default value: array([[1., 0., 0., 0.], [0., 1., 0., 0.], [0., 0., 1., 0.],
 /// [0., 0., 0., 1.]]).
 /// \param estimation TransformationEstimationForDopplerICP method. Can only
-/// change the lambda_geometric value and the robust kernel used in the
+/// change the lambda_doppler value and the robust kernel used in the
 /// optimization.
 /// \param criteria Convergence criteria.
 /// \param period Time period (in seconds) between the source and the target

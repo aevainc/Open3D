@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
         visualize = true;
     }
 
-    // Prepare input
+    // Prepare input.
     std::shared_ptr<geometry::PointCloud> source =
             open3d::io::CreatePointCloudFromFile(argv[1]);
     std::shared_ptr<geometry::PointCloud> target =
@@ -83,26 +83,42 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    Eigen::Matrix4d trans = Eigen::Matrix4d::Identity();
-    const double period = 0.100003706;
+    // Configure DICP parameters.
+    const double max_neighbor_distance = {0.3};
+    const double lambda_doppler = {0.01};
+    const bool prune_correspondences = {false};
+    const double doppler_outlier_threshold = {2.0};
+    const size_t geometric_robust_loss_min_iteration = {0};
+    const size_t doppler_robust_loss_min_iteration = {2};
+    const double period = {0.1};  // seconds
+    const double convergence_threshold = {1e-6};
+    const size_t max_iters = {200};
 
     std::shared_ptr<RobustKernel> geometric_kernel =
             std::make_shared<TukeyLoss>(0.5);
-    std::shared_ptr<RobustKernel> doppler_kernel = std::make_shared<L2Loss>();
+    std::shared_ptr<RobustKernel> doppler_kernel =
+            std::make_shared<TukeyLoss>(0.5);
 
+    Eigen::Matrix4d transform = Eigen::Matrix4d::Identity();
     auto result = RegistrationDopplerICP(
-            *source, *target, 0.3, trans,
+            *source, *target, max_neighbor_distance, transform,
             TransformationEstimationForDopplerICP(
-                    0.99, 100.0, 0, 2, false, geometric_kernel, doppler_kernel),
-            ICPConvergenceCriteria(1e-6, 1e-6, 200), period, trans);
-    trans = result.transformation_;
+                    lambda_doppler, prune_correspondences,
+                    doppler_outlier_threshold,
+                    geometric_robust_loss_min_iteration,
+                    doppler_robust_loss_min_iteration, geometric_kernel,
+                    doppler_kernel),
+            ICPConvergenceCriteria(convergence_threshold, convergence_threshold,
+                                   max_iters),
+            period, transform);
+    transform = result.transformation_;
 
     std::stringstream ss;
-    ss << trans;
+    ss << transform;
     utility::LogInfo("Final transformation = \n{}", ss.str());
 
     if (visualize) {
-        VisualizeRegistration(*source, *target, trans);
+        VisualizeRegistration(*source, *target, transform);
     }
 
     return 0;

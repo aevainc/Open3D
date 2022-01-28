@@ -309,39 +309,38 @@ Sets :math:`c = 1` if ``with_scaling`` is ``False``.
             te_dop);
     py::detail::bind_copy_functions<TransformationEstimationForDopplerICP>(
             te_dop);
-    te_dop.def(py::init([](double lambda_geometric,
+    te_dop.def(py::init([](double lambda_doppler, bool prune_correspondences,
                            double doppler_outlier_threshold,
                            size_t geometric_robust_loss_min_iteration,
                            size_t doppler_robust_loss_min_iteration,
-                           bool check_doppler_compatibility,
                            std::shared_ptr<RobustKernel> geometric_kernel,
                            std::shared_ptr<RobustKernel> doppler_kernel) {
                    return new TransformationEstimationForDopplerICP(
-                           lambda_geometric, doppler_outlier_threshold,
+                           lambda_doppler,
+                           prune_correspondences,
+                           doppler_outlier_threshold,
                            geometric_robust_loss_min_iteration,
                            doppler_robust_loss_min_iteration,
-                           check_doppler_compatibility,
                            std::move(geometric_kernel),
                            std::move(doppler_kernel));
                }),
-               "lambda_geometric"_a, "doppler_outlier_threshold"_a,
+               "lambda_doppler"_a, "prune_correspondences"_a,
+               "doppler_outlier_threshold"_a,
                "geometric_robust_loss_min_iteration"_a,
-               "doppler_robust_loss_min_iteration"_a,
-               "check_doppler_compatibility"_a, "goemetric_kernel"_a,
+               "doppler_robust_loss_min_iteration"_a, "goemetric_kernel"_a,
                "doppler_kernel"_a)
-            .def(py::init([](double lambda_geometric) {
+            .def(py::init([](double lambda_doppler) {
                      return new TransformationEstimationForDopplerICP(
-                             lambda_geometric);
+                             lambda_doppler);
                  }),
-                 "lambda_geometric"_a)
+                 "lambda_doppler"_a)
             .def("compute_transformation",
                  py::overload_cast<const geometry::PointCloud &,
                                    const geometry::PointCloud &,
                                    const CorrespondenceSet &,
                                    const std::vector<Eigen::Vector3d> &,
                                    const double, const Eigen::Matrix4d &,
-                                   const Eigen::Matrix4d &, const size_t,
-                                   std::vector<Eigen::Vector3d> &>(
+                                   const Eigen::Matrix4d &, const size_t>(
                          &TransformationEstimationForDopplerICP::
                                  ComputeTransformation,
                          py::const_),
@@ -351,13 +350,18 @@ Sets :math:`c = 1` if ``with_scaling`` is ``False``.
                  [](const TransformationEstimationForDopplerICP &te) {
                      return std::string(
                                     "TransformationEstimationForDopplerICP ") +
-                            ("with lambda_geometric=" +
-                             std::to_string(te.lambda_geometric_));
+                            ("with lambda_doppler=" +
+                             std::to_string(te.lambda_doppler_));
                  })
             .def_readwrite(
-                    "lambda_geometric",
-                    &TransformationEstimationForDopplerICP::lambda_geometric_,
-                    "lambda_geometric")
+                    "lambda_doppler",
+                    &TransformationEstimationForDopplerICP::lambda_doppler_,
+                    "lambda_doppler")
+            .def_readwrite("prune_correspondences",
+                           &TransformationEstimationForDopplerICP::
+                                   prune_correspondences_,
+                           "Performs dynamic point outlier rejection of "
+                           "correspondences")
             .def_readwrite("doppler_outlier_threshold",
                            &TransformationEstimationForDopplerICP::
                                    doppler_outlier_threshold_,
@@ -374,11 +378,6 @@ Sets :math:`c = 1` if ``with_scaling`` is ``False``.
                             doppler_robust_loss_min_iteration_,
                     "Minimum iterations after which Robust Kernel is used for "
                     "the Doppler error")
-            .def_readwrite(
-                    "check_doppler_compatibility",
-                    &TransformationEstimationForDopplerICP::
-                            check_doppler_compatibility_,
-                    "Checks for Doppler compatibility with correspondences")
             .def_readwrite(
                     "geometric_kernel",
                     &TransformationEstimationForDopplerICP::geometric_kernel_,
@@ -702,6 +701,7 @@ static const std::unordered_map<std::string, std::string>
                  "``TransformationEstimationForDopplerICP``, "
                  "``TransformationEstimationForColoredICP``)"},
                 {"init", "Initial transformation estimation"},
+                {"lambda_doppler", "lambda_doppler value"},
                 {"lambda_geometric", "lambda_geometric value"},
                 {"epsilon", "epsilon value"},
                 {"kernel", "Robust Kernel used in the Optimization"},
@@ -714,6 +714,8 @@ static const std::unordered_map<std::string, std::string>
                 {"period",
                  "Time period (in seconds) between the source and the target "
                  "point clouds."},
+                {"prune_correspondences",
+                 "Prune dynamic point outlier correspondences."},
                 {"ransac_n", "Fit ransac with ``ransac_n`` correspondences"},
                 {"seed", "Random seed."},
                 {"source_feature", "Source point cloud feature."},
@@ -769,7 +771,7 @@ void pybind_registration_methods(py::module &m) {
           "Function for Doppler ICP registration", "source"_a, "target"_a,
           "max_correspondence_distance"_a,
           "init"_a = Eigen::Matrix4d::Identity(),
-          "estimation_method"_a = TransformationEstimationForDopplerICP(0.5),
+          "estimation_method"_a = TransformationEstimationForDopplerICP(0.99),
           "criteria"_a = ICPConvergenceCriteria(), "period"_a = 0.1F,
           "T_V_to_S"_a = Eigen::Matrix4d::Identity());
     docstring::FunctionDocInject(m, "registration_doppler_icp",

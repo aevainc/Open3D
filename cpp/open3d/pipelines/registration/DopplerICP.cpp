@@ -80,8 +80,7 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
         const double period,
         const Eigen::Matrix4d &transformation,
         const Eigen::Matrix4d &T_V_to_S,
-        const size_t iteration,
-        std::vector<Eigen::Vector3d> &errors) const {
+        const size_t iteration) const {
     if (corres.empty()) {
         utility::LogError(
                 "No correspondences found between source and target "
@@ -99,9 +98,9 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
         utility::LogError("Time period too small");
     }
 
-    const double lambda_doppler = 1.0 - lambda_geometric_;
-    const double sqrt_lambda_geometric = std::sqrt(lambda_geometric_);
-    const double sqrt_lambda_doppler = std::sqrt(lambda_doppler);
+    const double lambda_geometric = 1.0 - lambda_doppler_;
+    const double sqrt_lambda_doppler = std::sqrt(lambda_doppler_);
+    const double sqrt_lambda_geometric = std::sqrt(lambda_geometric);
     const double sqrt_lambda_doppler_by_dt = sqrt_lambda_doppler / period;
 
     const Eigen::Vector6d state_vector =
@@ -112,9 +111,6 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
     const Eigen::Vector3d v_v_in_V = -state_vector.block<3, 1>(3, 0) / period;
     const Eigen::Vector3d v_s_in_V = v_v_in_V + w_v_in_V.cross(r_v_to_s_in_V);
     const Eigen::Vector3d v_s_in_S = R_S_to_V * v_s_in_V;
-
-    errors.clear();
-    errors.reserve(corres.size());
 
     auto compute_jacobian_and_residual =
             [&](int i,
@@ -137,14 +133,14 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
                 const double doppler_pred_in_S = -ds_in_S.dot(v_s_in_S);
                 const double doppler_error = doppler_in_S - doppler_pred_in_S;
 
-                // Doppler compatibility check.
-                bool update = true;
-                if (check_doppler_compatibility_ &&
+                // Dynamic point outlier pruning of correspondences.
+                bool optimize{true};
+                if (prune_correspondences_ &&
                     std::abs(doppler_error) > doppler_outlier_threshold_) {
-                    update = false;
+                    optimize = false;
                 }
 
-                if (update) {
+                if (optimize) {
                     // Compute geometric point-to-plane error and Jacobian.
                     const double geometric_error = (ps_in_V - pt_in_V).dot(nt_in_V);
                     r[0] = sqrt_lambda_geometric * geometric_error;
@@ -174,14 +170,6 @@ Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
                     J_r[1].block<3, 1>(0, 0) = Eigen::Vector3d::Zero();
                     J_r[1].block<3, 1>(3, 0) = Eigen::Vector3d::Zero();
                 }
-
-                // double doppler_weight =
-                //         (iteration >= doppler_robust_loss_min_iteration_)
-                //                 ? doppler_kernel_->Weight(doppler_error)
-                //                 : default_kernel_->Weight(doppler_error);
-
-                errors.emplace_back(Eigen::Vector3d(
-                        doppler_error, std::abs(doppler_error), update));
             };
 
     Eigen::Matrix6d JTJ;
@@ -250,23 +238,26 @@ RegistrationResult RegistrationDopplerICP(
     result = GetRegistrationResultAndCorrespondences(
             pcd, target, kdtree, max_correspondence_distance, transformation);
 
-    std::vector<Eigen::Vector3d> errors;
-
     int i;
-    bool converged = false;
+    bool converged{false};
     for (i = 0; i < criteria.max_iteration_; i++) {
         utility::LogDebug("ICP Iteration #{:d}: Fitness {:.4f}, RMSE {:.4f}", i,
                           result.fitness_, result.inlier_rmse_);
+
+        // Compute the transform update.
         Eigen::Matrix4d update = estimation.ComputeTransformation(
                 pcd, target, result.correspondence_set_, source_directions,
-                period, transformation, T_V_to_S, i == 0, errors);
+                period, transformation, T_V_to_S, i);
         transformation = update * transformation;
         pcd.Transform(update);
+
+        // Update the registration result.
         RegistrationResult backup = result;
         result = GetRegistrationResultAndCorrespondences(
                 pcd, target, kdtree, max_correspondence_distance,
                 transformation);
 
+        // Check for convergence.
         if (std::abs(backup.fitness_ - result.fitness_) <
                     criteria.relative_fitness_ &&
             std::abs(backup.inlier_rmse_ - result.inlier_rmse_) <
