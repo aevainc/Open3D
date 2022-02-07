@@ -720,6 +720,8 @@ static const std::unordered_map<std::string, std::string>
                 {"seed", "Random seed."},
                 {"source_feature", "Source point cloud feature."},
                 {"source", "The source point cloud."},
+                {"source_directions",
+                 "Direction vectors for the source point cloud."},
                 {"T_V_to_S",
                  "The 4x4 transformation matrix to transform ``sensor`` to "
                  "``vehicle`` frame."},
@@ -769,7 +771,7 @@ void pybind_registration_methods(py::module &m) {
     m.def("registration_doppler_icp", &RegistrationDopplerICP,
           py::call_guard<py::gil_scoped_release>(),
           "Function for Doppler ICP registration", "source"_a, "target"_a,
-          "max_correspondence_distance"_a,
+          "source_directions"_a, "max_correspondence_distance"_a,
           "init"_a = Eigen::Matrix4d::Identity(),
           "estimation_method"_a = TransformationEstimationForDopplerICP(0.99),
           "criteria"_a = ICPConvergenceCriteria(), "period"_a = 0.1F,

@@ -33,6 +33,22 @@
 using namespace open3d;
 using namespace open3d::pipelines::registration;
 
+std::vector<Eigen::Vector3d> ComputeDirectionVectors(
+        const geometry::PointCloud &pcd) {
+    utility::LogDebug("ComputeDirectionVectors");
+
+    std::vector<Eigen::Vector3d> directions;
+    size_t n_points = pcd.points_.size();
+    directions.resize(n_points, Eigen::Vector3d::Zero());
+
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < (int)pcd.points_.size(); ++i) {
+        directions[i] = pcd.points_[i].normalized();
+    }
+
+    return directions;
+}
+
 void VisualizeRegistration(const open3d::geometry::PointCloud &source,
                            const open3d::geometry::PointCloud &target,
                            const Eigen::Matrix4d &Transformation) {
@@ -99,9 +115,13 @@ int main(int argc, char *argv[]) {
     std::shared_ptr<RobustKernel> doppler_kernel =
             std::make_shared<TukeyLoss>(0.5);
 
+    std::vector<Eigen::Vector3d> source_directions =
+            ComputeDirectionVectors(*source);
+
     Eigen::Matrix4d transform = Eigen::Matrix4d::Identity();
     auto result = RegistrationDopplerICP(
-            *source, *target, max_neighbor_distance, transform,
+            *source, *target, source_directions, max_neighbor_distance,
+            transform,
             TransformationEstimationForDopplerICP(
                     lambda_doppler, prune_correspondences,
                     doppler_outlier_threshold,

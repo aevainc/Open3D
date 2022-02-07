@@ -41,26 +41,6 @@ namespace open3d {
 namespace pipelines {
 namespace registration {
 
-namespace {
-
-std::vector<Eigen::Vector3d> ComputeDirectionVectors(
-        const geometry::PointCloud &pcd) {
-    utility::LogDebug("ComputeDirectionVectors");
-
-    std::vector<Eigen::Vector3d> directions;
-    size_t n_points = pcd.points_.size();
-    directions.resize(n_points, Eigen::Vector3d::Zero());
-
-#pragma omp parallel for schedule(static)
-    for (int i = 0; i < (int)pcd.points_.size(); ++i) {
-        directions[i] = pcd.points_[i].normalized();
-    }
-
-    return directions;
-}
-
-}  // namespace
-
 Eigen::Matrix4d TransformationEstimationForDopplerICP::ComputeTransformation(
         const geometry::PointCloud &source,
         const geometry::PointCloud &target,
@@ -204,6 +184,7 @@ double TransformationEstimationForDopplerICP::ComputeRMSE(
 RegistrationResult RegistrationDopplerICP(
         const geometry::PointCloud &source,
         const geometry::PointCloud &target,
+        const std::vector<Eigen::Vector3d> &source_directions,
         double max_correspondence_distance,
         const Eigen::Matrix4d &init /* = Eigen::Matrix4d::Identity()*/,
         const TransformationEstimationForDopplerICP &estimation
@@ -228,8 +209,6 @@ RegistrationResult RegistrationDopplerICP(
     geometry::KDTreeFlann kdtree;
     kdtree.SetGeometry(target);
     geometry::PointCloud pcd = source;
-    std::vector<Eigen::Vector3d> source_directions =
-            ComputeDirectionVectors(source);
     if (!init.isIdentity()) {
         pcd.Transform(init);
     }

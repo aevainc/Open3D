@@ -142,6 +142,7 @@ private:
 RegistrationResult RegistrationDopplerICP(
         const geometry::PointCloud &source,
         const geometry::PointCloud &target,
+        const std::vector<Eigen::Vector3d> &source_directions,
         double max_distance,
         const Eigen::Matrix4d &init = Eigen::Matrix4d::Identity(),
         const TransformationEstimationForDopplerICP &estimation =
