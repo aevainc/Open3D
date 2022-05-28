@@ -656,8 +656,6 @@ must hold true for all edges.)");
             .def_readwrite(
                     "num_iterations", &RegistrationResult::num_iterations_,
                     "int: Number of iterations the algorithm took to converge.")
-            .def_readwrite("errors", &RegistrationResult::errors_,
-                           "error vector")
             .def("__repr__", [](const RegistrationResult &rr) {
                 return fmt::format(
                         "RegistrationResult with "

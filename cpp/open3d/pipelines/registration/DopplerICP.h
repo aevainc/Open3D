@@ -51,8 +51,9 @@ class TransformationEstimationForDopplerICP : public TransformationEstimation {
 public:
     ~TransformationEstimationForDopplerICP() override{};
 
-    /// \brief Constructor that takes as input a RobustKernel \param kernel Any
-    /// of the implemented statistical robust kernel for outlier rejection.
+    /// \brief Constructor that takes as input a RobustKernel
+    /// \param kernel Any of the implemented statistical robust kernel for
+    /// outlier rejection.
     explicit TransformationEstimationForDopplerICP(
             double lambda_doppler = 0.01,
             bool prune_correspondences = false,
