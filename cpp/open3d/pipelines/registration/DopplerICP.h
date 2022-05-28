@@ -124,6 +124,10 @@ private:
 
 /// \brief Function for Doppler ICP registration.
 ///
+/// This is implementation of following paper:
+/// B. Hexsel, H. Vhavle, Y. Chen,
+/// DICP: Doppler Iterative Closest Point Algorithm, RSS 2022.
+///
 /// \param source The source point cloud.
 /// \param target The target point cloud.
 /// \param max_distance Maximum correspondence points-pair distance (meters).
