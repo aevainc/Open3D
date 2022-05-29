@@ -62,7 +62,7 @@ if __name__ == '__main__':
     target.estimate_normals(
         o3d.geometry.KDTreeSearchParamHybrid(radius=10.0, max_nn=30))
 
-    # This is implementation of following paper:
+    # This is the implementation of the following paper:
     # B. Hexsel, H. Vhavle, Y. Chen,
     # DICP: Doppler Iterative Closest Point Algorithm, RSS 2022.
     print('Apply point-to-plane Doppler ICP')
