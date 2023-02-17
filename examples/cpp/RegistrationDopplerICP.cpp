@@ -118,6 +118,9 @@ int main(int argc, char *argv[]) {
 
     std::vector<Eigen::Vector3d> source_directions =
             ComputeDirectionVectors(*source);
+    
+    target->normals_.clear();
+    target->EstimateNormals(geometry::KDTreeSearchParamHybrid(10.0, 30));
 
     Eigen::Matrix4d transform = Eigen::Matrix4d::Identity();
     auto result = RegistrationDopplerICP(
